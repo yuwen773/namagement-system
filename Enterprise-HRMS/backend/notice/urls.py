@@ -1,0 +1,11 @@
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import NoticeViewSet, NoticePublicViewSet
+
+router = DefaultRouter()
+router.register(r'notices', NoticeViewSet, basename='notice')
+router.register(r'public', NoticePublicViewSet, basename='notice-public')
+
+urlpatterns = [
+    path('', include(router.urls)),
+]

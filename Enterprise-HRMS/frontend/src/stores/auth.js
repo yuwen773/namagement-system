@@ -28,7 +28,9 @@ export const useAuthStore = defineStore('auth', () => {
     salary: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
     approval: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
     onboarding: [ROLE_ADMIN, ROLE_HR],
-    users: [ROLE_ADMIN]
+    users: [ROLE_ADMIN],
+    notices: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
+    noticeManagement: [ROLE_ADMIN]
   }
 
   // 检查是否有权限访问指定路由
@@ -49,6 +51,8 @@ export const useAuthStore = defineStore('auth', () => {
       { name: 'salary', label: '薪资管理', path: '/salary', icon: 'salary' },
       { name: 'approval', label: '审批中心', path: '/approval', icon: 'approval' },
       { name: 'onboarding', label: '入职管理', path: '/onboarding', icon: 'onboarding' },
+      { name: 'notices', label: '系统公告', path: '/notices', icon: 'notices' },
+      { name: 'noticeManagement', label: '公告管理', path: '/notice-management', icon: 'notices' },
       { name: 'users', label: '账号管理', path: '/users', icon: 'users' }
     ]
     return allMenus.filter(menu => hasPermission(menu.name))

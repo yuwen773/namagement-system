@@ -64,6 +64,24 @@ const router = createRouter({
           name: 'users',
           component: () => import('../views/UserManagement.vue'),
           meta: { roles: ['admin'] }
+        },
+        {
+          path: 'notices',
+          name: 'notices',
+          component: () => import('../views/NoticeList.vue'),
+          meta: { roles: ['admin', 'hr', 'employee'] }
+        },
+        {
+          path: 'notices/:id',
+          name: 'notice-detail',
+          component: () => import('../views/NoticeDetail.vue'),
+          meta: { roles: ['admin', 'hr', 'employee'] }
+        },
+        {
+          path: 'notice-management',
+          name: 'notice-management',
+          component: () => import('../views/NoticeManagement.vue'),
+          meta: { roles: ['admin'] }
         }
       ]
     },
