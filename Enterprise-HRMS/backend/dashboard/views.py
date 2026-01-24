@@ -9,6 +9,7 @@ from django.db.models.fields import DecimalField
 from django.utils import timezone
 from datetime import timedelta
 
+from HRMS.permissions import IsHROrAdmin
 from employee.models import EmployeeProfile
 from salary.models import SalaryRecord
 from attendance.models import Attendance
@@ -25,8 +26,10 @@ class DashboardStatsView(APIView):
     - 本月薪资总额
     - 部门人数分布
     - 近6月薪资趋势
+
+    权限：仅 HR/Admin 可访问
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsHROrAdmin]
 
     def get(self, request):
         """获取仪表盘统计数据"""

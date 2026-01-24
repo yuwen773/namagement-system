@@ -2,6 +2,8 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import ProtectedError
+
+from HRMS.permissions import IsHROrAdminOrReadOnly
 from .models import Department, Post
 from .serializers import DepartmentSerializer, DepartmentTreeSerializer, PostSerializer
 
@@ -16,9 +18,12 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     - partial_update: 部分更新
     - destroy: 删除部门（检查保护）
     - tree: 获取树形结构
+
+    权限：登录用户可查看，HR/Admin 可管理
     """
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
+    permission_classes = [IsHROrAdminOrReadOnly]
 
     def get_serializer_class(self):
         if self.action == "tree":
@@ -71,9 +76,12 @@ class PostViewSet(viewsets.ModelViewSet):
     - update: 更新岗位
     - partial_update: 部分更新
     - destroy: 删除岗位
+
+    权限：登录用户可查看，HR/Admin 可管理
     """
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    permission_classes = [IsHROrAdminOrReadOnly]
 
     def list(self, request, *args, **kwargs):
         """获取岗位列表，可选只获取启用的岗位"""

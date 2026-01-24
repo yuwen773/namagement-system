@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 
+from HRMS.permissions import IsEmployeeOrHROrAdmin
 from .models import Attendance
 from .serializers import (
     AttendanceSerializer,
@@ -16,9 +17,15 @@ from .serializers import (
 
 
 class AttendanceViewSet(viewsets.ModelViewSet):
-    """考勤记录 ViewSet"""
+    """
+    考勤记录 ViewSet
+
+    权限说明：
+    - check_in, check_out: 所有登录用户可访问（自己打卡）
+    - list, retrieve, today, stats: 登录用户可访问（普通员工只能看自己）
+    """
     queryset = Attendance.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsEmployeeOrHROrAdmin]
 
     def get_serializer_class(self):
         if self.action == 'list':

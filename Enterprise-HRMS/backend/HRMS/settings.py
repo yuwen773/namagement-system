@@ -178,3 +178,15 @@ CORS_ALLOWED_ORIGINS = [
 
 # Custom User Model
 AUTH_USER_MODEL = "accounts.User"
+
+# Role Constants
+ROLE_EMPLOYEE = 'employee'
+ROLE_HR = 'hr'
+ROLE_ADMIN = 'admin'
+
+# Role Choices for User Model
+ROLE_CHOICES = [
+    (ROLE_EMPLOYEE, '普通员工'),
+    (ROLE_HR, '人事专员'),
+    (ROLE_ADMIN, '管理员'),
+]

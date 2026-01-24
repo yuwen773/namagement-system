@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from HRMS.permissions import IsHROrAdmin, IsEmployeeOrHROrAdmin
 from .models import SalaryRecord
 from .serializers import (
     SalaryCalculateSerializer,
@@ -16,8 +17,12 @@ from employee.models import EmployeeProfile
 
 
 class SalaryCalculateViewSet(viewsets.ViewSet):
-    """薪资计算视图集"""
-    permission_classes = [IsAuthenticated]
+    """
+    薪资计算视图集
+
+    权限：仅 HR/Admin 可访问薪资计算功能
+    """
+    permission_classes = [IsHROrAdmin]
 
     def list(self, request):
         """薪资计算接口"""
@@ -101,8 +106,14 @@ class SalaryCalculateViewSet(viewsets.ViewSet):
 
 
 class SalaryRecordViewSet(viewsets.ModelViewSet):
-    """薪资记录管理视图集"""
-    permission_classes = [IsAuthenticated]
+    """
+    薪资记录管理视图集
+
+    权限说明：
+    - list, retrieve: 登录用户可访问（普通员工只能看自己已发布的薪资）
+    - save, publish: 仅 HR/Admin 可访问
+    """
+    permission_classes = [IsEmployeeOrHROrAdmin]
     queryset = SalaryRecord.objects.all()
 
     def get_serializer_class(self):
@@ -147,7 +158,14 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def save(self, request):
-        """保存薪资记录"""
+        """保存薪资记录（仅 HR/Admin 可访问）"""
+        # 权限检查已由 permission_classes 处理，但 save 是 action，需要额外检查
+        if request.user.role not in ['hr', 'admin']:
+            return Response({
+                'code': 403,
+                'message': '权限不足，需要人事或管理员权限'
+            }, status=status.HTTP_403_FORBIDDEN)
+
         serializer = SalaryCalculateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({'code': 400, 'message': '参数错误'},

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 
+from HRMS.permissions import IsHROrAdmin, IsEmployeeOrHROrAdmin
 from .models import EmployeeProfile
 from .serializers import (
     EmployeeListSerializer,
@@ -16,9 +17,14 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
     """
     员工档案 ViewSet
     提供：list, retrieve, create, update, partial_update, destroy, pending, resign
+
+    权限说明：
+    - list, retrieve: 登录用户可访问（普通员工只能看自己）
+    - create, update, partial_update, pending, resign: 仅 HR/Admin 可访问
     """
     queryset = EmployeeProfile.objects.select_related('user', 'department', 'post')
     serializer_class = EmployeeProfileSerializer
+    permission_classes = [IsEmployeeOrHROrAdmin]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -31,15 +37,34 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
+
+        # 普通员工只能查看自己的记录
+        if user.role == 'employee':
+            queryset = queryset.filter(user=user)
+
         # 按状态筛选
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         return queryset
 
+    def check_permissions(self, request):
+        """对敏感操作进行角色检查"""
+        super().check_permissions(request)
+
+        # 只有 HR/Admin 可以执行以下操作
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'pending', 'resign']:
+            if request.user.role not in ['hr', 'admin']:
+                self.permission_denied(request, message='权限不足，需要人事或管理员权限')
+
     def list(self, request, *args, **kwargs):
         """获取员工列表"""
-        queryset = self.get_queryset()
+        # 普通员工只能查看自己
+        if request.user.role == 'employee':
+            queryset = self.get_queryset().filter(user=request.user)
+        else:
+            queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'code': 0,
