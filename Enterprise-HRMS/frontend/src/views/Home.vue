@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, h } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
@@ -16,6 +16,64 @@ const userRoleText = computed(() => {
   }
   return roleMap[authStore.user?.role] || '用户'
 })
+
+// 动态获取当前用户可访问的菜单列表
+const accessibleMenus = computed(() => {
+  return authStore.getAccessibleMenus()
+})
+
+// 菜单图标渲染函数（使用 h 函数创建带 class 的 SVG，确保 scoped CSS 生效）
+const renderIcon = (iconName) => {
+  const icons = {
+    dashboard: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('rect', { x: '3', y: '3', width: '7', height: '7', rx: '1' }),
+      h('rect', { x: '14', y: '3', width: '7', height: '7', rx: '1' }),
+      h('rect', { x: '3', y: '14', width: '7', height: '7', rx: '1' }),
+      h('rect', { x: '14', y: '14', width: '7', height: '7', rx: '1' })
+    ]),
+    employees: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('path', { d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }),
+      h('circle', { cx: '12', cy: '7', r: '4' })
+    ]),
+    departments: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('path', { d: 'M3 21h18' }),
+      h('path', { d: 'M9 8h1' }),
+      h('path', { d: 'M9 12h1' }),
+      h('path', { d: 'M9 16h1' }),
+      h('path', { d: 'M14 8h1' }),
+      h('path', { d: 'M14 12h1' }),
+      h('path', { d: 'M14 16h1' }),
+      h('path', { d: 'M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16' })
+    ]),
+    attendance: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('circle', { cx: '12', cy: '12', r: '10' }),
+      h('polyline', { points: '12 6 12 12 16 14' })
+    ]),
+    salary: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('rect', { x: '2', y: '4', width: '20', height: '16', rx: '2' }),
+      h('path', { d: 'M12 12h.01' }),
+      h('path', { d: 'M6 12h.01' }),
+      h('path', { d: 'M18 12h.01' })
+    ]),
+    approval: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('path', { d: 'M9 11l3 3L22 4' }),
+      h('path', { d: 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11' })
+    ]),
+    onboarding: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('path', { d: 'M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' }),
+      h('circle', { cx: '8.5', cy: '7', r: '4' }),
+      h('line', { x1: '20', y1: '8', x2: '20', y2: '14' }),
+      h('line', { x1: '23', y1: '11', x2: '17', y2: '11' })
+    ]),
+    users: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('path', { d: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' }),
+      h('circle', { cx: '9', cy: '7', r: '4' }),
+      h('path', { d: 'M23 21v-2a4 4 0 0 0-3-3.87' }),
+      h('path', { d: 'M16 3.13a4 4 0 0 1 0 7.75' })
+    ])
+  }
+  return icons[iconName]?.() || null
+}
 </script>
 
 <template>
@@ -42,86 +100,15 @@ const userRoleText = computed(() => {
           router
           class="nav-menu"
         >
-          <el-menu-item index="/">
+          <el-menu-item
+            v-for="menu in accessibleMenus"
+            :key="menu.path"
+            :index="menu.path"
+          >
             <div class="menu-item-wrapper">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/>
-              </svg>
-              <span>数据概览</span>
+              <component :is="renderIcon(menu.icon)" />
             </div>
-          </el-menu-item>
-
-          <el-menu-item index="/employees">
-            <div class="menu-item-wrapper">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              <span>员工管理</span>
-            </div>
-          </el-menu-item>
-
-          <el-menu-item index="/departments">
-            <div class="menu-item-wrapper">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 21h18"/>
-                <path d="M9 8h1"/>
-                <path d="M9 12h1"/>
-                <path d="M9 16h1"/>
-                <path d="M14 8h1"/>
-                <path d="M14 12h1"/>
-                <path d="M14 16h1"/>
-                <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
-              </svg>
-              <span>部门管理</span>
-            </div>
-          </el-menu-item>
-
-          <el-menu-item index="/attendance">
-            <div class="menu-item-wrapper">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-              <span>考勤管理</span>
-            </div>
-          </el-menu-item>
-
-          <el-menu-item index="/salary">
-            <div class="menu-item-wrapper">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                <path d="M12 12h.01"/>
-                <path d="M6 12h.01"/>
-                <path d="M18 12h.01"/>
-              </svg>
-              <span>薪资管理</span>
-            </div>
-          </el-menu-item>
-
-          <el-menu-item index="/approval">
-            <div class="menu-item-wrapper">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 11l3 3L22 4"/>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-              </svg>
-              <span>审批中心</span>
-            </div>
-          </el-menu-item>
-
-          <el-menu-item index="/onboarding">
-            <div class="menu-item-wrapper">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="8.5" cy="7" r="4"/>
-                <line x1="20" y1="8" x2="20" y2="14"/>
-                <line x1="23" y1="11" x2="17" y2="11"/>
-              </svg>
-              <span>入职管理</span>
-            </div>
+            <span>{{ menu.label }}</span>
           </el-menu-item>
         </el-menu>
       </nav>

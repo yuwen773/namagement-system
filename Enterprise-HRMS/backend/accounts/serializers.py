@@ -157,3 +157,43 @@ class AdminResetPasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['new_password']
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    """
+    用户列表序列化器（轻量版，用于用户管理列表）
+    """
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'real_name', 'phone', 'email', 'role', 'is_active', 'status', 'date_joined']
+
+    def get_status(self, obj):
+        """返回用户状态文本"""
+        return '正常' if obj.is_active else '禁用'
+
+
+class UserRoleUpdateSerializer(serializers.ModelSerializer):
+    """
+    用户角色更新序列化器
+    """
+    class Meta:
+        model = User
+        fields = ['role']
+
+    def validate_role(self, value):
+        """验证角色值"""
+        valid_roles = ['employee', 'hr', 'admin']
+        if value not in valid_roles:
+            raise serializers.ValidationError(f'无效的角色，可选值: {valid_roles}')
+        return value
+
+
+class UserStatusUpdateSerializer(serializers.ModelSerializer):
+    """
+    用户状态更新序列化器
+    """
+    class Meta:
+        model = User
+        fields = ['is_active']
