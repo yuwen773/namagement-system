@@ -59,17 +59,52 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                 self.permission_denied(request, message='权限不足，需要人事或管理员权限')
 
     def list(self, request, *args, **kwargs):
-        """获取员工列表"""
+        """获取员工列表（支持分页和查询条件）"""
         # 普通员工只能查看自己
         if request.user.role == 'employee':
             queryset = self.get_queryset().filter(user=request.user)
         else:
             queryset = self.get_queryset()
+
+        # 按状态筛选
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # 按部门筛选
+        department_id = request.query_params.get('department_id')
+        if department_id:
+            queryset = queryset.filter(department_id=department_id)
+
+        # 按岗位筛选
+        post_id = request.query_params.get('post_id')
+        if post_id:
+            queryset = queryset.filter(post_id=post_id)
+
+        # 按关键词搜索（姓名/工号）
+        keyword = request.query_params.get('keyword')
+        if keyword:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(user__real_name__icontains=keyword) |
+                Q(emp_no__icontains=keyword)
+            )
+
+        # 分页
+        total = queryset.count()
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+        start = (page - 1) * page_size
+        end = start + page_size
+        queryset = queryset[start:end]
+
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'code': 0,
             'data': serializer.data,
-            'total': queryset.count()
+            'total': total,
+            'page': page,
+            'page_size': page_size
         })
 
     def retrieve(self, request, *args, **kwargs):
@@ -115,14 +150,30 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def pending(self, request):
-        """获取待入职用户列表（未关联档案的用户）"""
+        """获取待入职用户列表（支持分页和查询条件）"""
         from accounts.models import User
         from django.db.models import Q
 
         # 查找没有 profile 的用户
-        pending_users = User.objects.filter(
+        queryset = User.objects.filter(
             profile__isnull=True
         ).order_by('-date_joined')
+
+        # 按关键词搜索（姓名/用户名）
+        keyword = request.query_params.get('keyword')
+        if keyword:
+            queryset = queryset.filter(
+                Q(real_name__icontains=keyword) |
+                Q(username__icontains=keyword)
+            )
+
+        # 分页
+        total = queryset.count()
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+        start = (page - 1) * page_size
+        end = start + page_size
+        queryset = queryset[start:end]
 
         return Response({
             'code': 0,
@@ -133,8 +184,10 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                 'phone': user.phone,
                 'email': user.email,
                 'date_joined': user.date_joined,
-            } for user in pending_users],
-            'total': pending_users.count()
+            } for user in queryset],
+            'total': total,
+            'page': page,
+            'page_size': page_size
         })
 
     @action(detail=True, methods=['post'])

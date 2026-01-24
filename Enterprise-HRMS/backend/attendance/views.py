@@ -38,22 +38,57 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
         # 普通员工只能查看自己的记录
         if user.role == 'employee':
-            return Attendance.objects.filter(user=user)
+            queryset = Attendance.objects.filter(user=user)
+        else:
+            queryset = Attendance.objects.all()
 
-        # 人事和管理员可以查看所有或指定用户的记录
-        queryset = Attendance.objects.all()
+        # 筛选日期范围 (date_start, date_end)
+        date_start = self.request.query_params.get('date_start')
+        date_end = self.request.query_params.get('date_end')
+        if date_start:
+            queryset = queryset.filter(date__gte=date_start)
+        if date_end:
+            queryset = queryset.filter(date__lte=date_end)
 
-        # 筛选日期
+        # 兼容单日查询 (date)
         date_param = self.request.query_params.get('date')
-        if date_param:
+        if date_param and not date_start and not date_end:
             queryset = queryset.filter(date=date_param)
 
-        # 筛选用户
+        # 筛选状态 (status)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+
+        # 筛选用户 (仅 HR/Admin 可用)
         user_id = self.request.query_params.get('user_id')
-        if user_id:
+        if user_id and user.role != 'employee':
             queryset = queryset.filter(user_id=user_id)
 
-        return queryset
+        return queryset.order_by('-date', '-check_in_time')
+
+    def list(self, request, *args, **kwargs):
+        """考勤记录列表（支持分页）"""
+        queryset = self.get_queryset()
+
+        # 获取分页参数
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+
+        # 分页
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        queryset = queryset[start:end]
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'total': total,
+            'page': page,
+            'page_size': page_size
+        })
 
     @action(detail=False, methods=['post'], url_path='check-in')
     def check_in(self, request):

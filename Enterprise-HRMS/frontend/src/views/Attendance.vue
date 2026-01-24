@@ -113,16 +113,35 @@
       <template #header>
         <div class="card-header">
           <span>考勤记录</span>
-          <el-date-picker
-            v-model="selectedDate"
-            type="date"
-            placeholder="筛选日期"
-            format="YYYY年MM月DD日"
-            value-format="YYYY-MM-DD"
-            @change="fetchRecords"
-            size="small"
-            clearable
-          />
+          <div class="filter-group">
+            <el-date-picker
+              v-model="filterForm.dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              @change="handleFilterChange"
+              size="small"
+              clearable
+              style="width: 260px;"
+            />
+            <el-select
+              v-model="filterForm.status"
+              placeholder="状态筛选"
+              clearable
+              @change="handleFilterChange"
+              size="small"
+              style="width: 120px; margin-left: 10px;"
+            >
+              <el-option label="正常" value="normal" />
+              <el-option label="迟到" value="late" />
+              <el-option label="早退" value="early" />
+              <el-option label="缺勤" value="absent" />
+              <el-option label="请假" value="leave" />
+            </el-select>
+          </div>
         </div>
       </template>
       <el-table :data="records" v-loading="loading.records" stripe>
@@ -149,12 +168,25 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="fetchRecords"
+          @current-change="handlePageChange"
+        />
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Clock, Timer, Top, Bottom } from '@element-plus/icons-vue'
 import { checkIn, checkOut, getTodayAttendance, getAttendanceRecords, getAttendanceStats } from '@/api/attendance'
@@ -189,9 +221,21 @@ const stats = reactive({
 // 考勤记录列表
 const records = ref([])
 
-// 日期选择
+// 筛选表单
+const filterForm = reactive({
+  dateRange: null,
+  status: ''
+})
+
+// 分页状态
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  total: 0
+})
+
+// 月份选择
 const selectedMonth = ref(new Date().toISOString().slice(0, 7))
-const selectedDate = ref('')
 
 // 获取今日考勤
 async function fetchTodayAttendance() {
@@ -239,18 +283,45 @@ async function fetchStats() {
 async function fetchRecords() {
   loading.records = true
   try {
-    const params = {}
-    if (selectedDate.value) {
-      params.date = selectedDate.value
+    const params = {
+      page: pagination.page,
+      page_size: pagination.pageSize
     }
+
+    // 日期范围
+    if (filterForm.dateRange && filterForm.dateRange.length === 2) {
+      params.date_start = filterForm.dateRange[0]
+      params.date_end = filterForm.dateRange[1]
+    }
+
+    // 状态筛选
+    if (filterForm.status) {
+      params.status = filterForm.status
+    }
+
     const res = await getAttendanceRecords(params)
-    records.value = res.data?.data || []
+    if (res.data?.code === 0) {
+      records.value = res.data?.data || []
+      pagination.total = res.data?.total || 0
+    }
   } catch (error) {
     console.error('获取考勤记录失败:', error)
     ElMessage.error('获取考勤记录失败')
   } finally {
     loading.records = false
   }
+}
+
+// 筛选条件变化
+function handleFilterChange() {
+  pagination.page = 1
+  fetchRecords()
+}
+
+// 页码变化
+function handlePageChange(page) {
+  pagination.page = page
+  fetchRecords()
 }
 
 // 签到
@@ -311,8 +382,6 @@ function getStatusText(status) {
 const todayStatusTag = computed(() => {
   return getStatusType(todayData.status)
 })
-
-import { computed } from 'vue'
 
 // 初始化
 onMounted(() => {
@@ -400,5 +469,16 @@ onMounted(() => {
 
 .text-warning {
   color: #e6a23c;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 </style>

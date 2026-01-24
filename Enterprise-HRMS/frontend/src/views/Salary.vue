@@ -3,13 +3,15 @@
     <div class="page-header">
       <h2>薪资管理</h2>
       <el-date-picker
-        v-model="selectedMonth"
-        type="month"
-        placeholder="选择月份"
+        v-model="filterForm.monthRange"
+        type="monthrange"
+        range-separator="至"
+        start-placeholder="开始月份"
+        end-placeholder="结束月份"
         format="YYYY-MM"
         value-format="YYYY-MM"
         :disabled-date="disabledDate"
-        @change="handleMonthChange"
+        @change="handleFilterChange"
       />
     </div>
 
@@ -38,9 +40,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="180">
+        <el-table-column prop="create_time" label="创建时间" width="180">
           <template #default="{ row }">
-            {{ row.created_at?.replace('T', ' ').substring(0, 19) }}
+            {{ row.create_time?.replace('T', ' ').substring(0, 19) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" min-width="150" fixed="right">
@@ -62,6 +64,19 @@
       </el-table>
 
       <el-empty v-if="!loading && salaryRecords.length === 0" description="暂无薪资记录" />
+
+      <!-- 分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="fetchSalaryRecords"
+          @current-change="handlePageChange"
+        />
+      </div>
     </el-card>
 
     <!-- 薪资详情抽屉 -->
@@ -145,22 +160,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
-import { getSalaryRecords, getSalaryRecordDetail, saveSalaryRecord } from '@/api/salary'
+import { getSalaryRecords, getSalaryRecordDetail, saveSalaryRecord, publishSalaryRecords } from '@/api/salary'
 import { getEmployeeList } from '@/api/employee'
 
 // 状态
 const loading = ref(false)
 const calculating = ref(false)
 const salaryRecords = ref([])
-const selectedMonth = ref(new Date().toISOString().slice(0, 7))
 const detailDrawerVisible = ref(false)
 const currentRecord = ref(null)
 const calculateDialogVisible = ref(false)
 const calculateFormRef = ref(null)
 const employeeList = ref([])
+
+// 筛选表单
+const filterForm = reactive({
+  monthRange: null
+})
+
+// 分页状态
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  total: 0
+})
 
 // 计算表单
 const calculateForm = ref({
@@ -185,14 +211,27 @@ const disabledDate = (time) => {
 
 // 获取薪资记录列表
 const fetchSalaryRecords = async () => {
-  if (!selectedMonth.value) return
-
   loading.value = true
   try {
-    const params = { month: selectedMonth.value }
+    const params = {
+      page: pagination.page,
+      page_size: pagination.pageSize
+    }
+
+    // 月份范围（如果有选择）
+    if (filterForm.monthRange && filterForm.monthRange.length === 2) {
+      params.month_start = filterForm.monthRange[0]
+      params.month_end = filterForm.monthRange[1]
+    } else if (selectedMonth.value) {
+      // 单月查询（兼容旧选择器）
+      params.month = selectedMonth.value
+    }
+    // 如果都没有选择，则不传 month 参数，返回所有已发布数据
+
     const res = await getSalaryRecords(params)
     if (res.data?.code === 0) {
       salaryRecords.value = res.data.data || []
+      pagination.total = res.data.total || 0
     }
   } catch (error) {
     console.error('获取薪资记录失败:', error)
@@ -202,9 +241,26 @@ const fetchSalaryRecords = async () => {
   }
 }
 
-// 月份切换
-const handleMonthChange = () => {
+// 筛选条件变化
+const handleFilterChange = () => {
+  pagination.page = 1
   fetchSalaryRecords()
+}
+
+// 页码变化
+const handlePageChange = (page) => {
+  pagination.page = page
+  fetchSalaryRecords()
+}
+
+// 月份切换（兼容单月选择）
+const selectedMonth = ref(null)  // 默认显示所有已发布数据
+const handleMonthChange = () => {
+  // 如果选择了单月，清除月份范围
+  if (selectedMonth.value) {
+    filterForm.monthRange = null
+  }
+  handleFilterChange()
 }
 
 // 查看详情
@@ -230,12 +286,17 @@ const publishSalary = async (row) => {
       { type: 'warning' }
     )
 
-    // TODO: 实现发布接口
-    ElMessage.success('薪资已发布')
-    fetchSalaryRecords()
+    const res = await publishSalaryRecords([row.id])
+    if (res.data?.code === 0) {
+      ElMessage.success('薪资已发布')
+      fetchSalaryRecords()
+    } else {
+      ElMessage.error(res.data?.message || '发布失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('发布失败:', error)
+      ElMessage.error(error.response?.data?.message || '发布失败')
     }
   }
 }
@@ -366,5 +427,11 @@ onMounted(() => {
   font-size: 28px;
   font-weight: bold;
   color: #67c23a;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 </style>

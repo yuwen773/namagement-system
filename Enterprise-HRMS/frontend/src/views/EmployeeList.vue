@@ -52,6 +52,19 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页组件 -->
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="pagination.page"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="pagination.total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="fetchEmployees"
+        @current-change="handlePageChange"
+      />
+    </div>
+
     <!-- 空状态 -->
     <el-empty v-if="!loading && employeeList.length === 0" description="暂无员工数据" />
 
@@ -227,6 +240,13 @@ import { getPostList } from '@/api/post'
 const employeeList = ref([])
 const loading = ref(false)
 
+// 分页状态
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  total: 0
+})
+
 // 筛选表单
 const filterForm = reactive({
   status: ''
@@ -301,18 +321,30 @@ const getStatusText = (status) => statusMap[status]?.text || status
 const fetchEmployees = async () => {
   loading.value = true
   try {
-    const params = {}
+    const params = {
+      page: pagination.page,
+      page_size: pagination.pageSize
+    }
     if (filterForm.status) {
       params.status = filterForm.status
     }
     const res = await getEmployeeList(params)
-    employeeList.value = res.data?.data || []
+    if (res.data?.code === 0) {
+      employeeList.value = res.data?.data || []
+      pagination.total = res.data?.total || 0
+    }
   } catch (error) {
     console.error('获取员工列表失败:', error)
     ElMessage.error('获取员工列表失败')
   } finally {
     loading.value = false
   }
+}
+
+// 页码变化
+const handlePageChange = (page) => {
+  pagination.page = page
+  fetchEmployees()
 }
 
 // 查看员工详情
@@ -329,8 +361,8 @@ const viewDetail = async (row) => {
 
 // 打开编辑对话框
 const handleEdit = (employee) => {
-  editForm.department = employee.department
-  editForm.post = employee.post
+  editForm.department = employee.department?.id
+  editForm.post = employee.post?.id
   editForm.hire_date = employee.hire_date
   editForm.salary_base = employee.salary_base
   editVisible.value = true
@@ -345,8 +377,8 @@ const submitEdit = async () => {
     submitting.value = true
 
     await updateEmployee(currentEmployee.value.id, {
-      department: editForm.department,
-      post: editForm.post,
+      department_id: editForm.department,
+      post_id: editForm.post,
       hire_date: editForm.hire_date,
       salary_base: editForm.salary_base
     })
@@ -423,8 +455,8 @@ const handleOnboarding = async () => {
   // 加载待入职用户
   try {
     const [usersRes, deptsRes, postsRes] = await Promise.all([
-      getPendingUsers(),
-      getDepartmentList(),
+      getPendingUsers({ page: 1, page_size: 100 }),
+      getDepartmentList({ only_root: true }),
       getPostList({ only_active: true })
     ])
     pendingUsers.value = usersRes.data?.data || []
@@ -453,8 +485,9 @@ const submitOnboarding = async () => {
 
     await createEmployee({
       user_id: onboardingForm.user_id,
-      department: onboardingForm.department,
-      post: onboardingForm.post,
+      emp_no: `EMP${new Date().toISOString().slice(0, 7).replace('-', '')}${String(onboardingForm.department).padStart(3, '0')}`,
+      department_id: onboardingForm.department,
+      post_id: onboardingForm.post,
       hire_date: onboardingForm.hire_date,
       salary_base: onboardingForm.salary_base
     })
@@ -500,6 +533,12 @@ onMounted(() => {
   padding: 15px;
   background: #f5f7fa;
   border-radius: 4px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 
 .drawer-footer {

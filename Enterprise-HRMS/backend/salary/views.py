@@ -133,18 +133,39 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         return SalaryRecord.objects.filter(status='published')
 
     def list(self, request, *args, **kwargs):
-        """薪资记录列表"""
+        """薪资记录列表（支持分页和月份范围查询）"""
         queryset = self.get_queryset()
-        month = request.query_params.get('month')
 
-        if month:
+        # 兼容单月查询 (month)
+        month = request.query_params.get('month')
+        if month and not request.query_params.get('month_start') and not request.query_params.get('month_end'):
             queryset = queryset.filter(month=month)
+
+        # 筛选月份范围 (month_start, month_end)
+        month_start = request.query_params.get('month_start')
+        month_end = request.query_params.get('month_end')
+        if month_start:
+            queryset = queryset.filter(month__gte=month_start)
+        if month_end:
+            queryset = queryset.filter(month__lte=month_end)
+
+        # 获取分页参数
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+
+        # 分页
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        queryset = queryset[start:end]
 
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'code': 0,
             'data': serializer.data,
-            'total': queryset.count()
+            'total': total,
+            'page': page,
+            'page_size': page_size
         })
 
     def retrieve(self, request, *args, **kwargs):

@@ -15,7 +15,11 @@
         </template>
       </el-table-column>
       <el-table-column prop="code" label="部门编码" width="150" />
-      <el-table-column prop="parent_name" label="上级部门" width="150" />
+      <el-table-column label="上级部门" width="150">
+        <template #default="{ row }">
+          {{ row.parent ? getParentName(row.parent) : '-' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="sort_order" label="排序" width="100" align="center" />
       <el-table-column prop="is_active" label="状态" width="100" align="center">
         <template #default="{ row }">
@@ -31,6 +35,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 分页组件 -->
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="pagination.page"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="pagination.total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="fetchDepartments"
+        @current-change="handlePageChange"
+      />
+    </div>
 
     <!-- 新增/编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑部门' : '新增部门'" width="500px">
@@ -80,6 +97,13 @@ const isEdit = ref(false)
 const formRef = ref(null)
 const submitting = ref(false)
 
+// 分页状态
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  total: 0
+})
+
 const form = reactive({
   id: null,
   name: '',
@@ -109,13 +133,28 @@ const treeSelectData = computed(() => {
   return result
 })
 
+// 获取父部门名称
+const getParentName = (parentId) => {
+  const parent = departmentList.value.find(d => d.id === parentId)
+  return parent?.name || '-'
+}
+
 const fetchDepartments = async () => {
   loading.value = true
   try {
-    const res = await getDepartmentList()
+    const res = await getDepartmentList({
+      page: pagination.page,
+      page_size: pagination.pageSize,
+      only_root: 'true'  // 获取根部门构建树
+    })
     const data = res.data.data || []
-    departmentList.value = data
-    // 构建树形结构
+    pagination.total = res.data.total || 0
+
+    // 获取完整列表用于查找父部门名称
+    const allRes = await getDepartmentList({ page: 1, page_size: 9999 })
+    departmentList.value = allRes.data.data || []
+
+    // 构建树形结构（使用完整列表）
     const buildTree = (list, parentId = null) => {
       return list
         .filter(item => item.parent === parentId)
@@ -124,13 +163,19 @@ const fetchDepartments = async () => {
           children: buildTree(list, item.id)
         }))
     }
-    departmentTree.value = buildTree(data)
+    departmentTree.value = buildTree(departmentList.value)
   } catch (error) {
     console.error('获取部门列表失败:', error)
     ElMessage.error('获取部门列表失败')
   } finally {
     loading.value = false
   }
+}
+
+// 页码变化
+const handlePageChange = (page) => {
+  pagination.page = page
+  fetchDepartments()
 }
 
 const handleAdd = () => {
@@ -226,5 +271,11 @@ onMounted(() => {
   margin: 0;
   font-size: 18px;
   color: #303133;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 </style>
