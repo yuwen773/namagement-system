@@ -35,3 +35,25 @@ export function getPendingUsers() {
 export function createEmployee(data) {
   return axios.post('/employee/', data)
 }
+
+/**
+ * 更新员工档案
+ * @param {number} id - 员工ID
+ * @param {Object} data - 更新数据
+ * @returns {Promise} 更新结果
+ */
+export function updateEmployee(id, data) {
+  return axios.put(`/employee/${id}/`, data)
+}
+
+/**
+ * 员工离职办理
+ * @param {number} id - 员工ID
+ * @param {Object} data - 离职数据
+ * @param {string} data.resigned_date - 离职日期
+ * @param {string} data.resigned_reason - 离职原因
+ * @returns {Promise} 离职办理结果
+ */
+export function resignEmployee(id, data) {
+  return axios.post(`/employee/${id}/resign/`, data)
+}

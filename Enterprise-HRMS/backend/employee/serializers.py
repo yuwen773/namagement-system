@@ -136,3 +136,32 @@ class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
             new_seq = 1
 
         return f"{prefix}{new_seq:03d}"
+
+
+class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    更新员工档案序列化器
+    允许更新：department, post, hire_date, salary_base
+    """
+
+    class Meta:
+        model = EmployeeProfile
+        fields = ['department', 'post', 'hire_date', 'salary_base']
+
+    def validate_department(self, value):
+        """验证部门存在且启用"""
+        if value and not value.is_active:
+            raise serializers.ValidationError("该部门已停用")
+        return value
+
+    def validate_post(self, value):
+        """验证岗位存在且启用"""
+        if value and not value.is_active:
+            raise serializers.ValidationError("该岗位已停用")
+        return value
+
+    def validate_salary_base(self, value):
+        """验证工资为正数"""
+        if value is not None and value < 0:
+            raise serializers.ValidationError("基本工资不能为负数")
+        return value

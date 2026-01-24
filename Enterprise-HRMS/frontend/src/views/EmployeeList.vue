@@ -34,10 +34,19 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="viewDetail(row)">
             查看详情
+          </el-button>
+          <el-button
+            v-if="row.status === 'active'"
+            type="warning"
+            link
+            size="small"
+            @click="handleResign(row)"
+          >
+            离职
           </el-button>
         </template>
       </el-table-column>
@@ -70,7 +79,88 @@
           {{ currentEmployee.resigned_reason }}
         </el-descriptions-item>
       </el-descriptions>
+      <div class="drawer-footer" v-if="currentEmployee?.status === 'active'">
+        <el-button type="primary" @click="handleEdit(currentEmployee)">
+          <el-icon><Edit /></el-icon> 编辑信息
+        </el-button>
+        <el-button type="warning" @click="handleResign(currentEmployee)">
+          <el-icon><Switch /></el-icon> 办理离职
+        </el-button>
+      </div>
     </el-drawer>
+
+    <!-- 编辑员工对话框 -->
+    <el-dialog v-model="editVisible" title="编辑员工信息" width="500px">
+      <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="100px">
+        <el-form-item label="员工姓名">
+          <el-input :value="currentEmployee?.real_name" disabled />
+        </el-form-item>
+        <el-form-item label="部门" prop="department">
+          <el-select v-model="editForm.department" placeholder="请选择部门">
+            <el-option
+              v-for="dept in departments"
+              :key="dept.id"
+              :label="dept.name"
+              :value="dept.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="岗位" prop="post">
+          <el-select v-model="editForm.post" placeholder="请选择岗位">
+            <el-option
+              v-for="post in posts"
+              :key="post.id"
+              :label="post.name"
+              :value="post.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="入职日期" prop="hire_date">
+          <el-date-picker
+            v-model="editForm.hire_date"
+            type="date"
+            placeholder="请选择入职日期"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+        <el-form-item label="基本工资" prop="salary_base">
+          <el-input-number v-model="editForm.salary_base" :min="0" :precision="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitEdit" :loading="submitting">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 离职办理对话框 -->
+    <el-dialog v-model="resignVisible" title="办理离职" width="500px">
+      <el-form ref="resignFormRef" :model="resignForm" :rules="resignRules" label-width="100px">
+        <el-form-item label="员工姓名">
+          <el-input :value="currentEmployee?.real_name" disabled />
+        </el-form-item>
+        <el-form-item label="离职日期" prop="resigned_date">
+          <el-date-picker
+            v-model="resignForm.resigned_date"
+            type="date"
+            placeholder="请选择离职日期"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+        <el-form-item label="离职原因" prop="resigned_reason">
+          <el-input
+            v-model="resignForm.resigned_reason"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入离职原因（选填）"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="resignVisible = false">取消</el-button>
+        <el-button type="warning" @click="submitResign" :loading="submitting">确认离职</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 入职办理对话框 -->
     <el-dialog v-model="onboardingVisible" title="入职办理" width="500px">
@@ -128,8 +218,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import { getEmployeeList, getEmployeeDetail, getPendingUsers, createEmployee } from '@/api/employee'
+import { Plus, Edit, Switch } from '@element-plus/icons-vue'
+import { getEmployeeList, getEmployeeDetail, getPendingUsers, createEmployee, updateEmployee, resignEmployee } from '@/api/employee'
 import { getDepartmentList } from '@/api/department'
 import { getPostList } from '@/api/post'
 
@@ -145,6 +235,33 @@ const filterForm = reactive({
 // 详情抽屉
 const drawerVisible = ref(false)
 const currentEmployee = ref(null)
+
+// 编辑对话框
+const editVisible = ref(false)
+const editFormRef = ref(null)
+const editForm = reactive({
+  department: null,
+  post: null,
+  hire_date: '',
+  salary_base: 0
+})
+const editRules = {
+  department: [{ required: true, message: '请选择部门', trigger: 'change' }],
+  post: [{ required: true, message: '请选择岗位', trigger: 'change' }],
+  hire_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }],
+  salary_base: [{ required: true, message: '请输入基本工资', trigger: 'blur' }]
+}
+
+// 离职对话框
+const resignVisible = ref(false)
+const resignFormRef = ref(null)
+const resignForm = reactive({
+  resigned_date: '',
+  resigned_reason: ''
+})
+const resignRules = {
+  resigned_date: [{ required: true, message: '请选择离职日期', trigger: 'change' }]
+}
 
 // 入职办理
 const onboardingVisible = ref(false)
@@ -207,6 +324,91 @@ const viewDetail = async (row) => {
   } catch (error) {
     console.error('获取员工详情失败:', error)
     ElMessage.error('获取员工详情失败')
+  }
+}
+
+// 打开编辑对话框
+const handleEdit = (employee) => {
+  editForm.department = employee.department
+  editForm.post = employee.post
+  editForm.hire_date = employee.hire_date
+  editForm.salary_base = employee.salary_base
+  editVisible.value = true
+}
+
+// 提交编辑
+const submitEdit = async () => {
+  if (!editFormRef.value) return
+
+  try {
+    await editFormRef.value.validate()
+    submitting.value = true
+
+    await updateEmployee(currentEmployee.value.id, {
+      department: editForm.department,
+      post: editForm.post,
+      hire_date: editForm.hire_date,
+      salary_base: editForm.salary_base
+    })
+
+    ElMessage.success('更新成功')
+    editVisible.value = false
+    drawerVisible.value = false
+    fetchEmployees()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('更新员工信息失败:', error)
+      ElMessage.error(error.response?.data?.message || '更新失败')
+    }
+  } finally {
+    submitting.value = false
+  }
+}
+
+// 打开离职对话框
+const handleResign = (employee) => {
+  currentEmployee.value = employee
+  resignForm.resigned_date = ''
+  resignForm.resigned_reason = ''
+  resignVisible.value = true
+}
+
+// 提交离职
+const submitResign = async () => {
+  if (!resignFormRef.value) return
+
+  try {
+    await resignFormRef.value.validate()
+    submitting.value = true
+
+    await ElMessageBox.confirm(
+      '确定要办理离职吗？离职后该员工账号将被禁用。',
+      '离职确认',
+      {
+        confirmButtonText: '确定离职',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    await resignEmployee(currentEmployee.value.id, {
+      resigned_date: resignForm.resigned_date,
+      resigned_reason: resignForm.resigned_reason
+    })
+
+    ElMessage.success('离职办理成功')
+    resignVisible.value = false
+    drawerVisible.value = false
+    fetchEmployees()
+  } catch (error) {
+    if (error !== 'confirm') {
+      if (error !== 'cancel') {
+        console.error('离职办理失败:', error)
+        ElMessage.error(error.response?.data?.message || '离职办理失败')
+      }
+    }
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -298,5 +500,13 @@ onMounted(() => {
   padding: 15px;
   background: #f5f7fa;
   border-radius: 4px;
+}
+
+.drawer-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+  display: flex;
+  gap: 10px;
 }
 </style>

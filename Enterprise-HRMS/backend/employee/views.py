@@ -8,12 +8,14 @@ from .serializers import (
     EmployeeListSerializer,
     EmployeeProfileSerializer,
     EmployeeProfileCreateSerializer,
+    EmployeeProfileUpdateSerializer,
 )
 
 
 class EmployeeProfileViewSet(viewsets.ModelViewSet):
     """
     员工档案 ViewSet
+    提供：list, retrieve, create, update, partial_update, destroy, pending, resign
     """
     queryset = EmployeeProfile.objects.select_related('user', 'department', 'post')
     serializer_class = EmployeeProfileSerializer
@@ -23,6 +25,8 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             return EmployeeListSerializer
         if self.action == 'create':
             return EmployeeProfileCreateSerializer
+        if self.action in ['update', 'partial_update']:
+            return EmployeeProfileUpdateSerializer
         return EmployeeProfileSerializer
 
     def get_queryset(self):
@@ -63,6 +67,27 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             'data': EmployeeProfileSerializer(profile).data
         }, status=status.HTTP_201_CREATED)
 
+    def update(self, request, *args, **kwargs):
+        """更新员工档案"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            'code': 0,
+            'message': '更新成功',
+            'data': EmployeeProfileSerializer(instance).data
+        })
+
+    def destroy(self, request, *args, **kwargs):
+        """删除员工档案（软删除，改为离职状态）"""
+        instance = self.get_object()
+        return Response({
+            'code': 400,
+            'message': '请使用离职接口处理员工离职'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=False, methods=['get'])
     def pending(self, request):
         """获取待入职用户列表（未关联档案的用户）"""
@@ -85,4 +110,45 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                 'date_joined': user.date_joined,
             } for user in pending_users],
             'total': pending_users.count()
+        })
+
+    @action(detail=True, methods=['post'])
+    def resign(self, request, pk=None):
+        """
+        员工离职办理
+        POST /api/employee/{id}/resign/
+        请求体：{ resigned_date: '2024-01-31', resigned_reason: '个人原因' }
+        """
+        instance = self.get_object()
+
+        # 验证员工状态
+        if instance.status == 'resigned':
+            return Response({
+                'code': 400,
+                'message': '该员工已离职'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        resigned_date = request.data.get('resigned_date')
+        resigned_reason = request.data.get('resigned_reason', '')
+
+        if not resigned_date:
+            return Response({
+                'code': 400,
+                'message': '请填写离职日期'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 更新员工状态
+        instance.status = 'resigned'
+        instance.resigned_date = resigned_date
+        instance.resigned_reason = resigned_reason
+        instance.save()
+
+        # 禁用关联的用户账号
+        instance.user.is_active = False
+        instance.user.save()
+
+        return Response({
+            'code': 0,
+            'message': '离职办理成功',
+            'data': EmployeeProfileSerializer(instance).data
         })
