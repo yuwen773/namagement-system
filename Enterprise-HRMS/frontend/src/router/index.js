@@ -82,6 +82,18 @@ const router = createRouter({
           name: 'notice-management',
           component: () => import('../views/NoticeManagement.vue'),
           meta: { roles: ['admin'] }
+        },
+        {
+          path: 'performance-review',
+          name: 'performance-review',
+          component: () => import('../views/PerformanceReview.vue'),
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'my-performance',
+          name: 'my-performance',
+          component: () => import('../views/MyPerformance.vue'),
+          meta: { roles: ['admin', 'hr', 'employee'] }
         }
       ]
     },

@@ -27,4 +27,5 @@ urlpatterns = [
     path("api/dashboard/", include("dashboard.urls")),
     path("api/approval/", include("approval.urls")),
     path("api/notice/", include("notice.urls")),
+    path("api/", include("performance.urls")),
 ]

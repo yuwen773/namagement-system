@@ -77,6 +77,9 @@ const renderIcon = (iconName) => {
       h('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
       h('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
       h('polyline', { points: '10 9 9 9 8 9' })
+    ]),
+    performance: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('path', { d: 'M22 12h-4l-3 9L9 3l-3 9H2' })
     ])
   }
   return icons[iconName]?.() || null

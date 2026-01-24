@@ -9,6 +9,7 @@ from organization.models import Department, Post
 
 class EmployeeListSerializer(serializers.ModelSerializer):
     """员工列表序列化器（轻量版，仅显示关键字段）"""
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
     real_name = serializers.CharField(source='user.real_name', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
     post_name = serializers.CharField(source='post.name', read_only=True)
@@ -16,7 +17,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeProfile
         fields = [
-            'id', 'employee_no', 'real_name',
+            'id', 'user_id', 'employee_no', 'real_name',
             'department_name', 'post_name',
             'hire_date', 'status'
         ]

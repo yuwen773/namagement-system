@@ -30,7 +30,9 @@ export const useAuthStore = defineStore('auth', () => {
     onboarding: [ROLE_ADMIN, ROLE_HR],
     users: [ROLE_ADMIN],
     notices: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
-    noticeManagement: [ROLE_ADMIN]
+    noticeManagement: [ROLE_ADMIN],
+    performanceReview: [ROLE_ADMIN, ROLE_HR],
+    myPerformance: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE]
   }
 
   // 检查是否有权限访问指定路由
@@ -51,6 +53,8 @@ export const useAuthStore = defineStore('auth', () => {
       { name: 'salary', label: '薪资管理', path: '/salary', icon: 'salary' },
       { name: 'approval', label: '审批中心', path: '/approval', icon: 'approval' },
       { name: 'onboarding', label: '入职管理', path: '/onboarding', icon: 'onboarding' },
+      { name: 'performanceReview', label: '绩效评估', path: '/performance-review', icon: 'performance' },
+      { name: 'myPerformance', label: '我的绩效', path: '/my-performance', icon: 'performance' },
       { name: 'notices', label: '系统公告', path: '/notices', icon: 'notices' },
       { name: 'noticeManagement', label: '公告管理', path: '/notice-management', icon: 'notices' },
       { name: 'users', label: '账号管理', path: '/users', icon: 'users' }

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "dashboard",
     "approval",
     "notice",
+    "performance",
 ]
 
 MIDDLEWARE = [
