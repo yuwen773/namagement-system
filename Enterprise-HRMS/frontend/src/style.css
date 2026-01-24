@@ -1,0 +1,49 @@
+/* 全局样式重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #303133;
+  background-color: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+/* 链接样式 */
+a {
+  color: #409EFF;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #66b1ff;
+}
+
+/* Element Plus 覆盖样式 */
+.el-card {
+  border-radius: 8px;
+}
+
+.el-button--primary {
+  background-color: #409EFF;
+  border-color: #409EFF;
+}
+
+.el-button--primary:hover {
+  background-color: #66b1ff;
+  border-color: #66b1ff;
+}
