@@ -1,9 +1,49 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.password_validation import validate_password, MinimumLengthValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
+
+
+class PasswordStrengthValidator:
+    """
+    自定义密码强度验证器
+    要求：至少8位，包含字母、数字、特殊字符
+    """
+    def __init__(self, min_length=8):
+        self.min_length = min_length
+
+    def validate(self, password, user=None):
+        import re
+
+        errors = []
+
+        # 检查最小长度
+        if len(password) < self.min_length:
+            errors.append(f'密码长度至少需要 {self.min_length} 个字符')
+
+        # 检查是否包含字母
+        if not re.search(r'[a-zA-Z]', password):
+            errors.append('密码必须包含字母')
+
+        # 检查是否包含数字
+        if not re.search(r'\d', password):
+            errors.append('密码必须包含数字')
+
+        # 检查是否包含特殊字符
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            errors.append('密码必须包含特殊字符')
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+    def get_help_text(self):
+        return '密码必须至少8位，包含字母、数字和特殊字符'
+
+
+# 创建自定义密码验证器实例
+password_strength_validator = PasswordStrengthValidator()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -13,7 +53,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[validate_password],
+        validators=[password_strength_validator.validate],
         style={'input_type': 'password'}
     )
     password2 = serializers.CharField(
@@ -101,3 +141,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['role'] = self.user.role
 
         return data
+
+
+class AdminResetPasswordSerializer(serializers.ModelSerializer):
+    """
+    管理员重置用户密码序列化器
+    """
+    new_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[password_strength_validator.validate],
+        style={'input_type': 'password'}
+    )
+
+    class Meta:
+        model = User
+        fields = ['new_password']
