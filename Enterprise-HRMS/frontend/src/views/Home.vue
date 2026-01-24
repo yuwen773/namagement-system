@@ -1,447 +1,617 @@
-<template>
-  <div class="dashboard">
-    <!-- KPI 卡片区域 -->
-    <el-row :gutter="20" class="kpi-row">
-      <el-col :span="6">
-        <el-card class="kpi-card" shadow="hover">
-          <div class="kpi-content">
-            <div class="kpi-icon employee-icon">
-              <el-icon :size="28"><User /></el-icon>
-            </div>
-            <div class="kpi-info">
-              <div class="kpi-value">{{ stats.total_employees }}</div>
-              <div class="kpi-label">在职员工</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="kpi-card" shadow="hover">
-          <div class="kpi-content">
-            <div class="kpi-icon hire-icon">
-              <el-icon :size="28"><Plus /></el-icon>
-            </div>
-            <div class="kpi-info">
-              <div class="kpi-value">{{ stats.new_hires_this_month }}</div>
-              <div class="kpi-label">本月入职</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="kpi-card" shadow="hover">
-          <div class="kpi-content">
-            <div class="kpi-icon resign-icon">
-              <el-icon :size="28"><Minus /></el-icon>
-            </div>
-            <div class="kpi-info">
-              <div class="kpi-value">{{ stats.resigned_this_month }}</div>
-              <div class="kpi-label">本月离职</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="kpi-card" shadow="hover">
-          <div class="kpi-content">
-            <div class="kpi-icon salary-icon">
-              <el-icon :size="28"><Money /></el-icon>
-            </div>
-            <div class="kpi-info">
-              <div class="kpi-value">¥{{ formatNumber(stats.total_salary_this_month) }}</div>
-              <div class="kpi-label">本月薪资总额</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 图表区域 -->
-    <el-row :gutter="20" class="chart-row">
-      <!-- 部门人数分布饼图 -->
-      <el-col :span="12">
-        <el-card class="chart-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>部门人数分布</span>
-            </div>
-          </template>
-          <div ref="departmentChartRef" class="chart-container"></div>
-        </el-card>
-      </el-col>
-
-      <!-- 薪资趋势折线图 -->
-      <el-col :span="12">
-        <el-card class="chart-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>近6月薪资趋势</span>
-            </div>
-          </template>
-          <div ref="salaryChartRef" class="chart-container"></div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 考勤异常柱状图 -->
-    <el-row :gutter="20" class="chart-row">
-      <el-col :span="24">
-        <el-card class="chart-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>本月考勤异常统计</span>
-              <span class="subtitle">按部门分组统计迟到、早退、缺勤次数</span>
-            </div>
-          </template>
-          <div ref="attendanceChartRef" class="chart-container-wide"></div>
-        </el-card>
-      </el-col>
-    </el-row>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import * as echarts from 'echarts'
-import { User, Plus, Minus, Money } from '@element-plus/icons-vue'
-import { getDashboardStats } from '@/api/dashboard'
+import { computed } from 'vue'
+import { useAuthStore } from '../stores/auth'
 
-// 统计数据
-const stats = ref({
-  total_employees: 0,
-  new_hires_this_month: 0,
-  resigned_this_month: 0,
-  total_salary_this_month: 0,
-  department_distribution: [],
-  salary_trend: [],
-  attendance_anomalies: []
+const authStore = useAuthStore()
+
+const userDisplayName = computed(() => {
+  return authStore.user?.real_name || authStore.user?.username || '用户'
 })
 
-// 图表引用
-const departmentChartRef = ref(null)
-const salaryChartRef = ref(null)
-const attendanceChartRef = ref(null)
-
-// 图表实例
-let departmentChart = null
-let salaryChart = null
-let attendanceChart = null
-
-// 格式化数字
-const formatNumber = (num) => {
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万'
+const userRoleText = computed(() => {
+  const roleMap = {
+    admin: '管理员',
+    hr: '人事专员',
+    employee: '普通员工'
   }
-  return num.toLocaleString()
-}
-
-// 初始化图表
-const initCharts = () => {
-  // 部门分布饼图
-  if (departmentChartRef.value) {
-    departmentChart = echarts.init(departmentChartRef.value)
-    const departmentData = stats.value.department_distribution.map(item => ({
-      name: item.department_name,
-      value: item.employee_count
-    }))
-    departmentChart.setOption({
-      tooltip: {
-        trigger: 'item',
-        formatter: '{b}: {c}人 ({d}%)'
-      },
-      legend: {
-        orient: 'vertical',
-        right: '5%',
-        top: 'center'
-      },
-      series: [{
-        type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['40%', '50%'],
-        avoidLabelOverlap: false,
-        itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
-        label: {
-          show: false
-        },
-        emphasis: {
-          label: {
-            show: true,
-            fontSize: 16,
-            fontWeight: 'bold'
-          }
-        },
-        data: departmentData,
-        color: ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#B37FEB', '#36CFCC']
-      }]
-    })
-  }
-
-  // 薪资趋势折线图
-  if (salaryChartRef.value) {
-    salaryChart = echarts.init(salaryChartRef.value)
-    const months = stats.value.salary_trend.map(item => item.month)
-    const amounts = stats.value.salary_trend.map(item => item.total_amount)
-    const counts = stats.value.salary_trend.map(item => item.count)
-
-    salaryChart.setOption({
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross'
-        }
-      },
-      legend: {
-        data: ['薪资总额', '人数'],
-        bottom: 0
-      },
-      grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '15%',
-        top: '10%',
-        containLabel: true
-      },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: months
-      },
-      yAxis: [{
-        type: 'value',
-        name: '金额(元)',
-        position: 'left',
-        axisLabel: {
-          formatter: (value) => {
-            if (value >= 10000) {
-              return (value / 10000) + '万'
-            }
-            return value
-          }
-        }
-      }, {
-        type: 'value',
-        name: '人数',
-        position: 'right',
-        splitLine: {
-          show: false
-        }
-      }],
-      series: [{
-        name: '薪资总额',
-        type: 'line',
-        smooth: true,
-        data: amounts,
-        areaStyle: {
-          opacity: 0.3
-        },
-        itemStyle: {
-          color: '#67C23A'
-        }
-      }, {
-        name: '人数',
-        type: 'line',
-        yAxisIndex: 1,
-        smooth: true,
-        data: counts,
-        itemStyle: {
-          color: '#409EFF'
-        }
-      }]
-    })
-  }
-
-  // 考勤异常柱状图
-  if (attendanceChartRef.value) {
-    attendanceChart = echarts.init(attendanceChartRef.value)
-    const anomalyData = stats.value.attendance_anomalies
-    const departments = anomalyData.map(item => item.department)
-    const lateData = anomalyData.map(item => item.late)
-    const earlyData = anomalyData.map(item => item.early)
-    const absentData = anomalyData.map(item => item.absent)
-
-    attendanceChart.setOption({
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow'
-        }
-      },
-      legend: {
-        data: ['迟到', '早退', '缺勤'],
-        bottom: 0
-      },
-      grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '15%',
-        top: '10%',
-        containLabel: true
-      },
-      xAxis: {
-        type: 'value'
-      },
-      yAxis: {
-        type: 'category',
-        data: departments.reverse()
-      },
-      series: [{
-        name: '迟到',
-        type: 'bar',
-        stack: 'total',
-        data: lateData,
-        itemStyle: { color: '#E6A23C' }
-      }, {
-        name: '早退',
-        type: 'bar',
-        stack: 'total',
-        data: earlyData,
-        itemStyle: { color: '#F56C6C' }
-      }, {
-        name: '缺勤',
-        type: 'bar',
-        stack: 'total',
-        data: absentData,
-        itemStyle: { color: '#909399' }
-      }]
-    })
-  }
-}
-
-// 窗口大小变化时重绘图表
-const handleResize = () => {
-  departmentChart?.resize()
-  salaryChart?.resize()
-  attendanceChart?.resize()
-}
-
-// 获取数据
-const fetchData = async () => {
-  try {
-    const res = await getDashboardStats()
-    const data = res.data?.data || {}
-    stats.value = {
-      total_employees: data.total_employees || 0,
-      new_hires_this_month: data.new_hires_this_month || 0,
-      resigned_this_month: data.resigned_this_month || 0,
-      total_salary_this_month: data.total_salary_this_month || 0,
-      department_distribution: data.department_distribution || [],
-      salary_trend: data.salary_trend || [],
-      attendance_anomalies: data.attendance_anomalies || []
-    }
-
-    // 数据更新后重新渲染图表
-    initCharts()
-  } catch (error) {
-    console.error('获取仪表盘数据失败:', error)
-  }
-}
-
-onMounted(() => {
-  fetchData()
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  departmentChart?.dispose()
-  salaryChart?.dispose()
-  attendanceChart?.dispose()
+  return roleMap[authStore.user?.role] || '用户'
 })
 </script>
 
+<template>
+  <div class="app-layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon-wrapper">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="logo-glow"></div>
+          </div>
+          <span class="logo-text">HRMS</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <el-menu
+          :default-active="$route.path"
+          router
+          class="nav-menu"
+        >
+          <el-menu-item index="/">
+            <div class="menu-item-wrapper">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+              </svg>
+              <span>数据概览</span>
+            </div>
+          </el-menu-item>
+
+          <el-menu-item index="/employees">
+            <div class="menu-item-wrapper">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>员工管理</span>
+            </div>
+          </el-menu-item>
+
+          <el-menu-item index="/departments">
+            <div class="menu-item-wrapper">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 21h18"/>
+                <path d="M9 8h1"/>
+                <path d="M9 12h1"/>
+                <path d="M9 16h1"/>
+                <path d="M14 8h1"/>
+                <path d="M14 12h1"/>
+                <path d="M14 16h1"/>
+                <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+              </svg>
+              <span>部门管理</span>
+            </div>
+          </el-menu-item>
+
+          <el-menu-item index="/attendance">
+            <div class="menu-item-wrapper">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>考勤管理</span>
+            </div>
+          </el-menu-item>
+
+          <el-menu-item index="/salary">
+            <div class="menu-item-wrapper">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="M12 12h.01"/>
+                <path d="M6 12h.01"/>
+                <path d="M18 12h.01"/>
+              </svg>
+              <span>薪资管理</span>
+            </div>
+          </el-menu-item>
+        </el-menu>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-line"></div>
+        <span class="version">v1.0</span>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <div class="main-wrapper">
+      <!-- 顶部栏 -->
+      <header class="header">
+        <div class="header-left">
+          <div class="header-decoration"></div>
+          <h2 class="header-title">企业人力资源管理系统</h2>
+        </div>
+        <div class="header-right">
+          <el-dropdown trigger="click" placement="bottom-end">
+            <div class="user-profile">
+              <div class="user-avatar-wrapper">
+                <div class="user-avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="avatar-ring"></div>
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ userDisplayName }}</span>
+                <span class="user-role">{{ userRoleText }}</span>
+              </div>
+              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu class="user-dropdown-menu">
+                <el-dropdown-item divided @click="authStore.logout()">
+                  <svg class="dropdown-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  <span>退出登录</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <main class="main-content">
+        <router-view v-slot="{ Component }">
+          <transition name="page-fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </main>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.dashboard {
-  padding: 0;
+/* ========================================
+   App Layout - Modern Corporate Design
+   ======================================== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-bg-primary);
 }
 
-.kpi-row {
-  margin-bottom: 20px;
+/* 侧边栏 */
+.sidebar {
+  width: 260px;
+  background: linear-gradient(180deg, #1a1d21 0%, #1f2226 100%);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.kpi-card {
-  border-radius: 8px;
+.sidebar-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.1);
 }
 
-.kpi-content {
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon-wrapper {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  color: var(--color-primary-light);
+  position: relative;
+  z-index: 1;
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.3) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 导航菜单 */
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 12px;
+  overflow-y: auto;
+}
+
+.nav-menu {
+  border-right: none;
+  background: transparent;
+}
+
+.nav-menu:not(.el-menu--collapse) {
+  width: 100%;
+}
+
+.el-menu-item {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  margin-bottom: 4px;
+  padding: 0 16px !important;
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.el-menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--color-primary);
+  border-radius: 0 2px 2px 0;
+  transition: height var(--transition-base);
+}
+
+.el-menu-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.el-menu-item:hover::before {
+  height: 24px;
+}
+
+.el-menu-item.is-active {
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.15);
+}
+
+.el-menu-item.is-active::before {
+  height: 24px;
+}
+
+.menu-item-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.el-menu-item:hover .nav-icon {
+  transform: scale(1.1);
+}
+
+.el-menu-item.is-active .nav-icon {
+  color: var(--color-primary-light);
+}
+
+/* 侧边栏底部 */
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.footer-line {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  margin-bottom: 12px;
+}
+
+.version {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 1px;
+}
+
+/* 主内容区 */
+.main-wrapper {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+}
+
+/* 顶部栏 */
+.header {
+  height: 64px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-xs);
+}
+
+.header-left {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
-.kpi-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+.header-decoration {
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: 2px;
+}
+
+.header-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--color-gray-50);
+}
+
+.user-profile:hover {
+  background: var(--color-gray-100);
+}
+
+.user-avatar-wrapper {
+  position: relative;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: white;
+  position: relative;
+  z-index: 1;
 }
 
-.employee-icon {
-  background: linear-gradient(135deg, #409EFF, #66b1ff);
+.user-avatar svg {
+  width: 18px;
+  height: 18px;
 }
 
-.hire-icon {
-  background: linear-gradient(135deg, #67C23A, #85ce61);
+.avatar-ring {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: var(--radius-lg);
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-success)) border-box;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
-.resign-icon {
-  background: linear-gradient(135deg, #F56C6C, #f89898);
+.user-profile:hover .avatar-ring {
+  opacity: 1;
 }
 
-.salary-icon {
-  background: linear-gradient(135deg, #E6A23C, #f3c06b);
-}
-
-.kpi-info {
-  flex: 1;
-}
-
-.kpi-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-  line-height: 1.2;
-}
-
-.kpi-label {
-  font-size: 14px;
-  color: #909399;
-  margin-top: 4px;
-}
-
-.chart-row {
-  margin-bottom: 20px;
-}
-
-.chart-card {
-  border-radius: 8px;
-  height: 400px;
-}
-
-.card-header {
+.user-info {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
 }
 
-.card-header .subtitle {
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.user-role {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-tertiary);
+  line-height: 1.3;
 }
 
-.chart-container {
-  height: 300px;
-  width: 100%;
+.dropdown-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-tertiary);
+  transition: transform var(--transition-fast);
 }
 
-.chart-container-wide {
-  height: 300px;
-  width: 100%;
+.user-profile:hover .dropdown-icon {
+  transform: rotate(180deg);
+  color: var(--color-text-secondary);
+}
+
+/* 下拉菜单 */
+.user-dropdown-menu {
+  min-width: 180px;
+  padding: 8px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border-light);
+}
+
+.user-dropdown-menu .el-dropdown-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  transition: all var(--transition-fast);
+}
+
+.user-dropdown-menu .el-dropdown-menu__item:hover {
+  background: var(--color-gray-100);
+  color: var(--color-text-primary);
+}
+
+.user-dropdown-menu .el-dropdown-menu__item--divided {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top-color: var(--color-border-light);
+}
+
+.user-dropdown-menu .el-dropdown-menu__item--divided:hover {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+}
+
+.dropdown-item-icon {
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+
+/* 主内容区域 */
+.main-content {
+  flex: 1;
+  padding: 28px 32px;
+  min-height: calc(100vh - 64px);
+}
+
+/* 页面切换动画 */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 72px;
+  }
+
+  .logo-text,
+  .el-menu-item span,
+  .sidebar-footer,
+  .user-info {
+    display: none;
+  }
+
+  .el-menu-item {
+    justify-content: center;
+    padding: 0 !important;
+  }
+
+  .menu-item-wrapper {
+    justify-content: center;
+  }
+
+  .main-wrapper {
+    margin-left: 72px;
+  }
+
+  .user-profile {
+    padding: 8px;
+  }
+
+  .header {
+    padding: 0 20px;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+}
+</style>
+
+<style>
+/* 全局 dropdown 样式覆盖 */
+.user-dropdown-menu .el-dropdown-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.user-dropdown-menu .el-dropdown-menu__item--divided {
+  margin-top: 4px;
+  border-top-color: var(--color-border-light);
 }
 </style>

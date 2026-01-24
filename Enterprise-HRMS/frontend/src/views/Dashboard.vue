@@ -1,177 +1,706 @@
 <script setup>
-import { computed } from 'vue'
-import { useAuthStore } from '../stores/auth'
+import { ref, onMounted, onUnmounted } from 'vue'
+import * as echarts from 'echarts'
+import { getDashboardStats } from '@/api/dashboard'
 
-const authStore = useAuthStore()
+// 统计数据
+const stats = ref({
+  total_employees: 0,
+  new_hires_this_month: 0,
+  resigned_this_month: 0,
+  total_salary_this_month: 0,
+  department_distribution: [],
+  salary_trend: [],
+  attendance_anomalies: []
+})
 
-const userDisplayName = computed(() => {
-  return authStore.user?.real_name || authStore.user?.username || '用户'
+// 图表引用
+const departmentChartRef = ref(null)
+const salaryChartRef = ref(null)
+const attendanceChartRef = ref(null)
+
+// 图表实例
+let departmentChart = null
+let salaryChart = null
+let attendanceChart = null
+
+// 格式化数字
+const formatNumber = (num) => {
+  if (num >= 10000) {
+    return (num / 10000).toFixed(1) + '万'
+  }
+  return num.toLocaleString()
+}
+
+// 初始化图表
+const initCharts = () => {
+  // 部门分布饼图
+  if (departmentChartRef.value) {
+    departmentChart = echarts.init(departmentChartRef.value)
+    const departmentData = stats.value.department_distribution.map(item => ({
+      name: item.department_name,
+      value: item.employee_count
+    }))
+
+    const colorPalette = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899']
+
+    departmentChart.setOption({
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c}人 ({d}%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#e5e5e5',
+        borderWidth: 1,
+        textStyle: { color: '#1f2937' },
+        padding: [12, 16]
+      },
+      legend: {
+        orient: 'vertical',
+        right: '5%',
+        top: 'middle',
+        itemWidth: 12,
+        itemHeight: 12,
+        itemGap: 12,
+        textStyle: { color: '#6b7280', fontSize: 13 }
+      },
+      series: [{
+        type: 'pie',
+        radius: ['35%', '60%'],
+        center: ['40%', '50%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 6,
+          borderColor: '#ffffff',
+          borderWidth: 3
+        },
+        label: { show: false },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: '500'
+          },
+          itemStyle: {
+            shadowBlur: 20,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.15)'
+          }
+        },
+        data: departmentData,
+        color: colorPalette
+      }]
+    })
+  }
+
+  // 薪资趋势折线图
+  if (salaryChartRef.value) {
+    salaryChart = echarts.init(salaryChartRef.value)
+    const months = stats.value.salary_trend.map(item => item.month)
+    const amounts = stats.value.salary_trend.map(item => item.total_amount)
+    const counts = stats.value.salary_trend.map(item => item.count)
+
+    salaryChart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' },
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#e5e5e5',
+        borderWidth: 1,
+        textStyle: { color: '#1f2937' },
+        padding: [12, 16]
+      },
+      legend: {
+        data: ['薪资总额', '人数'],
+        bottom: 0,
+        textStyle: { color: '#6b7280', fontSize: 12 }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '18%',
+        top: '12%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: months,
+        axisLine: { lineStyle: { color: '#d4d4d4' } },
+        axisLabel: { color: '#6b7280', fontSize: 12 }
+      },
+      yAxis: [{
+        type: 'value',
+        name: '金额(元)',
+        position: 'left',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: '#f3f4f6' } },
+        axisLabel: {
+          color: '#9ca3af',
+          fontSize: 12,
+          formatter: (value) => {
+            if (value >= 10000) return (value / 10000) + '万'
+            return value
+          }
+        },
+        nameTextStyle: { color: '#9ca3af', fontSize: 12 }
+      }, {
+        type: 'value',
+        name: '人数',
+        position: 'right',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+        nameTextStyle: { color: '#9ca3af', fontSize: 12 }
+      }],
+      series: [{
+        name: '薪资总额',
+        type: 'line',
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 8,
+        data: amounts,
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(16, 185, 129, 0.15)' },
+              { offset: 1, color: 'rgba(16, 185, 129, 0)' }
+            ]
+          }
+        },
+        lineStyle: { width: 3, color: '#10b981' },
+        itemStyle: { color: '#10b981', borderColor: '#fff', borderWidth: 2 }
+      }, {
+        name: '人数',
+        type: 'line',
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 8,
+        yAxisIndex: 1,
+        data: counts,
+        lineStyle: { width: 3, color: '#4f46e5' },
+        itemStyle: { color: '#4f46e5', borderColor: '#fff', borderWidth: 2 }
+      }]
+    })
+  }
+
+  // 考勤异常柱状图
+  if (attendanceChartRef.value) {
+    attendanceChart = echarts.init(attendanceChartRef.value)
+    const anomalyData = stats.value.attendance_anomalies
+    const departments = anomalyData.map(item => item.department)
+    const lateData = anomalyData.map(item => item.late)
+    const earlyData = anomalyData.map(item => item.early)
+    const absentData = anomalyData.map(item => item.absent)
+
+    attendanceChart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#e5e5e5',
+        borderWidth: 1,
+        textStyle: { color: '#1f2937' },
+        padding: [12, 16]
+      },
+      legend: {
+        data: ['迟到', '早退', '缺勤'],
+        bottom: 0,
+        textStyle: { color: '#6b7280', fontSize: 12 }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '18%',
+        top: '12%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        axisLine: { lineStyle: { color: '#d4d4d4' } },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+        splitLine: { lineStyle: { color: '#f3f4f6' } }
+      },
+      yAxis: {
+        type: 'category',
+        data: departments,
+        axisLine: { lineStyle: { color: '#d4d4d4' } },
+        axisLabel: { color: '#4b5563', fontSize: 12 }
+      },
+      series: [{
+        name: '迟到',
+        type: 'bar',
+        stack: 'total',
+        data: lateData,
+        barWidth: 24,
+        itemStyle: {
+          color: '#f59e0b',
+          borderRadius: [0, 0, 0, 0]
+        }
+      }, {
+        name: '早退',
+        type: 'bar',
+        stack: 'total',
+        data: earlyData,
+        barWidth: 24,
+        itemStyle: {
+          color: '#ef4444',
+          borderRadius: [0, 0, 0, 0]
+        }
+      }, {
+        name: '缺勤',
+        type: 'bar',
+        stack: 'total',
+        data: absentData,
+        barWidth: 24,
+        itemStyle: {
+          color: '#9ca3af',
+          borderRadius: [4, 4, 0, 0]
+        }
+      }]
+    })
+  }
+}
+
+// 窗口大小变化时重绘图表
+const handleResize = () => {
+  departmentChart?.resize()
+  salaryChart?.resize()
+  attendanceChart?.resize()
+}
+
+// 获取数据
+const fetchData = async () => {
+  try {
+    const res = await getDashboardStats()
+    const data = res.data?.data || {}
+    stats.value = {
+      total_employees: data.total_employees || 0,
+      new_hires_this_month: data.new_hires_this_month || 0,
+      resigned_this_month: data.resigned_this_month || 0,
+      total_salary_this_month: data.total_salary_this_month || 0,
+      department_distribution: data.department_distribution || [],
+      salary_trend: data.salary_trend || [],
+      attendance_anomalies: data.attendance_anomalies || []
+    }
+
+    // 数据更新后重新渲染图表
+    setTimeout(() => {
+      initCharts()
+    }, 100)
+  } catch (error) {
+    console.error('获取仪表盘数据失败:', error)
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  departmentChart?.dispose()
+  salaryChart?.dispose()
+  attendanceChart?.dispose()
 })
 </script>
 
 <template>
-  <div class="dashboard">
-    <el-container class="main-container">
-      <!-- 侧边栏 -->
-      <el-aside width="220px" class="sidebar">
-        <div class="logo">
-          <h1>企业 HRMS</h1>
+  <div class="dashboard-page">
+    <!-- KPI 卡片区域 -->
+    <div class="kpi-section">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon-wrapper employee">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-value">{{ stats.total_employees }}</div>
+            <div class="kpi-label">在职员工</div>
+          </div>
+          <div class="kpi-accent employee-accent"></div>
         </div>
-        <el-menu
-          :default-active="$route.path"
-          router
-          background-color="#304156"
-          text-color="#bfcbd9"
-          active-text-color="#409EFF"
-        >
-          <el-menu-item index="/">
-            <el-icon><DataBoard /></el-icon>
-            <span>数据概览</span>
-          </el-menu-item>
-          <el-menu-item index="/employees">
-            <el-icon><User /></el-icon>
-            <span>员工管理</span>
-          </el-menu-item>
-          <el-menu-item index="/departments">
-            <el-icon><OfficeBuilding /></el-icon>
-            <span>部门管理</span>
-          </el-menu-item>
-          <el-menu-item index="/attendance">
-            <el-icon><Clock /></el-icon>
-            <span>考勤管理</span>
-          </el-menu-item>
-          <el-menu-item index="/salary">
-            <el-icon><Money /></el-icon>
-            <span>薪资管理</span>
-          </el-menu-item>
-        </el-menu>
-      </el-aside>
 
-      <!-- 右侧内容区 -->
-      <el-container>
-        <!-- 顶部栏 -->
-        <el-header class="header">
-          <div class="header-content">
-            <h2>企业人力资源管理系统</h2>
-            <div class="user-info">
-              <el-dropdown>
-                <div class="user-dropdown">
-                  <el-avatar :size="32" :icon="User" />
-                  <span class="username">{{ userDisplayName }}</span>
-                  <el-icon><ArrowDown /></el-icon>
-                </div>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item>
-                      <el-icon><User /></el-icon>个人信息
-                    </el-dropdown-item>
-                    <el-dropdown-item divided @click="authStore.logout()">
-                      <el-icon><SwitchButton /></el-icon>退出登录
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+        <div class="kpi-card">
+          <div class="kpi-icon-wrapper hire">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-value">{{ stats.new_hires_this_month }}</div>
+            <div class="kpi-label">本月入职</div>
+          </div>
+          <div class="kpi-accent hire-accent"></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-wrapper resign">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-value">{{ stats.resigned_this_month }}</div>
+            <div class="kpi-label">本月离职</div>
+          </div>
+          <div class="kpi-accent resign-accent"></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-wrapper salary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-value">¥{{ formatNumber(stats.total_salary_this_month) }}</div>
+            <div class="kpi-label">本月薪资总额</div>
+          </div>
+          <div class="kpi-accent salary-accent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="chart-section">
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="card-header">
+            <div class="header-content">
+              <span class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a10 10 0 0 1 10 10"/>
+                  <path d="M12 12L16 12"/>
+                </svg>
+              </span>
+              <span class="card-title">部门人数分布</span>
             </div>
           </div>
-        </el-header>
+          <div ref="departmentChartRef" class="chart-container"></div>
+        </div>
 
-        <!-- 主内容区 -->
-        <el-main class="main-content">
-          <router-view />
-        </el-main>
-      </el-container>
-    </el-container>
+        <div class="chart-card">
+          <div class="card-header">
+            <div class="header-content">
+              <span class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </span>
+              <span class="card-title">近6月薪资趋势</span>
+            </div>
+          </div>
+          <div ref="salaryChartRef" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-card full-width">
+          <div class="card-header">
+            <div class="header-content">
+              <span class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span class="card-title">本月考勤异常统计</span>
+            </div>
+            <span class="card-subtitle">按部门分组统计迟到、早退、缺勤次数</span>
+          </div>
+          <div ref="attendanceChartRef" class="chart-container-wide"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.dashboard {
-  min-height: 100vh;
-  background: #f0f2f5;
+/* ========================================
+   Dashboard - Modern Corporate Design
+   ======================================== */
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.main-container {
-  min-height: 100vh;
+/* KPI 卡片 */
+.kpi-section {
+  margin-bottom: 4px;
 }
 
-/* 侧边栏 */
-.sidebar {
-  background: #304156;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
-.logo {
-  height: 60px;
+.kpi-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.kpi-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+.employee-accent {
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+}
+
+.hire-accent {
+  background: linear-gradient(180deg, #10b981 0%, #34d399 100%);
+}
+
+.resign-accent {
+  background: linear-gradient(180deg, #ef4444 0%, #f87171 100%);
+}
+
+.salary-accent {
+  background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.kpi-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #263445;
+  flex-shrink: 0;
+  position: relative;
 }
 
-.logo h1 {
-  color: #fff;
-  font-size: 18px;
-  margin: 0;
-  white-space: nowrap;
+.kpi-icon-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  opacity: 0.15;
 }
 
-.el-menu {
-  border-right: none;
+.kpi-icon-wrapper.employee {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
 }
 
-.el-menu-item {
+.kpi-icon-wrapper.employee::after {
+  background: #4f46e5;
+}
+
+.kpi-icon-wrapper.hire {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.05) 100%);
+}
+
+.kpi-icon-wrapper.hire::after {
+  background: #10b981;
+}
+
+.kpi-icon-wrapper.resign {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(248, 113, 113, 0.05) 100%);
+}
+
+.kpi-icon-wrapper.resign::after {
+  background: #ef4444;
+}
+
+.kpi-icon-wrapper.salary {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
+}
+
+.kpi-icon-wrapper.salary::after {
+  background: #f59e0b;
+}
+
+.kpi-icon-wrapper svg {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.kpi-icon-wrapper.employee svg {
+  color: #4f46e5;
+}
+
+.kpi-icon-wrapper.hire svg {
+  color: #10b981;
+}
+
+.kpi-icon-wrapper.resign svg {
+  color: #ef4444;
+}
+
+.kpi-icon-wrapper.salary svg {
+  color: #f59e0b;
+}
+
+.kpi-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+/* 图表区域 */
+.chart-section {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.el-menu-item .el-icon {
-  margin-right: 4px;
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
-/* 顶部栏 */
-.header {
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+.chart-row:last-child {
+  margin-top: 0;
+}
+
+.chart-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
   padding: 0;
+  transition: all var(--transition-base);
+}
+
+.chart-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.chart-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: linear-gradient(to bottom, var(--color-gray-50), var(--color-bg-secondary));
 }
 
 .header-content {
-  height: 60px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
+  gap: 10px;
 }
 
-.header h2 {
-  font-size: 18px;
-  color: #303133;
-  margin: 0;
-}
-
-.user-dropdown {
+.card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background 0.2s;
+  justify-content: center;
 }
 
-.user-dropdown:hover {
-  background: #f5f7fa;
+.card-icon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
 }
 
-.username {
-  color: #303133;
-  font-size: 14px;
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
-/* 主内容区 */
-.main-content {
-  padding: 24px;
-  min-height: calc(100vh - 60px);
+.card-subtitle {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.chart-container {
+  height: 300px;
+  width: 100%;
+  padding: 16px;
+}
+
+.chart-container-wide {
+  height: 320px;
+  width: 100%;
+  padding: 16px;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-card {
+    padding: 20px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+  }
+
+  .chart-card .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }
 </style>

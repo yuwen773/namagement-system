@@ -1,42 +1,29 @@
 <template>
   <div class="attendance-page">
-    <h2>考勤管理</h2>
-
     <!-- 今日考勤卡片 -->
-    <el-card class="today-card">
-      <template #header>
-        <div class="card-header">
-          <span>今日考勤</span>
-          <el-tag :type="todayStatusTag">{{ todayData.status_text }}</el-tag>
+    <div class="section-card today-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <span class="card-title">今日考勤</span>
+          <el-tag :type="todayStatusType" size="small" class="status-badge">{{ todayData.status_text }}</el-tag>
         </div>
-      </template>
-      <el-row :gutter="20">
-        <el-col :span="8">
-          <div class="stat-item">
-            <el-icon size="24"><Clock /></el-icon>
-            <div class="stat-info">
-              <span class="stat-label">签到时间</span>
-              <span class="stat-value">{{ todayData.check_in_time || '--:--:--' }}</span>
-            </div>
-          </div>
-        </el-col>
-        <el-col :span="8">
-          <div class="stat-item">
-            <el-icon size="24"><Timer /></el-icon>
-            <div class="stat-info">
-              <span class="stat-label">签退时间</span>
-              <span class="stat-value">{{ todayData.check_out_time || '--:--:--' }}</span>
-            </div>
-          </div>
-        </el-col>
-        <el-col :span="8" style="text-align: right;">
+        <div class="header-right">
           <el-button
             type="primary"
             :loading="loading.checkIn"
             :disabled="todayData.has_check_in"
             @click="handleCheckIn"
+            class="action-btn"
           >
-            <el-icon><Top /></el-icon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
             签到
           </el-button>
           <el-button
@@ -44,151 +31,239 @@
             :loading="loading.checkOut"
             :disabled="!todayData.has_check_in || todayData.has_check_out"
             @click="handleCheckOut"
+            class="action-btn"
           >
-            <el-icon><Bottom /></el-icon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
             签退
           </el-button>
-        </el-col>
-      </el-row>
-    </el-card>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-icon checkin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">签到时间</span>
+              <span class="stat-value">{{ todayData.check_in_time || '--:--:--' }}</span>
+            </div>
+            <div v-if="todayData.check_in_time && todayData.status === 'late'" class="late-indicator">迟到</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon checkout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">签退时间</span>
+              <span class="stat-value">{{ todayData.check_out_time || '--:--:--' }}</span>
+            </div>
+            <div v-if="todayData.check_out_time && todayData.status === 'early'" class="early-indicator">早退</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- 月度统计 -->
-    <el-card class="stats-card">
-      <template #header>
-        <div class="card-header">
-          <span>月度统计</span>
-          <el-date-picker
-            v-model="selectedMonth"
-            type="month"
-            placeholder="选择月份"
-            format="YYYY年MM月"
-            value-format="YYYY-MM"
-            @change="fetchStats"
-            size="small"
-          />
+    <div class="section-card stats-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-wrapper chart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </div>
+          <span class="card-title">月度统计</span>
         </div>
-      </template>
-      <el-row :gutter="20">
-        <el-col :span="4">
-          <div class="stat-box normal">
-            <span class="stat-number">{{ stats.normal_days }}</span>
-            <span class="stat-text">正常</span>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="stat-box late">
-            <span class="stat-number">{{ stats.late_days }}</span>
-            <span class="stat-text">迟到</span>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="stat-box early">
-            <span class="stat-number">{{ stats.early_days }}</span>
-            <span class="stat-text">早退</span>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="stat-box absent">
-            <span class="stat-number">{{ stats.absent_days }}</span>
-            <span class="stat-text">缺勤</span>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="stat-box leave">
-            <span class="stat-number">{{ stats.leave_days }}</span>
-            <span class="stat-text">请假</span>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="stat-box total">
-            <span class="stat-number">{{ stats.total_days }}</span>
-            <span class="stat-text">出勤天数</span>
-          </div>
-        </el-col>
-      </el-row>
-    </el-card>
-
-    <!-- 考勤记录列表 -->
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>考勤记录</span>
-          <div class="filter-group">
-            <el-date-picker
-              v-model="filterForm.dateRange"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              format="YYYY-MM-DD"
-              value-format="YYYY-MM-DD"
-              @change="handleFilterChange"
-              size="small"
-              clearable
-              style="width: 260px;"
-            />
-            <el-select
-              v-model="filterForm.status"
-              placeholder="状态筛选"
-              clearable
-              @change="handleFilterChange"
-              size="small"
-              style="width: 120px; margin-left: 10px;"
-            >
-              <el-option label="正常" value="normal" />
-              <el-option label="迟到" value="late" />
-              <el-option label="早退" value="early" />
-              <el-option label="缺勤" value="absent" />
-              <el-option label="请假" value="leave" />
-            </el-select>
-          </div>
-        </div>
-      </template>
-      <el-table :data="records" v-loading="loading.records" stripe>
-        <el-table-column prop="date" label="日期" width="120" />
-        <el-table-column prop="check_in_time" label="签到时间" width="120">
-          <template #default="{ row }">
-            <span :class="{ 'text-danger': row.status === 'late' }">
-              {{ row.check_in_time || '--:--:--' }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="check_out_time" label="签退时间" width="120">
-          <template #default="{ row }">
-            <span :class="{ 'text-warning': row.status === 'early' }">
-              {{ row.check_out_time || '--:--:--' }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页组件 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="fetchRecords"
-          @current-change="handlePageChange"
+        <el-date-picker
+          v-model="selectedMonth"
+          type="month"
+          placeholder="选择月份"
+          format="YYYY年MM月"
+          value-format="YYYY-MM"
+          @change="fetchStats"
+          size="small"
+          class="month-picker"
         />
       </div>
-    </el-card>
+      <div class="card-body">
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-box-content normal">
+              <div class="stat-icon-small">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <span class="stat-number">{{ stats.normal_days }}</span>
+              <span class="stat-text">正常</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-content late">
+              <div class="stat-icon-small">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <span class="stat-number">{{ stats.late_days }}</span>
+              <span class="stat-text">迟到</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-content early">
+              <div class="stat-icon-small">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+              <span class="stat-number">{{ stats.early_days }}</span>
+              <span class="stat-text">早退</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-content absent">
+              <div class="stat-icon-small">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="15" y1="9" x2="9" y2="15"/>
+                  <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+              </div>
+              <span class="stat-number">{{ stats.absent_days }}</span>
+              <span class="stat-text">缺勤</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-content leave">
+              <div class="stat-icon-small">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <span class="stat-number">{{ stats.leave_days }}</span>
+              <span class="stat-text">请假</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-content total">
+              <div class="stat-icon-small">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <span class="stat-number">{{ stats.total_days }}</span>
+              <span class="stat-text">出勤天数</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 考勤记录列表 -->
+    <div class="section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-wrapper list">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"/>
+              <line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </div>
+          <span class="card-title">考勤记录</span>
+        </div>
+        <div class="filter-group">
+          <el-date-picker
+            v-model="filterForm.dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            @change="handleFilterChange"
+            size="small"
+            clearable
+            class="date-range-picker"
+          />
+          <el-select
+            v-model="filterForm.status"
+            placeholder="状态筛选"
+            clearable
+            @change="handleFilterChange"
+            size="small"
+            class="status-filter"
+          >
+            <el-option label="正常" value="normal" />
+            <el-option label="迟到" value="late" />
+            <el-option label="早退" value="early" />
+            <el-option label="缺勤" value="absent" />
+            <el-option label="请假" value="leave" />
+          </el-select>
+        </div>
+      </div>
+      <div class="card-body">
+        <el-table :data="records" v-loading="loading.records" stripe class="custom-table">
+          <el-table-column prop="date" label="日期" width="120" />
+          <el-table-column prop="check_in_time" label="签到时间" width="120">
+            <template #default="{ row }">
+              <span :class="{ 'text-danger': row.status === 'late', 'late-value': row.status === 'late' }">
+                {{ row.check_in_time || '--:--:--' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="check_out_time" label="签退时间" width="120">
+            <template #default="{ row }">
+              <span :class="{ 'text-warning': row.status === 'early', 'early-value': row.status === 'early' }">
+                {{ row.check_out_time || '--:--:--' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getStatusType(row.status)" size="small" class="status-tag">
+                {{ getStatusText(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="pagination-wrapper">
+          <el-pagination
+            v-model:current-page="pagination.page"
+            v-model:page-size="pagination.pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="pagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="fetchRecords"
+            @current-change="handlePageChange"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Clock, Timer, Top, Bottom } from '@element-plus/icons-vue'
 import { checkIn, checkOut, getTodayAttendance, getAttendanceRecords, getAttendanceStats } from '@/api/attendance'
 
 // 加载状态
@@ -237,6 +312,9 @@ const pagination = reactive({
 // 月份选择
 const selectedMonth = ref(new Date().toISOString().slice(0, 7))
 
+// 今日状态标签颜色
+const todayStatusType = computed(() => getStatusType(todayData.status))
+
 // 获取今日考勤
 async function fetchTodayAttendance() {
   try {
@@ -252,7 +330,6 @@ async function fetchTodayAttendance() {
       todayData.check_out_time = data.check_out_time
     }
 
-    // 计算今日状态
     if (data.status) {
       todayData.status = data.status
       todayData.status_text = getStatusText(data.status)
@@ -288,13 +365,11 @@ async function fetchRecords() {
       page_size: pagination.pageSize
     }
 
-    // 日期范围
     if (filterForm.dateRange && filterForm.dateRange.length === 2) {
       params.date_start = filterForm.dateRange[0]
       params.date_end = filterForm.dateRange[1]
     }
 
-    // 状态筛选
     if (filterForm.status) {
       params.status = filterForm.status
     }
@@ -378,11 +453,6 @@ function getStatusText(status) {
   return map[status] || '未知'
 }
 
-// 今日状态标签颜色
-const todayStatusTag = computed(() => {
-  return getStatusType(todayData.status)
-})
-
 // 初始化
 onMounted(() => {
   fetchTodayAttendance()
@@ -392,34 +462,143 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ========================================
+   Attendance - Modern Corporate Design
+   ======================================== */
 .attendance-page {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.attendance-page h2 {
-  margin: 0 0 20px 0;
-  font-size: 18px;
-  color: #303133;
+/* 通用卡片样式 */
+.section-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  overflow: hidden;
 }
 
-.today-card,
-.stats-card {
-  margin-bottom: 20px;
+.section-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: linear-gradient(to bottom, var(--color-gray-50), var(--color-bg-secondary));
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow-primary);
+}
+
+.header-icon-wrapper.chart {
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
+  box-shadow: var(--shadow-glow-success);
+}
+
+.header-icon-wrapper.list {
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-light) 100%);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+.header-icon-wrapper svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.status-badge {
+  font-weight: 500;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* 今日考勤 */
+.stat-row {
+  display: flex;
+  gap: 48px;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  gap: 16px;
+  position: relative;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon.checkin {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+}
+
+.stat-icon.checkin svg {
+  color: var(--color-primary);
+  width: 24px;
+  height: 24px;
+}
+
+.stat-icon.checkout {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.05) 100%);
+}
+
+.stat-icon.checkout svg {
+  color: var(--color-success);
+  width: 24px;
+  height: 24px;
 }
 
 .stat-info {
@@ -428,57 +607,262 @@ onMounted(() => {
 }
 
 .stat-label {
-  font-size: 12px;
-  color: #909399;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 18px;
-  font-weight: bold;
-  color: #303133;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.late-indicator,
+.early-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.late-indicator {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+}
+
+.early-indicator {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+/* 月度统计 */
+.month-picker {
+  width: 180px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
 }
 
 .stat-box {
-  padding: 16px;
-  border-radius: 8px;
-  text-align: center;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
 }
 
-.stat-box.normal { background: #f0f9eb; }
-.stat-box.late { background: #fef0f0; }
-.stat-box.early { background: #fdf6ec; }
-.stat-box.absent { background: #f4f4f5; }
-.stat-box.leave { background: #ecf5ff; }
-.stat-box.total { background: #ecf5ff; }
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-box-content {
+  padding: 20px 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-box-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.stat-box-content.normal::before {
+  background: var(--color-success);
+}
+
+.stat-box-content.late::before {
+  background: var(--color-danger);
+}
+
+.stat-box-content.early::before {
+  background: var(--color-warning);
+}
+
+.stat-box-content.absent::before {
+  background: var(--color-info);
+}
+
+.stat-box-content.leave::before {
+  background: var(--color-primary);
+}
+
+.stat-box-content.total::before {
+  background: var(--color-primary);
+}
+
+.stat-icon-small {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-box-content.normal .stat-icon-small {
+  background: var(--color-success-subtle);
+}
+
+.stat-box-content.normal .stat-icon-small svg {
+  color: var(--color-success);
+}
+
+.stat-box-content.late .stat-icon-small {
+  background: var(--color-danger-subtle);
+}
+
+.stat-box-content.late .stat-icon-small svg {
+  color: var(--color-danger);
+}
+
+.stat-box-content.early .stat-icon-small {
+  background: var(--color-warning-subtle);
+}
+
+.stat-box-content.early .stat-icon-small svg {
+  color: var(--color-warning);
+}
+
+.stat-box-content.absent .stat-icon-small {
+  background: var(--color-info-subtle);
+}
+
+.stat-box-content.absent .stat-icon-small svg {
+  color: var(--color-info);
+}
+
+.stat-box-content.leave .stat-icon-small {
+  background: var(--color-primary-subtle);
+}
+
+.stat-box-content.leave .stat-icon-small svg {
+  color: var(--color-primary);
+}
+
+.stat-box-content.total .stat-icon-small {
+  background: var(--color-primary-subtle);
+}
+
+.stat-box-content.total .stat-icon-small svg {
+  color: var(--color-primary);
+}
+
+.stat-icon-small svg {
+  width: 14px;
+  height: 14px;
+}
 
 .stat-number {
   display: block;
   font-size: 28px;
-  font-weight: bold;
-  color: #303133;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+  line-height: 1.2;
 }
 
 .stat-text {
-  font-size: 14px;
-  color: #606266;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
 }
 
-.text-danger {
-  color: #f56c6c;
-}
-
-.text-warning {
-  color: #e6a23c;
-}
-
+/* 筛选组样式 */
 .filter-group {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
-.pagination-container {
+.date-range-picker {
+  width: 260px;
+}
+
+.status-filter {
+  width: 100px;
+}
+
+/* 表格样式 */
+.custom-table {
+  border-radius: 0;
+}
+
+.status-tag {
+  font-weight: 500;
+}
+
+/* 分页 */
+.pagination-wrapper {
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-border-light);
+  margin-top: 0;
+}
+
+/* 状态文本颜色 */
+.text-danger,
+.late-value {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.text-warning,
+.early-value {
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-row {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .filter-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .date-range-picker {
+    width: 100%;
+  }
+
+  .stat-item {
+    width: 100%;
+  }
 }
 </style>

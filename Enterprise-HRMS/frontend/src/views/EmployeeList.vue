@@ -1,115 +1,168 @@
 <template>
-  <div class="employee-list">
+  <div class="employee-page">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <h2>员工管理</h2>
-      <el-button type="primary" @click="handleOnboarding">
-        <el-icon><Plus /></el-icon> 入职办理
-      </el-button>
+      <div class="header-left">
+        <div class="header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <span class="page-title">员工管理</span>
+      </div>
+      <div class="header-right">
+        <el-button type="primary" @click="handleOnboarding">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          入职办理
+        </el-button>
+      </div>
     </div>
 
     <!-- 筛选区域 -->
     <div class="filter-section">
-      <el-form :inline="true" :model="filterForm">
-        <el-form-item label="状态">
-          <el-select v-model="filterForm.status" placeholder="全部" clearable @change="fetchEmployees">
+      <div class="filter-content">
+        <div class="filter-item">
+          <label class="filter-label">状态</label>
+          <el-select v-model="filterForm.status" placeholder="全部" clearable @change="fetchEmployees" class="filter-select">
             <el-option label="在职" value="active" />
             <el-option label="待入职" value="pending" />
             <el-option label="已离职" value="resigned" />
           </el-select>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </div>
 
     <!-- 员工列表 -->
-    <el-table :data="employeeList" v-loading="loading" stripe border>
-      <el-table-column prop="employee_no" label="工号" width="160" />
-      <el-table-column prop="real_name" label="姓名" width="100" />
-      <el-table-column prop="department_name" label="部门" min-width="120" />
-      <el-table-column prop="post_name" label="岗位" width="120" />
-      <el-table-column prop="hire_date" label="入职日期" width="120" />
-      <el-table-column prop="status" label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="getStatusType(row.status)">
-            {{ getStatusText(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="viewDetail(row)">
-            查看详情
-          </el-button>
-          <el-button
-            v-if="row.status === 'active'"
-            type="warning"
-            link
-            size="small"
-            @click="handleResign(row)"
-          >
-            离职
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="table-section">
+      <el-table :data="employeeList" v-loading="loading" stripe class="custom-table">
+        <el-table-column prop="employee_no" label="工号" width="160" />
+        <el-table-column prop="real_name" label="姓名" width="100">
+          <template #default="{ row }">
+            <div class="employee-name">
+              <div class="name-avatar">{{ row.real_name?.charAt(0) }}</div>
+              <span>{{ row.real_name }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="department_name" label="部门" min-width="120" />
+        <el-table-column prop="post_name" label="岗位" width="120" />
+        <el-table-column prop="hire_date" label="入职日期" width="120" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)" size="small" class="status-tag">
+              {{ getStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="viewDetail(row)" class="action-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              查看详情
+            </el-button>
+            <el-button
+              v-if="row.status === 'active'"
+              type="warning"
+              link
+              size="small"
+              @click="handleResign(row)"
+              class="action-btn"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              离职
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <!-- 分页组件 -->
-    <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="pagination.total"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="fetchEmployees"
-        @current-change="handlePageChange"
-      />
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="fetchEmployees"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 空状态 -->
     <el-empty v-if="!loading && employeeList.length === 0" description="暂无员工数据" />
 
     <!-- 员工详情抽屉 -->
-    <el-drawer v-model="drawerVisible" title="员工详情" size="400px">
-      <el-descriptions v-if="currentEmployee" :column="1" border>
-        <el-descriptions-item label="工号">{{ currentEmployee.employee_no }}</el-descriptions-item>
-        <el-descriptions-item label="姓名">{{ currentEmployee.real_name }}</el-descriptions-item>
-        <el-descriptions-item label="用户名">{{ currentEmployee.username }}</el-descriptions-item>
-        <el-descriptions-item label="手机号">{{ currentEmployee.phone }}</el-descriptions-item>
-        <el-descriptions-item label="邮箱">{{ currentEmployee.email }}</el-descriptions-item>
-        <el-descriptions-item label="部门">{{ currentEmployee.department_name }}</el-descriptions-item>
-        <el-descriptions-item label="岗位">{{ currentEmployee.post_name }}</el-descriptions-item>
-        <el-descriptions-item label="入职日期">{{ currentEmployee.hire_date }}</el-descriptions-item>
-        <el-descriptions-item label="基本工资">¥{{ Number(currentEmployee?.salary_base || 0).toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="getStatusType(currentEmployee.status)">
+    <el-drawer v-model="drawerVisible" title="员工详情" size="420px">
+      <div v-if="currentEmployee" class="drawer-content">
+        <div class="employee-header">
+          <div class="avatar-large">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="info">
+            <h3>{{ currentEmployee.real_name }}</h3>
+            <p>{{ currentEmployee.employee_no }}</p>
+          </div>
+          <el-tag :type="getStatusType(currentEmployee.status)" class="status-badge">
             {{ getStatusText(currentEmployee.status) }}
           </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item v-if="currentEmployee.resigned_date" label="离职日期">
-          {{ currentEmployee.resigned_date }}
-        </el-descriptions-item>
-        <el-descriptions-item v-if="currentEmployee.resigned_reason" label="离职原因">
-          {{ currentEmployee.resigned_reason }}
-        </el-descriptions-item>
-      </el-descriptions>
-      <div class="drawer-footer" v-if="currentEmployee?.status === 'active'">
-        <el-button type="primary" @click="handleEdit(currentEmployee)">
-          <el-icon><Edit /></el-icon> 编辑信息
-        </el-button>
-        <el-button type="warning" @click="handleResign(currentEmployee)">
-          <el-icon><Switch /></el-icon> 办理离职
-        </el-button>
+        </div>
+
+        <el-descriptions :column="1" border class="info-descriptions">
+          <el-descriptions-item label="用户名">{{ currentEmployee.username }}</el-descriptions-item>
+          <el-descriptions-item label="手机号">{{ currentEmployee.phone }}</el-descriptions-item>
+          <el-descriptions-item label="邮箱">{{ currentEmployee.email }}</el-descriptions-item>
+          <el-descriptions-item label="部门">{{ currentEmployee.department_name }}</el-descriptions-item>
+          <el-descriptions-item label="岗位">{{ currentEmployee.post_name }}</el-descriptions-item>
+          <el-descriptions-item label="入职日期">{{ currentEmployee.hire_date }}</el-descriptions-item>
+          <el-descriptions-item label="基本工资">
+            <span class="salary-highlight">¥{{ Number(currentEmployee?.salary_base || 0).toLocaleString() }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="currentEmployee.resigned_date" label="离职日期">
+            {{ currentEmployee.resigned_date }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="currentEmployee.resigned_reason" label="离职原因">
+            {{ currentEmployee.resigned_reason }}
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <div class="drawer-footer" v-if="currentEmployee?.status === 'active'">
+          <el-button type="primary" @click="handleEdit(currentEmployee)" class="footer-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            编辑信息
+          </el-button>
+          <el-button type="warning" @click="handleResign(currentEmployee)" class="footer-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            办理离职
+          </el-button>
+        </div>
       </div>
     </el-drawer>
 
     <!-- 编辑员工对话框 -->
     <el-dialog v-model="editVisible" title="编辑员工信息" width="500px">
-      <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="100px">
+      <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="100px" class="custom-form">
         <el-form-item label="员工姓名">
-          <el-input :value="currentEmployee?.real_name" disabled />
+          <el-input :value="currentEmployee?.real_name" disabled class="form-input" />
         </el-form-item>
         <el-form-item label="部门" prop="department">
-          <el-select v-model="editForm.department" placeholder="请选择部门">
+          <el-select v-model="editForm.department" placeholder="请选择部门" class="form-input">
             <el-option
               v-for="dept in departments"
               :key="dept.id"
@@ -119,7 +172,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="岗位" prop="post">
-          <el-select v-model="editForm.post" placeholder="请选择岗位">
+          <el-select v-model="editForm.post" placeholder="请选择岗位" class="form-input">
             <el-option
               v-for="post in posts"
               :key="post.id"
@@ -134,10 +187,11 @@
             type="date"
             placeholder="请选择入职日期"
             value-format="YYYY-MM-DD"
+            class="form-input"
           />
         </el-form-item>
         <el-form-item label="基本工资" prop="salary_base">
-          <el-input-number v-model="editForm.salary_base" :min="0" :precision="2" />
+          <el-input-number v-model="editForm.salary_base" :min="0" :precision="2" class="form-input" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -148,9 +202,9 @@
 
     <!-- 离职办理对话框 -->
     <el-dialog v-model="resignVisible" title="办理离职" width="500px">
-      <el-form ref="resignFormRef" :model="resignForm" :rules="resignRules" label-width="100px">
+      <el-form ref="resignFormRef" :model="resignForm" :rules="resignRules" label-width="100px" class="custom-form">
         <el-form-item label="员工姓名">
-          <el-input :value="currentEmployee?.real_name" disabled />
+          <el-input :value="currentEmployee?.real_name" disabled class="form-input" />
         </el-form-item>
         <el-form-item label="离职日期" prop="resigned_date">
           <el-date-picker
@@ -158,6 +212,7 @@
             type="date"
             placeholder="请选择离职日期"
             value-format="YYYY-MM-DD"
+            class="form-input"
           />
         </el-form-item>
         <el-form-item label="离职原因" prop="resigned_reason">
@@ -166,6 +221,7 @@
             type="textarea"
             :rows="3"
             placeholder="请输入离职原因（选填）"
+            class="form-input"
           />
         </el-form-item>
       </el-form>
@@ -177,9 +233,9 @@
 
     <!-- 入职办理对话框 -->
     <el-dialog v-model="onboardingVisible" title="入职办理" width="500px">
-      <el-form ref="onboardingFormRef" :model="onboardingForm" :rules="onboardingRules" label-width="100px">
+      <el-form ref="onboardingFormRef" :model="onboardingForm" :rules="onboardingRules" label-width="100px" class="custom-form">
         <el-form-item label="选择用户" prop="user_id">
-          <el-select v-model="onboardingForm.user_id" placeholder="请选择待入职用户" filterable>
+          <el-select v-model="onboardingForm.user_id" placeholder="请选择待入职用户" filterable class="form-input">
             <el-option
               v-for="user in pendingUsers"
               :key="user.id"
@@ -189,7 +245,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="部门" prop="department">
-          <el-select v-model="onboardingForm.department" placeholder="请选择部门">
+          <el-select v-model="onboardingForm.department" placeholder="请选择部门" class="form-input">
             <el-option
               v-for="dept in departments"
               :key="dept.id"
@@ -199,7 +255,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="岗位" prop="post">
-          <el-select v-model="onboardingForm.post" placeholder="请选择岗位">
+          <el-select v-model="onboardingForm.post" placeholder="请选择岗位" class="form-input">
             <el-option
               v-for="post in posts"
               :key="post.id"
@@ -214,10 +270,11 @@
             type="date"
             placeholder="请选择入职日期"
             value-format="YYYY-MM-DD"
+            class="form-input"
           />
         </el-form-item>
         <el-form-item label="基本工资" prop="salary_base">
-          <el-input-number v-model="onboardingForm.salary_base" :min="0" :precision="2" />
+          <el-input-number v-model="onboardingForm.salary_base" :min="0" :precision="2" class="form-input" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -231,7 +288,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Switch } from '@element-plus/icons-vue'
 import { getEmployeeList, getEmployeeDetail, getPendingUsers, createEmployee, updateEmployee, resignEmployee } from '@/api/employee'
 import { getDepartmentList } from '@/api/department'
 import { getPostList } from '@/api/post'
@@ -452,7 +508,6 @@ const handleOnboarding = async () => {
   onboardingForm.hire_date = ''
   onboardingForm.salary_base = 5000
 
-  // 加载待入职用户
   try {
     const [usersRes, deptsRes, postsRes] = await Promise.all([
       getPendingUsers({ page: 1, page_size: 100 }),
@@ -511,41 +566,266 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.employee-list {
-  padding: 20px;
-}
+/* ========================================
+   Employee List - Modern Corporate Design
+   ======================================== */
 
+/* 页面头部 */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
-.page-header h2 {
-  margin: 0;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow-primary);
+}
+
+.header-icon svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.page-title {
   font-size: 18px;
-  color: #303133;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
+.header-right .el-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+}
+
+.header-right svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 筛选区域 */
 .filter-section {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  padding: 20px 24px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
 }
 
-.pagination-container {
+.filter-content {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.filter-select {
+  width: 140px;
+}
+
+/* 表格区域 */
+.table-section {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.custom-table {
+  border-radius: 0;
+}
+
+/* 员工姓名列样式 */
+.employee-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.name-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-tag {
+  font-weight: 500;
+}
+
+/* 操作按钮 */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 分页 */
+.pagination-wrapper {
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* 抽屉样式 */
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.employee-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.avatar-large {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: var(--shadow-glow-primary);
+}
+
+.avatar-large svg {
+  width: 32px;
+  height: 32px;
+}
+
+.info {
+  flex: 1;
+}
+
+.info h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.info p {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.status-badge {
+  font-weight: 500;
+}
+
+.info-descriptions {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.salary-highlight {
+  font-weight: 600;
+  color: var(--color-success);
+  font-size: 15px;
 }
 
 .drawer-footer {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+}
+
+.footer-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 表单样式 */
+.custom-form .form-input {
+  width: 100%;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .filter-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .employee-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .drawer-footer {
+    flex-direction: column;
+  }
 }
 </style>

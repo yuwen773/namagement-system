@@ -1,41 +1,63 @@
 <template>
   <div class="salary-page">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <h2>薪资管理</h2>
-      <el-date-picker
-        v-model="filterForm.monthRange"
-        type="monthrange"
-        range-separator="至"
-        start-placeholder="开始月份"
-        end-placeholder="结束月份"
-        format="YYYY-MM"
-        value-format="YYYY-MM"
-        :disabled-date="disabledDate"
-        @change="handleFilterChange"
-      />
+      <div class="header-left">
+        <div class="header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="M12 12h.01"/>
+            <path d="M6 12h.01"/>
+            <path d="M18 12h.01"/>
+          </svg>
+        </div>
+        <span class="page-title">薪资管理</span>
+      </div>
+      <div class="header-right">
+        <el-date-picker
+          v-model="filterForm.monthRange"
+          type="monthrange"
+          range-separator="至"
+          start-placeholder="开始月份"
+          end-placeholder="结束月份"
+          format="YYYY-MM"
+          value-format="YYYY-MM"
+          :disabled-date="disabledDate"
+          @change="handleFilterChange"
+          class="month-range-picker"
+        />
+      </div>
     </div>
 
     <!-- 薪资记录列表 -->
-    <el-card v-loading="loading">
-      <el-table :data="salaryRecords" stripe style="width: 100%">
+    <div class="table-section" v-loading="loading">
+      <el-table :data="salaryRecords" stripe class="custom-table">
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="real_name" label="员工姓名" width="120" />
+        <el-table-column label="员工" min-width="140">
+          <template #default="{ row }">
+            <div class="employee-cell">
+              <div class="avatar-small">{{ row.real_name?.charAt(0) }}</div>
+              <div class="info">
+                <span class="name">{{ row.real_name }}</span>
+                <span class="dept">{{ row.department_name }}</span>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="month" label="月份" width="100" />
-        <el-table-column prop="base_salary" label="基本工资" width="120">
+        <el-table-column prop="base_salary" label="基本工资" width="120" align="right">
           <template #default="{ row }">
-            ¥{{ row.base_salary?.toLocaleString() }}
+            <span class="salary-amount">¥{{ row.base_salary?.toLocaleString() }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="final_salary" label="实发工资" width="120">
+        <el-table-column prop="final_salary" label="实发工资" width="140" align="right">
           <template #default="{ row }">
-            <span style="color: #67c23a; font-weight: bold;">
-              ¥{{ row.final_salary?.toLocaleString() }}
-            </span>
+            <span class="salary-amount final">¥{{ row.final_salary?.toLocaleString() }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'published' ? 'success' : 'info'" size="small">
+            <el-tag :type="row.status === 'published' ? 'success' : 'info'" size="small" class="status-tag">
               {{ row.status === 'published' ? '已发布' : '草稿' }}
             </el-tag>
           </template>
@@ -47,7 +69,11 @@
         </el-table-column>
         <el-table-column label="操作" min-width="150" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="viewDetail(row)">
+            <el-button type="primary" link size="small" @click="viewDetail(row)" class="action-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
               查看详情
             </el-button>
             <el-button
@@ -56,17 +82,18 @@
               link
               size="small"
               @click="publishSalary(row)"
+              class="action-btn"
             >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
               发布
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-empty v-if="!loading && salaryRecords.length === 0" description="暂无薪资记录" />
-
-      <!-- 分页组件 -->
-      <div class="pagination-container">
+      <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.pageSize"
@@ -77,25 +104,25 @@
           @current-change="handlePageChange"
         />
       </div>
-    </el-card>
+    </div>
+
+    <el-empty v-if="!loading && salaryRecords.length === 0" description="暂无薪资记录" />
 
     <!-- 薪资详情抽屉 -->
-    <el-drawer v-model="detailDrawerVisible" title="薪资详情" size="400px">
-      <div v-if="currentRecord" class="salary-detail">
+    <el-drawer v-model="detailDrawerVisible" title="薪资详情" size="420px">
+      <div v-if="currentRecord" class="drawer-content">
         <div class="detail-header">
-          <h3>{{ currentRecord.month }} 月薪资单</h3>
-          <el-tag :type="currentRecord.status === 'published' ? 'success' : 'info'">
+          <div class="header-info">
+            <h3>{{ currentRecord.real_name }}</h3>
+            <p>{{ currentRecord.month }} 月薪资单</p>
+          </div>
+          <el-tag :type="currentRecord.status === 'published' ? 'success' : 'info'" class="status-badge">
             {{ currentRecord.status === 'published' ? '已发布' : '草稿' }}
           </el-tag>
         </div>
 
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="员工姓名">
-            {{ currentRecord.real_name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="部门">
-            {{ currentRecord.department_name || '-' }}
-          </el-descriptions-item>
+        <el-descriptions :column="1" border class="info-descriptions">
+          <el-descriptions-item label="部门">{{ currentRecord.department_name || '-' }}</el-descriptions-item>
           <el-descriptions-item label="基本工资">
             <span class="amount">¥{{ currentRecord.base_salary?.toLocaleString() }}</span>
           </el-descriptions-item>
@@ -105,12 +132,8 @@
           <el-descriptions-item label="考勤扣款">
             <span class="amount minus">-¥{{ currentRecord.attendance_deduction?.toLocaleString() }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="迟到次数">
-            {{ currentRecord.late_count || 0 }} 次
-          </el-descriptions-item>
-          <el-descriptions-item label="早退次数">
-            {{ currentRecord.early_count || 0 }} 次
-          </el-descriptions-item>
+          <el-descriptions-item label="迟到次数">{{ currentRecord.late_count || 0 }} 次</el-descriptions-item>
+          <el-descriptions-item label="早退次数">{{ currentRecord.early_count || 0 }} 次</el-descriptions-item>
         </el-descriptions>
 
         <div class="final-salary">
@@ -122,14 +145,9 @@
 
     <!-- HR/管理员：薪资计算对话框 -->
     <el-dialog v-model="calculateDialogVisible" title="薪资计算" width="500px">
-      <el-form ref="calculateFormRef" :model="calculateForm" :rules="calculateRules" label-width="100px">
+      <el-form ref="calculateFormRef" :model="calculateForm" :rules="calculateRules" label-width="100px" class="custom-form">
         <el-form-item label="员工" prop="user_id">
-          <el-select
-            v-model="calculateForm.user_id"
-            placeholder="选择员工"
-            filterable
-            style="width: 100%"
-          >
+          <el-select v-model="calculateForm.user_id" placeholder="选择员工" filterable class="form-input">
             <el-option
               v-for="emp in employeeList"
               :key="emp.id"
@@ -145,7 +163,7 @@
             placeholder="选择月份"
             format="YYYY-MM"
             value-format="YYYY-MM"
-            style="width: 100%"
+            class="form-input"
           />
         </el-form-item>
       </el-form>
@@ -218,15 +236,12 @@ const fetchSalaryRecords = async () => {
       page_size: pagination.pageSize
     }
 
-    // 月份范围（如果有选择）
     if (filterForm.monthRange && filterForm.monthRange.length === 2) {
       params.month_start = filterForm.monthRange[0]
       params.month_end = filterForm.monthRange[1]
     } else if (selectedMonth.value) {
-      // 单月查询（兼容旧选择器）
       params.month = selectedMonth.value
     }
-    // 如果都没有选择，则不传 month 参数，返回所有已发布数据
 
     const res = await getSalaryRecords(params)
     if (res.data?.code === 0) {
@@ -253,10 +268,9 @@ const handlePageChange = (page) => {
   fetchSalaryRecords()
 }
 
-// 月份切换（兼容单月选择）
-const selectedMonth = ref(null)  // 默认显示所有已发布数据
+// 单月选择（兼容旧版本）
+const selectedMonth = ref(null)
 const handleMonthChange = () => {
-  // 如果选择了单月，清除月份范围
   if (selectedMonth.value) {
     filterForm.monthRange = null
   }
@@ -359,79 +373,240 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.salary-page {
-  padding: 20px;
-}
+/* ========================================
+   Salary - Modern Corporate Design
+   ======================================== */
 
+/* 页面头部 */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
-.page-header h2 {
-  margin: 0;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow-success);
+}
+
+.header-icon svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.page-title {
   font-size: 18px;
-  color: #303133;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
-.salary-detail {
-  padding: 0 10px;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.month-range-picker {
+  width: 280px;
+}
+
+/* 表格区域 */
+.table-section {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--color-shadow-sm);
+  overflow: hidden;
+}
+
+.custom-table {
+  border-radius: 0;
+}
+
+/* 员工单元格 */
+.employee-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-small {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.employee-cell .info {
+  display: flex;
+  flex-direction: column;
+}
+
+.employee-cell .name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.employee-cell .dept {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.salary-amount {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.salary-amount.final {
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.status-tag {
+  font-weight: 500;
+}
+
+/* 操作按钮 */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 分页 */
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* 抽屉样式 */
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .detail-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #ebeef5;
+  align-items: flex-start;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-.detail-header h3 {
+.header-info h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.header-info p {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
   margin: 0;
-  font-size: 18px;
-  color: #303133;
+}
+
+.status-badge {
+  font-weight: 500;
+}
+
+.info-descriptions {
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .amount {
-  font-weight: bold;
-  color: #303133;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
 .amount.add {
-  color: #67c23a;
+  color: var(--color-success);
+  font-weight: 600;
 }
 
 .amount.minus {
-  color: #f56c6c;
+  color: var(--color-danger);
+  font-weight: 600;
 }
 
 .final-salary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--color-success-subtle) 0%, var(--color-bg-secondary) 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-success-subtle);
 }
 
 .final-salary span:first-child {
-  font-size: 16px;
-  color: #606266;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
 .amount-total {
   font-size: 28px;
-  font-weight: bold;
-  color: #67c23a;
+  font-weight: 700;
+  color: var(--color-success);
 }
 
-.pagination-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
+/* 表单样式 */
+.custom-form .form-input {
+  width: 100%;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .header-right {
+    width: 100%;
+  }
+
+  .month-range-picker {
+    width: 100%;
+  }
 }
 </style>
