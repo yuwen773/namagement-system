@@ -58,7 +58,7 @@ class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeProfile
         fields = [
-            'user', 'user_id', 'user_real_name',
+            'user_id', 'user_real_name',
             'department', 'post', 'hire_date', 'salary_base',
             'status', 'resigned_date', 'resigned_reason'
         ]

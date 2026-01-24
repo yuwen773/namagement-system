@@ -11,18 +11,21 @@ const stats = ref({
   total_salary_this_month: 0,
   department_distribution: [],
   salary_trend: [],
-  attendance_anomalies: []
+  attendance_anomalies: [],
+  hire_resign_trend: []
 })
 
 // 图表引用
 const departmentChartRef = ref(null)
 const salaryChartRef = ref(null)
 const attendanceChartRef = ref(null)
+const hireResignChartRef = ref(null)
 
 // 图表实例
 let departmentChart = null
 let salaryChart = null
 let attendanceChart = null
+let hireResignChart = null
 
 // 格式化数字
 const formatNumber = (num) => {
@@ -263,6 +266,84 @@ const initCharts = () => {
       }]
     })
   }
+
+  // 入离职趋势折线图
+  if (hireResignChartRef.value) {
+    hireResignChart = echarts.init(hireResignChartRef.value)
+    const months = stats.value.hire_resign_trend.map(item => item.month)
+    const hireData = stats.value.hire_resign_trend.map(item => item.hire_count)
+    const resignData = stats.value.hire_resign_trend.map(item => item.resign_count)
+
+    hireResignChart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' },
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#e5e5e5',
+        borderWidth: 1,
+        textStyle: { color: '#1f2937' },
+        padding: [12, 16]
+      },
+      legend: {
+        data: ['入职人数', '离职人数'],
+        bottom: 0,
+        textStyle: { color: '#6b7280', fontSize: 12 }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '15%',
+        top: '12%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: months,
+        axisLine: { lineStyle: { color: '#d4d4d4' } },
+        axisLabel: { color: '#6b7280', fontSize: 12 }
+      },
+      yAxis: {
+        type: 'value',
+        name: '人数',
+        position: 'left',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: '#f3f4f6' } },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+        nameTextStyle: { color: '#9ca3af', fontSize: 12 }
+      },
+      series: [{
+        name: '入职人数',
+        type: 'line',
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 8,
+        data: hireData,
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(16, 185, 129, 0.15)' },
+              { offset: 1, color: 'rgba(16, 185, 129, 0)' }
+            ]
+          }
+        },
+        lineStyle: { width: 3, color: '#10b981' },
+        itemStyle: { color: '#10b981', borderColor: '#fff', borderWidth: 2 }
+      }, {
+        name: '离职人数',
+        type: 'line',
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 8,
+        data: resignData,
+        lineStyle: { width: 3, color: '#ef4444' },
+        itemStyle: { color: '#ef4444', borderColor: '#fff', borderWidth: 2 }
+      }]
+    })
+  }
 }
 
 // 窗口大小变化时重绘图表
@@ -270,6 +351,7 @@ const handleResize = () => {
   departmentChart?.resize()
   salaryChart?.resize()
   attendanceChart?.resize()
+  hireResignChart?.resize()
 }
 
 // 获取数据
@@ -284,7 +366,8 @@ const fetchData = async () => {
       total_salary_this_month: data.total_salary_this_month || 0,
       department_distribution: data.department_distribution || [],
       salary_trend: data.salary_trend || [],
-      attendance_anomalies: data.attendance_anomalies || []
+      attendance_anomalies: data.attendance_anomalies || [],
+      hire_resign_trend: data.hire_resign_trend || []
     }
 
     // 数据更新后重新渲染图表
@@ -306,6 +389,7 @@ onUnmounted(() => {
   departmentChart?.dispose()
   salaryChart?.dispose()
   attendanceChart?.dispose()
+  hireResignChart?.dispose()
 })
 </script>
 
@@ -422,6 +506,24 @@ onUnmounted(() => {
             <span class="card-subtitle">按部门分组统计迟到、早退、缺勤次数</span>
           </div>
           <div ref="attendanceChartRef" class="chart-container-wide"></div>
+        </div>
+      </div>
+
+      <!-- 入离职趋势图表 -->
+      <div class="chart-row">
+        <div class="chart-card full-width">
+          <div class="card-header">
+            <div class="header-content">
+              <span class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </span>
+              <span class="card-title">近6月入离职趋势</span>
+            </div>
+            <span class="card-subtitle">按月份统计入职和离职人数变化</span>
+          </div>
+          <div ref="hireResignChartRef" class="chart-container-wide"></div>
         </div>
       </div>
     </div>

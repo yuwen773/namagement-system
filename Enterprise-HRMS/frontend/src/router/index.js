@@ -44,6 +44,11 @@ const router = createRouter({
           path: 'approval',
           name: 'approval',
           component: () => import('../views/ApprovalCenter.vue')
+        },
+        {
+          path: 'onboarding',
+          name: 'onboarding',
+          component: () => import('../views/Onboarding.vue')
         }
       ]
     }

@@ -138,6 +138,43 @@ class DashboardStatsView(APIView):
             for item in attendance_anomalies
         ]
 
+        # 8. 近6月入离职趋势
+        hire_resign_trend = []
+        current_month = today.replace(day=1)
+        for i in range(5, -1, -1):
+            # 计算目标月份：当前月向前推 i 个月
+            if i == 0:
+                target_month = current_month
+            else:
+                target_year = current_month.year - (current_month.month - 1 + i) // 12
+                target_month_num = (current_month.month - 1 + i) % 12 + 1
+                target_month = current_month.replace(year=target_year, month=target_month_num)
+
+            month_start = target_month
+            month_end = target_month.replace(day=28) + timedelta(days=4)
+            month_end = month_end - timedelta(days=month_end.day)
+
+            month_str = target_month.strftime('%Y-%m')
+
+            # 统计入职人数
+            hire_count = EmployeeProfile.objects.filter(
+                hire_date__gte=month_start,
+                hire_date__lte=month_end
+            ).count()
+
+            # 统计离职人数
+            resign_count = EmployeeProfile.objects.filter(
+                status='resigned',
+                resigned_date__gte=month_start,
+                resigned_date__lte=month_end
+            ).count()
+
+            hire_resign_trend.append({
+                'month': month_str,
+                'hire_count': hire_count,
+                'resign_count': resign_count
+            })
+
         return Response({
             'code': 0,
             'data': {
@@ -147,6 +184,7 @@ class DashboardStatsView(APIView):
                 'total_salary_this_month': float(total_salary_this_month),
                 'department_distribution': department_data,
                 'salary_trend': salary_trend,
-                'attendance_anomalies': anomaly_data
+                'attendance_anomalies': anomaly_data,
+                'hire_resign_trend': hire_resign_trend
             }
         })
