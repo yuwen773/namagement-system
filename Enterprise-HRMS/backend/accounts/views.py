@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import (
     RegisterSerializer, UserSerializer, CustomTokenObtainPairSerializer,
     AdminResetPasswordSerializer, UserListSerializer, UserRoleUpdateSerializer,
-    UserStatusUpdateSerializer
+    UserStatusUpdateSerializer, ChangePasswordSerializer
 )
 from HRMS.permissions import IsAdmin
 from django.contrib.auth import get_user_model
@@ -90,6 +90,29 @@ class AdminResetPasswordView(GenericAPIView):
         return Response({
             'code': 0,
             'message': f'用户 {instance.real_name} 的密码已重置'
+        })
+
+
+class ChangePasswordView(GenericAPIView):
+    """
+    用户自主修改密码接口
+    POST /api/auth/change-password/
+    需要认证，验证旧密码后设置新密码
+    """
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        # 设置新密码（自动哈希）
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+
+        return Response({
+            'code': 0,
+            'message': '密码修改成功，请重新登录'
         })
 
 

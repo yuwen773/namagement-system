@@ -83,3 +83,8 @@ export function getOrganizationTree() {
     params: { include_inactive: true }
   });
 }
+
+// 修改密码
+export function changePassword(data) {
+  return axios.post("/auth/change-password/", data);
+}

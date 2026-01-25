@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterView, CustomTokenObtainPairView, CurrentUserView, AdminResetPasswordView,
-    UserListView, UserRoleUpdateView, UserStatusUpdateView,
+    ChangePasswordView, UserListView, UserRoleUpdateView, UserStatusUpdateView,
     UserEditRequestViewSet, RolePermissionViewSet, SystemConfigViewSet
 )
 
@@ -14,6 +14,7 @@ urlpatterns = [
     path('login/', CustomTokenObtainPairView.as_view(), name='login'),
     path('me/', CurrentUserView.as_view(), name='current_user'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('users/', UserListView.as_view(), name='user_list'),
     path('users/<int:user_id>/reset-password/', AdminResetPasswordView.as_view(), name='reset_password'),
     path('users/<int:user_id>/role/', UserRoleUpdateView.as_view(), name='update_role'),

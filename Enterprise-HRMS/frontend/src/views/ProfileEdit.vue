@@ -74,6 +74,74 @@
       <el-empty v-else description="暂无组织架构信息" :image-size="80" />
     </el-card>
 
+    <!-- 修改密码 -->
+    <el-card class="info-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span><el-icon><Lock /></el-icon> 修改密码</span>
+          <el-button type="primary" link @click="showPasswordDialog = true">
+            <el-icon><Edit /></el-icon>
+            修改密码
+          </el-button>
+        </div>
+      </template>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="密码状态">
+          <el-tag type="success" size="small">已设置</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="安全等级">
+          <el-rate v-model="passwordStrength" disabled text-color="#ff9900" />
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-card>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog v-model="showPasswordDialog" title="修改密码" width="450px" :close-on-click-modal="false">
+      <el-form
+        ref="passwordFormRef"
+        :model="passwordForm"
+        :rules="passwordRules"
+        label-width="100px"
+        status-icon
+      >
+        <el-form-item label="旧密码" prop="old_password">
+          <el-input
+            v-model="passwordForm.old_password"
+            type="password"
+            placeholder="请输入旧密码"
+            show-password
+            autocomplete="off"
+          />
+        </el-form-item>
+        <el-form-item label="新密码" prop="new_password">
+          <el-input
+            v-model="passwordForm.new_password"
+            type="password"
+            placeholder="请输入新密码（至少8位，包含字母、数字、特殊字符）"
+            show-password
+            autocomplete="off"
+          />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="new_password2">
+          <el-input
+            v-model="passwordForm.new_password2"
+            type="password"
+            placeholder="请再次输入新密码"
+            show-password
+            autocomplete="off"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showPasswordDialog = false">取消</el-button>
+          <el-button type="primary" @click="handlePasswordSubmit" :loading="passwordLoading">
+            确认修改
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <!-- 修改信息表单 -->
     <el-card class="edit-card" shadow="hover">
       <template #header>
@@ -268,7 +336,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Right, Refresh, View } from '@element-plus/icons-vue'
+import { Right, Refresh, View, Lock } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
 import {
   getCurrentUser,
@@ -279,6 +347,7 @@ import {
   rejectEditRequest,
   getMyEmployeeProfile,
   getDepartmentTree,
+  changePassword,
   EDIT_TYPE,
   EDIT_TYPE_TEXT,
   STATUS,
@@ -424,6 +493,114 @@ const approvalForm = reactive({
 })
 const approvalLoading = ref(false)
 const currentEditRequest = ref(null)
+
+// 密码修改相关
+const showPasswordDialog = ref(false)
+const passwordFormRef = ref(null)
+const passwordForm = reactive({
+  old_password: '',
+  new_password: '',
+  new_password2: ''
+})
+const passwordLoading = ref(false)
+const passwordStrength = ref(4)
+
+// 密码验证规则
+const validateOldPassword = (rule, value, callback) => {
+  if (!value) {
+    callback(new Error('请输入旧密码'))
+  } else {
+    callback()
+  }
+}
+
+const validateNewPassword = (rule, value, callback) => {
+  if (!value) {
+    callback(new Error('请输入新密码'))
+  } else if (value.length < 8) {
+    callback(new Error('密码长度至少8位'))
+  } else {
+    // 检查密码强度
+    const hasLetter = /[a-zA-Z]/.test(value)
+    const hasNumber = /\d/.test(value)
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(value)
+    let strength = 0
+    if (hasLetter) strength++
+    if (hasNumber) strength++
+    if (hasSpecial) strength++
+    if (value.length >= 12) strength++
+    passwordStrength.value = Math.min(strength, 5)
+
+    if (!hasLetter || !hasNumber || !hasSpecial) {
+      callback(new Error('密码必须包含字母、数字和特殊字符'))
+    } else {
+      callback()
+    }
+  }
+}
+
+const validateNewPassword2 = (rule, value, callback) => {
+  if (!value) {
+    callback(new Error('请再次输入新密码'))
+  } else if (value !== passwordForm.new_password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const passwordRules = {
+  old_password: [{ validator: validateOldPassword, trigger: 'blur' }],
+  new_password: [{ validator: validateNewPassword, trigger: 'blur' }],
+  new_password2: [{ validator: validateNewPassword2, trigger: 'blur' }]
+}
+
+// 提交密码修改
+const handlePasswordSubmit = async () => {
+  if (!passwordFormRef.value) return
+
+  await passwordFormRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        passwordLoading.value = true
+        await changePassword({
+          old_password: passwordForm.old_password,
+          new_password: passwordForm.new_password,
+          new_password2: passwordForm.new_password2
+        })
+        ElMessage.success('密码修改成功，请重新登录')
+
+        // 关闭对话框并清除表单
+        showPasswordDialog.value = false
+        passwordForm.old_password = ''
+        passwordForm.new_password = ''
+        passwordForm.new_password2 = ''
+        passwordFormRef.value.resetFields()
+
+        // 提示用户重新登录
+        setTimeout(() => {
+          ElMessageBox.confirm(
+            '为了安全起见，密码修改后需要重新登录。是否立即重新登录？',
+            '重新登录',
+            {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'info'
+            }
+          ).then(() => {
+            authStore.logout()
+            window.location.reload()
+          }).catch(() => {})
+        }, 500)
+      } catch (error) {
+        const msg = error.response?.data?.message || error.response?.data?.old_password?.[0] || '密码修改失败'
+        ElMessage.error(msg)
+      } finally {
+        passwordLoading.value = false
+      }
+    }
+  })
+}
 
 // 格式化日期
 const formatDate = (date) => {

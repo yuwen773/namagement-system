@@ -205,6 +205,54 @@ class UserStatusUpdateSerializer(serializers.ModelSerializer):
         fields = ['is_active']
 
 
+class ChangePasswordSerializer(serializers.ModelSerializer):
+    """
+    用户自主修改密码序列化器
+    """
+    old_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[password_strength_validator.validate],
+        style={'input_type': 'password'}
+    )
+    new_password2 = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+
+    class Meta:
+        model = User
+        fields = ['old_password', 'new_password', 'new_password2']
+
+    def validate(self, attrs):
+        """验证两次新密码是否一致"""
+        if attrs['new_password'] != attrs['new_password2']:
+            raise serializers.ValidationError({
+                'new_password2': '两次新密码不一致'
+            })
+        return attrs
+
+    def validate_old_password(self, value):
+        """验证旧密码"""
+        user = self.context.get('request').user
+        if not user.check_password(value):
+            raise serializers.ValidationError('旧密码不正确')
+        return value
+
+    def validate_new_password(self, value):
+        """验证新密码不能与旧密码相同"""
+        user = self.context.get('request').user
+        if user.check_password(value):
+            raise serializers.ValidationError('新密码不能与旧密码相同')
+        return value
+
+
 class UserEditRequestCreateSerializer(serializers.ModelSerializer):
     """
     创建信息修改申请序列化器
