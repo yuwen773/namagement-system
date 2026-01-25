@@ -31,28 +31,28 @@ Enterprise HRMS 是一个轻量级、数据驱动的企业人事管理系统，�
 
 ## 技术栈
 
-| 层级 | 技术 |
-|------|------|
-| 后端 | Django 5.2 + Django REST Framework + MySQL 8.0 (端口 3307) |
-| 前端 | Vue 3.5 + Vite + Element Plus 2.x + ECharts |
-| 认证 | JWT (djangorestframework-simplejwt): Access 2h, Refresh 7d |
-| 状态管理 | Pinia |
+| 层级     | 技术                                                       |
+| -------- | ---------------------------------------------------------- |
+| 后端     | Django 5.2 + Django REST Framework + MySQL 8.0 (端口 3307) |
+| 前端     | Vue 3.5 + Vite + Element Plus 2.x + ECharts                |
+| 认证     | JWT (djangorestframework-simplejwt): Access 2h, Refresh 7d |
+| 状态管理 | Pinia                                                      |
 
 ---
 
 ## 功能模块
 
-| 模块 | 功能描述 |
-|------|----------|
-| **用户认证** | 注册、登录、Token 刷新、密码重置 |
-| **组织架构** | 部门树形管理、岗位池维护 |
+| 模块         | 功能描述                               |
+| ------------ | -------------------------------------- |
+| **用户认证** | 注册、登录、Token 刷新、密码重置       |
+| **组织架构** | 部门树形管理、岗位池维护               |
 | **员工档案** | 入职办理、离职管理、个人信息编辑与审核 |
-| **考勤管理** | 每日签到/签退、自动计算考勤状态 |
-| **审批中心** | 请假/加班申请、在线审批 |
-| **薪资管理** | 自动薪资计算、工资条查看、申诉处理 |
-| **公告管理** | Markdown 公告发布、置顶功能 |
-| **绩效管理** | 绩效评估、草稿→发布流程 |
-| **数据中心** | 可视化驾驶舱、统计分析报表 |
+| **考勤管理** | 每日签到/签退、自动计算考勤状态        |
+| **审批中心** | 请假/加班申请、在线审批                |
+| **薪资管理** | 自动薪资计算、工资条查看、申诉处理     |
+| **公告管理** | Markdown 公告发布、置顶功能            |
+| **绩效管理** | 绩效评估、草稿→发布流程                |
+| **数据中心** | 可视化驾驶舱、统计分析报表             |
 
 ---
 
@@ -201,13 +201,13 @@ DATABASES = {
 
 ### 考勤规则 (09:00 - 18:00)
 
-| 场景 | 考勤状态 |
-|------|----------|
-| 9:00 后签到 | late (迟到) |
-| 18:00 前签退 | early (早退) |
+| 场景                       | 考勤状态      |
+| -------------------------- | ------------- |
+| 9:00 后签到                | late (迟到)   |
+| 18:00 前签退               | early (早退)  |
 | 9:00 前签到且 18:00 后签退 | normal (正常) |
-| 无打卡记录 | absent (缺卡) |
-| 有已通过请假申请 | leave (休假) |
+| 无打卡记录                 | absent (缺卡) |
+| 有已通过请假申请           | leave (休假)  |
 
 ---
 
@@ -215,63 +215,63 @@ DATABASES = {
 
 ### 认证模块
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/auth/register/` | POST | 用户注册 |
-| `/api/auth/login/` | POST | 用户登录 |
+| 端点                       | 方法 | 说明       |
+| -------------------------- | ---- | ---------- |
+| `/api/auth/register/`      | POST | 用户注册   |
+| `/api/auth/login/`         | POST | 用户登录   |
 | `/api/auth/token/refresh/` | POST | 刷新 Token |
 
 ### 员工模块
 
-| 端点 | 方法 | 说明 | 权限 |
-|------|------|------|------|
-| `/api/employee/` | GET | 员工列表 | HR/Admin |
-| `/api/employee/` | POST | 办理入职 | HR/Admin |
-| `/api/employee/pending/` | GET | 待入职列表 | HR/Admin |
-| `/api/employee/options/` | GET | 员工选择列表 | HR/Admin |
+| 端点                     | 方法 | 说明         | 权限     |
+| ------------------------ | ---- | ------------ | -------- |
+| `/api/employee/`         | GET  | 员工列表     | HR/Admin |
+| `/api/employee/`         | POST | 办理入职     | HR/Admin |
+| `/api/employee/pending/` | GET  | 待入职列表   | HR/Admin |
+| `/api/employee/options/` | GET  | 员工选择列表 | HR/Admin |
 
 ### 考勤模块
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/attendance/check-in/` | POST | 签到 |
-| `/api/attendance/check-out/` | POST | 签退 |
-| `/api/attendance/my-records/` | GET | 我的考勤记录 |
-| `/api/attendance/records/` | GET | 所有考勤记录 |
+| 端点                          | 方法 | 说明         |
+| ----------------------------- | ---- | ------------ |
+| `/api/attendance/check-in/`   | POST | 签到         |
+| `/api/attendance/check-out/`  | POST | 签退         |
+| `/api/attendance/my-records/` | GET  | 我的考勤记录 |
+| `/api/attendance/records/`    | GET  | 所有考勤记录 |
 
 ### 审批模块
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/approval/requests/` | GET | 我的申请列表 |
-| `/api/approval/pending/` | GET | 待我审批 (HR/Admin) |
-| `/api/approval/requests/` | POST | 提交申请 |
-| `/api/approval/requests/{id}/approve/` | POST | 审批通过 |
-| `/api/approval/requests/{id}/reject/` | POST | 审批驳回 |
+| 端点                                   | 方法 | 说明                |
+| -------------------------------------- | ---- | ------------------- |
+| `/api/approval/requests/`              | GET  | 我的申请列表        |
+| `/api/approval/pending/`               | GET  | 待我审批 (HR/Admin) |
+| `/api/approval/requests/`              | POST | 提交申请            |
+| `/api/approval/requests/{id}/approve/` | POST | 审批通过            |
+| `/api/approval/requests/{id}/reject/`  | POST | 审批驳回            |
 
 ### 薪资模块
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/salary/records/` | GET | 薪资记录列表 |
-| `/api/salary/calculate/` | POST | 计算薪资 (HR/Admin) |
-| `/api/salary/my-records/` | GET | 我的工资条 |
+| 端点                      | 方法 | 说明                |
+| ------------------------- | ---- | ------------------- |
+| `/api/salary/records/`    | GET  | 薪资记录列表        |
+| `/api/salary/calculate/`  | POST | 计算薪资 (HR/Admin) |
+| `/api/salary/my-records/` | GET  | 我的工资条          |
 
 ### 公告模块
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/notice/notices/` | GET | 公告列表 |
-| `/api/notice/notices/` | POST | 发布公告 (HR/Admin) |
-| `/api/notice/notices/{id}/` | DELETE | 删除公告 |
+| 端点                        | 方法   | 说明                |
+| --------------------------- | ------ | ------------------- |
+| `/api/notice/notices/`      | GET    | 公告列表            |
+| `/api/notice/notices/`      | POST   | 发布公告 (HR/Admin) |
+| `/api/notice/notices/{id}/` | DELETE | 删除公告            |
 
 ### 仪表盘模块
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/dashboard/stats/` | GET | 统计数据 |
-| `/api/dashboard/department-distribution/` | GET | 部门人数分布 |
-| `/api/dashboard/salary-trend/` | GET | 薪资趋势 |
+| 端点                                      | 方法 | 说明         |
+| ----------------------------------------- | ---- | ------------ |
+| `/api/dashboard/stats/`                   | GET  | 统计数据     |
+| `/api/dashboard/department-distribution/` | GET  | 部门人数分布 |
+| `/api/dashboard/salary-trend/`            | GET  | 薪资趋势     |
 
 ---
 
@@ -279,20 +279,20 @@ DATABASES = {
 
 ### 用户角色
 
-| 角色 | 说明 |
-|------|------|
-| `employee` | 普通员工 |
-| `hr` | 人事专员 |
-| `admin` | 系统管理员 |
+| 角色       | 说明       |
+| ---------- | ---------- |
+| `employee` | 普通员工   |
+| `hr`       | 人事专员   |
+| `admin`    | 系统管理员 |
 
 ### 权限类
 
-| 权限类 | 逻辑 | 用途 |
-|--------|------|------|
-| `IsAdmin` | `user.role == 'admin'` | Dashboard 统计、用户管理 |
-| `IsHROrAdmin` | `role in ['hr','admin']` | 薪资计算、员工管理 |
-| `IsEmployeeOrHROrAdmin` | 员工看自己，HR/Admin 看全部 | 档案、考勤、薪资 |
-| `IsOwnerOrHROrAdmin` | `obj.user == request.user` | 敏感数据 |
+| 权限类                  | 逻辑                        | 用途                     |
+| ----------------------- | --------------------------- | ------------------------ |
+| `IsAdmin`               | `user.role == 'admin'`      | Dashboard 统计、用户管理 |
+| `IsHROrAdmin`           | `role in ['hr','admin']`    | 薪资计算、员工管理       |
+| `IsEmployeeOrHROrAdmin` | 员工看自己，HR/Admin 看全部 | 档案、考勤、薪资         |
+| `IsOwnerOrHROrAdmin`    | `obj.user == request.user`  | 敏感数据                 |
 
 ### 路由权限控制
 
@@ -300,29 +300,29 @@ DATABASES = {
 
 ```javascript
 router.beforeEach((to, from, next) => {
-  const roles = to.meta.roles || []
+  const roles = to.meta.roles || [];
   if (roles.length && !roles.includes(user.value?.role)) {
-    return next('/notices')  // 无权限跳转
+    return next("/notices"); // 无权限跳转
   }
-  next()
-})
+  next();
+});
 ```
 
 ---
 
 ## 数据库表
 
-| 表名 | 模块 | 说明 |
-|------|------|------|
-| `accounts_user` | accounts | 扩展用户表 |
-| `organization_department` | organization | 部门树形表 |
-| `organization_post` | organization | 岗位表 |
-| `employee_employeeprofile` | employee | 员工档案表 |
-| `attendance_attendance` | attendance | 考勤记录表 |
-| `salary_salaryrecord` | salary | 薪资记录表 |
-| `approval_approvalrequest` | approval | 审批请求表 |
-| `notice_notice` | notice | 公告表 |
-| `performance_performancereview` | performance | 绩效评估表 |
+| 表名                            | 模块         | 说明       |
+| ------------------------------- | ------------ | ---------- |
+| `accounts_user`                 | accounts     | 扩展用户表 |
+| `organization_department`       | organization | 部门树形表 |
+| `organization_post`             | organization | 岗位表     |
+| `employee_employeeprofile`      | employee     | 员工档案表 |
+| `attendance_attendance`         | attendance   | 考勤记录表 |
+| `salary_salaryrecord`           | salary       | 薪资记录表 |
+| `approval_approvalrequest`      | approval     | 审批请求表 |
+| `notice_notice`                 | notice       | 公告表     |
+| `performance_performancereview` | performance  | 绩效评估表 |
 
 ---
 
@@ -371,14 +371,6 @@ router.beforeEach((to, from, next) => {
 - 使用 Vue 3 组合式 API (`<script setup>`)
 - 状态管理使用 Pinia
 - ECharts 图表需在 `onUnmounted()` 时 dispose 防止内存泄漏
-
----
-
-## 相关文档
-
-- 产品需求文档 (memory-bank/product-requirement-document.md)
-- 架构设计 (memory-bank/architecture.md)
-- 实现计划 (memory-bank/implementation-plan.md)
 
 ---
 
