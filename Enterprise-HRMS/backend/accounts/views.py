@@ -76,7 +76,7 @@ class AdminResetPasswordView(GenericAPIView):
 
     def get_queryset(self):
         # 排除当前管理员自己
-        return User.objects.filter(is_staff=False).exclude(id=self.request.user.id)
+        return User.objects.exclude(id=self.request.user.id)
 
     def post(self, request, *args, **kwargs):
         instance = self.get_object()
