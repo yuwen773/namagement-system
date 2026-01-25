@@ -70,18 +70,10 @@ export const useAuthStore = defineStore('auth', () => {
     // 如果有后端动态权限配置，优先使用
     if (rolePermissions.value?.menu_permissions) {
       // 如果后端配置包含该路由，允许访问
-      if (rolePermissions.value.menu_permissions.includes(routeName)) {
-        return true
-      }
-      // 如果后端配置存在但不包含该路由，检查是否在默认配置中
-      const allowedRoles = defaultMenuPermissions[routeName]
-      if (allowedRoles && allowedRoles.includes(user.value.role)) {
-        return true
-      }
-      return false
+      return rolePermissions.value.menu_permissions.includes(routeName)
     }
 
-    // 否则使用默认配置
+    // 否则使用默认配置兜底（仅用于初始化时）
     const allowedRoles = defaultMenuPermissions[routeName]
     if (!allowedRoles) return true // 未配置的路由默认允许访问
     return allowedRoles.includes(user.value.role)

@@ -29,77 +29,117 @@ onMounted(async () => {
   }
 })
 
-// 菜单图标渲染函数（使用 h 函数创建带 class 的 SVG，确保 scoped CSS 生效）
+// 菜单图标渲染函数 - 每个菜单都有独特的图标
 const renderIcon = (iconName) => {
   const icons = {
-    dashboard: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('rect', { x: '3', y: '3', width: '7', height: '7', rx: '1' }),
-      h('rect', { x: '14', y: '3', width: '7', height: '7', rx: '1' }),
-      h('rect', { x: '3', y: '14', width: '7', height: '7', rx: '1' }),
-      h('rect', { x: '14', y: '14', width: '7', height: '7', rx: '1' })
+    // 仪表盘 - 房子
+    dashboard: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' }),
+      h('polyline', { points: '9 22 9 12 15 12 15 22' })
     ]),
-    employees: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }),
-      h('circle', { cx: '12', cy: '7', r: '4' })
+    // 员工管理 - 人员卡片
+    employees: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('rect', { x: '2', y: '5', width: '20', height: '14', rx: '2' }),
+      h('path', { d: 'M2 10h20' }),
+      h('circle', { cx: '7', cy: '19', r: '2' }),
+      h('circle', { cx: '17', cy: '19', r: '2' })
     ]),
-    departments: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M3 21h18' }),
-      h('path', { d: 'M9 8h1' }),
-      h('path', { d: 'M9 12h1' }),
-      h('path', { d: 'M9 16h1' }),
-      h('path', { d: 'M14 8h1' }),
-      h('path', { d: 'M14 12h1' }),
-      h('path', { d: 'M14 16h1' }),
-      h('path', { d: 'M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16' })
+    // 部门管理 - 树形结构
+    departments: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M12 22V8' }),
+      h('path', { d: 'M5 12H2a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3' }),
+      h('path', { d: 'M22 12h-3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3' }),
+      h('circle', { cx: '12', cy: '8', r: '3' })
     ]),
-    posts: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('rect', { x: '2', y: '7', width: '20', height: '14', rx: '2', ry: '2' }),
-      h('path', { d: 'M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' })
+    // 岗位管理 - 标签
+    posts: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z' }),
+      h('line', { x1: '7', y1: '7', x2: '7.01', y2: '7' })
     ]),
-    attendance: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('circle', { cx: '12', cy: '12', r: '10' }),
-      h('polyline', { points: '12 6 12 12 16 14' })
+    // 考勤管理 - 日历
+    attendance: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('rect', { x: '3', y: '4', width: '18', height: '18', rx: '2', ry: '2' }),
+      h('line', { x1: '16', y1: '2', x2: '16', y2: '6' }),
+      h('line', { x1: '8', y1: '2', x2: '8', y2: '6' }),
+      h('line', { x1: '3', y1: '10', x2: '21', y2: '10' })
     ]),
-    salary: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('rect', { x: '2', y: '4', width: '20', height: '16', rx: '2' }),
-      h('path', { d: 'M12 12h.01' }),
-      h('path', { d: 'M6 12h.01' }),
-      h('path', { d: 'M18 12h.01' })
+    // 薪资管理 - 信用卡
+    salary: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('rect', { x: '1', y: '4', width: '22', height: '16', rx: '2', ry: '2' }),
+      h('line', { x1: '1', y1: '10', x2: '23', y2: '10' }),
+      h('path', { d: 'M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0' })
     ]),
-    approval: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M9 11l3 3L22 4' }),
-      h('path', { d: 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11' })
+    // 审批中心 - 印章
+    approval: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z' }),
+      h('path', { d: 'M9 12l2 2 4-4' })
     ]),
-    onboarding: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' }),
-      h('circle', { cx: '8.5', cy: '7', r: '4' }),
-      h('line', { x1: '20', y1: '8', x2: '20', y2: '14' }),
-      h('line', { x1: '23', y1: '11', x2: '17', y2: '11' })
-    ]),
-    users: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' }),
+    // 入职管理 - 欢迎手势
+    onboarding: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }),
       h('circle', { cx: '9', cy: '7', r: '4' }),
-      h('path', { d: 'M23 21v-2a4 4 0 0 0-3-3.87' }),
+      h('line', { x1: '19', y1: '8', x2: '19', y2: '14' }),
+      h('line', { x1: '22', y1: '11', x2: '16', y2: '11' }),
+      h('path', { d: 'M16 3a5 5 0 0 1 0 10' })
+    ]),
+    // 用户管理 - 多人轮廓
+    users: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }),
+      h('circle', { cx: '9', cy: '7', r: '4' }),
+      h('path', { d: 'M22 21v-2a4 4 0 0 0-3-3.87' }),
       h('path', { d: 'M16 3.13a4 4 0 0 1 0 7.75' })
     ]),
-    notices: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
-      h('polyline', { points: '14 2 14 8 20 8' }),
-      h('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
-      h('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
-      h('polyline', { points: '10 9 9 9 8 9' })
+    // 公告管理 - 广播
+    notices: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M22 2L11 13' }),
+      h('path', { d: 'M22 2l-7 20-4-9-9-4 20-7z' })
     ]),
-    performance: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M22 12h-4l-3 9L9 3l-3 9H2' })
+    // 绩效管理 - 靶心
+    performance: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('circle', { cx: '12', cy: '12', r: '10' }),
+      h('circle', { cx: '12', cy: '12', r: '6' }),
+      h('circle', { cx: '12', cy: '12', r: '2' })
     ]),
-    profile: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+    // 个人中心 - 用户徽章
+    profile: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
       h('path', { d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }),
       h('circle', { cx: '12', cy: '7', r: '4' }),
-      h('path', { d: 'M16 3.13a4 4 0 0 1 0 7.75' })
+      h('path', { d: 'M12 3v1' }),
+      h('path', { d: 'M12 20v1' })
     ]),
-    setting: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('circle', { cx: '12', cy: '12', r: '3' }),
-      h('path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' })
+    // 系统设置 - 滑块
+    setting: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('line', { x1: '4', y1: '21', x2: '4', y2: '14' }),
+      h('line', { x1: '4', y1: '10', x2: '4', y2: '3' }),
+      h('line', { x1: '12', y1: '21', x2: '12', y2: '12' }),
+      h('line', { x1: '12', y1: '8', x2: '12', y2: '3' }),
+      h('line', { x1: '20', y1: '21', x2: '20', y2: '16' }),
+      h('line', { x1: '20', y1: '12', x2: '20', y2: '3' }),
+      h('line', { x1: '1', y1: '14', x2: '7', y2: '14' }),
+      h('line', { x1: '9', y1: '8', x2: '15', y2: '8' }),
+      h('line', { x1: '17', y1: '16', x2: '23', y2: '16' })
+    ]),
+    // 数据中心 - 服务器
+    data: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('rect', { x: '2', y: '2', width: '20', height: '8', rx: '2', ry: '2' }),
+      h('rect', { x: '2', y: '14', width: '20', height: '8', rx: '2', ry: '2' }),
+      h('line', { x1: '6', y1: '6', x2: '6.01', y2: '6' }),
+      h('line', { x1: '6', y1: '18', x2: '6.01', y2: '18' })
+    ]),
+    // 权限管理 - 钥匙
+    permission: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4' })
+    ]),
+    // 离职管理 - 出口
+    resignation: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
+      h('polyline', { points: '15 3 21 3 21 9' }),
+      h('line', { x1: '10', y1: '14', x2: '21', y2: '3' })
+    ]),
+    // 安全配置 - 盾牌
+    security: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      h('path', { d: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' }),
+      h('path', { d: 'M9 12l2 2 4-4' })
     ])
   }
   return icons[iconName]?.() || null
@@ -352,6 +392,18 @@ const renderIcon = (iconName) => {
   height: 24px;
 }
 
+.el-menu-item.is-active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 30px;
+  background: radial-gradient(ellipse at right, rgba(79, 70, 229, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
 .menu-item-wrapper {
   display: flex;
   align-items: center;
@@ -365,15 +417,18 @@ const renderIcon = (iconName) => {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  transition: transform var(--transition-fast);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 0 rgba(99, 102, 241, 0));
 }
 
 .el-menu-item:hover .nav-icon {
-  transform: scale(1.1);
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
 }
 
 .el-menu-item.is-active .nav-icon {
   color: var(--color-primary-light);
+  filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
 }
 
 /* 侧边栏底部 */

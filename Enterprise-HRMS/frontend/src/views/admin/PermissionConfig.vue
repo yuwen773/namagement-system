@@ -33,22 +33,27 @@ const roleColors = {
 
 // 菜单选项
 const menuOptions = [
-  { value: 'dashboard', label: '数据概览', icon: 'Dashboard' },
   { value: 'employeeDashboard', label: '员工首页', icon: 'HomeFilled' },
-  { value: 'dataCenter', label: '数据中心', icon: 'DataAnalysis' },
+  { value: 'dashboard', label: '数据概览', icon: 'DataAnalysis' },
+  { value: 'dataCenter', label: '数据中心', icon: 'DataLine' },
   { value: 'employees', label: '员工管理', icon: 'User' },
   { value: 'departments', label: '部门管理', icon: 'OfficeBuilding' },
+  { value: 'posts', label: '岗位管理', icon: 'Postcard' },
   { value: 'attendance', label: '考勤管理', icon: 'Clock' },
-  { value: 'salary', label: '薪资管理', icon: 'Money' },
   { value: 'approval', label: '审批中心', icon: 'Tickets' },
   { value: 'onboarding', label: '入职管理', icon: 'UserFilled' },
-  { value: 'users', label: '账号管理', icon: 'Lock' },
+  { value: 'resignation', label: '离职管理', icon: 'UserRemove' },
+  { value: 'salary', label: '薪资管理', icon: 'Money' },
+  { value: 'salaryException', label: '异常处理', icon: 'Warning' },
+  { value: 'performanceReview', label: '绩效评估', icon: 'TrendCharts' },
+  { value: 'performanceTemplate', label: '绩效模板', icon: 'Document' },
+  { value: 'myPerformance', label: '我的绩效', icon: 'Odometer' },
   { value: 'notices', label: '系统公告', icon: 'Bell' },
   { value: 'noticeManagement', label: '公告管理', icon: 'EditPen' },
-  { value: 'performanceReview', label: '绩效评估', icon: 'TrendCharts' },
-  { value: 'myPerformance', label: '我的绩效', icon: 'Odometer' },
-  { value: 'profile', label: '个人信息', icon: 'User' },
-  { value: 'permissionConfig', label: '权限配置', icon: 'Setting' }
+  { value: 'users', label: '账号管理', icon: 'Lock' },
+  { value: 'profile', label: '个人信息', icon: 'UserFilled' },
+  { value: 'permissionConfig', label: '权限配置', icon: 'Setting' },
+  { value: 'securityConfig', label: '安全配置', icon: 'Shield' }
 ]
 
 // 按钮权限选项
@@ -183,30 +188,89 @@ const resetToDefault = async () => {
   }
 }
 
-// 获取默认配置
+// 获取默认配置（严格按照 docs/requirements.md 配置）
 const getDefaultConfig = (role) => {
   const defaults = {
+    // 普通员工 (6个页面)
     employee: {
-      menu_permissions: ['dashboard', 'attendance', 'salary', 'approval', 'notices', 'myPerformance', 'profile'],
-      button_permissions: ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary'],
+      // 首页、个人信息、部门岗位、考勤、申请中心、薪资绩效
+      menu_permissions: [
+        'employeeDashboard',  // 首页
+        'profile',            // 个人信息编辑
+        'departments',        // 部门信息（只读）
+        'posts',              // 岗位信息（只读）
+        'attendance',         // 考勤中心
+        'approval',           // 申请中心
+        'salary',             // 薪资明细查询
+        'myPerformance',      // 绩效评分查看
+        'notices'             // 公告列表
+      ],
+      button_permissions: [
+        'checkIn',            // 签到
+        'checkOut',           // 签退
+        'applyLeave',         // 请假申请
+        'applyOvertime',      // 加班申请
+        'viewSalary'          // 查看薪资
+      ],
       data_permission: 'self',
       attendance_permission: 'self',
       salary_permission: 'self',
       can_access_datacenter: false,
       can_access_performance: true
     },
+    // 人事专员 (7个页面)
     hr: {
-      menu_permissions: ['dashboard', 'employees', 'departments', 'attendance', 'salary', 'approval', 'onboarding', 'notices', 'noticeManagement', 'performanceReview', 'dataCenter', 'profile'],
-      button_permissions: ['createEmployee', 'editEmployee', 'deleteEmployee', 'approveLeave', 'approveOvertime', 'calculateSalary', 'publishSalary', 'createNotice'],
-      data_permission: 'department',
+      // 人事工作台、员工档案、组织岗位、入离职、考勤管理、绩效管理、薪资管理
+      menu_permissions: [
+        'dashboard',          // 人事工作台
+        'employees',          // 员工档案管理
+        'departments',        // 部门信息管理
+        'posts',              // 岗位信息管理
+        'onboarding',         // 入职管理
+        'resignation',        // 离职管理
+        'attendance',         // 考勤管理
+        'approval',           // 审批中心
+        'salary',             // 薪资管理
+        'salaryException',    // 异常处理
+        'performanceReview',  // 绩效评估
+        'performanceTemplate',// 绩效模板
+        'notices'             // 公告查看
+      ],
+      button_permissions: [
+        'createEmployee',     // 创建员工
+        'editEmployee',       // 编辑员工
+        'deleteEmployee',     // 删除员工
+        'approveLeave',       // 审批请假
+        'approveOvertime',    // 审批加班
+        'calculateSalary',    // 计算薪资
+        'publishSalary',      // 发布薪资
+        'createNotice'        // 创建公告（HR可发布公告）
+      ],
+      data_permission: 'all',
       attendance_permission: 'all',
       salary_permission: 'all',
       can_access_datacenter: true,
       can_access_performance: true
     },
+    // 系统管理员 (5个页面)
     admin: {
-      menu_permissions: ['dashboard', 'employees', 'departments', 'attendance', 'salary', 'approval', 'onboarding', 'users', 'notices', 'noticeManagement', 'performanceReview', 'dataCenter', 'profile', 'permissionConfig'],
-      button_permissions: ['createEmployee', 'editEmployee', 'deleteEmployee', 'approveLeave', 'approveOvertime', 'calculateSalary', 'publishSalary', 'createNotice', 'manageUsers', 'resetPassword', 'configurePermissions'],
+      // 系统管理首页、用户账号、角色权限、数据中心、系统公告
+      menu_permissions: [
+        'dashboard',          // 系统管理首页
+        'users',              // 用户账号管理
+        'permissionConfig',   // 角色与权限配置
+        'securityConfig',     // 安全配置
+        'dataCenter',         // 数据中心
+        'noticeManagement',   // 系统公告管理
+        'salaryException',    // 薪资异常处理（管理员也可访问）
+        'profile'             // 个人信息
+      ],
+      button_permissions: [
+        'manageUsers',        // 管理用户
+        'resetPassword',      // 重置密码
+        'configurePermissions',// 配置权限
+        'viewSalary'          // 查看薪资
+      ],
       data_permission: 'all',
       attendance_permission: 'all',
       salary_permission: 'all',

@@ -182,11 +182,23 @@ class RolePermission(models.Model):
     @classmethod
     def get_default_permissions(cls, role):
         """
-        获取默认权限配置
+        获取默认权限配置（严格按照 docs/requirements.md 配置）
         """
         defaults = {
+            # 普通员工 (6个页面)
             'employee': {
-                'menu_permissions': ['dashboard', 'attendance', 'salary', 'approval', 'notices', 'myPerformance', 'profile'],
+                # 首页、个人信息、部门岗位、考勤、申请中心、薪资绩效
+                'menu_permissions': [
+                    'employeeDashboard',  # 首页
+                    'profile',            # 个人信息编辑
+                    'departments',        # 部门信息（只读）
+                    'posts',              # 岗位信息（只读）
+                    'attendance',         # 考勤中心
+                    'approval',           # 申请中心
+                    'salary',             # 薪资明细查询
+                    'myPerformance',      # 绩效评分查看
+                    'notices'             # 公告列表
+                ],
                 'button_permissions': ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary'],
                 'data_permission': 'self',
                 'attendance_permission': 'self',
@@ -194,18 +206,59 @@ class RolePermission(models.Model):
                 'can_access_datacenter': False,
                 'can_access_performance': True,
             },
+            # 人事专员 (7个页面)
             'hr': {
-                'menu_permissions': ['dashboard', 'employees', 'departments', 'posts', 'attendance', 'attendanceStatistics', 'salary', 'approval', 'onboarding', 'notices', 'noticeManagement', 'performanceReview', 'dataCenter', 'profile'],
-                'button_permissions': ['createEmployee', 'editEmployee', 'deleteEmployee', 'approveLeave', 'approveOvertime', 'calculateSalary', 'publishSalary', 'createNotice'],
-                'data_permission': 'department',
+                # 人事工作台、员工档案、组织岗位、入离职、考勤管理、绩效管理、薪资管理
+                'menu_permissions': [
+                    'dashboard',          # 人事工作台
+                    'employees',          # 员工档案管理
+                    'departments',        # 部门信息管理
+                    'posts',              # 岗位信息管理
+                    'onboarding',         # 入职管理
+                    'resignation',        # 离职管理
+                    'attendance',         # 考勤管理
+                    'approval',           # 审批中心
+                    'salary',             # 薪资管理
+                    'salaryException',    # 异常处理
+                    'performanceReview',  # 绩效评估
+                    'performanceTemplate',# 绩效模板
+                    'notices'             # 公告查看
+                ],
+                'button_permissions': [
+                    'createEmployee',     # 创建员工
+                    'editEmployee',       # 编辑员工
+                    'deleteEmployee',     # 删除员工
+                    'approveLeave',       # 审批请假
+                    'approveOvertime',    # 审批加班
+                    'calculateSalary',    # 计算薪资
+                    'publishSalary',      # 发布薪资
+                    'createNotice'        # 创建公告（HR可发布公告）
+                ],
+                'data_permission': 'all',
                 'attendance_permission': 'all',
                 'salary_permission': 'all',
                 'can_access_datacenter': True,
                 'can_access_performance': True,
             },
+            # 系统管理员 (5个页面)
             'admin': {
-                'menu_permissions': ['dashboard', 'employees', 'departments', 'posts', 'attendance', 'attendanceStatistics', 'salary', 'approval', 'onboarding', 'users', 'notices', 'noticeManagement', 'performanceReview', 'dataCenter', 'profile', 'permissionConfig'],
-                'button_permissions': ['createEmployee', 'editEmployee', 'deleteEmployee', 'approveLeave', 'approveOvertime', 'calculateSalary', 'publishSalary', 'createNotice', 'manageUsers', 'resetPassword', 'configurePermissions'],
+                # 系统管理首页、用户账号、角色权限、数据中心、系统公告
+                'menu_permissions': [
+                    'dashboard',          # 系统管理首页
+                    'users',              # 用户账号管理
+                    'permissionConfig',   # 角色与权限配置
+                    'securityConfig',     # 安全配置
+                    'dataCenter',         # 数据中心
+                    'noticeManagement',   # 系统公告管理
+                    'salaryException',    # 薪资异常处理（管理员也可访问）
+                    'profile'             # 个人信息
+                ],
+                'button_permissions': [
+                    'manageUsers',        # 管理用户
+                    'resetPassword',      # 重置密码
+                    'configurePermissions',# 配置权限
+                    'viewSalary'          # 查看薪资
+                ],
                 'data_permission': 'all',
                 'attendance_permission': 'all',
                 'salary_permission': 'all',
