@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PerformanceReview
+from .models import PerformanceReview, PerformanceTemplate
 
 
 class PerformanceReviewSerializer(serializers.ModelSerializer):
@@ -79,3 +79,63 @@ class PerformanceReviewUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = PerformanceReview
         fields = ['score', 'strengths', 'improvements', 'goals', 'status']
+
+
+# ==================== PerformanceTemplate 序列化器 ====================
+
+class PerformanceTemplateSerializer(serializers.ModelSerializer):
+    """绩效模板详情序列化器"""
+    total_weight = serializers.SerializerMethodField()
+    items_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PerformanceTemplate
+        fields = [
+            'id', 'name', 'description', 'is_active',
+            'items', 'total_weight', 'items_count',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+    def get_total_weight(self, obj):
+        return obj.get_total_weight()
+
+    def get_items_count(self, obj):
+        return len(obj.items) if obj.items else 0
+
+
+class PerformanceTemplateListSerializer(serializers.ModelSerializer):
+    """绩效模板列表序列化器（轻量版）"""
+    total_weight = serializers.SerializerMethodField()
+    active_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PerformanceTemplate
+        fields = [
+            'id', 'name', 'description', 'is_active', 'active_status',
+            'total_weight', 'created_at'
+        ]
+
+    def get_total_weight(self, obj):
+        return obj.get_total_weight()
+
+    def get_active_status(self, obj):
+        return '启用' if obj.is_active else '停用'
+
+
+class PerformanceTemplateCreateUpdateSerializer(serializers.ModelSerializer):
+    """创建/更新绩效模板序列化器"""
+
+    class Meta:
+        model = PerformanceTemplate
+        fields = ['name', 'description', 'is_active', 'items']
+
+    def validate_items(self, value):
+        """验证考核项权重总和不超过100"""
+        total_weight = sum(item.get('weight', 0) for item in value)
+        if total_weight > 100:
+            raise serializers.ValidationError('考核项权重总和不能超过100')
+        if total_weight < 100:
+            # 给出警告但不阻止
+            pass
+        return value

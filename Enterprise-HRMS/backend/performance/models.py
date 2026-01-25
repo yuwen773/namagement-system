@@ -66,3 +66,41 @@ class PerformanceReview(models.Model):
 
     def __str__(self):
         return f'{self.employee.real_name} - {self.review_period}'
+
+
+class PerformanceTemplate(models.Model):
+    """
+    绩效考核模板
+    用于定义考核项和权重，支持不同部门/岗位使用不同模板
+    """
+    name = models.CharField(
+        max_length=100,
+        help_text='模板名称'
+    )
+    description = models.TextField(
+        blank=True,
+        default='',
+        help_text='模板描述'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text='是否启用'
+    )
+    items = models.JSONField(
+        default=list,
+        help_text='考核项列表 [{"name": "工作质量", "weight": 30, "desc": "完成任务的质量"}]'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '绩效模板'
+        verbose_name_plural = '绩效模板'
+
+    def __str__(self):
+        return self.name
+
+    def get_total_weight(self):
+        """计算总权重"""
+        return sum(item.get('weight', 0) for item in self.items)

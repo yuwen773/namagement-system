@@ -3,12 +3,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from HRMS.permissions import IsHROrAdmin
-from .models import PerformanceReview
+from .models import PerformanceReview, PerformanceTemplate
 from .serializers import (
     PerformanceReviewSerializer,
     PerformanceReviewListSerializer,
     PerformanceReviewCreateSerializer,
-    PerformanceReviewUpdateSerializer
+    PerformanceReviewUpdateSerializer,
+    PerformanceTemplateSerializer,
+    PerformanceTemplateListSerializer,
+    PerformanceTemplateCreateUpdateSerializer
 )
 
 
@@ -138,4 +141,60 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
             'code': 0,
             'data': serializer.data,
             'message': '绩效评估已撤回'
+        })
+
+
+# ==================== 绩效模板管理 ====================
+
+class PerformanceTemplateViewSet(viewsets.ModelViewSet):
+    """
+    绩效模板 ViewSet
+
+    list: 获取模板列表
+    create: 创建模板（HR/Admin）
+    retrieve: 获取模板详情
+    update: 更新模板（HR/Admin）
+    destroy: 删除模板（HR/Admin）
+    toggle-active: 切换启用/停用状态
+    """
+    queryset = PerformanceTemplate.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PerformanceTemplateListSerializer
+        elif self.action in ['create', 'update', 'partial_update']:
+            return PerformanceTemplateCreateUpdateSerializer
+        return PerformanceTemplateSerializer
+
+    def get_queryset(self):
+        # 只返回启用的模板或全部（根据参数）
+        is_active = self.request.query_params.get('is_active')
+        queryset = PerformanceTemplate.objects.all()
+
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+
+        return queryset
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated(), IsHROrAdmin()]
+        return [IsAuthenticated()]
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        """
+        切换模板的启用/停用状态
+        """
+        template = self.get_object()
+        template.is_active = not template.is_active
+        template.save()
+
+        serializer = PerformanceTemplateSerializer(template)
+        status_text = '启用' if template.is_active else '停用'
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'message': f'模板已{status_text}'
         })

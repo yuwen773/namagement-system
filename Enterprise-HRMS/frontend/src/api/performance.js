@@ -150,3 +150,55 @@ export const STATUS_TYPE = {
   [STATUS.DRAFT]: 'info',
   [STATUS.PUBLISHED]: 'success'
 }
+
+// ==================== 绩效模板管理 API ====================
+
+/**
+ * 获取绩效模板列表
+ * @param {Object} params - 查询参数
+ * @param {string} params.is_active - 是否启用筛选
+ */
+export function getPerformanceTemplateList(params) {
+  return axios.get('/performance/templates/', { params })
+}
+
+/**
+ * 获取绩效模板详情
+ * @param {number} id - 模板ID
+ */
+export function getPerformanceTemplateDetail(id) {
+  return axios.get(`/performance/templates/${id}/`)
+}
+
+/**
+ * 创建绩效模板
+ * @param {Object} data - 模板数据
+ */
+export function createPerformanceTemplate(data) {
+  return axios.post('/performance/templates/', data)
+}
+
+/**
+ * 更新绩效模板
+ * @param {number} id - 模板ID
+ * @param {Object} data - 更新数据
+ */
+export function updatePerformanceTemplate(id, data) {
+  return axios.put(`/performance/templates/${id}/`, data)
+}
+
+/**
+ * 删除绩效模板
+ * @param {number} id - 模板ID
+ */
+export function deletePerformanceTemplate(id) {
+  return axios.delete(`/performance/templates/${id}/`)
+}
+
+/**
+ * 切换模板启用/停用状态
+ * @param {number} id - 模板ID
+ */
+export function togglePerformanceTemplateActive(id) {
+  return axios.post(`/performance/templates/${id}/toggle_active/`)
+}
