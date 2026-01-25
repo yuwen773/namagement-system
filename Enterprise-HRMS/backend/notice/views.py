@@ -26,16 +26,34 @@ class NoticeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """获取公告列表"""
         queryset = Notice.objects.all()
-        
+
         # 过滤条件
         is_published = self.request.query_params.get('is_published')
         if is_published is not None:
             queryset = queryset.filter(is_published=is_published.lower() == 'true')
-        
+
         is_pinned = self.request.query_params.get('is_pinned')
         if is_pinned is not None:
             queryset = queryset.filter(is_pinned=is_pinned.lower() == 'true')
-        
+
+        # 按标题关键词搜索
+        keyword = self.request.query_params.get('keyword')
+        if keyword:
+            queryset = queryset.filter(title__icontains=keyword)
+
+        # 按日期范围筛选
+        date_start = self.request.query_params.get('date_start')
+        date_end = self.request.query_params.get('date_end')
+        if date_start:
+            queryset = queryset.filter(created_at__date__gte=date_start)
+        if date_end:
+            queryset = queryset.filter(created_at__date__lte=date_end)
+
+        # 按发布人筛选
+        publisher_id = self.request.query_params.get('publisher_id')
+        if publisher_id:
+            queryset = queryset.filter(published_by_id=publisher_id)
+
         return queryset
     
     @action(detail=True, methods=['post'])
@@ -93,6 +111,24 @@ class NoticePublicViewSet(viewsets.ReadOnlyModelViewSet):
             return Notice.objects.none()
 
         queryset = Notice.objects.filter(is_published=True)
+
+        # 按标题关键词搜索
+        keyword = self.request.query_params.get('keyword')
+        if keyword:
+            queryset = queryset.filter(title__icontains=keyword)
+
+        # 按日期范围筛选（发布时间）
+        date_start = self.request.query_params.get('date_start')
+        date_end = self.request.query_params.get('date_end')
+        if date_start:
+            queryset = queryset.filter(published_at__date__gte=date_start)
+        if date_end:
+            queryset = queryset.filter(published_at__date__lte=date_end)
+
+        # 按是否置顶筛选
+        is_pinned = self.request.query_params.get('is_pinned')
+        if is_pinned is not None:
+            queryset = queryset.filter(is_pinned=is_pinned.lower() == 'true')
 
         return queryset
 

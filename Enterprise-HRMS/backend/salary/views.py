@@ -277,6 +277,24 @@ class SalaryExceptionViewSet(viewsets.ModelViewSet):
         if exception_type:
             queryset = queryset.filter(exception_type=exception_type)
 
+        # 按员工ID筛选（HR/Admin可用）
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            queryset = queryset.filter(salary_record__user_id=user_id)
+
+        # 按月份筛选
+        month = self.request.query_params.get('month')
+        if month:
+            queryset = queryset.filter(salary_record__month=month)
+
+        # 按日期范围筛选
+        date_start = self.request.query_params.get('date_start')
+        date_end = self.request.query_params.get('date_end')
+        if date_start:
+            queryset = queryset.filter(created_at__date__gte=date_start)
+        if date_end:
+            queryset = queryset.filter(created_at__date__lte=date_end)
+
         # 普通员工只能看自己上报的异常
         if user.role == 'employee':
             queryset = queryset.filter(reported_by=user)

@@ -89,13 +89,12 @@ class DashboardStatsView(APIView):
         current_month = today.replace(day=1)
         for i in range(5, -1, -1):
             # 计算目标月份：当前月向前推 i 个月
-            if i == 0:
-                target_month = current_month
-            else:
-                # 简单计算：年份差和月份差
-                target_year = current_month.year - (current_month.month - 1 + i) // 12
-                target_month_num = (current_month.month - 1 + i) % 12 + 1
-                target_month = current_month.replace(year=target_year, month=target_month_num)
+            target_month_num = current_month.month - 1 - i
+            target_year = current_month.year
+            if target_month_num < 0:
+                target_year -= 1
+                target_month_num += 12
+            target_month = current_month.replace(year=target_year, month=target_month_num + 1)
 
             month_str = target_month.strftime('%Y-%m')
 
@@ -144,12 +143,12 @@ class DashboardStatsView(APIView):
         current_month = today.replace(day=1)
         for i in range(5, -1, -1):
             # 计算目标月份：当前月向前推 i 个月
-            if i == 0:
-                target_month = current_month
-            else:
-                target_year = current_month.year - (current_month.month - 1 + i) // 12
-                target_month_num = (current_month.month - 1 + i) % 12 + 1
-                target_month = current_month.replace(year=target_year, month=target_month_num)
+            target_month_num = current_month.month - 1 - i
+            target_year = current_month.year
+            if target_month_num < 0:
+                target_year -= 1
+                target_month_num += 12
+            target_month = current_month.replace(year=target_year, month=target_month_num + 1)
 
             month_start = target_month
             month_end = target_month.replace(day=28) + timedelta(days=4)
@@ -199,31 +198,32 @@ class DashboardStatsView(APIView):
         ]
 
         # 10. 部门请假统计（本月）
-        leave_by_department = ApprovalRequest.objects.filter(
+        # 先获取所有请假记录，手动计算时长
+        leave_requests = ApprovalRequest.objects.filter(
             request_type='leave',
             status='approved',
             start_time__gte=first_day_of_month,
             start_time__lte=timezone.now()
-        ).values(
-            'user__profile__department__name',
-            'leave_type'
-        ).annotate(
-            leave_days=Count('id'),
-            total_hours=Sum(
-                models.F('end_time') - models.F('start_time'),
-                output_field=DecimalField()
-            )
-        )
+        ).select_related('user__profile__department')
 
-        # 按部门汇总请假天数
+        # 按部门汇总请假数据
         leave_dict = {}
-        for item in leave_by_department:
-            dept = item['user__profile__department__name'] or '未分配部门'
+        for req in leave_requests:
+            # 检查用户是否有profile和部门
+            try:
+                profile = req.user.profile
+                dept = profile.department.name if profile.department else '未分配部门'
+            except EmployeeProfile.DoesNotExist:
+                dept = '未分配部门'
+
             if dept not in leave_dict:
                 leave_dict[dept] = {'days': 0, 'count': 0}
-            # 简单估算：每次请假算1天，实际可根据时长计算
-            leave_dict[dept]['days'] += float(item['total_hours'] or 0) / 24 if item['total_hours'] else 1
-            leave_dict[dept]['count'] += item['leave_days']
+            # 计算请假时长（天数）
+            duration = req.end_time - req.start_time
+            leave_hours = duration.total_seconds() / 3600  # 转换为小时
+            leave_days = leave_hours / 24  # 转换为天
+            leave_dict[dept]['days'] += leave_days
+            leave_dict[dept]['count'] += 1
 
         leave_data = [
             {

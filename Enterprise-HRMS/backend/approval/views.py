@@ -39,6 +39,39 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = ApprovalRequest.objects.select_related('user', 'approver')
 
+        # 按状态筛选
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # 按类型筛选
+        type_filter = self.request.query_params.get('type')
+        if type_filter:
+            queryset = queryset.filter(request_type=type_filter)
+
+        # 按日期范围筛选
+        date_start = self.request.query_params.get('date_start')
+        date_end = self.request.query_params.get('date_end')
+        if date_start:
+            queryset = queryset.filter(created_at__date__gte=date_start)
+        if date_end:
+            queryset = queryset.filter(created_at__date__lte=date_end)
+
+        # 按申请人筛选（HR/Admin可用）
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+
+        # 按部门筛选（HR/Admin可用）
+        department_id = self.request.query_params.get('department_id')
+        if department_id:
+            queryset = queryset.filter(user__employee_profile__department_id=department_id)
+
+        # 按请假类型筛选（仅当 type=leave 时有效）
+        leave_type = self.request.query_params.get('leave_type')
+        if leave_type:
+            queryset = queryset.filter(leave_type=leave_type)
+
         # 普通员工只能看自己的申请
         if user.role == 'employee':
             return queryset.filter(user=user)
@@ -75,6 +108,19 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
         applicant = request.query_params.get('applicant')
         if applicant:
             queryset = queryset.filter(user__real_name__contains=applicant)
+
+        # 按日期范围筛选
+        date_start = request.query_params.get('date_start')
+        date_end = request.query_params.get('date_end')
+        if date_start:
+            queryset = queryset.filter(created_at__date__gte=date_start)
+        if date_end:
+            queryset = queryset.filter(created_at__date__lte=date_end)
+
+        # 按部门筛选
+        department_id = request.query_params.get('department_id')
+        if department_id:
+            queryset = queryset.filter(user__employee_profile__department_id=department_id)
 
         # 分页
         page = self.paginate_queryset(queryset)
@@ -165,16 +211,6 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """重写 list 方法，统一响应格式"""
         queryset = self.filter_queryset(self.get_queryset())
-
-        # 支持状态筛选
-        status_filter = request.query_params.get('status')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
-
-        # 支持类型筛选
-        type_filter = request.query_params.get('type')
-        if type_filter:
-            queryset = queryset.filter(request_type=type_filter)
 
         page = self.paginate_queryset(queryset)
         if page is not None:

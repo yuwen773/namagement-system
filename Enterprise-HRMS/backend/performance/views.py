@@ -42,6 +42,39 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = PerformanceReview.objects.select_related('employee', 'reviewer')
 
+        # 按考核周期筛选
+        review_period = self.request.query_params.get('review_period')
+        if review_period:
+            queryset = queryset.filter(review_period=review_period)
+
+        # 按员工ID筛选
+        employee_id = self.request.query_params.get('employee_id')
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+
+        # 按状态筛选
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # 按分数范围筛选
+        score_min = self.request.query_params.get('score_min')
+        score_max = self.request.query_params.get('score_max')
+        if score_min:
+            queryset = queryset.filter(score__gte=score_min)
+        if score_max:
+            queryset = queryset.filter(score__lte=score_max)
+
+        # 按员工姓名关键词搜索
+        keyword = self.request.query_params.get('keyword')
+        if keyword:
+            queryset = queryset.filter(employee__real_name__icontains=keyword)
+
+        # 按部门筛选（通过员工档案关联部门）
+        department_id = self.request.query_params.get('department_id')
+        if department_id:
+            queryset = queryset.filter(employee__employee_profile__department_id=department_id)
+
         # 普通员工只能看自己已发布的绩效
         if user.role == 'employee':
             queryset = queryset.filter(employee=user, status='published')
@@ -170,10 +203,15 @@ class PerformanceTemplateViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # 只返回启用的模板或全部（根据参数）
         is_active = self.request.query_params.get('is_active')
+        keyword = self.request.query_params.get('keyword')
         queryset = PerformanceTemplate.objects.all()
 
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() == 'true')
+
+        # 按模板名称关键词搜索
+        if keyword:
+            queryset = queryset.filter(name__icontains=keyword)
 
         return queryset
 

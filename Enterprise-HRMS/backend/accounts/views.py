@@ -11,6 +11,7 @@ from .serializers import (
 )
 from HRMS.permissions import IsAdmin
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
 
@@ -135,6 +136,32 @@ class UserListView(ListAPIView):
             queryset = queryset.filter(is_active=True)
         elif status_filter == 'inactive':
             queryset = queryset.filter(is_active=False)
+
+        # 按角色筛选
+        role = self.request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(role=role)
+
+        # 按部门筛选（通过员工档案）
+        department_id = self.request.query_params.get('department_id')
+        if department_id:
+            queryset = queryset.filter(employee_profile__department_id=department_id)
+
+        # 按关键词搜索（姓名/用户名）
+        keyword = self.request.query_params.get('keyword')
+        if keyword:
+            queryset = queryset.filter(
+                models.Q(real_name__icontains=keyword) |
+                models.Q(username__icontains=keyword)
+            )
+
+        # 按注册日期范围筛选
+        date_joined_start = self.request.query_params.get('date_joined_start')
+        date_joined_end = self.request.query_params.get('date_joined_end')
+        if date_joined_start:
+            queryset = queryset.filter(date_joined__date__gte=date_joined_start)
+        if date_joined_end:
+            queryset = queryset.filter(date_joined__date__lte=date_joined_end)
 
         return queryset
 
@@ -357,6 +384,24 @@ class UserEditRequestViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_403_FORBIDDEN)
 
         queryset = UserEditRequest.objects.filter(status='pending')
+
+        # 按日期范围筛选
+        date_start = request.query_params.get('date_start')
+        date_end = request.query_params.get('date_end')
+        if date_start:
+            queryset = queryset.filter(created_at__date__gte=date_start)
+        if date_end:
+            queryset = queryset.filter(created_at__date__lte=date_end)
+
+        # 按申请人关键词搜索
+        keyword = request.query_params.get('keyword')
+        if keyword:
+            queryset = queryset.filter(user__real_name__icontains=keyword)
+
+        # 按修改类型筛选
+        edit_type = request.query_params.get('edit_type')
+        if edit_type:
+            queryset = queryset.filter(edit_type=edit_type)
 
         page = self.paginate_queryset(queryset)
         if page is not None:

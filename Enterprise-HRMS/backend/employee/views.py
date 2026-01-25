@@ -167,6 +167,14 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
                 Q(username__icontains=keyword)
             )
 
+        # 按预期入职日期范围筛选（使用 date_joined 作为预期入职日期）
+        hire_date_start = request.query_params.get('hire_date_start')
+        hire_date_end = request.query_params.get('hire_date_end')
+        if hire_date_start:
+            queryset = queryset.filter(date_joined__date__gte=hire_date_start)
+        if hire_date_end:
+            queryset = queryset.filter(date_joined__date__lte=hire_date_end)
+
         # 分页
         total = queryset.count()
         page = int(request.query_params.get('page', 1))
