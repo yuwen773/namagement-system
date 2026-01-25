@@ -5,6 +5,38 @@
       <p class="subtitle">管理待入职用户，为其办理入职手续</p>
     </div>
 
+    <!-- 筛选区域 -->
+    <el-card class="filter-card" shadow="never">
+      <el-form :inline="true" class="filter-form">
+        <el-form-item label="关键词">
+          <el-input
+            v-model="filters.keyword"
+            placeholder="姓名/用户名"
+            clearable
+            style="width: 180px"
+          />
+        </el-form-item>
+        <el-form-item label="注册日期">
+          <el-date-picker
+            v-model="filters.dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            format="YYYY-MM-DD"
+            style="width: 240px"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="fetchPendingUsers">
+            查询
+          </el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <!-- 待入职用户列表 -->
     <el-card class="user-list-card">
       <template #header>
@@ -170,6 +202,12 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
+// 筛选条件
+const filters = reactive({
+  keyword: '',
+  dateRange: []
+})
+
 // 表单
 const onboardingFormRef = ref(null)
 const onboardingForm = reactive({
@@ -219,10 +257,19 @@ const disabledDate = (time) => {
 const fetchPendingUsers = async () => {
   loading.value = true
   try {
-    const res = await getPendingUsers({
+    const params = {
       page: currentPage.value,
       page_size: pageSize.value
-    })
+    }
+    if (filters.keyword) {
+      params.keyword = filters.keyword
+    }
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      params.hire_date_start = filters.dateRange[0]
+      params.hire_date_end = filters.dateRange[1]
+    }
+
+    const res = await getPendingUsers(params)
     pendingUsers.value = res.data?.data || []
     total.value = res.data?.total || 0
   } catch (error) {
@@ -231,6 +278,14 @@ const fetchPendingUsers = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 重置筛选
+const resetFilters = () => {
+  filters.keyword = ''
+  filters.dateRange = []
+  currentPage.value = 1
+  fetchPendingUsers()
 }
 
 // 获取部门树
@@ -326,6 +381,22 @@ onMounted(() => {
   margin: 0;
   color: #909399;
   font-size: 14px;
+}
+
+.filter-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.filter-form :deep(.el-form-item) {
+  margin: 0;
 }
 
 .user-list-card {

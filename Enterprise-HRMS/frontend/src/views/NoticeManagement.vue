@@ -27,7 +27,9 @@ const pagination = reactive({
 
 const filters = reactive({
   is_published: '',  // '', 'true', 'false'
-  is_pinned: ''      // '', 'true', 'false'
+  is_pinned: '',      // '', 'true', 'false'
+  keyword: '',
+  dateRange: []
 })
 
 // 表单数据
@@ -64,6 +66,13 @@ const fetchNoticeList = async () => {
     if (filters.is_pinned !== '') {
       params.is_pinned = filters.is_pinned
     }
+    if (filters.keyword) {
+      params.keyword = filters.keyword
+    }
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      params.date_start = filters.dateRange[0]
+      params.date_end = filters.dateRange[1]
+    }
 
     const res = await getNoticeList(params)
     const responseData = res.data?.data || res.data?.results || []
@@ -87,6 +96,16 @@ const fetchNoticeList = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 重置筛选
+const resetFilters = () => {
+  filters.is_published = ''
+  filters.is_pinned = ''
+  filters.keyword = ''
+  filters.dateRange = []
+  pagination.page = 1
+  fetchNoticeList()
 }
 
 // 重置表单
@@ -271,11 +290,32 @@ onMounted(() => {
             <el-option label="普通" value="false" />
           </el-select>
         </el-form-item>
+        <el-form-item label="公告标题">
+          <el-input
+            v-model="filters.keyword"
+            placeholder="请输入标题关键词"
+            clearable
+            style="width: 180px"
+          />
+        </el-form-item>
+        <el-form-item label="发布日期">
+          <el-date-picker
+            v-model="filters.dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            format="YYYY-MM-DD"
+            style="width: 240px"
+            @change="handleFilterChange"
+          />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="fetchNoticeList">
             查询
           </el-button>
-          <el-button @click="filters.is_published = ''; filters.is_pinned = ''; fetchNoticeList()">
+          <el-button @click="resetFilters">
             重置
           </el-button>
         </el-form-item>

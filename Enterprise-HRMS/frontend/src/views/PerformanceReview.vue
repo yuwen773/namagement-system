@@ -42,6 +42,33 @@
             <el-option label="已发布" value="published" />
           </el-select>
         </el-form-item>
+        <el-form-item label="员工姓名">
+          <el-input
+            v-model="filterForm.keyword"
+            placeholder="请输入员工姓名"
+            clearable
+            style="width: 150px"
+          />
+        </el-form-item>
+        <el-form-item label="分数范围">
+          <el-input-number
+            v-model="filterForm.score_min"
+            placeholder="最低分"
+            :min="0"
+            :max="5"
+            :precision="1"
+            style="width: 100px"
+          />
+          <span style="margin: 0 8px">至</span>
+          <el-input-number
+            v-model="filterForm.score_max"
+            placeholder="最高分"
+            :min="0"
+            :max="5"
+            :precision="1"
+            style="width: 100px"
+          />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleFilter">
             <el-icon><Search /></el-icon>
@@ -324,7 +351,10 @@ const pagination = reactive({
 // 筛选表单
 const filterForm = reactive({
   review_period: '',
-  status: ''
+  status: '',
+  keyword: '',
+  score_min: null,
+  score_max: null
 })
 
 // 表单数据
@@ -382,6 +412,15 @@ const fetchReviewList = async () => {
     if (filterForm.status) {
       params.status = filterForm.status
     }
+    if (filterForm.keyword) {
+      params.keyword = filterForm.keyword
+    }
+    if (filterForm.score_min !== null && filterForm.score_min !== '') {
+      params.score_min = filterForm.score_min
+    }
+    if (filterForm.score_max !== null && filterForm.score_max !== '') {
+      params.score_max = filterForm.score_max
+    }
     const response = await getPerformanceReviewList(params)
     // 处理分页数据格式
     const data = response.data?.data || response.data?.results || []
@@ -417,6 +456,9 @@ const handleFilter = () => {
 const resetFilter = () => {
   filterForm.review_period = ''
   filterForm.status = ''
+  filterForm.keyword = ''
+  filterForm.score_min = null
+  filterForm.score_max = null
   pagination.page = 1
   fetchReviewList()
 }

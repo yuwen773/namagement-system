@@ -29,6 +29,18 @@
                 <el-option label="已驳回" value="rejected" />
               </el-select>
             </el-form-item>
+            <el-form-item label="日期范围">
+              <el-date-picker
+                v-model="myFilter.dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="YYYY-MM-DD"
+                format="YYYY-MM-DD"
+                style="width: 240px"
+              />
+            </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="loadMyApplications">查询</el-button>
               <el-button @click="resetMyFilter">重置</el-button>
@@ -108,8 +120,27 @@
                 <el-option label="加班" value="overtime" />
               </el-select>
             </el-form-item>
+            <el-form-item label="请假类型">
+              <el-select v-model="pendingFilter.leave_type" placeholder="全部" clearable style="width: 120px">
+                <el-option label="病假" value="sick" />
+                <el-option label="事假" value="personal" />
+                <el-option label="年假" value="annual" />
+              </el-select>
+            </el-form-item>
             <el-form-item label="申请人">
               <el-input v-model="pendingFilter.applicant" placeholder="申请人姓名" clearable style="width: 150px" />
+            </el-form-item>
+            <el-form-item label="日期范围">
+              <el-date-picker
+                v-model="pendingFilter.dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="YYYY-MM-DD"
+                format="YYYY-MM-DD"
+                style="width: 240px"
+              />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="loadPendingApprovals">查询</el-button>
@@ -333,7 +364,8 @@ const myLoading = ref(false)
 const myApplications = ref([])
 const myFilter = reactive({
   request_type: '',
-  status: ''
+  status: '',
+  dateRange: []
 })
 const myPage = ref(1)
 const myPageSize = ref(10)
@@ -344,7 +376,9 @@ const pendingLoading = ref(false)
 const pendingApprovals = ref([])
 const pendingFilter = reactive({
   request_type: '',
-  applicant: ''
+  leave_type: '',
+  applicant: '',
+  dateRange: []
 })
 const pendingPage = ref(1)
 const pendingPageSize = ref(10)
@@ -398,6 +432,10 @@ const loadMyApplications = async () => {
     }
     if (myFilter.request_type) params.request_type = myFilter.request_type
     if (myFilter.status) params.status = myFilter.status
+    if (myFilter.dateRange && myFilter.dateRange.length === 2) {
+      params.date_start = myFilter.dateRange[0]
+      params.date_end = myFilter.dateRange[1]
+    }
 
     const res = await getApplicationList(params)
     myApplications.value = res.data?.data || []
@@ -413,6 +451,7 @@ const loadMyApplications = async () => {
 const resetMyFilter = () => {
   myFilter.request_type = ''
   myFilter.status = ''
+  myFilter.dateRange = []
   myPage.value = 1
   loadMyApplications()
 }
@@ -427,7 +466,12 @@ const loadPendingApprovals = async () => {
       page_size: pendingPageSize.value
     }
     if (pendingFilter.request_type) params.request_type = pendingFilter.request_type
+    if (pendingFilter.leave_type) params.leave_type = pendingFilter.leave_type
     if (pendingFilter.applicant) params.applicant = pendingFilter.applicant
+    if (pendingFilter.dateRange && pendingFilter.dateRange.length === 2) {
+      params.date_start = pendingFilter.dateRange[0]
+      params.date_end = pendingFilter.dateRange[1]
+    }
 
     const res = await getPendingApprovals(params)
     pendingApprovals.value = res.data?.data || []
@@ -442,7 +486,9 @@ const loadPendingApprovals = async () => {
 // 重置待审批筛选
 const resetPendingFilter = () => {
   pendingFilter.request_type = ''
+  pendingFilter.leave_type = ''
   pendingFilter.applicant = ''
+  pendingFilter.dateRange = []
   pendingPage.value = 1
   loadPendingApprovals()
 }

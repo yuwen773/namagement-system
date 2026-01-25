@@ -21,7 +21,10 @@ const pagination = reactive({
 
 // 筛选条件
 const filters = reactive({
-  status: 'all'
+  status: 'all',
+  role: '',
+  keyword: '',
+  dateRange: []
 })
 
 // 密码重置对话框
@@ -64,6 +67,16 @@ const fetchUserList = async () => {
     if (filters.status !== 'all') {
       params.status = filters.status
     }
+    if (filters.role) {
+      params.role = filters.role
+    }
+    if (filters.keyword) {
+      params.keyword = filters.keyword
+    }
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      params.date_joined_start = filters.dateRange[0]
+      params.date_joined_end = filters.dateRange[1]
+    }
 
     const res = await getUserList(params)
     // DRF 默认分页格式：{count, next, previous, results}
@@ -83,6 +96,16 @@ const fetchUserList = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 重置筛选
+const resetFilters = () => {
+  filters.status = 'all'
+  filters.role = ''
+  filters.keyword = ''
+  filters.dateRange = []
+  pagination.page = 1
+  fetchUserList()
 }
 
 // 筛选变更处理
@@ -231,6 +254,40 @@ onMounted(() => {
               <el-option label="已禁用" value="inactive" />
             </el-select>
           </el-form-item>
+          <el-form-item label="用户角色">
+            <el-select
+              v-model="filters.role"
+              placeholder="全部角色"
+              clearable
+              @change="handleFilterChange"
+              style="width: 140px"
+            >
+              <el-option label="管理员" value="admin" />
+              <el-option label="人事专员" value="hr" />
+              <el-option label="普通员工" value="employee" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="关键词">
+            <el-input
+              v-model="filters.keyword"
+              placeholder="姓名/用户名"
+              clearable
+              style="width: 150px"
+            />
+          </el-form-item>
+          <el-form-item label="注册日期">
+            <el-date-picker
+              v-model="filters.dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+              format="YYYY-MM-DD"
+              style="width: 240px"
+              @change="handleFilterChange"
+            />
+          </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="fetchUserList">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -238,6 +295,7 @@ onMounted(() => {
               </svg>
               查询
             </el-button>
+            <el-button @click="resetFilters">重置</el-button>
           </el-form-item>
         </el-form>
       </el-card>

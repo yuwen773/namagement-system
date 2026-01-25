@@ -79,6 +79,32 @@
         <el-option label="员工申诉" value="employee_appeal"/>
         <el-option label="其他" value="other"/>
       </el-select>
+      <el-select v-model="filterForm.user_id" placeholder="选择员工" clearable filterable @change="handleFilterChange" class="filter-select">
+        <el-option
+          v-for="emp in employeeOptions"
+          :key="emp.user_id"
+          :label="emp.real_name"
+          :value="emp.user_id"
+        />
+      </el-select>
+      <el-date-picker
+        v-model="filterForm.dateRange"
+        type="daterange"
+        range-separator="至"
+        start-placeholder="开始日期"
+        end-placeholder="结束日期"
+        value-format="YYYY-MM-DD"
+        format="YYYY-MM-DD"
+        style="width: 240px"
+        @change="handleFilterChange"
+      />
+      <el-input
+        v-model="filterForm.month"
+        placeholder="薪资月份 (YYYY-MM)"
+        clearable
+        style="width: 150px"
+        @keyup.enter="handleFilterChange"
+      />
     </div>
 
     <!-- 异常列表 -->
@@ -297,6 +323,7 @@ import {
   getExceptionStatistics,
   getSalaryRecordsForException
 } from '@/api/salary'
+import { getEmployeeOptions } from '@/api/employee'
 
 // 状态
 const loading = ref(false)
@@ -310,6 +337,7 @@ const showResolveDialog = ref(false)
 const reportFormRef = ref(null)
 const resolveFormRef = ref(null)
 const salaryRecords = ref([])
+const employeeOptions = ref([])
 const statistics = reactive({
   pending: 0,
   resolved: 0,
@@ -319,7 +347,10 @@ const statistics = reactive({
 // 筛选表单
 const filterForm = reactive({
   status: '',
-  exception_type: ''
+  exception_type: '',
+  user_id: '',
+  dateRange: [],
+  month: ''
 })
 
 // 分页状态
@@ -374,6 +405,16 @@ const fetchExceptions = async () => {
     if (filterForm.exception_type) {
       params.exception_type = filterForm.exception_type
     }
+    if (filterForm.user_id) {
+      params.user_id = filterForm.user_id
+    }
+    if (filterForm.dateRange && filterForm.dateRange.length === 2) {
+      params.date_start = filterForm.dateRange[0]
+      params.date_end = filterForm.dateRange[1]
+    }
+    if (filterForm.month) {
+      params.month = filterForm.month
+    }
 
     const res = await getExceptionList(params)
     if (res.data?.code === 0) {
@@ -416,6 +457,18 @@ const fetchSalaryRecords = async () => {
     }
   } catch (error) {
     console.error('获取薪资记录失败:', error)
+  }
+}
+
+// 获取员工选项
+const fetchEmployeeOptions = async () => {
+  try {
+    const res = await getEmployeeOptions({})
+    if (res.data?.code === 0) {
+      employeeOptions.value = res.data.data || []
+    }
+  } catch (error) {
+    console.error('获取员工列表失败:', error)
   }
 }
 
@@ -549,6 +602,7 @@ onMounted(() => {
   if (isHR.value) {
     fetchStatistics()
     fetchSalaryRecords()
+    fetchEmployeeOptions()
   }
 })
 </script>
