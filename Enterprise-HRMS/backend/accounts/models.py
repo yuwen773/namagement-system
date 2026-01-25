@@ -214,3 +214,96 @@ class RolePermission(models.Model):
             },
         }
         return defaults.get(role, defaults['employee'])
+
+
+class SystemConfig(models.Model):
+    """
+    系统配置模型
+    用于存储登录/注册规则、密码策略等系统级配置
+    """
+    # 注册配置
+    require_registration_approval = models.BooleanField(
+        default=False,
+        verbose_name='注册需审批',
+        help_text='新用户注册后是否需要管理员审批才能登录'
+    )
+
+    # 密码策略配置
+    password_min_length = models.PositiveIntegerField(
+        default=6,
+        verbose_name='密码最小长度',
+        help_text='密码最小长度要求'
+    )
+    password_require_uppercase = models.BooleanField(
+        default=False,
+        verbose_name='需要大写字母',
+        help_text='密码是否需要包含大写字母'
+    )
+    password_require_lowercase = models.BooleanField(
+        default=True,
+        verbose_name='需要小写字母',
+        help_text='密码是否需要包含小写字母'
+    )
+    password_require_number = models.BooleanField(
+        default=True,
+        verbose_name='需要数字',
+        help_text='密码是否需要包含数字'
+    )
+    password_require_special = models.BooleanField(
+        default=False,
+        verbose_name='需要特殊字符',
+        help_text='密码是否需要包含特殊字符'
+    )
+
+    # 登录安全配置
+    max_login_attempts = models.PositiveIntegerField(
+        default=5,
+        verbose_name='最大登录尝试次数',
+        help_text='连续登录失败后锁定账户的次数'
+    )
+    login_lockout_duration = models.PositiveIntegerField(
+        default=30,
+        verbose_name='锁定时间(分钟)',
+        help_text='账户锁定时间（分钟）'
+    )
+    session_timeout = models.PositiveIntegerField(
+        default=120,
+        verbose_name='会话超时(分钟)',
+        help_text='用户无操作后会话超时时间（分钟）'
+    )
+
+    # 其他配置
+    allow_multiple_sessions = models.BooleanField(
+        default=True,
+        verbose_name='允许多端登录',
+        help_text='是否允许同一账户在多个设备同时登录'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        db_table = 'accounts_systemconfig'
+        verbose_name = '系统配置'
+        verbose_name_plural = '系统配置'
+
+    def __str__(self):
+        return f"系统配置 (ID: {self.id})"
+
+    @classmethod
+    def get_config(cls):
+        """
+        获取系统配置，如果不存在则创建默认配置
+        """
+        config, created = cls.objects.get_or_create(id=1, defaults={
+            'password_min_length': 6,
+            'password_require_uppercase': False,
+            'password_require_lowercase': True,
+            'password_require_number': True,
+            'password_require_special': False,
+            'max_login_attempts': 5,
+            'login_lockout_duration': 30,
+            'session_timeout': 120,
+            'allow_multiple_sessions': True,
+        })
+        return config

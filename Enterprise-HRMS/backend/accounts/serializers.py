@@ -308,3 +308,94 @@ class RolePermissionUpdateSerializer(serializers.ModelSerializer):
             'data_permission', 'attendance_permission', 'salary_permission',
             'can_access_datacenter', 'can_access_performance'
         ]
+
+
+# 延迟导入 SystemConfig 模型
+def get_system_config_model():
+    """延迟导入 SystemConfig，避免循环导入"""
+    from .models import SystemConfig
+    return SystemConfig
+
+
+class SystemConfigSerializer(serializers.ModelSerializer):
+    """
+    系统配置序列化器
+    """
+    class Meta:
+        model = get_system_config_model()
+        fields = [
+            'id',
+            # 注册配置
+            'require_registration_approval',
+            # 密码策略配置
+            'password_min_length',
+            'password_require_uppercase',
+            'password_require_lowercase',
+            'password_require_number',
+            'password_require_special',
+            # 登录安全配置
+            'max_login_attempts',
+            'login_lockout_duration',
+            'session_timeout',
+            # 其他配置
+            'allow_multiple_sessions',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class SystemConfigUpdateSerializer(serializers.ModelSerializer):
+    """
+    系统配置更新序列化器
+    """
+    class Meta:
+        model = get_system_config_model()
+        fields = [
+            # 注册配置
+            'require_registration_approval',
+            # 密码策略配置
+            'password_min_length',
+            'password_require_uppercase',
+            'password_require_lowercase',
+            'password_require_number',
+            'password_require_special',
+            # 登录安全配置
+            'max_login_attempts',
+            'login_lockout_duration',
+            'session_timeout',
+            # 其他配置
+            'allow_multiple_sessions'
+        ]
+
+    def validate_password_min_length(self, value):
+        """验证密码最小长度"""
+        if value < 6:
+            raise serializers.ValidationError('密码最小长度不能小于6位')
+        if value > 32:
+            raise serializers.ValidationError('密码最小长度不能大于32位')
+        return value
+
+    def validate_max_login_attempts(self, value):
+        """验证最大登录尝试次数"""
+        if value < 3:
+            raise serializers.ValidationError('最大登录尝试次数不能小于3次')
+        if value > 20:
+            raise serializers.ValidationError('最大登录尝试次数不能大于20次')
+        return value
+
+    def validate_login_lockout_duration(self, value):
+        """验证锁定时间"""
+        if value < 5:
+            raise serializers.ValidationError('锁定时间不能小于5分钟')
+        if value > 1440:  # 24小时
+            raise serializers.ValidationError('锁定时间不能大于1440分钟（24小时）')
+        return value
+
+    def validate_session_timeout(self, value):
+        """验证会话超时时间"""
+        if value < 10:
+            raise serializers.ValidationError('会话超时时间不能小于10分钟')
+        if value > 1440:  # 24小时
+            raise serializers.ValidationError('会话超时时间不能大于1440分钟（24小时）')
+        return value

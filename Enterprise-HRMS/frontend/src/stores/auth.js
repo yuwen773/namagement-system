@@ -42,7 +42,8 @@ export const useAuthStore = defineStore('auth', () => {
     performanceTemplate: [ROLE_ADMIN, ROLE_HR],
     dataCenter: [ROLE_ADMIN, ROLE_HR],
     profile: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
-    permissionConfig: [ROLE_ADMIN]
+    permissionConfig: [ROLE_ADMIN],
+    securityConfig: [ROLE_ADMIN]
   }
 
   // 从后端获取角色权限配置
@@ -147,7 +148,8 @@ export const useAuthStore = defineStore('auth', () => {
       { name: 'notices', label: '系统公告', path: '/notices', icon: 'notices' },
       { name: 'noticeManagement', label: '公告管理', path: '/notice-management', icon: 'notices' },
       { name: 'users', label: '账号管理', path: '/users', icon: 'users' },
-      { name: 'permissionConfig', label: '权限配置', path: '/permission-config', icon: 'setting' }
+      { name: 'permissionConfig', label: '权限配置', path: '/permission-config', icon: 'setting' },
+      { name: 'securityConfig', label: '安全配置', path: '/security-config', icon: 'setting' }
     ]
     return allMenus.filter(menu => hasPermission(menu.name))
   }

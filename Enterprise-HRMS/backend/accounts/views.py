@@ -421,12 +421,12 @@ class UserEditRequestViewSet(viewsets.ModelViewSet):
         })
 
 
-from rest_framework import viewsets, status as http_status
+from rest_framework import viewsets, mixins, status as http_status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
-from .models import RolePermission
-from .serializers import RolePermissionSerializer, RolePermissionUpdateSerializer
+from .models import RolePermission, SystemConfig
+from .serializers import RolePermissionSerializer, RolePermissionUpdateSerializer, SystemConfigSerializer, SystemConfigUpdateSerializer
 
 
 class RolePermissionViewSet(viewsets.ModelViewSet):
@@ -550,3 +550,58 @@ class RolePermissionViewSet(viewsets.ModelViewSet):
             'created': created_count,
             'updated': updated_count
         })
+
+
+class SystemConfigViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    """
+    系统配置 ViewSet
+    提供系统安全配置的查询和更新功能
+    """
+    serializer_class = SystemConfigSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_serializer_class(self):
+        """根据 action 选择不同的序列化器"""
+        if self.action == 'update':
+            return SystemConfigUpdateSerializer
+        return SystemConfigSerializer
+
+    def get_queryset(self):
+        """返回查询集（用于 Router 识别）"""
+        return SystemConfig.objects.filter(id=1)
+
+    def list(self, request, *args, **kwargs):
+        """获取系统配置（列表接口返回单条）"""
+        config = SystemConfig.get_config()
+        serializer = self.get_serializer(config)
+        return Response({
+            'code': 0,
+            'data': serializer.data
+        })
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取单个系统配置"""
+        config = SystemConfig.get_config()
+        serializer = self.get_serializer(config)
+        return Response({
+            'code': 0,
+            'data': serializer.data
+        })
+
+    @action(detail=False, methods=['put', 'patch'])
+    def update_config(self, request):
+        """更新系统配置（无 PK）"""
+        config = SystemConfig.get_config()
+        partial = request.method == 'PATCH'
+        serializer = self.get_serializer(config, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # 返回更新后的完整配置
+        response_serializer = SystemConfigSerializer(config)
+        return Response({
+            'code': 0,
+            'message': '系统配置已更新',
+            'data': response_serializer.data
+        })
+

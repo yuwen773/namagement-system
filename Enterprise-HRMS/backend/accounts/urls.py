@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterView, CustomTokenObtainPairView, CurrentUserView, AdminResetPasswordView,
     UserListView, UserRoleUpdateView, UserStatusUpdateView,
-    UserEditRequestViewSet, RolePermissionViewSet
+    UserEditRequestViewSet, RolePermissionViewSet, SystemConfigViewSet
 )
 
 app_name = 'accounts'
@@ -24,5 +24,6 @@ urlpatterns = [
 router = DefaultRouter()
 router.register(r'edit-requests', UserEditRequestViewSet, basename='edit-request')
 router.register(r'permissions', RolePermissionViewSet, basename='permission')
+router.register(r'system-config', SystemConfigViewSet, basename='system-config')
 
 urlpatterns += router.urls

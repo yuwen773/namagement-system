@@ -138,6 +138,12 @@ const router = createRouter({
           meta: { roles: ['admin'] }
         },
         {
+          path: 'security-config',
+          name: 'security-config',
+          component: () => import('../views/admin/SecurityConfig.vue'),
+          meta: { roles: ['admin'] }
+        },
+        {
           path: 'salary-exception',
           name: 'salary-exception',
           component: () => import('../views/SalaryException.vue'),
