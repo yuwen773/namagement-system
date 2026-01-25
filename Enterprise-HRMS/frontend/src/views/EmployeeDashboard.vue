@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { ElMessage } from 'element-plus'
-import { getTodayAttendance, checkIn, checkOut } from '../api/attendance'
+import { getTodayAttendance, checkIn, checkOut, getAttendanceStats } from '../api/attendance'
 import { getLatestNotices } from '../api/notice'
 
 const authStore = useAuthStore()
@@ -37,8 +37,8 @@ const fetchTodayAttendance = async () => {
   attendanceLoading.value = true
   try {
     const res = await getTodayAttendance()
-    if (res.code === 0) {
-      todayAttendance.value = res.data
+    if (res.data.code === 0) {
+      todayAttendance.value = res.data.data
     }
   } catch (error) {
     console.error('获取今日考勤失败:', error)
@@ -52,8 +52,8 @@ const fetchNotices = async () => {
   noticesLoading.value = true
   try {
     const res = await getLatestNotices(5)
-    if (res.code === 0) {
-      notices.value = res.data
+    if (res.data.code === 0) {
+      notices.value = res.data.data
     }
   } catch (error) {
     console.error('获取公告失败:', error)
@@ -67,11 +67,11 @@ const handleClockIn = async () => {
   quickActionLoading.value = true
   try {
     const res = await checkIn()
-    if (res.code === 0) {
-      ElMessage.success('签到成功')
+    if (res.data.code === 0) {
+      ElMessage.success(res.data.message || '签到成功')
       fetchTodayAttendance()
     } else {
-      ElMessage.error(res.message || '签到失败')
+      ElMessage.error(res.data.message || '签到失败')
     }
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '签到失败')
@@ -85,11 +85,11 @@ const handleClockOut = async () => {
   quickActionLoading.value = true
   try {
     const res = await checkOut()
-    if (res.code === 0) {
-      ElMessage.success('签退成功')
+    if (res.data.code === 0) {
+      ElMessage.success(res.data.message || '签退成功')
       fetchTodayAttendance()
     } else {
-      ElMessage.error(res.message || '签退失败')
+      ElMessage.error(res.data.message || '签退失败')
     }
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '签退失败')
@@ -131,6 +131,26 @@ const formatDate = (date) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// 获取本月考勤统计
+const fetchMonthlyStats = async () => {
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  try {
+    const res = await getAttendanceStats(currentMonth)
+    if (res.data.code === 0) {
+      const data = res.data.data
+      monthlyStats.value = {
+        normalDays: data.normal_days || 0,
+        lateDays: data.late_days || 0,
+        earlyDays: data.early_days || 0,
+        leaveDays: data.leave_days || 0,
+        absentDays: data.absent_days || 0
+      }
+    }
+  } catch (error) {
+    console.error('获取月度统计失败:', error)
+  }
+}
+
 onMounted(async () => {
   // 获取权限配置
   if (authStore.token && !authStore.rolePermissions) {
@@ -138,6 +158,7 @@ onMounted(async () => {
   }
   fetchTodayAttendance()
   fetchNotices()
+  fetchMonthlyStats()
 })
 </script>
 
@@ -170,7 +191,7 @@ onMounted(async () => {
             <el-button
               type="primary"
               :loading="quickActionLoading"
-              :disabled="todayAttendance?.check_in_time"
+              :disabled="!!todayAttendance?.check_in_time"
               @click="handleClockIn"
             >
               {{ todayAttendance?.check_in_time ? '已签到' : '立即签到' }}
@@ -193,7 +214,7 @@ onMounted(async () => {
             <el-button
               type="success"
               :loading="quickActionLoading"
-              :disabled="!todayAttendance?.check_in_time || todayAttendance?.check_out_time"
+              :disabled="!todayAttendance?.check_in_time || !!todayAttendance?.check_out_time"
               @click="handleClockOut"
             >
               {{ todayAttendance?.check_out_time ? '已签退' : '立即签退' }}
@@ -279,7 +300,7 @@ onMounted(async () => {
           <template #header>
             <div class="card-header">
               <span>最新公告</span>
-              <el-link type="primary" :underline="false" @click="$router.push('/notices')">
+              <el-link type="primary" underline="never" @click="$router.push('/notices')">
                 查看全部 →
               </el-link>
             </div>
