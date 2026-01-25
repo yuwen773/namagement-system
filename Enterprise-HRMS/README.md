@@ -88,6 +88,9 @@ Enterprise-HRMS/
 │   ├── architecture.md
 │   └── implementation-plan.md
 │
+├── sql/                        # 数据库脚本
+│   └── hrms_db.sql             # 数据库初始化脚本
+│
 └── docs/                       # 文档目录
 ```
 
@@ -168,6 +171,8 @@ DATABASES = {
 ```
 
 > **注意**: 确保提前创建数据库 `hrms_db`，或修改 `NAME` 为你的数据库名。
+>
+> 可使用 `sql/hrms_db.sql` 快速初始化数据库结构和基础数据。
 
 ---
 
@@ -371,9 +376,9 @@ router.beforeEach((to, from, next) => {
 
 ## 相关文档
 
-- [产品需求文档](memory-bank/product-requirement-document.md)
-- [架构设计](memory-bank/architecture.md)
-- [实现计划](memory-bank/implementation-plan.md)
+- 产品需求文档 (memory-bank/product-requirement-document.md)
+- 架构设计 (memory-bank/architecture.md)
+- 实现计划 (memory-bank/implementation-plan.md)
 
 ---
 
