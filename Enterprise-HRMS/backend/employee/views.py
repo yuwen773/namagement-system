@@ -154,9 +154,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         from accounts.models import User
         from django.db.models import Q
 
-        # 查找没有 profile 的用户
+        # 查找没有 profile 的用户（排除管理员和人事账号）
         queryset = User.objects.filter(
             profile__isnull=True
+        ).exclude(
+            role__in=['admin', 'hr']
         ).order_by('-date_joined')
 
         # 按关键词搜索（姓名/用户名）
