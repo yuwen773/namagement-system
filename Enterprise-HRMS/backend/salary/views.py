@@ -1,17 +1,22 @@
 from decimal import Decimal
 from django.db import models
 from django.db.models import Count
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from HRMS.permissions import IsHROrAdmin, IsEmployeeOrHROrAdmin
-from .models import SalaryRecord
+from .models import SalaryRecord, SalaryException
 from .serializers import (
     SalaryCalculateSerializer,
     SalaryRecordSerializer,
-    SalaryRecordListSerializer
+    SalaryRecordListSerializer,
+    SalaryExceptionSerializer,
+    SalaryExceptionListSerializer,
+    SalaryExceptionCreateSerializer,
+    SalaryExceptionResolveSerializer
 )
 from employee.models import EmployeeProfile
 
@@ -226,3 +231,220 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
             'message': '保存成功',
             'data': SalaryRecordSerializer(record).data
         }, status=status.HTTP_201_CREATED)
+
+
+# ==================== 薪资异常处理 ====================
+
+class SalaryExceptionViewSet(viewsets.ModelViewSet):
+    """
+    薪资异常处理 ViewSet
+
+    list: 获取异常列表
+    create: 创建异常报告（所有用户可上报）
+    retrieve: 获取异常详情
+    update/partial_update: 更新异常（HR/Admin）
+    resolve: 处理异常（HR/Admin）
+    my-exceptions: 获取我上报的异常（员工）
+    pending: 获取待处理异常（HR/Admin）
+    """
+    queryset = SalaryException.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SalaryExceptionListSerializer
+        elif self.action == 'create':
+            return SalaryExceptionCreateSerializer
+        elif self.action in ['update', 'partial_update', 'resolve']:
+            return SalaryExceptionResolveSerializer
+        return SalaryExceptionSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = SalaryException.objects.select_related(
+            'salary_record__user',
+            'reported_by',
+            'assigned_to'
+        )
+
+        # 根据状态筛选
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # 根据类型筛选
+        exception_type = self.request.query_params.get('exception_type')
+        if exception_type:
+            queryset = queryset.filter(exception_type=exception_type)
+
+        # 普通员工只能看自己上报的异常
+        if user.role == 'employee':
+            queryset = queryset.filter(reported_by=user)
+
+        return queryset
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsHROrAdmin()]
+
+    def list(self, request, *args, **kwargs):
+        """获取异常列表"""
+        queryset = self.get_queryset()
+
+        # 分页
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        queryset = queryset[start:end]
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'total': total,
+            'page': page,
+            'page_size': page_size
+        })
+
+    def create(self, request, *args, **kwargs):
+        """上报异常"""
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'code': 400, 'message': '参数错误', 'errors': serializer.errors},
+                          status=status.HTTP_400_BAD_REQUEST)
+
+        exception = serializer.save()
+
+        return Response({
+            'code': 0,
+            'message': '异常已上报',
+            'data': SalaryExceptionSerializer(exception).data
+        }, status=status.HTTP_201_CREATED)
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取异常详情"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            'code': 0,
+            'data': serializer.data
+        })
+
+    @action(detail=True, methods=['post'])
+    def resolve(self, request, pk=None):
+        """
+        处理异常（HR/Admin）
+        """
+        if request.user.role == 'employee':
+            return Response({
+                'code': 403,
+                'message': '权限不足'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        exception = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response({'code': 400, 'message': '参数错误', 'errors': serializer.errors},
+                          status=status.HTTP_400_BAD_REQUEST)
+
+        # 更新异常
+        exception.resolution = serializer.validated_data.get('resolution', '')
+        exception.adjustment_amount = serializer.validated_data.get('adjustment_amount', 0)
+        exception.status = serializer.validated_data.get('status', 'resolved')
+        exception.assigned_to = request.user
+        exception.resolved_at = timezone.now()
+        exception.save()
+
+        # 如果调整金额不为0，更新薪资记录
+        if exception.adjustment_amount != 0:
+            salary_record = exception.salary_record
+            salary_record.final_salary = salary_record.final_salary + exception.adjustment_amount
+            salary_record.save()
+
+        return Response({
+            'code': 0,
+            'message': '异常已处理',
+            'data': SalaryExceptionSerializer(exception).data
+        })
+
+    @action(detail=False, methods=['get'])
+    def my_exceptions(self, request):
+        """
+        获取我上报的异常列表
+        """
+        exceptions = SalaryException.objects.filter(
+            reported_by=request.user
+        ).select_related(
+            'salary_record__user'
+        ).order_by('-created_at')
+
+        serializer = SalaryExceptionListSerializer(exceptions, many=True)
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'total': len(serializer.data)
+        })
+
+    @action(detail=False, methods=['get'])
+    def pending(self, request):
+        """
+        获取待处理的异常列表（HR/Admin）
+        """
+        if request.user.role == 'employee':
+            return Response({
+                'code': 403,
+                'message': '权限不足'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        exceptions = SalaryException.objects.filter(
+            status__in=['pending', 'processing']
+        ).select_related(
+            'salary_record__user',
+            'reported_by'
+        ).order_by('-created_at')
+
+        serializer = SalaryExceptionListSerializer(exceptions, many=True)
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'total': len(serializer.data)
+        })
+
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """
+        获取异常统计信息（HR/Admin）
+        """
+        if request.user.role == 'employee':
+            return Response({
+                'code': 403,
+                'message': '权限不足'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        from django.db.models import Count
+
+        # 按状态统计
+        status_stats = SalaryException.objects.values('status').annotate(
+            count=Count('id')
+        )
+
+        # 按类型统计
+        type_stats = SalaryException.objects.values('exception_type').annotate(
+            count=Count('id')
+        )
+
+        return Response({
+            'code': 0,
+            'data': {
+                'by_status': list(status_stats),
+                'by_type': list(type_stats),
+                'total': SalaryException.objects.count(),
+                'pending': SalaryException.objects.filter(status='pending').count(),
+                'resolved': SalaryException.objects.filter(status='resolved').count()
+            }
+        })

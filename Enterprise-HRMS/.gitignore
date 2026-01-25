@@ -3,3 +3,30 @@
 CLAUDE.md
 memory-bank/
 docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.log
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

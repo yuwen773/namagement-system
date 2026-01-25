@@ -58,10 +58,102 @@ export function publishSalaryRecords(ids) {
   return axios.post('/salary/records/publish/', { ids })
 }
 
+/**
+ * 薪资异常处理 API
+ */
+
+/**
+ * 获取异常列表
+ * @param {Object} params - 查询参数
+ * @param {string} params.status - 状态筛选
+ * @param {string} params.exception_type - 类型筛选
+ * @param {number} params.page - 页码
+ * @param {number} params.page_size - 每页数量
+ * @returns {Promise}
+ */
+export function getExceptionList(params) {
+  return axios.get('/salary/exceptions/', { params })
+}
+
+/**
+ * 获取异常详情
+ * @param {number} id - 异常ID
+ * @returns {Promise}
+ */
+export function getExceptionDetail(id) {
+  return axios.get(`/salary/exceptions/${id}/`)
+}
+
+/**
+ * 上报异常
+ * @param {Object} data - 异常数据
+ * @param {number} data.salary_record - 薪资记录ID
+ * @param {string} data.exception_type - 异常类型
+ * @param {string} data.description - 异常描述
+ * @returns {Promise}
+ */
+export function reportException(data) {
+  return axios.post('/salary/exceptions/', data)
+}
+
+/**
+ * 处理异常
+ * @param {number} id - 异常ID
+ * @param {Object} data - 处理数据
+ * @param {string} data.resolution - 处理方案
+ * @param {number} data.adjustment_amount - 调整金额
+ * @param {string} data.status - 处理状态
+ * @returns {Promise}
+ */
+export function resolveException(id, data) {
+  return axios.post(`/salary/exceptions/${id}/resolve/`, data)
+}
+
+/**
+ * 获取我上报的异常列表
+ * @returns {Promise}
+ */
+export function getMyExceptions() {
+  return axios.get('/salary/exceptions/my-exceptions/')
+}
+
+/**
+ * 获取待处理异常列表（HR/Admin）
+ * @returns {Promise}
+ */
+export function getPendingExceptions() {
+  return axios.get('/salary/exceptions/pending/')
+}
+
+/**
+ * 获取异常统计信息
+ * @returns {Promise}
+ */
+export function getExceptionStatistics() {
+  return axios.get('/salary/exceptions/statistics/')
+}
+
+/**
+ * 获取薪资记录列表（用于上报异常时选择）
+ * @param {Object} params - 查询参数
+ * @returns {Promise}
+ */
+export function getSalaryRecordsForException(params) {
+  return axios.get('/salary/records/', { params })
+}
+
 export default {
   calculateSalary,
   getSalaryRecords,
   getSalaryRecordDetail,
   saveSalaryRecord,
-  publishSalaryRecords
+  publishSalaryRecords,
+  getExceptionList,
+  getExceptionDetail,
+  reportException,
+  resolveException,
+  getMyExceptions,
+  getPendingExceptions,
+  getExceptionStatistics,
+  getSalaryRecordsForException
 }

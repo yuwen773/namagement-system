@@ -136,6 +136,12 @@ const router = createRouter({
           name: 'permission-config',
           component: () => import('../views/admin/PermissionConfig.vue'),
           meta: { roles: ['admin'] }
+        },
+        {
+          path: 'salary-exception',
+          name: 'salary-exception',
+          component: () => import('../views/SalaryException.vue'),
+          meta: { roles: ['admin', 'hr', 'employee'] }
         }
       ]
     },

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SalaryRecord
+from .models import SalaryRecord, SalaryException
 
 
 class SalaryCalculateSerializer(serializers.Serializer):
@@ -72,3 +72,97 @@ class SalaryRecordListSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalaryRecord
         fields = ['id', 'real_name', 'month', 'base_salary', 'final_salary', 'status']
+
+
+class SalaryExceptionSerializer(serializers.ModelSerializer):
+    """薪资异常详情序列化器"""
+    exception_type_display = serializers.CharField(
+        source='get_exception_type_display',
+        read_only=True
+    )
+    status_display = serializers.CharField(
+        source='get_status_display',
+        read_only=True
+    )
+    reported_by_name = serializers.CharField(
+        source='reported_by.real_name',
+        read_only=True
+    )
+    assigned_to_name = serializers.CharField(
+        source='assigned_to.real_name',
+        read_only=True
+    )
+    employee_name = serializers.CharField(
+        source='salary_record.user.real_name',
+        read_only=True
+    )
+    month = serializers.CharField(
+        source='salary_record.month',
+        read_only=True
+    )
+
+    class Meta:
+        model = SalaryException
+        fields = [
+            'id', 'salary_record', 'employee_name', 'month',
+            'exception_type', 'exception_type_display',
+            'description', 'status', 'status_display',
+            'reported_by', 'reported_by_name',
+            'assigned_to', 'assigned_to_name',
+            'resolution', 'adjustment_amount',
+            'resolved_at', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class SalaryExceptionListSerializer(serializers.ModelSerializer):
+    """薪资异常列表序列化器"""
+    exception_type_display = serializers.CharField(
+        source='get_exception_type_display',
+        read_only=True
+    )
+    status_display = serializers.CharField(
+        source='get_status_display',
+        read_only=True
+    )
+    employee_name = serializers.CharField(
+        source='salary_record.user.real_name',
+        read_only=True
+    )
+    month = serializers.CharField(
+        source='salary_record.month',
+        read_only=True
+    )
+
+    class Meta:
+        model = SalaryException
+        fields = [
+            'id', 'employee_name', 'month',
+            'exception_type', 'exception_type_display',
+            'status', 'status_display',
+            'adjustment_amount', 'created_at'
+        ]
+
+
+class SalaryExceptionCreateSerializer(serializers.ModelSerializer):
+    """创建薪资异常序列化器"""
+
+    class Meta:
+        model = SalaryException
+        fields = [
+            'salary_record', 'exception_type',
+            'description', 'reported_by'
+        ]
+
+    def create(self, validated_data):
+        # 自动设置 reported_by 为当前用户
+        validated_data['reported_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class SalaryExceptionResolveSerializer(serializers.ModelSerializer):
+    """处理薪资异常序列化器"""
+
+    class Meta:
+        model = SalaryException
+        fields = ['resolution', 'adjustment_amount', 'status']
