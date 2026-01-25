@@ -100,6 +100,12 @@ const router = createRouter({
           name: 'data-center',
           component: () => import('../views/DataCenter.vue'),
           meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: () => import('../views/ProfileEdit.vue'),
+          meta: { roles: ['admin', 'hr', 'employee'] }
         }
       ]
     },

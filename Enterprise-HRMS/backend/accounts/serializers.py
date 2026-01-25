@@ -6,6 +6,12 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 User = get_user_model()
 
 
+def get_user_edit_request_model():
+    """延迟导入 UserEditRequest，避免循环导入"""
+    from .models import UserEditRequest
+    return UserEditRequest
+
+
 class PasswordStrengthValidator:
     """
     自定义密码强度验证器
@@ -197,3 +203,70 @@ class UserStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['is_active']
+
+
+class UserEditRequestCreateSerializer(serializers.ModelSerializer):
+    """
+    创建信息修改申请序列化器
+    """
+    class Meta:
+        model = get_user_edit_request_model()
+        fields = ['edit_type', 'new_value', 'reason']
+
+    def validate_new_value(self, value):
+        """验证新值的唯一性（手机号/邮箱）"""
+        edit_type = self.initial_data.get('edit_type')
+        if edit_type == 'phone':
+            import re
+            if not re.match(r'^1[3-9]\d{9}$', value):
+                raise serializers.ValidationError('手机号格式不正确')
+            if User.objects.filter(phone=value).exists():
+                raise serializers.ValidationError('该手机号已被注册')
+        elif edit_type == 'email':
+            if User.objects.filter(email=value).exists():
+                raise serializers.ValidationError('该邮箱已被注册')
+        return value
+
+
+class UserEditRequestSerializer(serializers.ModelSerializer):
+    """
+    信息修改申请详情序列化器
+    """
+    user_name = serializers.CharField(source='user.real_name', read_only=True)
+    edit_type_display = serializers.CharField(source='get_edit_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    reviewer_name = serializers.CharField(source='reviewer.real_name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = get_user_edit_request_model()
+        fields = [
+            'id', 'user', 'user_name', 'edit_type', 'edit_type_display',
+            'old_value', 'new_value', 'reason', 'status', 'status_display',
+            'reviewer', 'reviewer_name', 'reviewer_comment', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'old_value', 'status', 'reviewer', 'created_at', 'updated_at']
+
+
+class UserEditRequestListSerializer(serializers.ModelSerializer):
+    """
+    信息修改申请列表序列化器（轻量版）
+    """
+    user_name = serializers.CharField(source='user.real_name', read_only=True)
+    edit_type_display = serializers.CharField(source='get_edit_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = get_user_edit_request_model()
+        fields = [
+            'id', 'user', 'user_name', 'edit_type', 'edit_type_display',
+            'old_value', 'new_value', 'reason', 'status', 'status_display', 'created_at'
+        ]
+
+
+class UserEditRequestActionSerializer(serializers.ModelSerializer):
+    """
+    审批操作序列化器
+    """
+    class Meta:
+        model = get_user_edit_request_model()
+        fields = ['reviewer_comment']
