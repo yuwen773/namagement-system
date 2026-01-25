@@ -91,3 +91,126 @@ class UserEditRequest(models.Model):
 
     def __str__(self):
         return f"{self.user.real_name} - {self.get_edit_type_display()} - {self.get_status_display()}"
+
+
+class RolePermission(models.Model):
+    """
+    角色权限配置模型
+    用于配置各角色的菜单权限、按钮权限和数据权限
+    """
+    ROLE_CHOICES = [
+        ('employee', '普通员工'),
+        ('hr', '人事专员'),
+        ('admin', '管理员'),
+    ]
+
+    DATA_PERMISSION_CHOICES = [
+        ('all', '全部数据'),
+        ('department', '本部门数据'),
+        ('self', '仅本人'),
+    ]
+
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        unique=True,
+        verbose_name='角色'
+    )
+
+    # 菜单权限配置 - JSON字段存储可访问的菜单路由列表
+    menu_permissions = models.JSONField(
+        default=list,
+        verbose_name='菜单权限',
+        help_text='可访问的菜单路由列表'
+    )
+
+    # 按钮权限配置 - JSON字段存储可显示的按钮列表
+    button_permissions = models.JSONField(
+        default=list,
+        verbose_name='按钮权限',
+        help_text='可显示的操作按钮列表'
+    )
+
+    # 数据权限配置
+    data_permission = models.CharField(
+        max_length=20,
+        choices=DATA_PERMISSION_CHOICES,
+        default='self',
+        verbose_name='数据权限',
+        help_text='可访问的数据范围'
+    )
+
+    # 考勤数据权限
+    attendance_permission = models.CharField(
+        max_length=20,
+        choices=DATA_PERMISSION_CHOICES,
+        default='self',
+        verbose_name='考勤数据权限'
+    )
+
+    # 薪资数据权限
+    salary_permission = models.CharField(
+        max_length=20,
+        choices=DATA_PERMISSION_CHOICES,
+        default='self',
+        verbose_name='薪资数据权限'
+    )
+
+    # 是否可访问数据中心
+    can_access_datacenter = models.BooleanField(
+        default=False,
+        verbose_name='可访问数据中心'
+    )
+
+    # 是否可访问绩效管理
+    can_access_performance = models.BooleanField(
+        default=False,
+        verbose_name='可访问绩效管理'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        db_table = 'accounts_rolepermission'
+        verbose_name = '角色权限配置'
+        verbose_name_plural = '角色权限配置'
+
+    def __str__(self):
+        return f"{self.get_role_display()} 权限配置"
+
+    @classmethod
+    def get_default_permissions(cls, role):
+        """
+        获取默认权限配置
+        """
+        defaults = {
+            'employee': {
+                'menu_permissions': ['dashboard', 'attendance', 'salary', 'approval', 'notices', 'myPerformance', 'profile'],
+                'button_permissions': ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary'],
+                'data_permission': 'self',
+                'attendance_permission': 'self',
+                'salary_permission': 'self',
+                'can_access_datacenter': False,
+                'can_access_performance': True,
+            },
+            'hr': {
+                'menu_permissions': ['dashboard', 'employees', 'departments', 'posts', 'attendance', 'attendanceStatistics', 'salary', 'approval', 'onboarding', 'notices', 'noticeManagement', 'performanceReview', 'dataCenter', 'profile'],
+                'button_permissions': ['createEmployee', 'editEmployee', 'deleteEmployee', 'approveLeave', 'approveOvertime', 'calculateSalary', 'publishSalary', 'createNotice'],
+                'data_permission': 'department',
+                'attendance_permission': 'all',
+                'salary_permission': 'all',
+                'can_access_datacenter': True,
+                'can_access_performance': True,
+            },
+            'admin': {
+                'menu_permissions': ['dashboard', 'employees', 'departments', 'posts', 'attendance', 'attendanceStatistics', 'salary', 'approval', 'onboarding', 'users', 'notices', 'noticeManagement', 'performanceReview', 'dataCenter', 'profile', 'permissionConfig'],
+                'button_permissions': ['createEmployee', 'editEmployee', 'deleteEmployee', 'approveLeave', 'approveOvertime', 'calculateSalary', 'publishSalary', 'createNotice', 'manageUsers', 'resetPassword', 'configurePermissions'],
+                'data_permission': 'all',
+                'attendance_permission': 'all',
+                'salary_permission': 'all',
+                'can_access_datacenter': True,
+                'can_access_performance': True,
+            },
+        }
+        return defaults.get(role, defaults['employee'])

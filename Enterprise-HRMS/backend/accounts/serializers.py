@@ -270,3 +270,41 @@ class UserEditRequestActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_edit_request_model()
         fields = ['reviewer_comment']
+
+
+# 延迟导入 RolePermission 模型
+def get_role_permission_model():
+    """延迟导入 RolePermission，避免循环导入"""
+    from .models import RolePermission
+    return RolePermission
+
+
+class RolePermissionSerializer(serializers.ModelSerializer):
+    """
+    角色权限配置序列化器
+    """
+    role_display = serializers.CharField(source='get_role_display', read_only=True)
+
+    class Meta:
+        model = get_role_permission_model()
+        fields = [
+            'id', 'role', 'role_display',
+            'menu_permissions', 'button_permissions',
+            'data_permission', 'attendance_permission', 'salary_permission',
+            'can_access_datacenter', 'can_access_performance',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'role', 'created_at', 'updated_at']
+
+
+class RolePermissionUpdateSerializer(serializers.ModelSerializer):
+    """
+    角色权限更新序列化器
+    """
+    class Meta:
+        model = get_role_permission_model()
+        fields = [
+            'menu_permissions', 'button_permissions',
+            'data_permission', 'attendance_permission', 'salary_permission',
+            'can_access_datacenter', 'can_access_performance'
+        ]

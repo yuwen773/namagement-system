@@ -419,3 +419,134 @@ class UserEditRequestViewSet(viewsets.ModelViewSet):
             'code': 0,
             'message': f'已驳回 {edit_request.user.real_name} 的{edit_request.get_edit_type_display()}修改申请'
         })
+
+
+from rest_framework import viewsets, status as http_status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
+from .models import RolePermission
+from .serializers import RolePermissionSerializer, RolePermissionUpdateSerializer
+
+
+class RolePermissionViewSet(viewsets.ModelViewSet):
+    """
+    角色权限配置 ViewSet
+    提供角色权限的查询和更新功能
+    """
+    queryset = RolePermission.objects.all()
+    serializer_class = RolePermissionSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    http_method_names = ['get', 'put', 'patch', 'post']  # 允许 GET, PUT, PATCH, POST
+
+    def get_serializer_class(self):
+        """根据 action 选择不同的序列化器"""
+        if self.action in ['update', 'partial_update']:
+            return RolePermissionUpdateSerializer
+        return RolePermissionSerializer
+
+    def get_queryset(self):
+        """获取权限配置列表"""
+        return RolePermission.objects.all().order_by('role')
+
+    def list(self, request, *args, **kwargs):
+        """获取所有角色的权限配置"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'total': queryset.count()
+        })
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取单个角色的权限配置"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            'code': 0,
+            'data': serializer.data
+        })
+
+    def update(self, request, *args, **kwargs):
+        """更新角色权限配置"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # 返回更新后的完整配置
+        response_serializer = RolePermissionSerializer(instance)
+        return Response({
+            'code': 0,
+            'message': f'{instance.get_role_display()} 权限配置已更新',
+            'data': response_serializer.data
+        })
+
+    def partial_update(self, request, *args, **kwargs):
+        """部分更新角色权限配置"""
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def by_role(self, request):
+        """
+        根据角色获取权限配置
+        GET /api/auth/permissions/by_role/?role=employee
+        """
+        role = request.query_params.get('role')
+        if not role:
+            return Response({
+                'code': 400,
+                'message': '请指定角色参数'
+            }, status=http_status.HTTP_400_BAD_REQUEST)
+
+        try:
+            permission = RolePermission.objects.get(role=role)
+            serializer = RolePermissionSerializer(permission)
+            return Response({
+                'code': 0,
+                'data': serializer.data
+            })
+        except RolePermission.DoesNotExist:
+            # 如果不存在，返回默认配置
+            defaults = RolePermission.get_default_permissions(role)
+            return Response({
+                'code': 0,
+                'data': {
+                    'role': role,
+                    **defaults
+                }
+            })
+
+    @action(detail=False, methods=['post'])
+    def initialize(self, request):
+        """
+        初始化所有角色的默认权限配置
+        POST /api/auth/permissions/initialize/
+        仅管理员可访问
+        """
+        with transaction.atomic():
+            roles = ['employee', 'hr', 'admin']
+            created_count = 0
+            updated_count = 0
+
+            for role in roles:
+                defaults = RolePermission.get_default_permissions(role)
+                permission, created = RolePermission.objects.update_or_create(
+                    role=role,
+                    defaults=defaults
+                )
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+
+        return Response({
+            'code': 0,
+            'message': f'权限配置初始化完成，创建 {created_count} 条，更新 {updated_count} 条',
+            'created': created_count,
+            'updated': updated_count
+        })
