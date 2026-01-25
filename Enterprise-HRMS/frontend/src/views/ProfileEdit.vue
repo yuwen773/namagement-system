@@ -744,29 +744,118 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* ========================================
+   Profile Edit - Refined Corporate Design
+   ======================================== */
 .profile-edit-container {
-  padding: 20px;
+  padding: 24px;
+  position: relative;
+}
+
+.profile-edit-container::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-success));
 }
 
 .page-header h2 {
   margin: 0 0 8px 0;
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-header h2::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: 2px;
 }
 
 .subtitle {
   margin: 0;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
+  padding-left: 16px;
 }
 
-.info-card {
+.info-card,
+.edit-card,
+.history-card {
   margin-bottom: 20px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.info-card:hover,
+.edit-card:hover,
+.history-card:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-md);
+}
+
+.info-card::before,
+.edit-card::before,
+.history-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.info-card:hover::before,
+.edit-card:hover::before,
+.history-card:hover::before {
+  opacity: 1;
+}
+
+.info-card :deep(.el-card__header),
+.edit-card :deep(.el-card__header),
+.history-card :deep(.el-card__header) {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-bg-secondary) 100%);
 }
 
 .card-header {
@@ -774,23 +863,30 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
+  font-size: 16px;
+  color: var(--color-text-primary);
 }
 
-.edit-card {
-  margin-bottom: 20px;
+.info-card :deep(.el-descriptions__label),
+.edit-card :deep(.el-descriptions__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-gray-50);
 }
 
-.history-card {
-  margin-bottom: 20px;
+.info-card :deep(.el-descriptions__cell),
+.edit-card :deep(.el-descriptions__cell) {
+  background: var(--color-bg-secondary);
 }
 
 .old-value {
-  color: #909399;
+  color: var(--color-text-tertiary);
   text-decoration: line-through;
+  font-size: 13px;
 }
 
 .new-value {
-  color: #67c23a;
+  color: var(--color-success);
   font-weight: 500;
 }
 
@@ -800,12 +896,15 @@ onMounted(async () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 13px;
 }
 
 .pagination-container {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border-light);
 }
 
 /* 组织架构样式 */
@@ -824,5 +923,49 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 4px 0;
+}
+
+/* 表格样式 */
+.history-card :deep(.el-table__header) {
+  background: var(--color-gray-50);
+}
+
+.history-card :deep(.el-table__header th) {
+  background: transparent;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .profile-edit-container {
+    padding: 16px;
+  }
+
+  .page-header {
+    padding: 20px;
+  }
+
+  .page-header h2 {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    padding-left: 0;
+    padding-top: 8px;
+  }
+
+  .info-card :deep(.el-card__header),
+  .edit-card :deep(.el-card__header),
+  .history-card :deep(.el-card__header) {
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .pagination-container {
+    justify-content: center;
+  }
 }
 </style>

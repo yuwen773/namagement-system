@@ -302,8 +302,26 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ========================================
+   Security Config - Refined Corporate Design
+   ======================================== */
 .security-config {
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+}
+
+.security-config::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* 页面标题 */
@@ -311,13 +329,29 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24, var(--color-warning));
 }
 
 .header-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .page-title {
@@ -325,6 +359,7 @@ onMounted(() => {
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0;
+  letter-spacing: 0.5px;
 }
 
 .page-desc {
@@ -341,7 +376,29 @@ onMounted(() => {
 
 .header-actions {
   display: flex;
+  gap: 12px;
+}
+
+.header-actions .el-button {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.header-actions .el-button:hover {
+  transform: translateY(-2px);
+}
+
+.header-actions .el-button[type="primary"]:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.header-actions .el-button[type="warning"]:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
 }
 
 /* 配置容器 */
@@ -349,11 +406,28 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 配置卡片 */
 .config-card {
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.config-card:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-md);
+}
+
+.config-card :deep(.el-card__header) {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-bg-secondary) 100%);
 }
 
 .card-header {
@@ -365,13 +439,13 @@ onMounted(() => {
 .card-title-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .card-icon {
-  width: 20px;
-  height: 20px;
-  color: var(--color-primary);
+  width: 24px;
+  height: 24px;
+  color: #f59e0b;
 }
 
 .card-title {
@@ -384,16 +458,22 @@ onMounted(() => {
 .config-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
+  padding: 8px 0;
 }
 
 .form-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: var(--color-background);
+  padding: 16px 20px;
+  margin: 0 16px;
   border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.form-item:hover {
+  background: var(--color-gray-50);
 }
 
 .form-info {
@@ -416,12 +496,37 @@ onMounted(() => {
 .form-divider {
   height: 1px;
   background: var(--color-border-light);
-  margin: 8px 0;
+  margin: 8px 16px;
 }
 
 .unit {
   margin-left: 8px;
   font-size: 14px;
   color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .form-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .config-card :deep(.el-card__header) {
+    padding: 16px;
+  }
 }
 </style>

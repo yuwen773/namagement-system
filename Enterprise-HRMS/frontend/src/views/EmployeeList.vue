@@ -567,61 +567,100 @@ onMounted(() => {
 
 <style scoped>
 /* ========================================
-   Employee List - Modern Corporate Design
+   Employee List - Refined Corporate Design
    ======================================== */
+.employee-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+}
+
+.employee-page::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* 页面头部 */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 20px 24px;
+  margin-bottom: 4px;
+  padding: 24px;
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-success));
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .header-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
 }
 
 .header-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: white;
 }
 
 .page-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--color-text-primary);
+  letter-spacing: 0.5px;
 }
 
 .header-right .el-button {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
+  gap: 8px;
+  padding: 12px 24px;
   border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.header-right .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
 }
 
 .header-right svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* 筛选区域 */
@@ -629,9 +668,9 @@ onMounted(() => {
   padding: 20px 24px;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  margin-bottom: 24px;
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-xl);
+  position: relative;
+  z-index: 1;
 }
 
 .filter-content {
@@ -661,25 +700,50 @@ onMounted(() => {
 .table-section {
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-xl);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .custom-table {
   border-radius: 0;
 }
 
+.custom-table :deep(.el-table__header) {
+  background: var(--color-gray-50);
+}
+
+.custom-table :deep(.el-table__header th) {
+  background: transparent;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
 /* 员工姓名列样式 */
 .employee-name {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .name-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   color: white;
@@ -688,10 +752,13 @@ onMounted(() => {
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
 }
 
 .status-tag {
   font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 2px 12px;
 }
 
 /* 操作按钮 */
@@ -699,6 +766,13 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: var(--color-primary-subtle);
 }
 
 .action-btn svg {
@@ -726,26 +800,51 @@ onMounted(() => {
 .employee-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+}
+
+.employee-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, transparent 100%);
 }
 
 .avatar-large {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+  position: relative;
+}
+
+.avatar-large::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-xl);
+  padding: 2px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-success));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 .avatar-large svg {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 .info {
@@ -753,20 +852,23 @@ onMounted(() => {
 }
 
 .info h3 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
+  letter-spacing: 0.3px;
 }
 
 .info p {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-tertiary);
   margin: 0;
 }
 
 .status-badge {
   font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
 }
 
 .info-descriptions {
@@ -774,10 +876,20 @@ onMounted(() => {
   overflow: hidden;
 }
 
+.info-descriptions :deep(.el-descriptions__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.info-descriptions :deep(.el-descriptions__content) {
+  color: var(--color-text-primary);
+}
+
 .salary-highlight {
   font-weight: 600;
   color: var(--color-success);
-  font-size: 15px;
+  font-size: 16px;
+  font-family: 'SF Mono', 'Monaco', monospace;
 }
 
 .drawer-footer {
@@ -791,18 +903,30 @@ onMounted(() => {
 .footer-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.footer-btn:hover {
+  transform: translateY(-2px);
 }
 
 .footer-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* 表单样式 */
 .custom-form .form-input {
   width: 100%;
+}
+
+.custom-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
 /* 响应式 */
@@ -826,6 +950,10 @@ onMounted(() => {
 
   .drawer-footer {
     flex-direction: column;
+  }
+
+  .pagination-wrapper {
+    justify-content: center;
   }
 }
 </style>

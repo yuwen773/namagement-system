@@ -319,86 +319,139 @@ onMounted(() => {
 
 <style scoped>
 /* ========================================
-   Department List - Modern Corporate Design
+   Department List - Refined Corporate Design
    ======================================== */
+.department-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+}
+
+.department-page::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* 页面头部 */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 20px 24px;
+  margin-bottom: 4px;
+  padding: 24px;
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-success));
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .header-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
 }
 
 .header-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: white;
 }
 
 .page-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--color-text-primary);
+  letter-spacing: 0.5px;
 }
 
 .header-right .el-button {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
+  gap: 8px;
+  padding: 12px 24px;
   border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.header-right .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
 }
 
 .header-right svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* 表格区域 */
 .table-section {
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-xl);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  animation-delay: 0.2s;
 }
 
 .custom-table {
   border-radius: 0;
 }
 
+.custom-table :deep(.el-table__header) {
+  background: var(--color-gray-50);
+}
+
+.custom-table :deep(.el-table__header th) {
+  background: transparent;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
 /* 部门名称列样式 */
 .department-name {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .dept-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   color: white;
   display: flex;
@@ -407,14 +460,18 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .parent-dept {
   color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .status-tag {
   font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 2px 12px;
 }
 
 /* 操作按钮 */
@@ -422,6 +479,13 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: var(--color-primary-subtle);
 }
 
 .action-btn svg {
@@ -444,12 +508,32 @@ onMounted(() => {
   width: 100%;
 }
 
+.custom-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
+  }
+
+  .pagination-wrapper {
+    justify-content: center;
   }
 }
 </style>

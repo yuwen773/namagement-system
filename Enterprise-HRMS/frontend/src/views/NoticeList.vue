@@ -148,46 +148,136 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ========================================
+   Notice List - Refined Corporate Design
+   ======================================== */
 .notice-list-container {
   padding: 24px;
-  background: #f5f7fa;
   min-height: calc(100vh - 112px);
+  position: relative;
+}
+
+.notice-list-container::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .page-header {
   margin-bottom: 24px;
+  padding: 24px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-warning));
 }
 
 .page-header h2 {
   margin: 0 0 8px 0;
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-header h2::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: 2px;
 }
 
 .subtitle {
   margin: 0;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
+  padding-left: 16px;
 }
 
 .notice-content {
   min-height: 200px;
+  position: relative;
+  z-index: 1;
 }
 
 .notice-item {
   margin-bottom: 16px;
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+}
+
+.notice-item:nth-child(1) { animation-delay: 0.1s; }
+.notice-item:nth-child(2) { animation-delay: 0.2s; }
+.notice-item:nth-child(3) { animation-delay: 0.3s; }
+.notice-item:nth-child(4) { animation-delay: 0.4s; }
+.notice-item:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .notice-card {
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  background: var(--color-bg-secondary);
+  overflow: hidden;
+  position: relative;
+}
+
+.notice-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .notice-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-primary-light);
+}
+
+.notice-card:hover::before {
+  opacity: 1;
+}
+
+.notice-card :deep(.el-card__body) {
+  padding: 24px;
 }
 
 .notice-header {
@@ -200,36 +290,41 @@ onMounted(() => {
 .notice-title-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
   min-width: 0;
 }
 
 .pinned-tag {
   flex-shrink: 0;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 2px 10px;
 }
 
 .notice-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #303133;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 .notice-date {
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 13px;
   flex-shrink: 0;
   margin-left: 16px;
+  font-weight: 400;
 }
 
 .notice-preview {
-  color: #606266;
+  color: var(--color-text-secondary);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
   margin: 0 0 16px 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -243,19 +338,67 @@ onMounted(() => {
 }
 
 .read-more {
-  color: #409eff;
+  color: var(--color-primary);
   font-size: 13px;
-  transition: color 0.3s;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.read-more::after {
+  content: '→';
+  transition: transform 0.3s ease;
 }
 
 .notice-card:hover .read-more {
-  color: #66b1ff;
+  color: var(--color-primary-dark);
+}
+
+.notice-card:hover .read-more::after {
+  transform: translateX(4px);
 }
 
 .pagination-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 24px;
-  padding: 16px 0;
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  position: relative;
+  z-index: 1;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 20px;
+  }
+
+  .page-header h2 {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    padding-left: 0;
+    padding-top: 8px;
+  }
+
+  .notice-card :deep(.el-card__body) {
+    padding: 16px;
+  }
+
+  .notice-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .notice-date {
+    margin-left: 0;
+    font-size: 12px;
+  }
 }
 </style>

@@ -374,48 +374,80 @@ onMounted(() => {
 
 <style scoped>
 /* ========================================
-   Salary - Modern Corporate Design
+   Salary - Refined Corporate Design
    ======================================== */
+.salary-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+}
+
+.salary-page::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* 页面头部 */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 20px 24px;
+  margin-bottom: 4px;
+  padding: 24px;
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-success), #34d399, var(--color-primary));
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .header-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-success) 0%, #34d399 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-glow-success);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
 }
 
 .header-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: white;
 }
 
 .page-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--color-text-primary);
+  letter-spacing: 0.5px;
 }
 
 .header-right {
@@ -432,20 +464,34 @@ onMounted(() => {
 .table-section {
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--color-shadow-sm);
+  border-radius: var(--radius-xl);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  animation-delay: 0.2s;
 }
 
 .custom-table {
   border-radius: 0;
 }
 
+.custom-table :deep(.el-table__header) {
+  background: var(--color-gray-50);
+}
+
+.custom-table :deep(.el-table__header th) {
+  background: transparent;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
 /* 员工单元格 */
 .employee-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .avatar-small {
@@ -460,11 +506,13 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
 }
 
 .employee-cell .info {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .employee-cell .name {
@@ -481,6 +529,7 @@ onMounted(() => {
 .salary-amount {
   font-weight: 500;
   color: var(--color-text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
 }
 
 .salary-amount.final {
@@ -490,6 +539,8 @@ onMounted(() => {
 
 .status-tag {
   font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 2px 12px;
 }
 
 /* 操作按钮 */
@@ -497,6 +548,13 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: var(--color-primary-subtle);
 }
 
 .action-btn svg {
@@ -527,23 +585,37 @@ onMounted(() => {
   align-items: flex-start;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+}
+
+.detail-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-success) 0%, transparent 100%);
 }
 
 .header-info h3 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
+  letter-spacing: 0.3px;
 }
 
 .header-info p {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-tertiary);
   margin: 0;
 }
 
 .status-badge {
   font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
 }
 
 .info-descriptions {
@@ -551,9 +623,15 @@ onMounted(() => {
   overflow: hidden;
 }
 
+.info-descriptions :deep(.el-descriptions__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
 .amount {
   font-weight: 500;
   color: var(--color-text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
 }
 
 .amount.add {
@@ -570,10 +648,22 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, var(--color-success-subtle) 0%, var(--color-bg-secondary) 100%);
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, var(--color-bg-secondary) 100%);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-success-subtle);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.final-salary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-success), #34d399);
 }
 
 .final-salary span:first-child {
@@ -583,14 +673,33 @@ onMounted(() => {
 }
 
 .amount-total {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--color-success);
+  letter-spacing: -1px;
+  font-feature-settings: 'tnum' on, 'lnum' on;
+  font-family: 'SF Mono', 'Monaco', monospace;
 }
 
 /* 表单样式 */
 .custom-form .form-input {
   width: 100%;
+}
+
+.custom-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 响应式 */
@@ -607,6 +716,10 @@ onMounted(() => {
 
   .month-range-picker {
     width: 100%;
+  }
+
+  .pagination-wrapper {
+    justify-content: center;
   }
 }
 </style>

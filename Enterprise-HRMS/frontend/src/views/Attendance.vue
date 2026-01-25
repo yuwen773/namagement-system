@@ -463,26 +463,58 @@ onMounted(() => {
 
 <style scoped>
 /* ========================================
-   Attendance - Modern Corporate Design
+   Attendance - Refined Corporate Design
    ======================================== */
 .attendance-page {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  position: relative;
+}
+
+.attendance-page::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* 通用卡片样式 */
 .section-card {
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .section-card:hover {
   box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+.section-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-success));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.section-card:hover::before {
+  opacity: 1;
 }
 
 .card-header {
@@ -491,39 +523,39 @@ onMounted(() => {
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid var(--color-border-light);
-  background: linear-gradient(to bottom, var(--color-gray-50), var(--color-bg-secondary));
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-bg-secondary) 100%);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .header-icon-wrapper {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
 }
 
 .header-icon-wrapper.chart {
-  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
-  box-shadow: var(--shadow-glow-success);
+  background: linear-gradient(135deg, var(--color-success) 0%, #34d399 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
 }
 
 .header-icon-wrapper.list {
-  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-light) 100%);
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+  background: linear-gradient(135deg, var(--color-warning) 0%, #fbbf24 100%);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
 .header-icon-wrapper svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: white;
 }
 
@@ -531,10 +563,13 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
+  letter-spacing: 0.3px;
 }
 
 .status-badge {
   font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
 }
 
 .header-right {
@@ -548,6 +583,12 @@ onMounted(() => {
   gap: 6px;
   padding: 10px 20px;
   border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
 }
 
 .action-btn svg {
@@ -560,73 +601,109 @@ onMounted(() => {
 }
 
 /* 今日考勤 */
+.today-card {
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+}
+
 .stat-row {
   display: flex;
-  gap: 48px;
+  gap: 64px;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   position: relative;
+  padding: 20px 24px;
+  background: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-primary-light);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.stat-icon::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: calc(var(--radius-lg) + 3px);
+  padding: 2px;
+  background: linear-gradient(135deg, currentColor, transparent 50%, currentColor);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-item:hover .stat-icon::after {
+  opacity: 0.3;
 }
 
 .stat-icon.checkin {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
-}
-
-.stat-icon.checkin svg {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(99, 102, 241, 0.06) 100%);
   color: var(--color-primary);
-  width: 24px;
-  height: 24px;
 }
 
 .stat-icon.checkout {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(52, 211, 153, 0.06) 100%);
+  color: var(--color-success);
 }
 
-.stat-icon.checkout svg {
-  color: var(--color-success);
-  width: 24px;
-  height: 24px;
+.stat-icon svg {
+  width: 28px;
+  height: 28px;
+  position: relative;
+  z-index: 1;
 }
 
 .stat-info {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .stat-label {
   font-size: 13px;
   color: var(--color-text-tertiary);
-  margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .stat-value {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--color-text-primary);
+  letter-spacing: -0.5px;
+  font-feature-settings: 'tnum' on, 'lnum' on;
 }
 
 .late-indicator,
 .early-indicator {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  padding: 2px 8px;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
   border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .late-indicator {
@@ -640,6 +717,12 @@ onMounted(() => {
 }
 
 /* 月度统计 */
+.stats-card {
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  animation-delay: 0.15s;
+}
+
 .month-picker {
   width: 180px;
 }
@@ -655,11 +738,11 @@ onMounted(() => {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: all var(--transition-base);
+  transition: all 0.3s ease;
 }
 
 .stat-box:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
 }
 
@@ -677,40 +760,42 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
 }
 
 .stat-box-content.normal::before {
-  background: var(--color-success);
+  background: linear-gradient(90deg, var(--color-success), #34d399);
 }
 
 .stat-box-content.late::before {
-  background: var(--color-danger);
+  background: linear-gradient(90deg, var(--color-danger), #f87171);
 }
 
 .stat-box-content.early::before {
-  background: var(--color-warning);
+  background: linear-gradient(90deg, var(--color-warning), #fbbf24);
 }
 
 .stat-box-content.absent::before {
-  background: var(--color-info);
+  background: linear-gradient(90deg, var(--color-info), #9ca3af);
 }
 
 .stat-box-content.leave::before {
-  background: var(--color-primary);
+  background: linear-gradient(90deg, var(--color-primary), #818cf8);
 }
 
 .stat-box-content.total::before {
-  background: var(--color-primary);
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
 }
 
 .stat-icon-small {
-  width: 28px;
-  height: 28px;
-  margin: 0 auto 8px;
-  border-radius: var(--radius-sm);
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 12px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .stat-box-content.normal .stat-icon-small {
@@ -754,31 +839,35 @@ onMounted(() => {
 }
 
 .stat-box-content.total .stat-icon-small {
-  background: var(--color-primary-subtle);
+  background: rgba(139, 92, 246, 0.12);
 }
 
 .stat-box-content.total .stat-icon-small svg {
-  color: var(--color-primary);
+  color: #8b5cf6;
 }
 
 .stat-icon-small svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .stat-number {
   display: block;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--color-text-primary);
   margin-bottom: 4px;
   line-height: 1.2;
+  letter-spacing: -1px;
+  font-feature-settings: 'tnum' on, 'lnum' on;
 }
 
 .stat-text {
   font-size: 12px;
   color: var(--color-text-tertiary);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* 筛选组样式 */
@@ -797,12 +886,30 @@ onMounted(() => {
 }
 
 /* 表格样式 */
+.section-card:last-of-type {
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  animation-delay: 0.3s;
+}
+
 .custom-table {
   border-radius: 0;
 }
 
+.custom-table :deep(.el-table__header) {
+  background: var(--color-gray-50);
+}
+
+.custom-table :deep(.el-table__header th) {
+  background: transparent;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
 .status-tag {
   font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 2px 12px;
 }
 
 /* 分页 */
@@ -820,13 +927,24 @@ onMounted(() => {
 .text-danger,
 .late-value {
   color: var(--color-danger);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .text-warning,
 .early-value {
   color: var(--color-warning);
-  font-weight: 500;
+  font-weight: 600;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 响应式 */
@@ -839,7 +957,11 @@ onMounted(() => {
 @media (max-width: 768px) {
   .stat-row {
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
+  }
+
+  .stat-item {
+    width: 100%;
   }
 
   .stats-grid {
@@ -861,8 +983,8 @@ onMounted(() => {
     width: 100%;
   }
 
-  .stat-item {
-    width: 100%;
+  .stat-number {
+    font-size: 26px;
   }
 }
 </style>

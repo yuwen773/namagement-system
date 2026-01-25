@@ -589,45 +589,343 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ========================================
+   Approval Center - Refined Corporate Design
+   ======================================== */
 .approval-center {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
 }
 
+.approval-center::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -30px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 页面标题 */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 24px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-success));
 }
 
 .page-header h2 {
   margin: 0;
-  font-size: 18px;
-  color: #303133;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
+.page-header h2::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: 2px;
+}
+
+.page-header .el-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.page-header .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+/* Tab 切换 */
 .approval-tabs {
-  background: #fff;
-  padding: 20px;
-  border-radius: 4px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  animation-delay: 0.2s;
 }
 
+.approval-tabs :deep(.el-tabs__header) {
+  margin: 0;
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.approval-tabs :deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+.approval-tabs :deep(.el-tabs__item) {
+  height: 56px;
+  line-height: 56px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: all 0.3s ease;
+}
+
+.approval-tabs :deep(.el-tabs__item:hover) {
+  color: var(--color-primary);
+}
+
+.approval-tabs :deep(.el-tabs__item.is-active) {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.approval-tabs :deep(.el-tabs__active-bar) {
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 3px 3px 0 0;
+}
+
+.approval-tabs :deep(.el-tabs__content) {
+  padding: 24px;
+}
+
+/* 筛选区域 */
 .filter-section {
-  margin-bottom: 15px;
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
 }
 
+.filter-section:hover {
+  border-color: var(--color-primary-light);
+  background: var(--color-bg-secondary);
+}
+
+.filter-section :deep(.el-form) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.filter-section :deep(.el-form-item) {
+  margin: 0;
+}
+
+.filter-section :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding-right: 12px;
+}
+
+.filter-section :deep(.el-input__wrapper),
+.filter-section :deep(.el-select .el-input__wrapper) {
+  border-radius: var(--radius-md);
+}
+
+.filter-section .el-button {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.filter-section .el-button:first-of-type {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border: none;
+}
+
+.filter-section .el-button:first-of-type:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+/* 表格样式 */
+.approval-tabs :deep(.el-table) {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.approval-tabs :deep(.el-table::before) {
+  display: none;
+}
+
+.approval-tabs :deep(.el-table__header) {
+  background: var(--color-gray-50);
+}
+
+.approval-tabs :deep(.el-table__header th) {
+  background: transparent;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.approval-tabs :deep(.el-table__row) {
+  transition: all 0.2s ease;
+}
+
+.approval-tabs :deep(.el-table__row:hover) {
+  background: var(--color-gray-50);
+}
+
+/* 状态标签 */
+.approval-tabs :deep(.el-tag) {
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  padding: 2px 12px;
+}
+
+/* 操作按钮 */
+.approval-tabs :deep(.el-button--small) {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.approval-tabs :deep(.el-button--small:hover) {
+  transform: translateY(-1px);
+}
+
+/* 分页 */
 .pagination-section {
-  margin-top: 15px;
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-border-light);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
+/* 表单提示文字 */
 .form-tip {
   margin-left: 10px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 13px;
+}
+
+/* 对话框样式 */
+.approval-tabs :deep(.el-dialog) {
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.approval-tabs :deep(.el-dialog__header) {
+  padding: 24px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-gray-50);
+}
+
+.approval-tabs :deep(.el-dialog__title) {
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--color-text-primary);
+}
+
+.approval-tabs :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.approval-tabs :deep(.el-dialog__footer) {
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-border-light);
+  background: var(--color-gray-50);
+}
+
+.approval-tabs :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.approval-tabs :deep(.el-textarea__inner) {
+  border-radius: var(--radius-md);
+  resize: none;
+}
+
+/* 描述列表 */
+.approval-tabs :deep(.el-descriptions) {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.approval-tabs :deep(.el-descriptions__label) {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-gray-50);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .filter-section :deep(.el-form) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-section :deep(.el-form-item) {
+    width: 100%;
+  }
+
+  .filter-section :deep(.el-select),
+  .filter-section :deep(.el-input) {
+    width: 100%;
+  }
+
+  .pagination-section {
+    justify-content: center;
+  }
 }
 </style>

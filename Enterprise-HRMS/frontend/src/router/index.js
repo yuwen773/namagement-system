@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
+import Register from '../views/Register.vue'
 import Home from '../views/Home.vue'
 import { useAuthStore } from '../stores/auth'
 import { ElMessage } from 'element-plus'
@@ -11,6 +12,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: Login
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: Register
     },
     {
       path: '/',
@@ -178,8 +184,8 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  // 2. 如果已登录，尝试访问登录页，跳转到首页
-  if (to.path === '/login' && token) {
+  // 2. 如果已登录，尝试访问登录页或注册页，跳转到首页
+  if ((to.path === '/login' || to.path === '/register') && token) {
     next('/')
     return
   }
