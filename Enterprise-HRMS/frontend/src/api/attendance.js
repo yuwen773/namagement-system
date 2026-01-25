@@ -53,10 +53,25 @@ export function getAttendanceStats(month) {
   return axios.get('/attendance/stats/', { params: { month } })
 }
 
+/**
+ * 获取月度考勤统计（按部门汇总）
+ * @param {string} month - 月份 (YYYY-MM)
+ * @param {number} departmentId - 部门ID（可选）
+ * @returns {Promise}
+ */
+export function getMonthlyAttendanceStats(month, departmentId = null) {
+  const params = { month }
+  if (departmentId) {
+    params.department_id = departmentId
+  }
+  return axios.get('/attendance/monthly-stats/', { params })
+}
+
 export default {
   checkIn,
   checkOut,
   getTodayAttendance,
   getAttendanceRecords,
-  getAttendanceStats
+  getAttendanceStats,
+  getMonthlyAttendanceStats
 }

@@ -4,8 +4,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-
-from HRMS.permissions import IsEmployeeOrHROrAdmin
+from django.db.models import Count, Q
+from HRMS.permissions import IsEmployeeOrHROrAdmin, IsHROrAdmin
 from .models import Attendance
 from .serializers import (
     AttendanceSerializer,
@@ -251,4 +251,142 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         return Response({
             'code': 0,
             'data': stats
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsHROrAdmin], url_path='monthly-stats')
+    def monthly_stats(self, request):
+        """
+        获取月度考勤统计（按部门汇总）
+        GET /api/attendance/monthly-stats/?month=2024-01&department_id=1
+        仅 HR/Admin 可访问
+        """
+        user = request.user
+        month = request.query_params.get('month')
+        department_id = request.query_params.get('department_id')
+
+        # 权限检查
+        if user.role not in ['hr', 'admin']:
+            return Response({
+                'code': 403,
+                'message': '您没有权限访问此统计'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if not month:
+            return Response({
+                'code': 400,
+                'message': '请指定月份，格式：YYYY-MM'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            year, month_num = map(int, month.split('-'))
+        except (ValueError, AttributeError):
+            return Response({
+                'code': 400,
+                'message': '月份格式错误，请使用 YYYY-MM 格式'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 获取该月份的工作日天数（简单计算：22天，可根据实际情况调整）
+        from calendar import monthrange
+        _, days_in_month = monthrange(year, month_num)
+        # 粗略估算工作日（约80%的天数）
+        total_work_days = int(days_in_month * 0.8)
+
+        # 获取考勤记录
+        from employee.models import EmployeeProfile
+
+        queryset = Attendance.objects.filter(
+            date__year=year,
+            date__month=month_num
+        )
+
+        # 按部门筛选
+        if department_id:
+            profile_ids = EmployeeProfile.objects.filter(
+                department_id=department_id
+            ).values_list('user_id', flat=True)
+            queryset = queryset.filter(user_id__in=profile_ids)
+
+        # 获取所有在职员工（用于计算部门人数）
+        active_profiles = EmployeeProfile.objects.filter(status='active')
+        if department_id:
+            active_profiles = active_profiles.filter(department_id=department_id)
+
+        # 部门统计
+        from django.db.models import F
+
+        # 按用户汇总
+        user_stats = queryset.values('user_id').annotate(
+            total=Count('id'),
+            normal=Count('id', filter=Q(status='normal')),
+            late=Count('id', filter=Q(status='late')),
+            early=Count('id', filter=Q(status='early')),
+            absent=Count('id', filter=Q(status='absent')),
+            leave=Count('id', filter=Q(status='leave')),
+        )
+
+        # 计算汇总数据
+        total_employees = active_profiles.count() or 1
+        total_records = sum(s['total'] for s in user_stats)
+        total_normal = sum(s['normal'] for s in user_stats)
+        total_late = sum(s['late'] for s in user_stats)
+        total_early = sum(s['early'] for s in user_stats)
+        total_absent = sum(s['absent'] for s in user_stats)
+        total_leave = sum(s['leave'] for s in user_stats)
+
+        # 部门人员统计
+        dept_user_map = {}
+        for profile in active_profiles.select_related('department'):
+            dept_name = profile.department.get_full_path() if profile.department else '未知部门'
+            if dept_name not in dept_user_map:
+                dept_user_map[dept_name] = {'count': 0, 'users': set()}
+            dept_user_map[dept_name]['count'] += 1
+            dept_user_map[dept_name]['users'].add(profile.user_id)
+
+        # 构建返回数据
+        stats_data = {
+            'month': month,
+            'total_work_days': total_work_days,
+            'summary': {
+                'total_employees': total_employees,
+                'total_records': total_records,
+                'normal_days': total_normal,
+                'late_days': total_late,
+                'early_days': total_early,
+                'absent_days': total_absent,
+                'leave_days': total_leave,
+                'attendance_rate': round(total_normal / total_records * 100, 2) if total_records > 0 else 0,
+            },
+            'by_department': []
+        }
+
+        # 按部门分组统计
+        for dept_name, dept_info in dept_user_map.items():
+            dept_user_ids = dept_info['users']
+            dept_queryset = queryset.filter(user_id__in=dept_user_ids)
+
+            dept_total = dept_queryset.count()
+            dept_normal = dept_queryset.filter(status='normal').count()
+            dept_late = dept_queryset.filter(status='late').count()
+            dept_early = dept_queryset.filter(status='early').count()
+            dept_absent = dept_queryset.filter(status='absent').count()
+            dept_leave = dept_queryset.filter(status='leave').count()
+
+            stats_data['by_department'].append({
+                'department': dept_name,
+                'employee_count': dept_info['count'],
+                'total_records': dept_total,
+                'normal_days': dept_normal,
+                'late_days': dept_late,
+                'early_days': dept_early,
+                'absent_days': dept_absent,
+                'leave_days': dept_leave,
+                'attendance_rate': round(dept_normal / dept_total * 100, 2) if dept_total > 0 else 0,
+            })
+
+        # 按部门名称排序
+        stats_data['by_department'].sort(key=lambda x: x['department'])
+
+        return Response({
+            'code': 0,
+            'data': stats_data
         })
