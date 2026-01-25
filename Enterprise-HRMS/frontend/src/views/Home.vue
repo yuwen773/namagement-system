@@ -1,5 +1,5 @@
 <script setup>
-import { computed, h } from 'vue'
+import { computed, h, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
@@ -20,6 +20,13 @@ const userRoleText = computed(() => {
 // 动态获取当前用户可访问的菜单列表
 const accessibleMenus = computed(() => {
   return authStore.getAccessibleMenus()
+})
+
+// 页面加载时获取权限配置
+onMounted(async () => {
+  if (authStore.token && !authStore.rolePermissions) {
+    await authStore.fetchRolePermissions()
+  }
 })
 
 // 菜单图标渲染函数（使用 h 函数创建带 class 的 SVG，确保 scoped CSS 生效）
@@ -44,6 +51,10 @@ const renderIcon = (iconName) => {
       h('path', { d: 'M14 12h1' }),
       h('path', { d: 'M14 16h1' }),
       h('path', { d: 'M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16' })
+    ]),
+    posts: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('rect', { x: '2', y: '7', width: '20', height: '14', rx: '2', ry: '2' }),
+      h('path', { d: 'M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' })
     ]),
     attendance: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
       h('circle', { cx: '12', cy: '12', r: '10' }),
@@ -85,6 +96,10 @@ const renderIcon = (iconName) => {
       h('path', { d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }),
       h('circle', { cx: '12', cy: '7', r: '4' }),
       h('path', { d: 'M16 3.13a4 4 0 0 1 0 7.75' })
+    ]),
+    setting: () => h('svg', { class: 'nav-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+      h('circle', { cx: '12', cy: '12', r: '3' }),
+      h('path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' })
     ])
   }
   return icons[iconName]?.() || null

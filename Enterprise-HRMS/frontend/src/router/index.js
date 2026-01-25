@@ -24,6 +24,12 @@ const router = createRouter({
           meta: { roles: ['admin', 'hr'] }
         },
         {
+          path: 'employee',
+          name: 'employee-dashboard',
+          component: () => import('../views/EmployeeDashboard.vue'),
+          meta: { roles: ['employee'] }
+        },
+        {
           path: 'employees',
           name: 'employees',
           component: () => import('../views/EmployeeList.vue'),
@@ -36,10 +42,22 @@ const router = createRouter({
           meta: { roles: ['admin', 'hr'] }
         },
         {
+          path: 'posts',
+          name: 'posts',
+          component: () => import('../views/PostList.vue'),
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
           path: 'attendance',
           name: 'attendance',
           component: () => import('../views/Attendance.vue'),
           meta: { roles: ['admin', 'hr', 'employee'] }
+        },
+        {
+          path: 'attendance-statistics',
+          name: 'attendance-statistics',
+          component: () => import('../views/AttendanceStatistics.vue'),
+          meta: { roles: ['admin', 'hr'] }
         },
         {
           path: 'salary',
@@ -96,6 +114,12 @@ const router = createRouter({
           meta: { roles: ['admin', 'hr', 'employee'] }
         },
         {
+          path: 'performance-template',
+          name: 'performance-template',
+          component: () => import('../views/performance/PerformanceTemplate.vue'),
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
           path: 'data-center',
           name: 'data-center',
           component: () => import('../views/DataCenter.vue'),
@@ -106,6 +130,12 @@ const router = createRouter({
           name: 'profile',
           component: () => import('../views/ProfileEdit.vue'),
           meta: { roles: ['admin', 'hr', 'employee'] }
+        },
+        {
+          path: 'permission-config',
+          name: 'permission-config',
+          component: () => import('../views/admin/PermissionConfig.vue'),
+          meta: { roles: ['admin'] }
         }
       ]
     },
@@ -119,7 +149,7 @@ const router = createRouter({
 })
 
 // 路由守卫：检查登录状态和角色权限
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   const token = localStorage.getItem('token')
   const user = authStore.user
@@ -136,16 +166,34 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 3. 检查角色权限
-  if (to.meta.roles && user?.role) {
-    const allowedRoles = to.meta.roles
-    if (!allowedRoles.includes(user.role)) {
+  // 3. 检查角色权限（优先使用动态权限）
+  if (user?.role) {
+    // 如果权限数据还没加载，先加载
+    if (!authStore.rolePermissions && to.meta.requiresAuth) {
+      await authStore.fetchRolePermissions()
+    }
+
+    // 先检查动态权限配置（从后端获取）
+    const hasDynamicPermission = authStore.hasPermission(to.name)
+    // 再检查路由的 meta.roles 配置
+    const routeAllowedRoles = to.meta.roles
+
+    // 如果动态权限允许访问，直接放行
+    if (hasDynamicPermission) {
+      next()
+      return
+    }
+
+    // 如果动态权限不允许，检查静态 meta.roles 作为兜底
+    if (routeAllowedRoles && !routeAllowedRoles.includes(user.role)) {
       // 无权限访问
       ElMessage.warning('您没有权限访问该页面')
       // 跳转到该角色可访问的第一个页面
       const accessibleMenus = authStore.getAccessibleMenus()
-      if (accessibleMenus.length > 0) {
-        next(accessibleMenus[0].path)
+      // 过滤掉当前要访问的路径，避免无限重定向
+      const validMenus = accessibleMenus.filter(menu => menu.path !== to.path)
+      if (validMenus.length > 0) {
+        next(validMenus[0].path)
       } else {
         // 如果没有任何可访问的菜单，跳转到登录页
         authStore.logout()

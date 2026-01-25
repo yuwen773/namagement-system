@@ -116,3 +116,19 @@ class NoticePublicViewSet(viewsets.ReadOnlyModelViewSet):
             'code': 0,
             'data': serializer.data
         })
+
+    @action(detail=False, methods=['get'])
+    def latest(self, request):
+        """
+        获取最新公告列表
+        GET /api/notice/public/latest/?limit=5
+        """
+        limit = int(request.query_params.get('limit', 5))
+        queryset = Notice.objects.filter(is_published=True)[:limit]
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'total': len(serializer.data)
+        })
