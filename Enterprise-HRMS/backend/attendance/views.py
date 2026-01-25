@@ -95,10 +95,22 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         """
         签到接口
         POST /api/attendance/check-in/
+        仅允许在 06:00 - 12:00 期间签到
         """
         user = request.user
         today = date.today()
         now = timezone.localtime().time().replace(microsecond=0)
+
+        # 签到时间限制：08:00 - 09:00
+        check_in_start = time(8, 0)
+        check_in_end = time(9, 0)
+        work_start = time(9, 0)
+
+        if now < check_in_start or now > check_in_end:
+            return Response({
+                'code': 400,
+                'message': f'签到时间范围为 {check_in_start.strftime("%H:%M")} - {check_in_end.strftime("%H:%M")}，请在规定时间内签到'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # 查找或创建今日考勤记录
         attendance, created = Attendance.objects.get_or_create(
@@ -121,7 +133,6 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         attendance.save()
 
         # 判断是否迟到
-        work_start = time(9, 0)
         is_late = now > work_start
 
         response_data = {
@@ -143,10 +154,21 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         """
         签退接口
         POST /api/attendance/check-out/
+        仅允许在 15:00 - 23:00 期间签退
         """
         user = request.user
         today = date.today()
         now = timezone.localtime().time().replace(microsecond=0)
+
+        # 签退时间限制：18:00 以后
+        check_out_start = time(18, 0)
+        work_end = time(18, 0)
+
+        if now < check_out_start:
+            return Response({
+                'code': 400,
+                'message': f'签退时间需在 {check_out_start.strftime("%H:%M")} 以后，请在规定时间内签退'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # 获取今日考勤记录
         try:
@@ -167,7 +189,6 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         attendance.save()
 
         # 判断是否早退
-        work_end = time(18, 0)
         is_early = now < work_end
 
         response_data = {
