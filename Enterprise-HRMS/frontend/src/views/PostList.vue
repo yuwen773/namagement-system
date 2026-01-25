@@ -12,7 +12,7 @@
         <span class="page-title">岗位管理</span>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="handleAdd">
+        <el-button v-if="!isReadOnly" type="primary" @click="handleAdd">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -23,7 +23,7 @@
     </div>
 
     <!-- 搜索区域 -->
-    <div class="search-section">
+    <div v-if="!isReadOnly" class="search-section">
       <el-input
         v-model="searchKeyword"
         placeholder="搜索岗位名称或编码..."
@@ -78,7 +78,7 @@
             <span class="employee-count">{{ row.employee_count || 0 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column v-if="!isReadOnly" label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)" class="action-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -147,9 +147,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPostList, createPost, updatePost, deletePost } from '@/api/post'
+import { useAuthStore } from '@/stores/auth'
 
 const loading = ref(false)
 const postList = ref([])
@@ -159,6 +160,10 @@ const formRef = ref(null)
 const submitting = ref(false)
 const searchKeyword = ref('')
 const filterActive = ref('')
+const authStore = useAuthStore()
+
+// 只读模式（员工角色无法操作）
+const isReadOnly = computed(() => authStore.user?.role === 'employee')
 
 // 分页状态
 const pagination = reactive({

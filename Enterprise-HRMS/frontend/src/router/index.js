@@ -39,13 +39,13 @@ const router = createRouter({
           path: 'departments',
           name: 'departments',
           component: () => import('../views/DepartmentList.vue'),
-          meta: { roles: ['admin', 'hr'] }
+          meta: { roles: ['admin', 'hr', 'employee'] }
         },
         {
           path: 'posts',
           name: 'posts',
           component: () => import('../views/PostList.vue'),
-          meta: { roles: ['admin', 'hr'] }
+          meta: { roles: ['admin', 'hr', 'employee'] }
         },
         {
           path: 'attendance',
@@ -75,6 +75,12 @@ const router = createRouter({
           path: 'onboarding',
           name: 'onboarding',
           component: () => import('../views/Onboarding.vue'),
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'resignation',
+          name: 'resignation',
+          component: () => import('../views/Resignation.vue'),
           meta: { roles: ['admin', 'hr'] }
         },
         {

@@ -18,7 +18,7 @@
         <span class="page-title">部门管理</span>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="handleAdd">
+        <el-button v-if="!isReadOnly" type="primary" @click="handleAdd">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -55,7 +55,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column v-if="!isReadOnly" label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleEdit(row)" class="action-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -129,6 +129,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getDepartmentList, createDepartment, updateDepartment, deleteDepartment } from '@/api/department'
+import { useAuthStore } from '@/stores/auth'
 
 const loading = ref(false)
 const departmentList = ref([])
@@ -137,6 +138,10 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref(null)
 const submitting = ref(false)
+const authStore = useAuthStore()
+
+// 只读模式（员工角色无法操作）
+const isReadOnly = computed(() => authStore.user?.role === 'employee')
 
 // 分页状态
 const pagination = reactive({
