@@ -77,11 +77,29 @@ export function resignEmployee(id, data) {
   return axios.post(`/employee/${id}/resign/`, data)
 }
 
+/**
+ * 获取员工列表（用于选择器）
+ * @param {Object} params - 查询参数
+ * @param {string} params.status - 状态筛选，默认 active
+ * @param {number} params.page_size - 每页数量，默认 100
+ * @returns {Promise}
+ */
+export function getEmployeeOptions(params) {
+  return axios.get('/employee/', {
+    params: {
+      ...params,
+      status: params.status || 'active',
+      page_size: params.page_size || 100
+    }
+  })
+}
+
 export default {
   getEmployeeList,
   getEmployeeDetail,
   getPendingUsers,
   createEmployee,
   updateEmployee,
-  resignEmployee
+  resignEmployee,
+  getEmployeeOptions
 }
