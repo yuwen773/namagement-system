@@ -33,7 +33,8 @@ export const useAuthStore = defineStore('auth', () => {
     noticeManagement: [ROLE_ADMIN],
     performanceReview: [ROLE_ADMIN, ROLE_HR],
     myPerformance: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
-    dataCenter: [ROLE_ADMIN, ROLE_HR]
+    dataCenter: [ROLE_ADMIN, ROLE_HR],
+    profile: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE]
   }
 
   // 检查是否有权限访问指定路由

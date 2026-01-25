@@ -230,3 +230,25 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             'message': '离职办理成功',
             'data': EmployeeProfileSerializer(instance).data
         })
+
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        """
+        获取当前用户的员工档案
+        GET /api/employee/me/
+        返回当前登录用户的员工档案信息（包含部门和岗位）
+        """
+        try:
+            instance = EmployeeProfile.objects.select_related('user', 'department', 'post').get(
+                user=request.user
+            )
+            serializer = self.get_serializer(instance)
+            return Response({
+                'code': 0,
+                'data': serializer.data
+            })
+        except EmployeeProfile.DoesNotExist:
+            return Response({
+                'code': 404,
+                'message': '暂无员工档案，请联系人事部门办理入职'
+            }, status=status.HTTP_404_NOT_FOUND)

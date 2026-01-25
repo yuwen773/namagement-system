@@ -1,15 +1,15 @@
 <template>
   <div class="profile-edit-container">
     <div class="page-header">
-      <h2>个人信息编辑</h2>
-      <p class="subtitle">管理您的个人信息，修改手机号或邮箱需要提交审批</p>
+      <h2>个人信息</h2>
+      <p class="subtitle">查看和管理您的个人信息、部门和岗位信息</p>
     </div>
 
     <!-- 当前信息展示 -->
     <el-card class="info-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>当前信息</span>
+          <span>基本信息</span>
         </div>
       </template>
       <el-descriptions :column="2" border>
@@ -20,6 +20,58 @@
         <el-descriptions-item label="角色">{{ roleText }}</el-descriptions-item>
         <el-descriptions-item label="注册时间">{{ formatDate(user?.date_joined) }}</el-descriptions-item>
       </el-descriptions>
+    </el-card>
+
+    <!-- 我的部门 -->
+    <el-card class="info-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span>我的部门</span>
+        </div>
+      </template>
+      <div v-if="employeeProfile" class="department-info">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="工号">{{ employeeProfile.employee_no }}</el-descriptions-item>
+          <el-descriptions-item label="部门">{{ employeeProfile.department_name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="岗位">{{ employeeProfile.post_name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="入职日期">{{ formatDate(employeeProfile.hire_date) }}</el-descriptions-item>
+          <el-descriptions-item label="基本工资">¥{{ formatCurrency(employeeProfile.salary_base) }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="employeeStatusType" size="small">{{ employeeStatusText }}</el-tag>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <el-empty v-else description="暂无员工档案信息" :image-size="80" />
+    </el-card>
+
+    <!-- 组织架构 -->
+    <el-card class="info-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span>组织架构</span>
+          <el-button type="primary" link @click="showOrgDialog = true">
+            <el-icon><View /></el-icon>
+            查看完整架构
+          </el-button>
+        </div>
+      </template>
+      <div v-if="departmentTree.length > 0" class="org-preview">
+        <el-tree
+          :data="departmentTree"
+          :props="{ label: 'name', children: 'children' }"
+          default-expand-all
+          :expand-on-click-node="false"
+          node-key="id"
+        >
+          <template #default="{ node, data }">
+            <div class="tree-node">
+              <span>{{ data.name }}</span>
+              <el-tag v-if="data.code" size="small" type="info">{{ data.code }}</el-tag>
+            </div>
+          </template>
+        </el-tree>
+      </div>
+      <el-empty v-else description="暂无组织架构信息" :image-size="80" />
     </el-card>
 
     <!-- 修改信息表单 -->
@@ -185,13 +237,38 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 组织架构完整视图对话框 -->
+    <el-dialog v-model="showOrgDialog" title="组织架构" width="600px">
+      <div class="org-tree-container">
+        <el-tree
+          v-if="fullDepartmentTree.length > 0"
+          :data="fullDepartmentTree"
+          :props="{ label: 'name', children: 'children' }"
+          default-expand-all
+          :expand-on-click-node="false"
+          node-key="id"
+        >
+          <template #default="{ node, data }">
+            <div class="tree-node">
+              <span>{{ data.name }}</span>
+              <el-tag v-if="data.code" size="small" type="info">{{ data.code }}</el-tag>
+            </div>
+          </template>
+        </el-tree>
+        <el-empty v-else description="暂无组织架构信息" :image-size="80" />
+      </div>
+      <template #footer>
+        <el-button @click="showOrgDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Right, Refresh } from '@element-plus/icons-vue'
+import { Right, Refresh, View } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
 import {
   getCurrentUser,
@@ -200,16 +277,52 @@ import {
   getPendingEditRequests,
   approveEditRequest,
   rejectEditRequest,
+  getMyEmployeeProfile,
+  getDepartmentTree,
   EDIT_TYPE,
   EDIT_TYPE_TEXT,
   STATUS,
   STATUS_TEXT,
   STATUS_TYPE
 } from '../api/profile'
+import { formatCurrency } from '../utils/format'
+
+// 打开组织架构对话框
+const handleViewOrg = () => {
+  showOrgDialog.value = true
+  if (departmentTree.value.length > 0) {
+    fullDepartmentTree.value = departmentTree.value
+  }
+}
 
 const authStore = useAuthStore()
 const user = ref(null)
 const isHR = computed(() => authStore.isHR || authStore.isAdmin)
+
+// 员工档案信息
+const employeeProfile = ref(null)
+const departmentTree = ref([])
+const fullDepartmentTree = ref([])
+const showOrgDialog = ref(false)
+
+// 员工状态
+const employeeStatusText = computed(() => {
+  const statusMap = {
+    active: '在职',
+    pending: '待入职',
+    resigned: '已离职'
+  }
+  return statusMap[employeeProfile.value?.status] || '-'
+})
+
+const employeeStatusType = computed(() => {
+  const typeMap = {
+    active: 'success',
+    pending: 'warning',
+    resigned: 'info'
+  }
+  return typeMap[employeeProfile.value?.status] || 'info'
+})
 
 const roleText = computed(() => {
   const roleMap = {
@@ -227,6 +340,31 @@ const loadCurrentUser = async () => {
     user.value = res.data?.data
   } catch (error) {
     console.error('获取用户信息失败:', error)
+  }
+}
+
+// 获取当前用户的员工档案
+const loadEmployeeProfile = async () => {
+  try {
+    const res = await getMyEmployeeProfile()
+    if (res.data?.code === 0) {
+      employeeProfile.value = res.data?.data
+    }
+  } catch (error) {
+    // 404 表示没有员工档案，这是正常的
+    console.log('暂无员工档案信息')
+  }
+}
+
+// 获取部门树
+const loadDepartmentTree = async () => {
+  try {
+    const res = await getDepartmentTree()
+    if (res.data?.code === 0) {
+      departmentTree.value = res.data?.data || []
+    }
+  } catch (error) {
+    console.error('获取部门树失败:', error)
   }
 }
 
@@ -422,6 +560,8 @@ const submitApproval = async () => {
 
 onMounted(async () => {
   await loadCurrentUser()
+  await loadEmployeeProfile()
+  await loadDepartmentTree()
   loadApplications()
 })
 </script>
@@ -489,5 +629,23 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+/* 组织架构样式 */
+.org-preview {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.org-tree-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
 }
 </style>
