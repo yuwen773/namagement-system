@@ -103,3 +103,11 @@ export const NOTICE_PINNED = {
   NORMAL: false,
   PINNED: true
 }
+
+/**
+ * 获取最新公告列表
+ * @param {number} limit - 获取数量，默认5
+ */
+export function getLatestNotices(limit = 5) {
+  return axios.get('/notice/public/latest/', { params: { limit } })
+}
