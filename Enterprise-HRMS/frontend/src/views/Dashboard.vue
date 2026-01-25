@@ -12,7 +12,10 @@ const stats = ref({
   department_distribution: [],
   salary_trend: [],
   attendance_anomalies: [],
-  hire_resign_trend: []
+  hire_resign_trend: [],
+  overtime_by_department: [],
+  leave_by_department: [],
+  retention_rate: 0
 })
 
 // 图表引用
@@ -20,12 +23,16 @@ const departmentChartRef = ref(null)
 const salaryChartRef = ref(null)
 const attendanceChartRef = ref(null)
 const hireResignChartRef = ref(null)
+const overtimeChartRef = ref(null)
+const leaveChartRef = ref(null)
 
 // 图表实例
 let departmentChart = null
 let salaryChart = null
 let attendanceChart = null
 let hireResignChart = null
+let overtimeChart = null
+let leaveChart = null
 
 // 格式化数字
 const formatNumber = (num) => {
@@ -344,6 +351,204 @@ const initCharts = () => {
       }]
     })
   }
+
+  // 部门加班统计柱状图
+  if (overtimeChartRef.value) {
+    overtimeChart = echarts.init(overtimeChartRef.value)
+    const overtimeData = stats.value.overtime_by_department
+    const departments = overtimeData.map(item => item.department)
+    const hoursData = overtimeData.map(item => item.overtime_hours)
+    const countData = overtimeData.map(item => item.overtime_count)
+
+    overtimeChart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#e5e5e5',
+        borderWidth: 1,
+        textStyle: { color: '#1f2937' },
+        padding: [12, 16],
+        formatter: function(params) {
+          const dept = params[0].name
+          const hours = params[0].value
+          const count = params[1].value
+          return `<div style="font-weight: 600; margin-bottom: 8px;">${dept}</div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #f59e0b; border-radius: 2px;"></span>
+                    <span>加班时长: <b style="color: #f59e0b;">${hours} 小时</b></span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #4f46e5; border-radius: 2px;"></span>
+                    <span>加班次数: <b style="color: #4f46e5;">${count} 次</b></span>
+                  </div>`
+        }
+      },
+      legend: {
+        data: ['加班时长', '加班次数'],
+        bottom: 0,
+        textStyle: { color: '#6b7280', fontSize: 12 }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '18%',
+        top: '12%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: departments,
+        axisLine: { lineStyle: { color: '#d4d4d4' } },
+        axisLabel: { color: '#4b5563', fontSize: 12, rotate: 30 }
+      },
+      yAxis: [{
+        type: 'value',
+        name: '时长(小时)',
+        position: 'left',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: '#f3f4f6' } },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+        nameTextStyle: { color: '#9ca3af', fontSize: 12 }
+      }, {
+        type: 'value',
+        name: '次数',
+        position: 'right',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+        nameTextStyle: { color: '#9ca3af', fontSize: 12 }
+      }],
+      series: [{
+        name: '加班时长',
+        type: 'bar',
+        data: hoursData,
+        barWidth: 24,
+        itemStyle: {
+          color: '#f59e0b',
+          borderRadius: [4, 4, 0, 0]
+        },
+        label: {
+          show: true,
+          position: 'top',
+          color: '#9ca3af',
+          fontSize: 11,
+          formatter: (params) => params.value + 'h'
+        }
+      }, {
+        name: '加班次数',
+        type: 'line',
+        yAxisIndex: 1,
+        data: countData,
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 8,
+        lineStyle: { width: 3, color: '#4f46e5' },
+        itemStyle: { color: '#4f46e5', borderColor: '#fff', borderWidth: 2 }
+      }]
+    })
+  }
+
+  // 部门请假统计柱状图
+  if (leaveChartRef.value) {
+    leaveChart = echarts.init(leaveChartRef.value)
+    const leaveData = stats.value.leave_by_department
+    const departments = leaveData.map(item => item.department)
+    const daysData = leaveData.map(item => item.leave_days)
+    const countData = leaveData.map(item => item.leave_count)
+
+    leaveChart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#e5e5e5',
+        borderWidth: 1,
+        textStyle: { color: '#1f2937' },
+        padding: [12, 16],
+        formatter: function(params) {
+          const dept = params[0].name
+          const days = params[0].value
+          const count = params[1].value
+          return `<div style="font-weight: 600; margin-bottom: 8px;">${dept}</div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #10b981; border-radius: 2px;"></span>
+                    <span>请假天数: <b style="color: #10b981;">${days} 天</b></span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #06b6d4; border-radius: 2px;"></span>
+                    <span>请假次数: <b style="color: #06b6d4;">${count} 次</b></span>
+                  </div>`
+        }
+      },
+      legend: {
+        data: ['请假天数', '请假次数'],
+        bottom: 0,
+        textStyle: { color: '#6b7280', fontSize: 12 }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '18%',
+        top: '12%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: departments,
+        axisLine: { lineStyle: { color: '#d4d4d4' } },
+        axisLabel: { color: '#4b5563', fontSize: 12, rotate: 30 }
+      },
+      yAxis: [{
+        type: 'value',
+        name: '天数',
+        position: 'left',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: '#f3f4f6' } },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+        nameTextStyle: { color: '#9ca3af', fontSize: 12 }
+      }, {
+        type: 'value',
+        name: '次数',
+        position: 'right',
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { color: '#9ca3af', fontSize: 12 },
+        nameTextStyle: { color: '#9ca3af', fontSize: 12 }
+      }],
+      series: [{
+        name: '请假天数',
+        type: 'bar',
+        data: daysData,
+        barWidth: 24,
+        itemStyle: {
+          color: '#10b981',
+          borderRadius: [4, 4, 0, 0]
+        },
+        label: {
+          show: true,
+          position: 'top',
+          color: '#9ca3af',
+          fontSize: 11,
+          formatter: (params) => params.value + 'd'
+        }
+      }, {
+        name: '请假次数',
+        type: 'line',
+        yAxisIndex: 1,
+        data: countData,
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 8,
+        lineStyle: { width: 3, color: '#06b6d4' },
+        itemStyle: { color: '#06b6d4', borderColor: '#fff', borderWidth: 2 }
+      }]
+    })
+  }
 }
 
 // 窗口大小变化时重绘图表
@@ -352,6 +557,8 @@ const handleResize = () => {
   salaryChart?.resize()
   attendanceChart?.resize()
   hireResignChart?.resize()
+  overtimeChart?.resize()
+  leaveChart?.resize()
 }
 
 // 获取数据
@@ -367,7 +574,10 @@ const fetchData = async () => {
       department_distribution: data.department_distribution || [],
       salary_trend: data.salary_trend || [],
       attendance_anomalies: data.attendance_anomalies || [],
-      hire_resign_trend: data.hire_resign_trend || []
+      hire_resign_trend: data.hire_resign_trend || [],
+      overtime_by_department: data.overtime_by_department || [],
+      leave_by_department: data.leave_by_department || [],
+      retention_rate: data.retention_rate || 0
     }
 
     // 数据更新后重新渲染图表
@@ -390,6 +600,8 @@ onUnmounted(() => {
   salaryChart?.dispose()
   attendanceChart?.dispose()
   hireResignChart?.dispose()
+  overtimeChart?.dispose()
+  leaveChart?.dispose()
 })
 </script>
 
@@ -451,6 +663,20 @@ onUnmounted(() => {
             <div class="kpi-label">本月薪资总额</div>
           </div>
           <div class="kpi-accent salary-accent"></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-wrapper retention">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-value">{{ stats.retention_rate }}%</div>
+            <div class="kpi-label">员工留存率</div>
+          </div>
+          <div class="kpi-accent retention-accent"></div>
         </div>
       </div>
     </div>
@@ -526,6 +752,43 @@ onUnmounted(() => {
           <div ref="hireResignChartRef" class="chart-container-wide"></div>
         </div>
       </div>
+
+      <!-- 加班统计和请假统计图表 -->
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="card-header">
+            <div class="header-content">
+              <span class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </span>
+              <span class="card-title">本月部门加班统计</span>
+            </div>
+            <span class="card-subtitle">按部门统计已审批加班时长和次数</span>
+          </div>
+          <div ref="overtimeChartRef" class="chart-container"></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="card-header">
+            <div class="header-content">
+              <span class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span class="card-title">本月部门请假统计</span>
+            </div>
+            <span class="card-subtitle">按部门统计已审批请假天数和次数</span>
+          </div>
+          <div ref="leaveChartRef" class="chart-container"></div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -547,7 +810,7 @@ onUnmounted(() => {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 20px;
 }
 
@@ -592,6 +855,10 @@ onUnmounted(() => {
 
 .salary-accent {
   background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.retention-accent {
+  background: linear-gradient(180deg, #8b5cf6 0%, #a78bfa 100%);
 }
 
 .kpi-icon-wrapper {
@@ -645,6 +912,14 @@ onUnmounted(() => {
   background: #f59e0b;
 }
 
+.kpi-icon-wrapper.retention {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(167, 139, 250, 0.05) 100%);
+}
+
+.kpi-icon-wrapper.retention::after {
+  background: #8b5cf6;
+}
+
 .kpi-icon-wrapper svg {
   width: 24px;
   height: 24px;
@@ -666,6 +941,10 @@ onUnmounted(() => {
 
 .kpi-icon-wrapper.salary svg {
   color: #f59e0b;
+}
+
+.kpi-icon-wrapper.retention svg {
+  color: #8b5cf6;
 }
 
 .kpi-content {
@@ -776,7 +1055,13 @@ onUnmounted(() => {
 }
 
 /* 响应式 */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
   }

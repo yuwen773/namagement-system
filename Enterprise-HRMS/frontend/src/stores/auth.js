@@ -32,7 +32,8 @@ export const useAuthStore = defineStore('auth', () => {
     notices: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
     noticeManagement: [ROLE_ADMIN],
     performanceReview: [ROLE_ADMIN, ROLE_HR],
-    myPerformance: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE]
+    myPerformance: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
+    dataCenter: [ROLE_ADMIN, ROLE_HR]
   }
 
   // 检查是否有权限访问指定路由
@@ -47,6 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
   function getAccessibleMenus() {
     const allMenus = [
       { name: 'dashboard', label: '数据概览', path: '/', icon: 'dashboard' },
+      { name: 'dataCenter', label: '数据中心', path: '/data-center', icon: 'dashboard' },
       { name: 'employees', label: '员工管理', path: '/employees', icon: 'employees' },
       { name: 'departments', label: '部门管理', path: '/departments', icon: 'departments' },
       { name: 'attendance', label: '考勤管理', path: '/attendance', icon: 'attendance' },

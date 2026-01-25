@@ -94,6 +94,12 @@ const router = createRouter({
           name: 'my-performance',
           component: () => import('../views/MyPerformance.vue'),
           meta: { roles: ['admin', 'hr', 'employee'] }
+        },
+        {
+          path: 'data-center',
+          name: 'data-center',
+          component: () => import('../views/DataCenter.vue'),
+          meta: { roles: ['admin', 'hr'] }
         }
       ]
     },

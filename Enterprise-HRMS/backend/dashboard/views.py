@@ -13,6 +13,7 @@ from HRMS.permissions import IsHROrAdmin
 from employee.models import EmployeeProfile
 from salary.models import SalaryRecord
 from attendance.models import Attendance
+from approval.models import ApprovalRequest
 
 
 class DashboardStatsView(APIView):
@@ -175,6 +176,70 @@ class DashboardStatsView(APIView):
                 'resign_count': resign_count
             })
 
+        # 9. 部门加班统计（本月）
+        overtime_by_department = ApprovalRequest.objects.filter(
+            request_type='overtime',
+            status='approved',
+            start_time__gte=first_day_of_month,
+            start_time__lte=timezone.now()
+        ).values(
+            'user__profile__department__name'
+        ).annotate(
+            overtime_hours=Sum('hours'),
+            overtime_count=Count('id')
+        ).order_by('-overtime_hours')
+
+        overtime_data = [
+            {
+                'department': item['user__profile__department__name'] or '未分配部门',
+                'overtime_hours': float(item['overtime_hours'] or 0),
+                'overtime_count': item['overtime_count']
+            }
+            for item in overtime_by_department
+        ]
+
+        # 10. 部门请假统计（本月）
+        leave_by_department = ApprovalRequest.objects.filter(
+            request_type='leave',
+            status='approved',
+            start_time__gte=first_day_of_month,
+            start_time__lte=timezone.now()
+        ).values(
+            'user__profile__department__name',
+            'leave_type'
+        ).annotate(
+            leave_days=Count('id'),
+            total_hours=Sum(
+                models.F('end_time') - models.F('start_time'),
+                output_field=DecimalField()
+            )
+        )
+
+        # 按部门汇总请假天数
+        leave_dict = {}
+        for item in leave_by_department:
+            dept = item['user__profile__department__name'] or '未分配部门'
+            if dept not in leave_dict:
+                leave_dict[dept] = {'days': 0, 'count': 0}
+            # 简单估算：每次请假算1天，实际可根据时长计算
+            leave_dict[dept]['days'] += float(item['total_hours'] or 0) / 24 if item['total_hours'] else 1
+            leave_dict[dept]['count'] += item['leave_days']
+
+        leave_data = [
+            {
+                'department': dept,
+                'leave_days': round(data['days'], 1),
+                'leave_count': data['count']
+            }
+            for dept, data in leave_dict.items()
+        ]
+        leave_data.sort(key=lambda x: x['leave_days'], reverse=True)
+
+        # 11. 员工留存率
+        total_profiles = EmployeeProfile.objects.count()
+        active_profiles = EmployeeProfile.objects.filter(status='active').count()
+        retention_rate = (active_profiles / total_profiles * 100) if total_profiles > 0 else 0
+
         return Response({
             'code': 0,
             'data': {
@@ -185,6 +250,9 @@ class DashboardStatsView(APIView):
                 'department_distribution': department_data,
                 'salary_trend': salary_trend,
                 'attendance_anomalies': anomaly_data,
-                'hire_resign_trend': hire_resign_trend
+                'hire_resign_trend': hire_resign_trend,
+                'overtime_by_department': overtime_data,
+                'leave_by_department': leave_data,
+                'retention_rate': round(retention_rate, 2)
             }
         })
