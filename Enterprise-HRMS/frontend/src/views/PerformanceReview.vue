@@ -627,4 +627,84 @@ onMounted(() => {
   word-break: break-all;
   color: #303133;
 }
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .filter-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .filter-item {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .filter-item.search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filter-row {
+    flex-direction: column;
+  }
+
+  .filter-item {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .review-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .review-info {
+    width: 100%;
+  }
+
+  .employee-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .employee-details {
+    font-size: 12px;
+  }
+
+  .action-btns {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .action-btns {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .action-btns .el-button {
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .pagination-container {
+    justify-content: center;
+  }
+}
 </style>

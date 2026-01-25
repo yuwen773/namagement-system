@@ -332,4 +332,92 @@ onMounted(() => {
   color: #909399;
   font-size: 13px;
 }
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .notice-container {
+    padding: 16px;
+  }
+
+  .notice-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+
+  .notice-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .meta-item {
+    font-size: 13px;
+  }
+
+  .notice-title {
+    font-size: 20px;
+  }
+
+  .notice-body {
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .notice-body :deep(img) {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .notice-body :deep(pre) {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .notice-body :deep(code) {
+    font-size: 13px;
+  }
+
+  .notice-footer {
+    margin-top: 24px;
+    padding-top: 12px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .notice-container {
+    padding: 12px;
+  }
+
+  .notice-title {
+    font-size: 18px;
+  }
+
+  .notice-body {
+    font-size: 14px;
+  }
+
+  .notice-body :deep(p) {
+    margin: 12px 0;
+  }
+
+  .notice-body :deep(h1) {
+    font-size: 20px;
+  }
+
+  .notice-body :deep(h2) {
+    font-size: 18px;
+  }
+
+  .notice-body :deep(h3) {
+    font-size: 16px;
+  }
+
+  .notice-body :deep(ul),
+  .notice-body :deep(ol) {
+    padding-left: 20px;
+  }
+}
 </style>

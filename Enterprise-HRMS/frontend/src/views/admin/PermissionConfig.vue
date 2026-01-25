@@ -602,6 +602,78 @@ onMounted(() => {
   min-height: 500px;
 }
 
+/* 响应式布局 */
+@media (max-width: 1024px) {
+  .config-container {
+    flex-direction: column;
+  }
+
+  .role-list-section {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .role-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .role-item {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .role-list {
+    flex-direction: column;
+  }
+
+  .role-item {
+    min-width: unset;
+  }
+
+  .menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .button-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .data-permission-group .el-radio-group {
+    width: 100%;
+  }
+
+  .data-permission-group .el-radio-button {
+    flex: 1;
+  }
+}
+
 /* 角色列表 */
 .role-list-section {
   width: 280px;

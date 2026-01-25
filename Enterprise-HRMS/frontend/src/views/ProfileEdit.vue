@@ -937,6 +937,12 @@ onMounted(async () => {
 }
 
 /* 响应式 */
+@media (max-width: 1024px) {
+  .info-card :deep(.el-descriptions) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .profile-edit-container {
     padding: 16px;
@@ -964,8 +970,58 @@ onMounted(async () => {
     align-items: flex-start;
   }
 
+  .info-card :deep(.el-descriptions) {
+    grid-template-columns: 1fr;
+  }
+
+  .info-card :deep(.el-descriptions-item__label),
+  .info-card :deep(.el-descriptions-item__content) {
+    padding: 12px 16px;
+  }
+
   .pagination-container {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .pagination-container .el-pagination {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-edit-container {
+    padding: 12px;
+  }
+
+  .page-header {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .page-header h2 {
+    font-size: 18px;
+  }
+
+  .page-header h2::before {
+    width: 3px;
+    height: 18px;
+  }
+
+  .info-card,
+  .edit-card,
+  .history-card {
+    margin-bottom: 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .card-header {
+    font-size: 15px;
+  }
+
+  .reason-text {
+    -webkit-line-clamp: 3;
   }
 }
 </style>

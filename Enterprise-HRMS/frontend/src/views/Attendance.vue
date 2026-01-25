@@ -320,8 +320,10 @@ async function fetchTodayAttendance() {
   try {
     const res = await getTodayAttendance()
     const data = res.data?.data || {}
-    todayData.has_check_in = data.has_check_in || false
-    todayData.has_check_out = data.has_check_out || false
+
+    // 根据 check_in_time 和 check_out_time 判断签到状态
+    todayData.has_check_in = !!data.check_in_time
+    todayData.has_check_out = !!data.check_out_time
 
     if (data.check_in_time) {
       todayData.check_in_time = data.check_in_time
@@ -404,9 +406,11 @@ async function handleCheckIn() {
   loading.checkIn = true
   try {
     const res = await checkIn()
+    console.log('签到响应:', res)  // 调试日志
     ElMessage.success(res.data?.message || '签到成功')
     await fetchTodayAttendance()
   } catch (error) {
+    console.log('签到错误:', error)  // 调试日志
     const msg = error.response?.data?.message || '签到失败'
     ElMessage.warning(msg)
   } finally {

@@ -544,37 +544,155 @@ function goToLogin() {
 }
 
 /* 响应式 */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .register-container {
+    min-height: 100vh;
+    padding: 20px;
+  }
+
   .register-card {
-    width: calc(100% - 32px);
-    padding: 32px 24px;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 36px 32px;
+    border-radius: var(--radius-xl);
+  }
+
+  .brand-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 20px;
+  }
+
+  .brand-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .brand-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-title {
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+
+  .brand-subtitle {
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .form-item {
+    margin-bottom: 20px;
+  }
+
+  :deep(.el-input__wrapper) {
+    height: 46px;
+  }
+
+  :deep(.el-form-item__label) {
+    font-size: 14px;
+  }
+
+  .submit-btn {
+    height: 46px;
+    font-size: 15px;
+    margin-top: 8px;
+  }
+
+  .register-tip {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+
+  .tip-text,
+  .tip-link {
+    font-size: 14px;
+  }
+
+  .register-footer {
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-container {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 30px;
+  }
+
+  .register-card {
+    padding: 24px 20px;
+    border-radius: var(--radius-lg);
+  }
+
+  .brand-icon-wrapper {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 16px;
+  }
+
+  .brand-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .brand-icon svg {
+    width: 26px;
+    height: 26px;
   }
 
   .brand-title {
     font-size: 22px;
   }
 
-  .brand-icon-wrapper {
-    width: 56px;
-    height: 56px;
+  .brand-subtitle {
+    font-size: 13px;
+    margin-bottom: 24px;
   }
 
-  .brand-icon {
-    width: 56px;
-    height: 56px;
-  }
-
-  .brand-icon svg {
-    width: 28px;
-    height: 28px;
+  .form-item {
+    margin-bottom: 16px;
   }
 
   :deep(.el-input__wrapper) {
     height: 42px;
   }
 
+  :deep(.el-form-item__label) {
+    font-size: 13px;
+    padding-bottom: 6px;
+  }
+
   .submit-btn {
     height: 42px;
+    font-size: 14px;
+  }
+
+  .submit-btn .btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .register-tip {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .tip-text,
+  .tip-link {
+    font-size: 13px;
+  }
+
+  .register-footer {
+    margin-top: 20px;
+  }
+
+  .footer-text {
+    font-size: 11px;
   }
 }
 </style>

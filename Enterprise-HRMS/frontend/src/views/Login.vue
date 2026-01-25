@@ -493,4 +493,126 @@ async function handleLogin() {
     height: 44px;
   }
 }
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .login-container {
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 32px 28px;
+    border-radius: var(--radius-xl);
+  }
+
+  .brand-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 20px;
+  }
+
+  .brand-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .login-title {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .login-subtitle {
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .custom-input :deep(.el-input__wrapper) {
+    height: 44px;
+  }
+
+  .submit-btn {
+    height: 44px;
+    font-size: 15px;
+    margin-top: 8px;
+  }
+
+  .login-options {
+    margin-top: 24px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .footer-links {
+    margin-top: 24px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .login-card {
+    padding: 24px 20px;
+    border-radius: var(--radius-lg);
+  }
+
+  .brand-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+  }
+
+  .brand-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .login-title {
+    font-size: 20px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .custom-input :deep(.el-input__wrapper) {
+    height: 42px;
+  }
+
+  .submit-btn {
+    height: 42px;
+    font-size: 14px;
+  }
+
+  .captcha-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .captcha-row .captcha-img {
+    width: 100%;
+    max-width: 140px;
+    align-self: flex-start;
+  }
+
+  .login-options {
+    margin-top: 20px;
+  }
+
+  .footer-links {
+    margin-top: 20px;
+    font-size: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+  }
+}
 </style>

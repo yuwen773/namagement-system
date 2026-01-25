@@ -510,4 +510,76 @@ onMounted(() => {
   color: #909399;
   font-size: 13px;
 }
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .filter-section {
+    flex-wrap: wrap;
+  }
+
+  .filter-item {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .filter-item.search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filter-section {
+    flex-direction: column;
+  }
+
+  .filter-item {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .notice-title {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .action-btns {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-btns .el-button {
+    width: 100%;
+  }
+
+  .pagination-wrapper {
+    padding: 12px 0;
+  }
+
+  .pagination-wrapper .el-pagination {
+    justify-content: center;
+  }
+}
 </style>

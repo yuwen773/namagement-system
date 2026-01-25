@@ -602,4 +602,85 @@ onMounted(() => {
   height: 18px;
   flex-shrink: 0;
 }
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .filter-row {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .filter-item {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .search-btn {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filter-row {
+    flex-direction: column;
+  }
+
+  .filter-item {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-item {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .user-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .user-detail {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-buttons .el-button {
+    width: 100%;
+  }
+
+  .role-tag {
+    font-size: 12px;
+  }
+}
 </style>
