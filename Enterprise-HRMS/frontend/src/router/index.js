@@ -81,7 +81,13 @@ const router = createRouter({
           path: 'approval',
           name: 'approval',
           component: () => import('../views/ApprovalCenter.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'application-center',
+          name: 'application-center',
+          component: () => import('../views/ApplicationCenter.vue'),
+          meta: { roles: ['employee'] }
         },
         {
           path: 'onboarding',

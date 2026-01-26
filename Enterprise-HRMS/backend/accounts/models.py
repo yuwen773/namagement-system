@@ -194,7 +194,7 @@ class RolePermission(models.Model):
                     'departments',          # 部门信息（只读）
                     'posts',                # 岗位信息（只读）
                     'attendanceCenter',     # 考勤中心
-                    'approval',             # 申请中心
+                    'applicationCenter',    # 申请中心
                     'salary',               # 薪资明细查询
                     'myPerformance',        # 绩效评分查看
                     'notices'               # 公告列表
