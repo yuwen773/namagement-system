@@ -171,7 +171,13 @@ const router = createRouter({
           path: 'salary-exception',
           name: 'salary-exception',
           component: () => import('../views/SalaryException.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'exception-report',
+          name: 'exception-report',
+          component: () => import('../views/ExceptionReport.vue'),
+          meta: { roles: ['employee'] }
         }
       ]
     },

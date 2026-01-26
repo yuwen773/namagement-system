@@ -302,7 +302,7 @@ class SalaryExceptionViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        if self.action in ['create']:
+        if self.action in ['create', 'list', 'retrieve']:
             return [IsAuthenticated()]
         return [IsAuthenticated(), IsHROrAdmin()]
 

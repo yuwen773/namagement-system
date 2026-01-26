@@ -185,9 +185,9 @@ class RolePermission(models.Model):
         获取默认权限配置（严格按照 docs/requirements.md 配置）
         """
         defaults = {
-            # 普通员工 (6个页面)
+            # 普通员工 (7个页面)
             'employee': {
-                # 首页、个人信息、部门岗位、考勤中心、申请中心、薪资绩效
+                # 首页、个人信息、部门岗位、考勤中心、申请中心、薪资绩效、异常上报
                 'menu_permissions': [
                     'employeeDashboard',    # 首页
                     'profile',              # 个人信息编辑
@@ -197,9 +197,10 @@ class RolePermission(models.Model):
                     'applicationCenter',    # 申请中心
                     'salary',               # 薪资明细查询
                     'myPerformance',        # 绩效评分查看
-                    'notices'               # 公告列表
+                    'notices',              # 公告列表
+                    'exceptionReport'       # 异常上报
                 ],
-                'button_permissions': ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary'],
+                'button_permissions': ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary', 'reportException'],
                 'data_permission': 'self',
                 'attendance_permission': 'self',
                 'salary_permission': 'self',
