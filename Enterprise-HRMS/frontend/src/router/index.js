@@ -57,7 +57,13 @@ const router = createRouter({
           path: 'attendance',
           name: 'attendance',
           component: () => import('../views/Attendance.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'attendance-center',
+          name: 'attendance-center',
+          component: () => import('../views/AttendanceCenter.vue'),
+          meta: { roles: ['employee'] }
         },
         {
           path: 'attendance-statistics',

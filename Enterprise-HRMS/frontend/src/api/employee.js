@@ -94,6 +94,14 @@ export function getEmployeeOptions(params) {
   })
 }
 
+/**
+ * 获取当前用户的员工档案
+ * @returns {Promise}
+ */
+export function getMyProfile() {
+  return axios.get('/employee/me/')
+}
+
 export default {
   getEmployeeList,
   getEmployeeDetail,
@@ -101,5 +109,6 @@ export default {
   createEmployee,
   updateEmployee,
   resignEmployee,
-  getEmployeeOptions
+  getEmployeeOptions,
+  getMyProfile
 }

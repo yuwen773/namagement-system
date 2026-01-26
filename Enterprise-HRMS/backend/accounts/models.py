@@ -187,17 +187,17 @@ class RolePermission(models.Model):
         defaults = {
             # 普通员工 (6个页面)
             'employee': {
-                # 首页、个人信息、部门岗位、考勤、申请中心、薪资绩效
+                # 首页、个人信息、部门岗位、考勤中心、申请中心、薪资绩效
                 'menu_permissions': [
-                    'employeeDashboard',  # 首页
-                    'profile',            # 个人信息编辑
-                    'departments',        # 部门信息（只读）
-                    'posts',              # 岗位信息（只读）
-                    'attendance',         # 考勤中心
-                    'approval',           # 申请中心
-                    'salary',             # 薪资明细查询
-                    'myPerformance',      # 绩效评分查看
-                    'notices'             # 公告列表
+                    'employeeDashboard',    # 首页
+                    'profile',              # 个人信息编辑
+                    'departments',          # 部门信息（只读）
+                    'posts',                # 岗位信息（只读）
+                    'attendanceCenter',     # 考勤中心
+                    'approval',             # 申请中心
+                    'salary',               # 薪资明细查询
+                    'myPerformance',        # 绩效评分查看
+                    'notices'               # 公告列表
                 ],
                 'button_permissions': ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary'],
                 'data_permission': 'self',
