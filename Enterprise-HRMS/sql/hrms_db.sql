@@ -11,7 +11,7 @@
  Target Server Version : 80026 (8.0.26)
  File Encoding         : 65001
 
- Date: 25/01/2026 21:04:21
+ Date: 26/01/2026 23:39:48
 */
 
 SET NAMES utf8mb4;
@@ -40,9 +40,9 @@ CREATE TABLE `accounts_rolepermission`  (
 -- ----------------------------
 -- Records of accounts_rolepermission
 -- ----------------------------
-INSERT INTO `accounts_rolepermission` VALUES (1, 'employee', '[\"employeeDashboard\", \"profile\", \"departments\", \"posts\", \"attendance\", \"approval\", \"salary\", \"myPerformance\", \"notices\"]', '[\"checkIn\", \"checkOut\", \"applyLeave\", \"applyOvertime\", \"viewSalary\"]', 'self', 'self', 'self', 0, 1, '2026-01-25 06:18:05.928470', '2026-01-25 11:18:10.864077');
-INSERT INTO `accounts_rolepermission` VALUES (2, 'hr', '[\"dashboard\", \"employees\", \"departments\", \"posts\", \"onboarding\", \"resignation\", \"attendance\", \"approval\", \"salary\", \"salaryException\", \"performanceReview\", \"performanceTemplate\", \"notices\"]', '[\"createEmployee\", \"editEmployee\", \"deleteEmployee\", \"approveLeave\", \"approveOvertime\", \"calculateSalary\", \"publishSalary\", \"createNotice\"]', 'all', 'all', 'all', 1, 1, '2026-01-25 06:18:05.931487', '2026-01-25 11:18:10.865077');
-INSERT INTO `accounts_rolepermission` VALUES (3, 'admin', '[\"dashboard\", \"users\", \"permissionConfig\", \"securityConfig\", \"dataCenter\", \"noticeManagement\", \"salaryException\", \"profile\"]', '[\"manageUsers\", \"resetPassword\", \"configurePermissions\", \"viewSalary\"]', 'all', 'all', 'all', 1, 1, '2026-01-25 06:18:05.934544', '2026-01-25 11:18:10.867459');
+INSERT INTO `accounts_rolepermission` VALUES (1, 'employee', '[\"employeeDashboard\", \"profile\", \"departments\", \"posts\", \"attendanceCenter\", \"applicationCenter\", \"salary\", \"myPerformance\", \"notices\", \"exceptionReport\"]', '[\"checkIn\", \"checkOut\", \"applyLeave\", \"applyOvertime\", \"viewSalary\", \"reportException\"]', 'self', 'self', 'self', 0, 1, '2026-01-25 06:18:05.928470', '2026-01-26 15:12:39.431283');
+INSERT INTO `accounts_rolepermission` VALUES (2, 'hr', '[\"dashboard\", \"employees\", \"departments\", \"posts\", \"onboarding\", \"resignation\", \"attendance\", \"approval\", \"salary\", \"salaryException\", \"performanceReview\", \"performanceTemplate\", \"notices\"]', '[\"createEmployee\", \"editEmployee\", \"deleteEmployee\", \"approveLeave\", \"approveOvertime\", \"calculateSalary\", \"publishSalary\", \"createNotice\"]', 'all', 'all', 'all', 1, 1, '2026-01-25 06:18:05.931487', '2026-01-26 15:12:39.434308');
+INSERT INTO `accounts_rolepermission` VALUES (3, 'admin', '[\"dashboard\", \"users\", \"permissionConfig\", \"securityConfig\", \"dataCenter\", \"noticeManagement\", \"salaryException\", \"profile\"]', '[\"manageUsers\", \"resetPassword\", \"configurePermissions\", \"viewSalary\"]', 'all', 'all', 'all', 1, 1, '2026-01-25 06:18:05.934544', '2026-01-26 15:12:39.435318');
 
 -- ----------------------------
 -- Table structure for accounts_systemconfig
@@ -2758,6 +2758,32 @@ INSERT INTO `attendance_attendance` VALUES (2092, '2026-01-03', '08:55:00.000000
 INSERT INTO `attendance_attendance` VALUES (2093, '2026-01-25', '20:55:51.000000', '20:55:53.000000', 'late', '2026-01-25 12:55:51.617266', '2026-01-25 12:55:53.229380', 2);
 
 -- ----------------------------
+-- Table structure for attendance_exceptionreport
+-- ----------------------------
+DROP TABLE IF EXISTS `attendance_exceptionreport`;
+CREATE TABLE `attendance_exceptionreport`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `exception_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `date` date NOT NULL,
+  `description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `handler_comment` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `handled_at` datetime(6) NULL DEFAULT NULL,
+  `handler_id` bigint NULL DEFAULT NULL,
+  `user_id` bigint NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `attendance_exception_handler_id_9f707d06_fk_accounts_`(`handler_id` ASC) USING BTREE,
+  INDEX `attendance_exceptionreport_user_id_74919185_fk_accounts_user_id`(`user_id` ASC) USING BTREE,
+  CONSTRAINT `attendance_exception_handler_id_9f707d06_fk_accounts_` FOREIGN KEY (`handler_id`) REFERENCES `accounts_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `attendance_exceptionreport_user_id_74919185_fk_accounts_user_id` FOREIGN KEY (`user_id`) REFERENCES `accounts_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of attendance_exceptionreport
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for auth_group
 -- ----------------------------
 DROP TABLE IF EXISTS `auth_group`;
@@ -2766,7 +2792,7 @@ CREATE TABLE `auth_group`  (
   `name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of auth_group
@@ -2785,7 +2811,7 @@ CREATE TABLE `auth_group_permissions`  (
   INDEX `auth_group_permissio_permission_id_84c5c92e_fk_auth_perm`(`permission_id` ASC) USING BTREE,
   CONSTRAINT `auth_group_permissio_permission_id_84c5c92e_fk_auth_perm` FOREIGN KEY (`permission_id`) REFERENCES `auth_permission` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `auth_group_permissions_group_id_b120cbf9_fk_auth_group_id` FOREIGN KEY (`group_id`) REFERENCES `auth_group` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of auth_group_permissions
@@ -2803,7 +2829,7 @@ CREATE TABLE `auth_permission`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `auth_permission_content_type_id_codename_01ab375a_uniq`(`content_type_id` ASC, `codename` ASC) USING BTREE,
   CONSTRAINT `auth_permission_content_type_id_2f476e4b_fk_django_co` FOREIGN KEY (`content_type_id`) REFERENCES `django_content_type` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 77 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 81 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of auth_permission
@@ -2884,6 +2910,10 @@ INSERT INTO `auth_permission` VALUES (73, 'Can add 系统配置', 19, 'add_syste
 INSERT INTO `auth_permission` VALUES (74, 'Can change 系统配置', 19, 'change_systemconfig');
 INSERT INTO `auth_permission` VALUES (75, 'Can delete 系统配置', 19, 'delete_systemconfig');
 INSERT INTO `auth_permission` VALUES (76, 'Can view 系统配置', 19, 'view_systemconfig');
+INSERT INTO `auth_permission` VALUES (77, 'Can add 异常上报', 20, 'add_exceptionreport');
+INSERT INTO `auth_permission` VALUES (78, 'Can change 异常上报', 20, 'change_exceptionreport');
+INSERT INTO `auth_permission` VALUES (79, 'Can delete 异常上报', 20, 'delete_exceptionreport');
+INSERT INTO `auth_permission` VALUES (80, 'Can view 异常上报', 20, 'view_exceptionreport');
 
 -- ----------------------------
 -- Table structure for django_admin_log
@@ -2920,7 +2950,7 @@ CREATE TABLE `django_content_type`  (
   `model` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `django_content_type_app_label_model_76bd3d3b_uniq`(`app_label` ASC, `model` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of django_content_type
@@ -2932,6 +2962,7 @@ INSERT INTO `django_content_type` VALUES (15, 'accounts', 'usereditrequest');
 INSERT INTO `django_content_type` VALUES (1, 'admin', 'logentry');
 INSERT INTO `django_content_type` VALUES (12, 'approval', 'approvalrequest');
 INSERT INTO `django_content_type` VALUES (10, 'attendance', 'attendance');
+INSERT INTO `django_content_type` VALUES (20, 'attendance', 'exceptionreport');
 INSERT INTO `django_content_type` VALUES (3, 'auth', 'group');
 INSERT INTO `django_content_type` VALUES (2, 'auth', 'permission');
 INSERT INTO `django_content_type` VALUES (4, 'contenttypes', 'contenttype');
@@ -2955,7 +2986,7 @@ CREATE TABLE `django_migrations`  (
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `applied` datetime(6) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 33 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of django_migrations
@@ -2992,6 +3023,9 @@ INSERT INTO `django_migrations` VALUES (29, 'accounts', '0003_rolepermission', '
 INSERT INTO `django_migrations` VALUES (30, 'performance', '0002_performancetemplate', '2026-01-25 07:27:05.054098');
 INSERT INTO `django_migrations` VALUES (31, 'salary', '0002_salaryexception', '2026-01-25 09:22:48.369943');
 INSERT INTO `django_migrations` VALUES (32, 'accounts', '0004_systemconfig', '2026-01-25 09:38:06.682831');
+INSERT INTO `django_migrations` VALUES (33, 'attendance', '0002_exceptionreport', '2026-01-26 13:03:50.025386');
+INSERT INTO `django_migrations` VALUES (34, 'salary', '0003_salaryexception_exception_date_and_more', '2026-01-26 13:09:16.756794');
+INSERT INTO `django_migrations` VALUES (35, 'organization', '0003_add_department_to_post', '2026-01-26 15:35:37.009579');
 
 -- ----------------------------
 -- Table structure for django_session
@@ -3523,28 +3557,31 @@ CREATE TABLE `organization_post`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `department_id` bigint NULL DEFAULT NULL,
   `description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `sort_order` int NOT NULL,
   `is_active` tinyint(1) NOT NULL,
   `created_at` datetime(6) NOT NULL,
   `updated_at` datetime(6) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `code`(`code` ASC) USING BTREE
+  UNIQUE INDEX `code`(`code` ASC) USING BTREE,
+  INDEX `idx_department_id`(`department_id` ASC) USING BTREE,
+  CONSTRAINT `fk_post_department` FOREIGN KEY (`department_id`) REFERENCES `organization_department` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of organization_post
 -- ----------------------------
-INSERT INTO `organization_post` VALUES (1, '初级开发工程师', 'JDEV', '负责基础开发工作，使用公司技术栈完成功能开发', 1, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (2, '中级开发工程师', 'MDEV', '承担核心模块开发，指导初级工程师', 2, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (3, '高级开发工程师', 'SDEV', '负责技术架构设计，攻克技术难题', 3, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (4, '技术总监', 'TD', '技术团队管理，技术战略规划', 4, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (5, '产品经理', 'PM', '产品规划，需求分析，项目管理', 5, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (6, 'UI/UX设计师', 'UI', '界面设计，用户体验优化', 6, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (7, '人事专员', 'HRSP', '招聘，员工关系，薪酬福利', 7, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (8, '财务专员', 'FASP', '账务处理，财务报表，税务申报', 8, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (9, '运营专员', 'OPSP', '日常运营，数据分析，活动策划', 9, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
-INSERT INTO `organization_post` VALUES (10, '客户成功经理', 'CSM', '客户服务，客户满意度维护', 10, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (1, '初级开发工程师', 'JDEV', 1, '负责基础开发工作，使用公司技术栈完成功能开发', 1, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (2, '中级开发工程师', 'MDEV', 1, '承担核心模块开发，指导初级工程师', 2, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (3, '高级开发工程师', 'SDEV', 1, '负责技术架构设计，攻克技术难题', 3, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (4, '技术总监', 'TD', 1, '技术团队管理，技术战略规划', 4, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (5, '产品经理', 'PM', 2, '产品规划，需求分析，项目管理', 5, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (6, 'UI/UX设计师', 'UI', 7, '界面设计，用户体验优化', 6, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (7, '人事专员', 'HRSP', 4, '招聘，员工关系，薪酬福利', 7, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (8, '财务专员', 'FASP', 5, '账务处理，财务报表，税务申报', 8, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (9, '运营专员', 'OPSP', 6, '日常运营，数据分析，活动策划', 9, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
+INSERT INTO `organization_post` VALUES (10, '客户成功经理', 'CSM', 8, '客户服务，客户满意度维护', 10, 1, '2026-01-24 16:10:19.000000', '2026-01-24 16:10:19.000000');
 
 -- ----------------------------
 -- Table structure for performance_performancereview
@@ -3621,7 +3658,8 @@ CREATE TABLE `salary_exception`  (
   `updated_at` datetime(6) NOT NULL,
   `assigned_to_id` bigint NULL DEFAULT NULL,
   `reported_by_id` bigint NULL DEFAULT NULL,
-  `salary_record_id` bigint NOT NULL,
+  `salary_record_id` bigint NULL DEFAULT NULL,
+  `exception_date` date NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `salary_exception_assigned_to_id_b493e5eb_fk_accounts_user_id`(`assigned_to_id` ASC) USING BTREE,
   INDEX `salary_exception_reported_by_id_3e6df770_fk_accounts_user_id`(`reported_by_id` ASC) USING BTREE,
@@ -3629,12 +3667,13 @@ CREATE TABLE `salary_exception`  (
   CONSTRAINT `salary_exception_assigned_to_id_b493e5eb_fk_accounts_user_id` FOREIGN KEY (`assigned_to_id`) REFERENCES `accounts_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `salary_exception_reported_by_id_3e6df770_fk_accounts_user_id` FOREIGN KEY (`reported_by_id`) REFERENCES `accounts_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `salary_exception_salary_record_id_5c158ee5_fk_salary_sa` FOREIGN KEY (`salary_record_id`) REFERENCES `salary_salaryrecord` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of salary_exception
 -- ----------------------------
-INSERT INTO `salary_exception` VALUES (1, 'salary_error', 'ces', 'resolved', '测试', 400.00, '2026-01-25 09:25:37.331122', '2026-01-25 09:25:13.323380', '2026-01-25 09:25:37.331122', 1, 1, 286);
+INSERT INTO `salary_exception` VALUES (1, 'salary_error', 'ces', 'resolved', '测试', 400.00, '2026-01-25 09:25:37.331122', '2026-01-25 09:25:13.323380', '2026-01-25 09:25:37.331122', 1, 1, 286, NULL);
+INSERT INTO `salary_exception` VALUES (2, 'attendance_error', '123123', 'pending', '', 0.00, NULL, '2026-01-26 12:06:47.511195', '2026-01-26 12:06:47.511195', NULL, 2, 327, NULL);
 
 -- ----------------------------
 -- Table structure for salary_salaryrecord
