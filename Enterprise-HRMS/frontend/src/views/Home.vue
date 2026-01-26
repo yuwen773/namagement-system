@@ -219,13 +219,6 @@ const renderIcon = (iconName) => {
             </div>
             <template #dropdown>
               <el-dropdown-menu class="user-dropdown-menu">
-                <el-dropdown-item divided @click="$router.push('/profile')">
-                  <svg class="dropdown-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  <span>个人信息</span>
-                </el-dropdown-item>
                 <el-dropdown-item divided @click="authStore.logout()">
                   <svg class="dropdown-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>

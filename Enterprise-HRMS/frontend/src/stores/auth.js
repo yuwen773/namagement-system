@@ -143,7 +143,8 @@ export const useAuthStore = defineStore('auth', () => {
       { name: 'noticeManagement', label: '公告管理', path: '/notice-management', icon: 'notices' },
       { name: 'users', label: '账号管理', path: '/users', icon: 'users' },
       { name: 'permissionConfig', label: '权限配置', path: '/permission-config', icon: 'setting' },
-      { name: 'securityConfig', label: '安全配置', path: '/security-config', icon: 'setting' }
+      { name: 'securityConfig', label: '安全配置', path: '/security-config', icon: 'setting' },
+      { name: 'profile', label: '个人中心', path: '/profile', icon: 'profile' }
     ]
     return allMenus.filter(menu => hasPermission(menu.name))
   }

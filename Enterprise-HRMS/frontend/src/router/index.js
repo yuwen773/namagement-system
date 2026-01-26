@@ -140,8 +140,8 @@ const router = createRouter({
         {
           path: 'profile',
           name: 'profile',
-          component: () => import('../views/ProfileEdit.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          component: () => import('../views/ProfileCenter.vue'),
+          meta: { title: '个人中心', roles: ['admin', 'hr', 'employee'] }
         },
         {
           path: 'permission-config',
