@@ -287,6 +287,13 @@ class SystemConfig(models.Model):
     )
 
     # 密码策略配置
+    password_storage_mode = models.CharField(
+        max_length=10,
+        choices=[('plain', '明文'), ('encrypted', '密文')],
+        default='encrypted',
+        verbose_name='密码存储模式',
+        help_text='明文模式下密码将不经加密直接存储，密文模式下使用哈希加密'
+    )
     password_min_length = models.PositiveIntegerField(
         default=6,
         verbose_name='密码最小长度',
@@ -354,6 +361,7 @@ class SystemConfig(models.Model):
         获取系统配置，如果不存在则创建默认配置
         """
         config, created = cls.objects.get_or_create(id=1, defaults={
+            'password_storage_mode': 'encrypted',
             'password_min_length': 6,
             'password_require_uppercase': False,
             'password_require_lowercase': True,
