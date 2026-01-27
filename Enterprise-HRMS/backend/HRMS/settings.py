@@ -93,9 +93,9 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "hrms_db",
         "USER": "root",
-        "PASSWORD": "yuwen123.",
+        "PASSWORD": "yuwen123",
         "HOST": "localhost",
-        "PORT": "3306",
+        "PORT": "3307",
         "OPTIONS": {
             "charset": "utf8mb4",
         },
