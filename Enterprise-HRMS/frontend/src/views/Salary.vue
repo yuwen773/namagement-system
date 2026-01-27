@@ -62,9 +62,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180">
+        <el-table-column prop="created_at" label="创建时间" width="180">
           <template #default="{ row }">
-            {{ row.create_time?.replace('T', ' ').substring(0, 19) }}
+            {{ row.created_at?.replace('T', ' ').substring(0, 19) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" min-width="150" fixed="right">

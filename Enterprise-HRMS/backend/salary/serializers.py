@@ -71,7 +71,7 @@ class SalaryRecordListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SalaryRecord
-        fields = ['id', 'real_name', 'month', 'base_salary', 'final_salary', 'status']
+        fields = ['id', 'real_name', 'month', 'base_salary', 'final_salary', 'status', 'created_at']
 
 
 class SalaryExceptionSerializer(serializers.ModelSerializer):
