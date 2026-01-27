@@ -111,11 +111,85 @@
 - 开发服务器运行时，修改代码会自动触发热更新
 - API 代理配置确保前端 `/api` 请求正确转发到后端
 
+- 注意事项：
+- Vite 默认端口为 5173，如果被占用会自动尝试其他端口
+- 开发服务器运行时，修改代码会自动触发热更新
+- API 代理配置确保前端 `/api` 请求正确转发到后端
+
+---
+
+### ✅ 步骤 2.1：创建用户账号模型与 API
+
+**实施内容**：
+
+1. **创建 User 模型** (`accounts/models.py`)
+   - 字段定义：
+     - `username` - 登录账号（唯一）
+     - `password` - 登录密码（开发阶段明文存储）
+     - `employee_id` - 关联员工档案ID（可选，外键）
+     - `role` - 角色类型（ADMIN/EMPLOYEE）
+     - `status` - 账号状态（ENABLED/DISABLED）
+     - `created_at`, `updated_at` - 时间戳
+   - 枚举类定义：`Role` 和 `Status` 使用 Django 的 `TextChoices`
+   - 自定义方法：`verify_password()` 用于验证用户名和密码
+
+2. **创建序列化器** (`accounts/serializers.py`)
+   - `LoginSerializer` - 登录请求验证（username, password 必填）
+   - `RegisterSerializer` - 注册请求验证（包含用户名唯一性检查）
+   - `UserSerializer` - 用户详情序列化（支持 CRUD 操作）
+   - `UserListSerializer` - 用户列表序列化（简化版，用于列表展示）
+
+3. **创建视图集** (`accounts/views.py`)
+   - `UserViewSet` - 基于 DRF 的 `ModelViewSet`
+   - 自定义 action：
+     - `login/` - 用户登录接口
+     - `register/` - 用户注册接口（默认角色为 EMPLOYEE）
+   - 标准 CRUD 操作：list, retrieve, create, update, destroy
+   - 统一的响应格式：`{code, message, data}`
+
+4. **配置 URL 路由**
+   - 创建 `accounts/urls.py` - 使用 DRF 的 `DefaultRouter`
+   - 更新 `config/urls.py` - 包含 accounts 路由：`/api/accounts/`
+
+5. **注册 Django Admin** (`accounts/admin.py`)
+   - 配置 `UserAdmin` 类
+   - 列表显示字段：id, username, role, status, employee_id, created_at
+   - 过滤器：role, status, created_at
+   - 搜索字段：username, id
+   - 分组字段展示：基本信息、角色与状态、时间信息
+
+6. **数据库迁移**
+   - 创建迁移：`accounts/migrations/0001_initial.py`
+   - 应用迁移到数据库
+
+**API 端点清单**：
+```
+POST   /api/accounts/register/   # 用户注册
+POST   /api/accounts/login/      # 用户登录
+GET    /api/accounts/            # 用户列表
+GET    /api/accounts/{id}/       # 用户详情
+POST   /api/accounts/            # 创建用户（管理员）
+PUT    /api/accounts/{id}/       # 更新用户
+DELETE /api/accounts/{id}/       # 删除用户
+```
+
+**测试验证**：
+- ✅ 注册新用户 - 返回 201，用户创建成功，默认角色为 EMPLOYEE
+- ✅ 登录验证（正确凭证）- 返回 200，获取用户信息
+- ✅ 登录验证（错误密码）- 返回 401，提示"用户名或密码错误"
+- ✅ 重复用户名注册 - 返回 400，提示"用户名已存在"
+- ✅ 获取用户列表 - 返回 200，显示所有用户
+- ✅ 获取用户详情 - 返回 200，显示完整用户信息
+
+**注意事项**：
+- 密码开发阶段采用明文存储，生产环境需改用哈希加密
+- `employee_id` 外键将在步骤 2.2 创建员工档案模型后建立关联
+- 权限验证待后续实现（目前所有用户都可访问管理接口）
+
 ---
 
 ## 待完成
 
-- [ ] 步骤 2.1：创建用户账号模型与 API
 - [ ] 步骤 2.2：创建员工档案模型与 API
 - [ ] 步骤 2.3：创建排班相关模型与 API
 - [ ] 步骤 2.4：创建考勤模型与 API

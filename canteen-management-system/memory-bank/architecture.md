@@ -59,6 +59,104 @@ canteen-management-system/
 
 ---
 
+## 应用模块详解
+
+### `accounts` 应用 - 用户账号与认证
+
+用户账号与认证模块，负责系统登录、注册和用户管理。
+
+#### 文件结构与职责
+
+```
+accounts/
+├── __init__.py
+├── admin.py              # Django Admin 配置
+├── apps.py               # 应用配置
+├── migrations/           # 数据库迁移文件
+│   └── 0001_initial.py  # 创建 User 表
+├── models.py             # 数据模型定义
+├── serializers.py        # DRF 序列化器
+├── urls.py               # 应用 URL 路由
+└── views.py              # API 视图
+```
+
+#### 核心模型：User
+
+```python
+class User(models.Model):
+    username       # 登录账号（唯一）
+    password       # 登录密码（开发阶段明文）
+    employee_id    # 关联员工档案ID（可选外键）
+    role           # 角色类型：ADMIN/EMPLOYEE
+    status         # 账号状态：ENABLED/DISABLED
+    created_at     # 创建时间
+    updated_at     # 更新时间
+```
+
+**架构设计要点**：
+- `employee_id` 是可选字段，允许用户账号独立于员工档案存在
+- 使用 Django 的 `TextChoices` 定义枚举类型，提供更好的类型安全
+- `verify_password()` 类方法封装认证逻辑，便于后续扩展（如添加密码哈希）
+
+#### 序列化器设计
+
+| 序列化器 | 用途 | 特点 |
+|---------|------|------|
+| `LoginSerializer` | 登录请求验证 | 仅验证字段，不涉及模型 |
+| `RegisterSerializer` | 注册请求验证 | 包含用户名唯一性检查 |
+| `UserSerializer` | 用户详情 CRUD | 支持完整字段，用于增删改查 |
+| `UserListSerializer` | 用户列表展示 | 简化字段，提升列表性能 |
+
+**设计理念**：
+- 分离序列化器职责，避免单个序列化器过于复杂
+- 列表使用简化版序列化器，减少不必要的数据传输
+
+#### 视图设计：UserViewSet
+
+基于 DRF 的 `ModelViewSet`，提供标准的 CRUD 操作：
+
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 登录 | POST | `/api/accounts/login/` | 自定义 action |
+| 注册 | POST | `/api/accounts/register/` | 自定义 action，默认角色 EMPLOYEE |
+| 列表 | GET | `/api/accounts/` | 标准操作 |
+| 详情 | GET | `/api/accounts/{id}/` | 标准操作 |
+| 创建 | POST | `/api/accounts/` | 标准操作（管理员） |
+| 更新 | PUT/PATCH | `/api/accounts/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/accounts/{id}/` | 标准操作 |
+
+**响应格式规范**：
+```json
+{
+  "code": 200,           // 状态码
+  "message": "成功",      // 消息提示
+  "data": { ... }        // 响应数据
+}
+```
+
+#### 路由配置
+
+使用 DRF 的 `DefaultRouter` 自动生成标准 RESTful 路由：
+
+```python
+router = DefaultRouter()
+router.register(r'', UserViewSet, basename='user')
+```
+
+**路由映射**：
+- 空字符串 `''` → 主路由为 `/api/accounts/`
+- `basename='user'` → 用于生成 URL 名称（如 `user-detail`）
+
+#### Django Admin 配置
+
+`UserAdmin` 类提供后台管理界面：
+- 列表展示：id, username, role, status, employee_id, created_at
+- 过滤器：按角色、状态、创建时间筛选
+- 搜索：支持用户名和 ID 搜索
+- 字段分组：基本信息、角色与状态、时间信息（可折叠）
+
+---
+
 ## 重要文件说明
 
 ### `backend/config/settings.py`
@@ -73,7 +171,9 @@ Django 项目的核心配置文件，包含：
 
 ### `backend/config/urls.py`
 
-URL 路由配置（待实现），将各应用的 URL 路由包含进来。
+URL 路由配置，将各应用的 URL 路由包含进来：
+- `/admin/` - Django 管理后台
+- `/api/accounts/` - 用户账号与认证 API
 
 ### `backend/requirements.txt`
 
@@ -290,7 +390,30 @@ export default defineConfig({
 
 ---
 
-## API 设计原则（待实现）
+## API 设计原则与已实现端点
+
+### RESTful 规范
+
+- 资源使用名词复数：`/api/accounts/`
+- HTTP 方法：GET（查询）、POST（创建）、PUT/PATCH（更新）、DELETE（删除）
+- 使用 Django REST Framework 的 ViewSets 和 Serializers
+- 统一响应格式：`{code, message, data}`
+
+### API 端点结构
+
+#### 已实现
+
+```
+POST   /api/accounts/register/   # 用户注册
+POST   /api/accounts/login/      # 用户登录
+GET    /api/accounts/            # 用户列表
+GET    /api/accounts/{id}/       # 用户详情
+POST   /api/accounts/            # 创建用户（管理员）
+PUT    /api/accounts/{id}/       # 更新用户
+DELETE /api/accounts/{id}/       # 删除用户
+```
+
+#### 计划中
 
 ### RESTful 规范
 
