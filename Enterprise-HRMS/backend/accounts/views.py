@@ -84,8 +84,14 @@ class AdminResetPasswordView(GenericAPIView):
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # 使用 set_password 自动哈希
-        instance.set_password(serializer.validated_data['new_password'])
+        from .models import SystemConfig
+        config = SystemConfig.get_config()
+
+        new_password = serializer.validated_data['new_password']
+        if config.password_storage_mode == 'plain':
+            instance.password = new_password
+        else:
+            instance.set_password(new_password)
         instance.save()
 
         return Response({
@@ -107,8 +113,14 @@ class ChangePasswordView(GenericAPIView):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
-        # 设置新密码（自动哈希）
-        request.user.set_password(serializer.validated_data['new_password'])
+        from .models import SystemConfig
+        config = SystemConfig.get_config()
+
+        new_password = serializer.validated_data['new_password']
+        if config.password_storage_mode == 'plain':
+            request.user.password = new_password
+        else:
+            request.user.set_password(new_password)
         request.user.save()
 
         return Response({

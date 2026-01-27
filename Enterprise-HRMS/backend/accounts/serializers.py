@@ -16,37 +16,47 @@ def get_user_edit_request_model():
 class PasswordStrengthValidator:
     """
     自定义密码强度验证器
-    要求：至少8位，包含字母、数字、特殊字符
+    从 SystemConfig 获取配置
     """
-    def __init__(self, min_length=8):
-        self.min_length = min_length
-
     def validate(self, password, user=None):
         import re
-
+        from .models import SystemConfig
+        
+        config = SystemConfig.get_config()
         errors = []
 
         # 检查最小长度
-        if len(password) < self.min_length:
-            errors.append(f'密码长度至少需要 {self.min_length} 个字符')
+        if len(password) < config.password_min_length:
+            errors.append(f'密码长度至少需要 {config.password_min_length} 个字符')
 
-        # 检查是否包含字母
-        if not re.search(r'[a-zA-Z]', password):
-            errors.append('密码必须包含字母')
+        # 检查是否包含大写字母
+        if config.password_require_uppercase and not re.search(r'[A-Z]', password):
+            errors.append('密码必须包含大写字母')
+
+        # 检查是否包含小写字母
+        if config.password_require_lowercase and not re.search(r'[a-z]', password):
+            errors.append('密码必须包含小写字母')
 
         # 检查是否包含数字
-        if not re.search(r'\d', password):
+        if config.password_require_number and not re.search(r'\d', password):
             errors.append('密码必须包含数字')
 
         # 检查是否包含特殊字符
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        if config.password_require_special and not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
             errors.append('密码必须包含特殊字符')
 
         if errors:
             raise serializers.ValidationError(errors)
 
     def get_help_text(self):
-        return '密码必须至少8位，包含字母、数字和特殊字符'
+        from .models import SystemConfig
+        config = SystemConfig.get_config()
+        requirements = [f"至少 {config.password_min_length} 位"]
+        if config.password_require_uppercase: requirements.append("大写字母")
+        if config.password_require_lowercase: requirements.append("小写字母")
+        if config.password_require_number: requirements.append("数字")
+        if config.password_require_special: requirements.append("特殊字符")
+        return f"密码要求：{', '.join(requirements)}"
 
 
 # 创建自定义密码验证器实例
@@ -85,6 +95,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             'phone': {'error_messages': {'required': '请输入手机号', 'blank': '手机号不能为空'}},
             'email': {'error_messages': {'required': '请输入邮箱', 'blank': '邮箱不能为空'}},
         }
+
+    def validate_password(self, value):
+        """
+        验证密码强度
+        """
+        password_strength_validator.validate(value)
+        return value
 
     def validate(self, attrs):
         """
@@ -127,12 +144,26 @@ class RegisterSerializer(serializers.ModelSerializer):
         """
         创建用户
         """
+        from .models import SystemConfig
+        config = SystemConfig.get_config()
+        
+        password = validated_data.pop('password')
         validated_data.pop('password2')
+        # 如果需要审批，则默认未激活
+        is_active = not config.require_registration_approval
+        
         user = User.objects.create_user(
             **validated_data,
+            password=password,
             role='employee',  # 默认角色为普通员工
-            is_active=True    # 默认激活
+            is_active=is_active
         )
+        
+        # 如果是明文存储模式，覆盖密码为明文
+        if config.password_storage_mode == 'plain':
+            user.password = password
+            user.save()
+            
         return user
 
 
@@ -150,12 +181,65 @@ class UserSerializer(serializers.ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     自定义登录序列化器，添加 real_name 和 role 到 token 响应中
+    并实现登录尝试次数限制和锁定功能
     """
     def validate(self, attrs):
-        try:
-            data = super().validate(attrs)
-        except Exception:
-            raise exceptions.AuthenticationFailed('账号或者密码错误')
+        from django.core.cache import cache
+        from .models import SystemConfig
+        
+        username = attrs.get('username')
+        config = SystemConfig.get_config()
+        
+        # 缓存键
+        lockout_key = f"login_lockout_{username}"
+        attempts_key = f"login_attempts_{username}"
+
+        # 1. 检查是否已被锁定
+        if cache.get(lockout_key):
+            raise exceptions.AuthenticationFailed(
+                f'账号已被锁定，请在 {int(config.login_lockout_duration)} 分钟后重试'
+            )
+
+        # 智能兼容验证逻辑
+        user = User.objects.filter(username=username).first()
+        password = attrs.get('password')
+        
+        authenticated = False
+        if user:
+            # 尝试方式 1：Django 标准哈希验证（针对密文存储的用户）
+            if user.check_password(password):
+                authenticated = True
+            # 尝试方式 2：直接比对（针对明文存储的用户）
+            elif user.password == password:
+                authenticated = True
+
+        if authenticated:
+            # 登录成功，清除失败记录
+            cache.delete(attempts_key)
+            self.user = user
+            
+            # 手动生成 JWT Token
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+            data = {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        else:
+            # 登录失败逻辑
+            attempts = cache.get(attempts_key, 0) + 1
+            cache.set(attempts_key, attempts, timeout=config.login_lockout_duration * 60)
+            
+            if attempts >= config.max_login_attempts:
+                cache.set(lockout_key, True, timeout=config.login_lockout_duration * 60)
+                raise exceptions.AuthenticationFailed(
+                    f'账号已被锁定，请在 {int(config.login_lockout_duration)} 分钟后重试'
+                )
+            
+            remaining = config.max_login_attempts - attempts
+            raise exceptions.AuthenticationFailed(
+                f'账号或者密码错误，还有 {remaining} 次尝试机会'
+            )
 
         # 添加自定义字段
         data['user_id'] = self.user.id
@@ -179,6 +263,11 @@ class AdminResetPasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['new_password']
+
+    def validate_new_password(self, value):
+        """验证新密码强度"""
+        password_strength_validator.validate(value)
+        return value
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -261,7 +350,11 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         return value
 
     def validate_new_password(self, value):
-        """验证新密码不能与旧密码相同"""
+        """验证新密码强度以及不能与旧密码相同"""
+        # 验证强度
+        password_strength_validator.validate(value)
+        
+        # 验证不能与旧密码相同
         user = self.context.get('request').user
         if user.check_password(value):
             raise serializers.ValidationError('新密码不能与旧密码相同')
@@ -391,6 +484,7 @@ class SystemConfigSerializer(serializers.ModelSerializer):
             # 注册配置
             'require_registration_approval',
             # 密码策略配置
+            'password_storage_mode',
             'password_min_length',
             'password_require_uppercase',
             'password_require_lowercase',
@@ -418,6 +512,7 @@ class SystemConfigUpdateSerializer(serializers.ModelSerializer):
             # 注册配置
             'require_registration_approval',
             # 密码策略配置
+            'password_storage_mode',
             'password_min_length',
             'password_require_uppercase',
             'password_require_lowercase',
