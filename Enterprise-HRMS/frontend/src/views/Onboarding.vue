@@ -121,18 +121,20 @@
             width="100%"
             filterable
             style="width: 100%"
+            @change="handleDepartmentChange"
           />
         </el-form-item>
 
         <el-form-item label="分配岗位" prop="post">
           <el-select
             v-model="onboardingForm.post"
-            placeholder="请选择岗位"
+            placeholder="请先选择部门"
             style="width: 100%"
             filterable
+            :disabled="!onboardingForm.department"
           >
             <el-option
-              v-for="post in postList"
+              v-for="post in postsByDepartment"
               :key="post.id"
               :label="post.name"
               :value="post.id"
@@ -186,14 +188,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { getPendingUsers, createEmployee } from '@/api/employee'
 import { getDepartmentTree } from '@/api/department'
-import { getPostList } from '@/api/post'
+import { getPostsByDepartment } from '@/api/post'
 
 // 数据
 const loading = ref(false)
 const submitting = ref(false)
 const pendingUsers = ref([])
 const departmentTree = ref([])
-const postList = ref([])
+const postsByDepartment = ref([])
 const selectedUser = ref(null)
 const dialogVisible = ref(false)
 
@@ -292,19 +294,41 @@ const resetFilters = () => {
 const fetchDepartmentTree = async () => {
   try {
     const res = await getDepartmentTree()
-    departmentTree.value = res.data?.data || []
+    // 过滤掉待分配部门
+    departmentTree.value = filterUnassignedDepartment(res.data?.data || [])
   } catch (error) {
     console.error('获取部门树失败:', error)
   }
 }
 
-// 获取岗位列表
-const fetchPostList = async () => {
+// 过滤待分配部门
+const filterUnassignedDepartment = (depts) => {
+  return depts
+    .filter(dept => dept.code !== 'UNASSIGNED')
+    .map(dept => ({
+      ...dept,
+      children: dept.children ? filterUnassignedDepartment(dept.children) : []
+    }))
+}
+
+// 部门变化时加载岗位
+const handleDepartmentChange = async (departmentId) => {
+  onboardingForm.post = null
+  postsByDepartment.value = []
+
+  if (!departmentId) return
+
   try {
-    const res = await getPostList({ only_active: true })
-    postList.value = res.data?.data || []
+    const res = await getPostsByDepartment(departmentId)
+    if (res.data?.code === 0) {
+      postsByDepartment.value = res.data?.data || []
+      if (postsByDepartment.value.length === 0) {
+        ElMessage.warning('该部门下暂无岗位，请联系管理员配置')
+      }
+    }
   } catch (error) {
     console.error('获取岗位列表失败:', error)
+    ElMessage.error('获取岗位列表失败')
   }
 }
 
@@ -316,6 +340,7 @@ const openOnboardingDialog = (user) => {
   onboardingForm.post = null
   onboardingForm.hire_date = ''
   onboardingForm.salary_base = 0
+  postsByDepartment.value = []
   dialogVisible.value = true
 }
 
@@ -323,6 +348,7 @@ const openOnboardingDialog = (user) => {
 const handleDialogClose = () => {
   onboardingFormRef.value?.resetFields()
   selectedUser.value = null
+  postsByDepartment.value = []
 }
 
 // 提交入职表单
@@ -335,8 +361,8 @@ const handleSubmit = async (formEl) => {
         submitting.value = true
         await createEmployee({
           user_id: onboardingForm.user_id,
-          department: onboardingForm.department,
-          post: onboardingForm.post,
+          department_id: onboardingForm.department,
+          post_id: onboardingForm.post,
           hire_date: onboardingForm.hire_date,
           salary_base: onboardingForm.salary_base
         })
@@ -357,7 +383,6 @@ const handleSubmit = async (formEl) => {
 onMounted(() => {
   fetchPendingUsers()
   fetchDepartmentTree()
-  fetchPostList()
 })
 </script>
 
