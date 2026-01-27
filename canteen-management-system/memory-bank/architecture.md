@@ -285,6 +285,187 @@ router.register(r'', EmployeeProfileViewSet, basename='employee')
 
 ---
 
+### `schedules` 应用 - 排班管理
+
+排班管理模块，负责班次定义、排班计划和调班申请管理。
+
+#### 文件结构与职责
+
+```
+schedules/
+├── __init__.py
+├── admin.py              # Django Admin 配置
+├── apps.py               # 应用配置
+├── migrations/           # 数据库迁移文件
+│   └── 0001_initial.py  # 创建 Shift, Schedule, ShiftSwapRequest 表
+├── models.py             # 数据模型定义
+├── serializers.py        # DRF 序列化器
+├── urls.py               # 应用 URL 路由
+└── views.py              # API 视图
+```
+
+#### 核心模型
+
+**Shift 模型** - 班次定义
+```python
+class Shift(models.Model):
+    name                    # 班次名称（如：早班/中班/晚班）
+    start_time              # 上班开始时间
+    end_time                # 下班结束时间
+    created_at              # 创建时间
+```
+
+**Schedule 模型** - 排班计划
+```python
+class Schedule(models.Model):
+    employee                # 员工（外键 -> EmployeeProfile）
+    shift                   # 班次（外键 -> Shift）
+    work_date               # 排班日期（唯一约束：员工 + 日期）
+    is_swapped              # 是否已调班
+    created_at              # 创建时间
+```
+
+**架构设计要点**：
+- 使用 `unique_together = [['employee', 'work_date']]` 防止同一员工在同一日期重复排班
+- `is_swapped` 标记用于跟踪调班历史
+- `work_date` 添加索引以优化日期范围查询性能
+
+**ShiftSwapRequest 模型** - 调班申请
+```python
+class ShiftSwapRequest(models.Model):
+    requester               # 发起员工（外键 -> EmployeeProfile）
+    original_schedule       # 原定排班（外键 -> Schedule）
+    target_date             # 期望调整日期
+    target_shift            # 期望调整班次（外键 -> Shift）
+    reason                  # 申请原因
+    status                  # 审批状态：PENDING/APPROVED/REJECTED
+    approver                # 审批管理员（外键 -> EmployeeProfile，可选）
+    approval_remark         # 审批意见
+    created_at              # 创建时间
+```
+
+**架构设计要点**：
+- 使用 `TextChoices` 定义状态枚举，提供类型安全
+- 调班审核通过后，系统自动更新排班记录（删除原排班，创建新排班）
+- 保留审批人和审批意见，便于审计和追溯
+
+#### 序列化器设计
+
+| 序列化器 | 用途 | 特点 |
+|---------|------|------|
+| `ShiftSerializer` | 班次详情 CRUD | 支持完整字段 |
+| `ShiftListSerializer` | 班次列表展示 | 简化字段 |
+| `ScheduleSerializer` | 排班创建 | 包含员工和班次 ID |
+| `ScheduleListSerializer` | 排班列表展示 | 简化字段，提升性能 |
+| `ScheduleDetailSerializer` | 排班详情 | 包含完整信息（员工姓名、岗位等） |
+| `BatchScheduleSerializer` | 批量排班 | 验证员工 ID 列表和日期范围 |
+| `ShiftSwapRequestSerializer` | 调班申请详情 | 包含完整审批信息 |
+| `ShiftSwapRequestListSerializer` | 调班申请列表 | 简化字段 |
+| `ShiftSwapApprovalSerializer` | 调班审批 | 验证审批参数 |
+| `CalendarViewSerializer` | 日历视图 | 验证日期范围参数 |
+
+#### 视图设计
+
+**ShiftViewSet** - 班次定义管理
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 列表 | GET | `/api/schedules/shifts/` | 标准操作 |
+| 创建 | POST | `/api/schedules/shifts/` | 标准操作，返回统一格式 |
+| 详情 | GET | `/api/schedules/shifts/{id}/` | 标准操作 |
+| 更新 | PUT/PATCH | `/api/schedules/shifts/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/schedules/shifts/{id}/` | 标准操作 |
+
+**ScheduleViewSet** - 排班计划管理
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 列表 | GET | `/api/schedules/schedules/` | 支持筛选、搜索、排序 |
+| 创建 | POST | `/api/schedules/schedules/` | 标准操作，返回统一格式 |
+| 批量创建 | POST | `/api/schedules/schedules/batch_create/` | 批量为多个员工创建排班 |
+| 日历视图 | POST | `/api/schedules/schedules/calendar_view/` | 按日期分组返回排班数据 |
+| 详情 | GET | `/api/schedules/schedules/{id}/` | 标准操作 |
+| 更新 | PUT/PATCH | `/api/schedules/schedules/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/schedules/schedules/{id}/` | 标准操作 |
+
+**批量排班接口**：
+- 输入参数：`employee_ids`（员工 ID 列表）、`shift_id`（班次 ID）、`start_date`、`end_date`
+- 使用 `get_or_create` 避免重复创建
+- 返回创建数量和跳过数量
+
+**日历视图接口**：
+- 输入参数：`start_date`、`end_date`、`employee_id`（可选）
+- 返回按日期分组的排班数据
+- 数据格式适合前端日历组件直接使用
+
+**ShiftSwapRequestViewSet** - 调班申请管理
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 列表 | GET | `/api/schedules/shift-requests/` | 支持筛选、搜索、排序 |
+| 创建 | POST | `/api/schedules/shift-requests/` | 标准操作，返回统一格式 |
+| 审批 | POST | `/api/schedules/shift-requests/{id}/approve/` | 批准或拒绝调班申请 |
+| 我的申请 | GET | `/api/schedules/shift-requests/my_requests/` | 查询当前员工的调班申请 |
+| 待审批 | GET | `/api/schedules/shift-requests/pending/` | 管理员查看待审批列表 |
+| 详情 | GET | `/api/schedules/shift-requests/{id}/` | 标准操作 |
+| 更新 | PUT/PATCH | `/api/schedules/shift-requests/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/schedules/shift-requests/{id}/` | 标准操作 |
+
+**调班审核接口**：
+- 输入参数：`approve`（是否批准）、`approval_remark`（审批意见）
+- 批准时自动更新排班记录（删除原排班，创建新排班）
+- 拒绝时仅更新申请状态和审批意见
+
+#### 路由配置
+
+```python
+router = DefaultRouter()
+router.register(r'shifts', ShiftViewSet, basename='shift')
+router.register(r'schedules', ScheduleViewSet, basename='schedule')
+router.register(r'shift-requests', ShiftSwapRequestViewSet, basename='shift-request')
+```
+
+**路由映射**：
+- `/api/schedules/shifts/` → 班次定义管理
+- `/api/schedules/schedules/` → 排班计划管理
+- `/api/schedules/shift-requests/` → 调班申请管理
+
+#### Django Admin 配置
+
+**ShiftAdmin** - 班次定义管理
+- 列表展示：id, name, start_time, end_time, created_at
+- 过滤器：按班次名称、创建时间筛选
+- 字段分组：基本信息、时间信息
+
+**ScheduleAdmin** - 排班计划管理
+- 列表展示：id, 员工名, 班次名, 排班日期, 是否调班, 创建时间
+- 自定义列：`employee_name`、`shift_name`
+- 过滤器：按班次、日期、是否调班、创建时间筛选
+- 搜索：支持员工姓名、手机号搜索
+- 日期分层导航：按排班日期浏览
+
+**ShiftSwapRequestAdmin** - 调班申请管理
+- 列表展示：id, 发起人, 原定排班, 目标排班, 状态, 审批人, 创建时间
+- 自定义列：`requester_name`、`original_info`、`target_info`、`approver_name`
+- 过滤器：按状态、目标日期、创建时间筛选
+- 搜索：支持发起人姓名、申请原因、审批意见搜索
+- 字段分组：申请信息、审批信息、时间信息
+
+#### 业务流程
+
+**排班流程**：
+1. 管理员创建班次定义（早班、中班、晚班等）
+2. 管理员为员工创建排班（单个或批量）
+3. 员工通过日历视图查看排班
+4. 员工发起调班申请
+5. 管理员审核调班申请（批准/拒绝）
+6. 批准后系统自动更新排班记录
+
+**批量排班逻辑**：
+- 计算日期范围内的所有日期
+- 为每个员工在每个日期创建排班
+- 使用 `get_or_create` 避免重复
+- 返回创建数量和跳过数量
+
+---
+
 ## 重要文件说明
 
 ### `backend/config/settings.py`
@@ -556,6 +737,43 @@ DELETE /api/employees/{id}/      # 删除员工档案
 - 按岗位筛选：`/api/employees/?position=CHEF`
 - 按状态筛选：`/api/employees/?status=ACTIVE`
 - 组合筛选：`/api/employees/?position=CHEF&status=ACTIVE`
+- 搜索：`/api/employees/?search=张三`
+- 排序：`/api/employees/?ordering=-created_at`
+
+**排班管理 API (`/api/schedules/`)**
+```
+# 班次定义
+GET    /api/schedules/shifts/           # 班次列表
+POST   /api/schedules/shifts/           # 创建班次
+GET    /api/schedules/shifts/{id}/      # 班次详情
+PUT    /api/schedules/shifts/{id}/      # 更新班次
+DELETE /api/schedules/shifts/{id}/      # 删除班次
+
+# 排班计划
+GET    /api/schedules/schedules/        # 排班列表（支持筛选、搜索、排序）
+POST   /api/schedules/schedules/        # 创建排班
+POST   /api/schedules/schedules/batch_create/    # 批量排班
+POST   /api/schedules/schedules/calendar_view/   # 日历视图
+GET    /api/schedules/schedules/{id}/   # 排班详情
+PUT    /api/schedules/schedules/{id}/   # 更新排班
+DELETE /api/schedules/schedules/{id}/   # 删除排班
+
+# 调班申请
+GET    /api/schedules/shift-requests/   # 调班申请列表
+POST   /api/schedules/shift-requests/   # 创建调班申请
+POST   /api/schedules/shift-requests/{id}/approve/ # 调班审核
+GET    /api/schedules/shift-requests/my_requests/  # 我的调班申请
+GET    /api/schedules/shift-requests/pending/      # 待审批列表
+GET    /api/schedules/shift-requests/{id}/ # 调班申请详情
+PUT    /api/schedules/shift-requests/{id}/ # 更新调班申请
+DELETE /api/schedules/shift-requests/{id}/ # 删除调班申请
+```
+
+**筛选参数示例**：
+- 排班筛选：`/api/schedules/schedules/?employee=1&shift=2&work_date=2026-01-28`
+- 排班搜索：`/api/schedules/schedules/?search=张三`
+- 排班排序：`/api/schedules/schedules/?ordering=-work_date`
+- 调班申请筛选：`/api/schedules/shift-requests/?requester=1&status=PENDING`
 - 搜索：`/api/employees/?search=张三`
 - 排序：`/api/employees/?ordering=-created_at`
 

@@ -263,9 +263,102 @@ DELETE /api/employees/{id}/      # 删除员工档案
 
 ---
 
+### ✅ 步骤 2.3：创建排班相关模型与 API
+
+**实施内容**：
+
+1. **创建模型** (`schedules/models.py`)
+   - `Shift` 模型：班次定义（name, start_time, end_time, created_at）
+   - `Schedule` 模型：排班计划（employee, shift, work_date, is_swapped, created_at）
+   - `ShiftSwapRequest` 模型：调班申请（requester, original_schedule, target_date, target_shift, reason, status, approver, approval_remark, created_at）
+   - 使用 `unique_together` 防止同一员工在同一日期重复排班
+
+2. **创建序列化器** (`schedules/serializers.py`)
+   - `ShiftSerializer` / `ShiftListSerializer` - 班次详情/列表序列化器
+   - `ScheduleSerializer` / `ScheduleListSerializer` / `ScheduleDetailSerializer` - 排班详情/列表/完整信息序列化器
+   - `ShiftSwapRequestSerializer` / `ShiftSwapRequestListSerializer` - 调班申请详情/列表序列化器
+   - `BatchScheduleSerializer` - 批量排班序列化器（支持多员工、日期范围）
+   - `ShiftSwapApprovalSerializer` - 调班审批序列化器
+   - `CalendarViewSerializer` - 日历视图序列化器
+
+3. **创建视图集** (`schedules/views.py`)
+   - `ShiftViewSet` - 班次定义的增删改查操作
+   - `ScheduleViewSet` - 排班计划的增删改查
+     - `batch_create/` - 批量排班接口
+     - `calendar_view/` - 日历视图接口（按日期分组返回排班数据）
+   - `ShiftSwapRequestViewSet` - 调班申请的增删改查
+     - `approve/` - 调班审核接口（批准/拒绝，自动更新排班）
+     - `my_requests/` - 我的调班申请接口
+     - `pending/` - 待审批调班申请列表
+   - 统一的响应格式：`{code, message, data}`
+
+4. **配置 URL 路由**
+   - 创建 `schedules/urls.py` - 使用 DRF 的 `DefaultRouter`
+   - 更新 `config/urls.py` - 包含 schedules 路由：`/api/schedules/`
+
+5. **注册 Django Admin** (`schedules/admin.py`)
+   - `ShiftAdmin` - 班次定义管理界面
+   - `ScheduleAdmin` - 排班计划管理界面（显示员工名、班次名、日期）
+   - `ShiftSwapRequestAdmin` - 调班申请管理界面（显示发起人、原定排班、目标排班、审批状态）
+
+6. **数据库迁移**
+   - 创建迁移：`schedules/migrations/0001_initial.py`
+   - 应用迁移到数据库
+
+**API 端点清单**：
+```
+# 班次定义
+GET    /api/schedules/shifts/           # 班次列表
+POST   /api/schedules/shifts/           # 创建班次
+GET    /api/schedules/shifts/{id}/      # 班次详情
+PUT    /api/schedules/shifts/{id}/      # 更新班次
+DELETE /api/schedules/shifts/{id}/      # 删除班次
+
+# 排班计划
+GET    /api/schedules/schedules/        # 排班列表（支持筛选、搜索、排序）
+POST   /api/schedules/schedules/        # 创建排班
+POST   /api/schedules/schedules/batch_create/  # 批量排班
+POST   /api/schedules/schedules/calendar_view/ # 日历视图
+GET    /api/schedules/schedules/{id}/   # 排班详情
+PUT    /api/schedules/schedules/{id}/   # 更新排班
+DELETE /api/schedules/schedules/{id}/   # 删除排班
+
+# 调班申请
+GET    /api/schedules/shift-requests/   # 调班申请列表
+POST   /api/schedules/shift-requests/   # 创建调班申请
+POST   /api/schedules/shift-requests/{id}/approve/  # 调班审核
+GET    /api/schedules/shift-requests/my_requests/   # 我的调班申请
+GET    /api/schedules/shift-requests/pending/       # 待审批列表
+GET    /api/schedules/shift-requests/{id}/  # 调班申请详情
+PUT    /api/schedules/shift-requests/{id}/  # 更新调班申请
+DELETE /api/schedules/shift-requests/{id}/  # 删除调班申请
+```
+
+**筛选和搜索参数**：
+- 排班筛选：`?employee=1&shift=2&work_date=2026-01-28`
+- 排班搜索：`?search=张三`
+- 排班排序：`?ordering=-work_date`
+- 调班申请筛选：`?requester=1&status=PENDING&target_date=2026-01-28`
+
+**测试验证**：
+- ✅ 创建班次，返回 200，班次创建成功
+- ✅ 查询班次列表，返回 200，显示所有班次
+- ✅ 创建排班，返回 200，排班创建成功
+- ✅ 批量排班，返回 200，创建 9 条记录（3 个员工 × 3 天）
+- ✅ 查询排班列表，返回 200，显示 10 条排班记录
+- ✅ 日历视图接口，返回 200，按日期分组显示排班数据
+- ✅ Django Admin 界面正常显示和管理排班数据
+
+**注意事项**：
+- 批量排班使用 `get_or_create` 避免重复创建
+- 调班审核通过后，自动更新排班记录（删除原排班，创建新排班）
+- 日历视图返回的数据格式适合前端日历组件使用
+- 权限验证待后续实现（目前所有用户都可访问管理接口）
+
+---
+
 ## 待完成
 
-- [ ] 步骤 2.3：创建排班相关模型与 API
 - [ ] 步骤 2.4：创建考勤模型与 API
 - [ ] 步骤 2.5：创建请假模型与 API
 - [ ] 步骤 2.6：创建薪资模型与 API
