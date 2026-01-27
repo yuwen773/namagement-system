@@ -28,11 +28,13 @@ export const useAuthStore = defineStore('auth', () => {
     employees: [ROLE_ADMIN, ROLE_HR],
     departments: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
     posts: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
-    attendance: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
+    attendance: [ROLE_ADMIN, ROLE_HR],
+    attendanceCenter: [ROLE_EMPLOYEE],
     attendanceStatistics: [ROLE_ADMIN, ROLE_HR],
     salary: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
-    salaryException: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
-    approval: [ROLE_ADMIN, ROLE_HR, ROLE_EMPLOYEE],
+    salaryException: [ROLE_ADMIN, ROLE_HR],
+    exceptionReport: [ROLE_EMPLOYEE],
+    applicationCenter: [ROLE_EMPLOYEE],
     onboarding: [ROLE_ADMIN, ROLE_HR],
     resignation: [ROLE_ADMIN, ROLE_HR],
     users: [ROLE_ADMIN],
@@ -123,17 +125,25 @@ export const useAuthStore = defineStore('auth', () => {
   // 获取当前用户可访问的菜单列表
   function getAccessibleMenus() {
     const allMenus = [
-      { name: 'dashboard', label: '数据概览', path: '/', icon: 'dashboard' },
+      { 
+        name: 'dashboard', 
+        label: isAdmin.value ? '系统运营看板' : (isHR.value ? '人事工作台' : '系统运营看板'), 
+        path: '/', 
+        icon: 'dashboard' 
+      },
       { name: 'employeeDashboard', label: '首页', path: '/employee', icon: 'dashboard' },
       { name: 'dataCenter', label: '数据中心', path: '/data-center', icon: 'dashboard' },
-      { name: 'employees', label: '员工管理', path: '/employees', icon: 'employees' },
+      { name: 'employees', label: isHR.value ? '员工档案管理' : '员工管理', path: '/employees', icon: 'employees' },
       { name: 'departments', label: '部门管理', path: '/departments', icon: 'departments' },
       { name: 'posts', label: '岗位管理', path: '/posts', icon: 'posts' },
       { name: 'attendance', label: '考勤管理', path: '/attendance', icon: 'attendance' },
+      { name: 'attendanceCenter', label: '考勤中心', path: '/attendance-center', icon: 'attendance' },
       { name: 'attendanceStatistics', label: '考勤统计', path: '/attendance-statistics', icon: 'attendance' },
       { name: 'salary', label: '薪资管理', path: '/salary', icon: 'salary' },
       { name: 'salaryException', label: '异常处理', path: '/salary-exception', icon: 'salary' },
+      { name: 'exceptionReport', label: '异常上报', path: '/exception-report', icon: 'salary' },
       { name: 'approval', label: '审批中心', path: '/approval', icon: 'approval' },
+      { name: 'applicationCenter', label: '申请中心', path: '/application-center', icon: 'approval' },
       { name: 'onboarding', label: '入职管理', path: '/onboarding', icon: 'onboarding' },
       { name: 'resignation', label: '离职管理', path: '/resignation', icon: 'onboarding' },
       { name: 'performanceReview', label: '绩效评估', path: '/performance-review', icon: 'performance' },
@@ -143,7 +153,8 @@ export const useAuthStore = defineStore('auth', () => {
       { name: 'noticeManagement', label: '公告管理', path: '/notice-management', icon: 'notices' },
       { name: 'users', label: '账号管理', path: '/users', icon: 'users' },
       { name: 'permissionConfig', label: '权限配置', path: '/permission-config', icon: 'setting' },
-      { name: 'securityConfig', label: '安全配置', path: '/security-config', icon: 'setting' }
+      { name: 'securityConfig', label: '安全配置', path: '/security-config', icon: 'setting' },
+      { name: 'profile', label: '个人中心', path: '/profile', icon: 'profile' }
     ]
     return allMenus.filter(menu => hasPermission(menu.name))
   }
@@ -195,7 +206,20 @@ export const useAuthStore = defineStore('auth', () => {
         router.push('/')
       }
     } catch (error) {
-      ElMessage.error(error.response?.data?.detail || '登录失败，请检查用户名和密码')
+      let errorMessage = '登录失败，请检查用户名和密码'
+      const errorData = error.response?.data
+      
+      if (errorData) {
+        if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail
+        } else if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail[0]
+        } else if (errorData.non_field_errors) {
+          errorMessage = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors
+        }
+      }
+      
+      ElMessage.error(errorMessage)
       throw error
     } finally {
       loading.value = false

@@ -57,7 +57,13 @@ const router = createRouter({
           path: 'attendance',
           name: 'attendance',
           component: () => import('../views/Attendance.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'attendance-center',
+          name: 'attendance-center',
+          component: () => import('../views/AttendanceCenter.vue'),
+          meta: { roles: ['employee'] }
         },
         {
           path: 'attendance-statistics',
@@ -75,7 +81,13 @@ const router = createRouter({
           path: 'approval',
           name: 'approval',
           component: () => import('../views/ApprovalCenter.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'application-center',
+          name: 'application-center',
+          component: () => import('../views/ApplicationCenter.vue'),
+          meta: { roles: ['employee'] }
         },
         {
           path: 'onboarding',
@@ -140,8 +152,8 @@ const router = createRouter({
         {
           path: 'profile',
           name: 'profile',
-          component: () => import('../views/ProfileEdit.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          component: () => import('../views/ProfileCenter.vue'),
+          meta: { title: '个人中心', roles: ['admin', 'hr', 'employee'] }
         },
         {
           path: 'permission-config',
@@ -159,7 +171,13 @@ const router = createRouter({
           path: 'salary-exception',
           name: 'salary-exception',
           component: () => import('../views/SalaryException.vue'),
-          meta: { roles: ['admin', 'hr', 'employee'] }
+          meta: { roles: ['admin', 'hr'] }
+        },
+        {
+          path: 'exception-report',
+          name: 'exception-report',
+          component: () => import('../views/ExceptionReport.vue'),
+          meta: { roles: ['employee'] }
         }
       ]
     },

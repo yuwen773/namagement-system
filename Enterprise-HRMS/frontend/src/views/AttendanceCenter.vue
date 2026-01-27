@@ -1,5 +1,48 @@
 <template>
   <div class="attendance-page">
+    <!-- 个人信息卡片 -->
+    <div class="section-card profile-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-wrapper profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <span class="card-title">个人信息</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="profile-info">
+          <div class="profile-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="profile-details">
+            <div class="profile-item">
+              <span class="profile-label">姓名</span>
+              <span class="profile-value">{{ userInfo.real_name || userInfo.username }}</span>
+            </div>
+            <div class="profile-item">
+              <span class="profile-label">工号</span>
+              <span class="profile-value">{{ userInfo.employee_id || '--' }}</span>
+            </div>
+            <div class="profile-item">
+              <span class="profile-label">部门</span>
+              <span class="profile-value">{{ userInfo.department || '--' }}</span>
+            </div>
+            <div class="profile-item">
+              <span class="profile-label">岗位</span>
+              <span class="profile-value">{{ userInfo.post || '--' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 今日考勤卡片 -->
     <div class="section-card today-card">
       <div class="card-header">
@@ -221,18 +264,20 @@
       </div>
       <div class="card-body">
         <el-table :data="records" v-loading="loading.records" stripe class="custom-table">
-          <el-table-column prop="date" label="日期" width="110" />
-          <el-table-column v-if="isAdminOrHR" prop="user_name" label="姓名" width="100" />
-          <el-table-column v-if="isAdminOrHR" prop="department_name" label="部门" min-width="120" show-overflow-tooltip />
-          <el-table-column v-if="isAdminOrHR" prop="post_name" label="岗位" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="check_in_time" label="签到时间" width="100">
+          <el-table-column prop="date" label="日期" width="120" />
+          <el-table-column label="员工" width="90">
+            <template #default>
+              <span class="employee-name">{{ userInfo.real_name || authStore.user?.real_name }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="check_in_time" label="签到时间" width="120">
             <template #default="{ row }">
               <span :class="{ 'text-danger': row.status === 'late', 'late-value': row.status === 'late' }">
                 {{ row.check_in_time || '--:--:--' }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column prop="check_out_time" label="签退时间" width="100">
+          <el-table-column prop="check_out_time" label="签退时间" width="120">
             <template #default="{ row }">
               <span :class="{ 'text-warning': row.status === 'early', 'early-value': row.status === 'early' }">
                 {{ row.check_out_time || '--:--:--' }}
@@ -244,6 +289,11 @@
               <el-tag :type="getStatusType(row.status)" size="small" class="status-tag">
                 {{ getStatusText(row.status) }}
               </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="工作时长" width="100">
+            <template #default="{ row }">
+              <span class="work-duration">{{ calculateDuration(row.check_in_time, row.check_out_time) }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -267,12 +317,20 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { checkIn, checkOut, getTodayAttendance, getAttendanceRecords, getAttendanceStats } from '@/api/attendance'
 import { useAuthStore } from '@/stores/auth'
+import { checkIn, checkOut, getTodayAttendance, getAttendanceRecords, getAttendanceStats } from '@/api/attendance'
+import { getMyProfile } from '@/api/employee'
 
 const authStore = useAuthStore()
-const isEmployee = computed(() => authStore.user?.role === 'employee')
-const isAdminOrHR = computed(() => ['admin', 'hr'].includes(authStore.user?.role))
+
+// 个人信息
+const userInfo = reactive({
+  real_name: '',
+  username: '',
+  employee_id: '',
+  department: '',
+  post: ''
+})
 
 // 加载状态
 const loading = reactive({
@@ -465,8 +523,49 @@ function getStatusText(status) {
   return map[status] || '未知'
 }
 
+// 计算工作时长
+function calculateDuration(checkIn, checkOut) {
+  if (!checkIn || !checkOut) return '--:--'
+
+  const [inHours, inMinutes, inSeconds] = checkIn.split(':').map(Number)
+  const [outHours, outMinutes, outSeconds] = checkOut.split(':').map(Number)
+
+  const inTotalSeconds = inHours * 3600 + inMinutes * 60 + inSeconds
+  const outTotalSeconds = outHours * 3600 + outMinutes * 60 + outSeconds
+
+  const diffSeconds = outTotalSeconds - inTotalSeconds
+
+  if (diffSeconds <= 0) return '--:--'
+
+  const hours = Math.floor(diffSeconds / 3600)
+  const minutes = Math.floor((diffSeconds % 3600) / 60)
+
+  return `${hours}h ${minutes}min`
+}
+
+// 获取个人信息
+async function fetchUserProfile() {
+  try {
+    const res = await getMyProfile()
+    if (res.data?.code === 0) {
+      const data = res.data?.data || {}
+      userInfo.real_name = data.real_name || authStore.user?.real_name || ''
+      userInfo.username = data.username || authStore.user?.username || ''
+      userInfo.employee_id = data.employee_id || ''
+      userInfo.department = data.department_name || data.department || ''
+      userInfo.post = data.post_name || data.post || ''
+    }
+  } catch (error) {
+    console.error('获取个人信息失败:', error)
+    // 使用登录时的基本信息
+    userInfo.real_name = authStore.user?.real_name || ''
+    userInfo.username = authStore.user?.username || ''
+  }
+}
+
 // 初始化
-onMounted(() => {
+onMounted(async () => {
+  await fetchUserProfile()
   fetchTodayAttendance()
   fetchStats()
   fetchRecords()
@@ -565,6 +664,11 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
+.header-icon-wrapper.profile {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
 .header-icon-wrapper svg {
   width: 20px;
   height: 20px;
@@ -610,6 +714,60 @@ onMounted(() => {
 
 .card-body {
   padding: 24px;
+}
+
+/* 个人信息卡片 */
+.profile-card {
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(167, 139, 250, 0.06) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-avatar svg {
+  width: 40px;
+  height: 40px;
+  color: #8b5cf6;
+}
+
+.profile-details {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  flex: 1;
+}
+
+.profile-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-label {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.profile-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 /* 今日考勤 */
@@ -924,6 +1082,16 @@ onMounted(() => {
   padding: 2px 12px;
 }
 
+.work-duration {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.employee-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 /* 分页 */
 .pagination-wrapper {
   display: flex;
@@ -997,6 +1165,16 @@ onMounted(() => {
 
   .stat-number {
     font-size: 26px;
+  }
+
+  .profile-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .profile-details {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 }
 </style>

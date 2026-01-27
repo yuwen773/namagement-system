@@ -27,6 +27,17 @@ export function getPost(id) {
 }
 
 /**
+ * 根据部门获取岗位列表
+ * @param {number} departmentId - 部门ID
+ * @returns {Promise}
+ */
+export function getPostsByDepartment(departmentId) {
+  return axios.get('/organization/posts/by_department/', {
+    params: { department_id: departmentId }
+  })
+}
+
+/**
  * 创建岗位
  * @param {Object} data - 岗位数据
  * @param {string} data.name - 岗位名称
@@ -60,6 +71,7 @@ export function deletePost(id) {
 export default {
   getPostList,
   getPost,
+  getPostsByDepartment,
   createPost,
   updatePost,
   deletePost

@@ -162,7 +162,7 @@
           <el-input :value="currentEmployee?.real_name" disabled class="form-input" />
         </el-form-item>
         <el-form-item label="部门" prop="department">
-          <el-select v-model="editForm.department" placeholder="请选择部门" class="form-input">
+          <el-select v-model="editForm.department" placeholder="请选择部门" class="form-input" @change="handleEditDepartmentChange">
             <el-option
               v-for="dept in departments"
               :key="dept.id"
@@ -172,9 +172,9 @@
           </el-select>
         </el-form-item>
         <el-form-item label="岗位" prop="post">
-          <el-select v-model="editForm.post" placeholder="请选择岗位" class="form-input">
+          <el-select v-model="editForm.post" placeholder="请先选择部门" class="form-input" :disabled="!editForm.department">
             <el-option
-              v-for="post in posts"
+              v-for="post in editPosts"
               :key="post.id"
               :label="post.name"
               :value="post.id"
@@ -245,7 +245,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="部门" prop="department">
-          <el-select v-model="onboardingForm.department" placeholder="请选择部门" class="form-input">
+          <el-select v-model="onboardingForm.department" placeholder="请选择部门" class="form-input" @change="handleOnboardingDepartmentChange">
             <el-option
               v-for="dept in departments"
               :key="dept.id"
@@ -255,9 +255,9 @@
           </el-select>
         </el-form-item>
         <el-form-item label="岗位" prop="post">
-          <el-select v-model="onboardingForm.post" placeholder="请选择岗位" class="form-input">
+          <el-select v-model="onboardingForm.post" placeholder="请先选择部门" class="form-input" :disabled="!onboardingForm.department">
             <el-option
-              v-for="post in posts"
+              v-for="post in onboardingPosts"
               :key="post.id"
               :label="post.name"
               :value="post.id"
@@ -290,7 +290,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getEmployeeList, getEmployeeDetail, getPendingUsers, createEmployee, updateEmployee, resignEmployee } from '@/api/employee'
 import { getDepartmentList } from '@/api/department'
-import { getPostList } from '@/api/post'
+import { getPostList, getPostsByDepartment } from '@/api/post'
 
 // 员工列表
 const employeeList = ref([])
@@ -353,6 +353,8 @@ const onboardingForm = reactive({
 const pendingUsers = ref([])
 const departments = ref([])
 const posts = ref([])
+const onboardingPosts = ref([])  // 入职表单：根据部门筛选的岗位
+const editPosts = ref([])         // 编辑表单：根据部门筛选的岗位
 
 // 表单验证规则
 const onboardingRules = {
@@ -415,12 +417,44 @@ const viewDetail = async (row) => {
   }
 }
 
+// 编辑表单 - 部门变化时加载岗位
+const handleEditDepartmentChange = async (departmentId) => {
+  editForm.post = null
+  editPosts.value = []
+
+  if (!departmentId) return
+
+  try {
+    const res = await getPostsByDepartment(departmentId)
+    if (res.data?.code === 0) {
+      editPosts.value = res.data?.data || []
+    }
+  } catch (error) {
+    console.error('获取岗位列表失败:', error)
+    ElMessage.error('获取岗位列表失败')
+  }
+}
+
 // 打开编辑对话框
-const handleEdit = (employee) => {
+const handleEdit = async (employee) => {
   editForm.department = employee.department?.id
   editForm.post = employee.post?.id
   editForm.hire_date = employee.hire_date
   editForm.salary_base = employee.salary_base
+  editPosts.value = []
+
+  // 加载员工所在部门的岗位
+  if (employee.department?.id) {
+    try {
+      const res = await getPostsByDepartment(employee.department.id)
+      if (res.data?.code === 0) {
+        editPosts.value = res.data?.data || []
+      }
+    } catch (error) {
+      console.error('获取岗位列表失败:', error)
+    }
+  }
+
   editVisible.value = true
 }
 
@@ -500,6 +534,27 @@ const submitResign = async () => {
   }
 }
 
+// 入职办理 - 部门变化时加载岗位
+const handleOnboardingDepartmentChange = async (departmentId) => {
+  onboardingForm.post = null
+  onboardingPosts.value = []
+
+  if (!departmentId) return
+
+  try {
+    const res = await getPostsByDepartment(departmentId)
+    if (res.data?.code === 0) {
+      onboardingPosts.value = res.data?.data || []
+      if (onboardingPosts.value.length === 0) {
+        ElMessage.warning('该部门下暂无岗位，请联系管理员配置')
+      }
+    }
+  } catch (error) {
+    console.error('获取岗位列表失败:', error)
+    ElMessage.error('获取岗位列表失败')
+  }
+}
+
 // 入职办理
 const handleOnboarding = async () => {
   onboardingForm.user_id = null
@@ -507,16 +562,15 @@ const handleOnboarding = async () => {
   onboardingForm.post = null
   onboardingForm.hire_date = ''
   onboardingForm.salary_base = 5000
+  onboardingPosts.value = []
 
   try {
-    const [usersRes, deptsRes, postsRes] = await Promise.all([
+    const [usersRes, deptsRes] = await Promise.all([
       getPendingUsers({ page: 1, page_size: 100 }),
-      getDepartmentList({ only_root: true }),
-      getPostList({ only_active: true })
+      getDepartmentList({ only_root: true })
     ])
     pendingUsers.value = usersRes.data?.data || []
     departments.value = deptsRes.data?.data || []
-    posts.value = postsRes.data?.data || []
 
     if (pendingUsers.value.length === 0) {
       ElMessage.warning('暂无待入职用户')
