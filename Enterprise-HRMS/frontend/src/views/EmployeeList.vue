@@ -124,27 +124,110 @@
           />
         </div>
       </div>
+
+      <!-- 快捷筛选栏 -->
+      <div class="quick-filters-bar">
+        <div class="quick-filter-label">快捷筛选</div>
+        <div class="quick-filter-buttons">
+          <button
+            :class="['quick-filter-btn', { active: filterForm.unassigned }]"
+            @click="toggleUnassignedFilter"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span class="filter-text">待分配员工</span>
+            <span v-if="unassignedCount > 0" class="filter-count">{{ unassignedCount }}</span>
+            <div class="active-indicator"></div>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 员工列表 -->
     <div class="table-section">
+      <!-- 批量操作栏 -->
+      <transition name="batch-bar-slide">
+        <div v-if="selectedEmployees.length > 0" class="batch-actions-bar">
+          <div class="batch-info">
+            <div class="selection-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <div class="selection-text">
+              <span class="selection-number">{{ selectedEmployees.length }}</span>
+              <span class="selection-label">名员工已选择</span>
+            </div>
+          </div>
+          <div class="batch-actions">
+            <button class="batch-action-btn primary" @click="openBatchAssignDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+              <span>分配部门/岗位</span>
+            </button>
+            <button class="batch-action-btn ghost" @click="clearSelection">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              <span>取消选择</span>
+            </button>
+          </div>
+        </div>
+      </transition>
+
       <el-table
+        ref="employeeTableRef"
         :data="employeeList"
         v-loading="loading"
         stripe
         class="custom-table"
+        :row-class-name="getRowClassName"
+        @selection-change="handleSelectionChange"
       >
-        <el-table-column prop="employee_no" label="工号" width="160" />
+        <el-table-column type="selection" width="55" :selectable="checkSelectable" />
+        <el-table-column prop="employee_no" label="工号" width="160">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.employee_no }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="real_name" label="姓名" width="150">
           <template #default="{ row }">
             <div class="employee-name">
-              <div class="name-avatar">{{ row.real_name?.charAt(0) }}</div>
+              <div class="name-avatar" :class="{ unassigned: row.is_unassigned }">
+                {{ row.real_name?.charAt(0) }}
+              </div>
               <span>{{ row.real_name }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="department_name" label="部门" min-width="180" />
-        <el-table-column prop="post_name" label="岗位" width="160" />
+        <el-table-column prop="department_name" label="部门" min-width="180">
+          <template #default="{ row }">
+            <div v-if="row.is_unassigned" class="unassigned-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>待分配部门</span>
+            </div>
+            <span v-else>{{ row.department_name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="post_name" label="岗位" width="160">
+          <template #default="{ row }">
+            <span v-if="row.is_unassigned" class="text-placeholder">待分配岗位</span>
+            <span v-else>{{ row.post_name }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="hire_date" label="入职日期" width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -255,12 +338,21 @@
           <el-descriptions-item label="邮箱">{{
             currentEmployee.email
           }}</el-descriptions-item>
-          <el-descriptions-item label="部门">{{
-            currentEmployee.department_name
-          }}</el-descriptions-item>
-          <el-descriptions-item label="岗位">{{
-            currentEmployee.post_name
-          }}</el-descriptions-item>
+          <el-descriptions-item label="部门">
+            <div v-if="currentEmployee.is_unassigned" class="unassigned-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>待分配部门</span>
+            </div>
+            <span v-else>{{ currentEmployee.department_name }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="岗位">
+            <span v-if="currentEmployee.is_unassigned" class="text-placeholder">待分配岗位</span>
+            <span v-else>{{ currentEmployee.post_name }}</span>
+          </el-descriptions-item>
           <el-descriptions-item label="入职日期">{{
             currentEmployee.hire_date
           }}</el-descriptions-item>
@@ -286,41 +378,40 @@
         </el-descriptions>
 
         <div class="drawer-footer" v-if="currentEmployee?.status === 'active'">
-          <el-button
-            type="primary"
-            @click="handleEdit(currentEmployee)"
-            class="footer-btn"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-              />
-              <path
-                d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-              />
-            </svg>
-            编辑信息
-          </el-button>
-          <el-button
-            type="warning"
-            @click="handleResign(currentEmployee)"
-            class="footer-btn"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            办理离职
-          </el-button>
+          <!-- 待分配员工：显示醒目的分配按钮 -->
+          <template v-if="currentEmployee?.is_unassigned">
+            <button class="footer-btn assign-primary" @click="handleEdit(currentEmployee)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+              分配部门/岗位
+            </button>
+            <button class="footer-btn ghost" @click="handleResign(currentEmployee)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              办理离职
+            </button>
+          </template>
+          <!-- 已分配员工：显示常规编辑按钮 -->
+          <template v-else>
+            <button class="footer-btn primary" @click="handleEdit(currentEmployee)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              编辑信息
+            </button>
+            <button class="footer-btn ghost" @click="handleResign(currentEmployee)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              办理离职
+            </button>
+          </template>
         </div>
       </div>
     </el-drawer>
@@ -522,11 +613,83 @@
         >
       </template>
     </el-dialog>
+
+    <!-- 批量分配对话框 -->
+    <el-dialog
+      v-model="batchAssignDialogVisible"
+      title="批量分配部门和岗位"
+      width="520px"
+      @close="resetBatchAssignForm"
+      class="batch-assign-dialog"
+    >
+      <div class="batch-assign-content">
+        <!-- 选中员工提示 -->
+        <div class="selected-employees-info">
+          <div class="info-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="info-content">
+            <div class="info-title">已选择 <strong>{{ selectedEmployees.length }}</strong> 名员工</div>
+            <div class="info-desc">将为他们分配部门和岗位，并自动重新生成工号</div>
+          </div>
+        </div>
+
+        <!-- 表单 -->
+        <el-form :model="batchAssignForm" label-width="90px" class="batch-assign-form">
+          <el-form-item label="目标部门" required>
+            <el-cascader
+              v-model="batchAssignForm.department_id"
+              :options="assignDepartments"
+              :props="{ value: 'id', label: 'name', children: 'children', checkStrictly: true }"
+              placeholder="请选择部门"
+              clearable
+              class="form-input"
+              @change="handleBatchAssignDepartmentChange"
+            />
+          </el-form-item>
+          <el-form-item label="目标岗位">
+            <el-select
+              v-model="batchAssignForm.post_id"
+              placeholder="可选，留空则不分配岗位"
+              clearable
+              class="form-input"
+              :disabled="!batchAssignForm.department_id"
+            >
+              <el-option
+                v-for="post in assignPosts"
+                :key="post.id"
+                :label="post.name"
+                :value="post.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <button class="footer-btn cancel" @click="batchAssignDialogVisible = false">
+            取消
+          </button>
+          <button class="footer-btn confirm" :disabled="batchAssignLoading" @click="submitBatchAssign">
+            <svg v-if="!batchAssignLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <svg v-else class="loading-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32" />
+            </svg>
+            {{ batchAssignLoading ? '分配中...' : '确认分配' }}
+          </button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
   getEmployeeList,
@@ -535,8 +698,9 @@ import {
   createEmployee,
   updateEmployee,
   resignEmployee,
+  batchAssignDepartment,
 } from "@/api/employee";
-import { getDepartmentList } from "@/api/department";
+import { getDepartmentList, getDepartmentTree } from "@/api/department";
 import { getPostList, getPostsByDepartment } from "@/api/post";
 
 // 员工列表
@@ -557,6 +721,7 @@ const filterForm = reactive({
   post_id: null,
   keyword: "",
   hireDateRange: null,
+  unassigned: false,
 });
 
 // 详情抽屉
@@ -610,6 +775,18 @@ const posts = ref([]);
 const filterPosts = ref([]); // 筛选用的岗位列表
 const onboardingPosts = ref([]); // 入职表单：根据部门筛选的岗位
 const editPosts = ref([]); // 编辑表单：根据部门筛选的岗位
+
+// 批量分配
+const employeeTableRef = ref(null)
+const selectedEmployees = ref([])
+const batchAssignDialogVisible = ref(false)
+const batchAssignForm = reactive({
+  department_id: null,
+  post_id: null
+})
+const assignDepartments = ref([])
+const assignPosts = ref([])
+const batchAssignLoading = ref(false)
 
 // 表单验证规则
 const onboardingRules = {
@@ -685,6 +862,9 @@ const fetchEmployees = async () => {
       params.hire_date_start = filterForm.hireDateRange[0];
       params.hire_date_end = filterForm.hireDateRange[1];
     }
+    if (filterForm.unassigned) {
+      params.unassigned = "true";
+    }
     const res = await getEmployeeList(params);
     if (res.data?.code === 0) {
       employeeList.value = res.data?.data || [];
@@ -742,8 +922,19 @@ const handleEdit = async (employee) => {
   editForm.salary_base = employee.salary_base;
   editPosts.value = [];
 
-  // 加载员工所在部门的岗位
-  if (employee.department?.id) {
+  // 加载部门列表（过滤掉待分配部门）
+  try {
+    const res = await getDepartmentList({ only_root: true });
+    if (res.data?.code === 0) {
+      // 过滤掉待分配部门
+      departments.value = filterUnassignedDepartmentForSelect(res.data?.data || []);
+    }
+  } catch (error) {
+    console.error("获取部门列表失败:", error);
+  }
+
+  // 加载员工所在部门的岗位（如果不是待分配部门）
+  if (employee.department?.id && employee.department?.code !== 'UNASSIGNED') {
     try {
       const res = await getPostsByDepartment(employee.department.id);
       if (res.data?.code === 0) {
@@ -755,6 +946,11 @@ const handleEdit = async (employee) => {
   }
 
   editVisible.value = true;
+};
+
+// 过滤待分配部门（用于选择器）
+const filterUnassignedDepartmentForSelect = (depts) => {
+  return depts.filter(dept => dept.code !== 'UNASSIGNED');
 };
 
 // 提交编辑
@@ -913,6 +1109,120 @@ const submitOnboarding = async () => {
   }
 };
 
+// ========== 批量分配相关方法 ==========
+
+// 切待分配筛选
+const toggleUnassignedFilter = () => {
+  filterForm.unassigned = !filterForm.unassigned;
+  fetchEmployees();
+};
+
+// 复选框可选择条件（只能选择待分配员工）
+const checkSelectable = (row) => {
+  return row.is_unassigned;
+};
+
+// 处理选择变化
+const handleSelectionChange = (selection) => {
+  selectedEmployees.value = selection;
+};
+
+// 清除选择
+const clearSelection = () => {
+  employeeTableRef.value?.clearSelection();
+  selectedEmployees.value = [];
+};
+
+// 过滤待分配部门
+const filterUnassignedDepartment = (depts) => {
+  return depts
+    .filter(dept => dept.code !== 'UNASSIGNED')
+    .map(dept => ({
+      ...dept,
+      children: dept.children ? filterUnassignedDepartment(dept.children) : []
+    }));
+};
+
+// 批量分配部门变化
+const handleBatchAssignDepartmentChange = async (val) => {
+  batchAssignForm.post_id = null;
+  assignPosts.value = [];
+  if (val && val.length > 0) {
+    const deptId = Array.isArray(val) ? val[val.length - 1] : val;
+    try {
+      const res = await getPostsByDepartment(deptId);
+      assignPosts.value = (res.data?.data || []).filter(p => p.code !== 'UNASSIGNED');
+    } catch (error) {
+      console.error("获取岗位列表失败:", error);
+    }
+  }
+};
+
+// 打开批量分配对话框
+const openBatchAssignDialog = async () => {
+  if (selectedEmployees.value.length === 0) {
+    ElMessage.warning("请先选择待分配的员工");
+    return;
+  }
+
+  try {
+    const res = await getDepartmentTree();
+    assignDepartments.value = filterUnassignedDepartment(res.data?.data || []);
+    batchAssignDialogVisible.value = true;
+  } catch (error) {
+    console.error("获取部门列表失败:", error);
+    ElMessage.error("获取部门列表失败");
+  }
+};
+
+// 提交批量分配
+const submitBatchAssign = async () => {
+  if (!batchAssignForm.department_id) {
+    ElMessage.warning("请选择目标部门");
+    return;
+  }
+
+  const deptId = Array.isArray(batchAssignForm.department_id)
+    ? batchAssignForm.department_id[batchAssignForm.department_id.length - 1]
+    : batchAssignForm.department_id;
+
+  batchAssignLoading.value = true;
+  try {
+    const res = await batchAssignDepartment({
+      employee_ids: selectedEmployees.value.map(emp => emp.id),
+      department_id: deptId,
+      post_id: batchAssignForm.post_id
+    });
+
+    ElMessage.success(res.data?.message || "分配成功");
+    batchAssignDialogVisible.value = false;
+    clearSelection();
+    fetchEmployees();
+  } catch (error) {
+    console.error("批量分配失败:", error);
+    ElMessage.error(error.response?.data?.message || "分配失败");
+  } finally {
+    batchAssignLoading.value = false;
+  }
+};
+
+// 重置批量分配表单
+const resetBatchAssignForm = () => {
+  batchAssignForm.department_id = null;
+  batchAssignForm.post_id = null;
+  assignPosts.value = [];
+};
+
+// 待分配员工数量
+const unassignedCount = computed(() => {
+  return employeeList.value.filter(emp => emp.is_unassigned).length;
+});
+
+// 获取表格行的类名
+const getRowClassName = ({ row }) => {
+  return row.is_unassigned ? 'unassigned-row' : '';
+};
+
 onMounted(() => {
   fetchEmployees();
   fetchAllDepartments();
@@ -923,6 +1233,12 @@ onMounted(() => {
 /* ========================================
    Employee List - Refined Corporate Design
    ======================================== */
+
+/* 颜色变量定义 */
+:deep(:root) {
+  --color-text-placeholder: rgba(0, 0, 0, 0.35);
+}
+
 .employee-page {
   display: flex;
   flex-direction: column;
@@ -1071,6 +1387,244 @@ onMounted(() => {
   width: 240px;
 }
 
+/* ========== 快捷筛选栏 ========== */
+.quick-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.quick-filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-filter-buttons {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+.quick-filter-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.quick-filter-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.quick-filter-btn:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.quick-filter-btn:hover::before {
+  opacity: 1;
+}
+
+.quick-filter-btn.active {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.08) 100%);
+  color: var(--color-warning);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.quick-filter-btn.active::before {
+  opacity: 1;
+}
+
+.filter-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.filter-text {
+  position: relative;
+  z-index: 1;
+}
+
+.filter-count {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--color-warning);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.active-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 60%;
+  height: 2px;
+  background: var(--color-warning);
+  border-radius: var(--radius-full);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-filter-btn.active .active-indicator {
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* ========== 批量操作栏 ========== */
+.batch-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(6, 182, 212, 0.04) 100%);
+  border-bottom: 1px solid rgba(79, 70, 229, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.batch-actions-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 50%, var(--color-success) 100%);
+}
+
+.batch-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.selection-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.selection-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.selection-text {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.selection-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.selection-label {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.batch-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.batch-action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.batch-action-btn.primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.batch-action-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+.batch-action-btn.ghost {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-light);
+}
+
+.batch-action-btn.ghost:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: var(--color-border);
+}
+
+/* ========== 批量操作栏动画 ========== */
+.batch-bar-slide-enter-active,
+.batch-bar-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.batch-bar-slide-enter-from,
+.batch-bar-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
 /* 表格区域 */
 .table-section {
   background: var(--color-bg-secondary);
@@ -1107,6 +1661,52 @@ onMounted(() => {
   background: transparent;
   font-weight: 600;
   color: var(--color-text-secondary);
+}
+
+/* 待分配员工行样式 */
+.custom-table :deep(.unassigned-row) {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.04) 0%, rgba(245, 158, 11, 0.02) 50%, transparent 100%);
+}
+
+.custom-table :deep(.unassigned-row:hover) {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.04) 50%, transparent 100%) !important;
+}
+
+/* ========== 待分配员工标识 ========== */
+.unassigned-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.08) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-warning);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.unassigned-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.text-placeholder {
+  color: var(--color-text-placeholder);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.name-avatar.unassigned {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(251, 191, 36, 0.6) 100%);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.mono-text {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.3px;
 }
 
 /* 员工姓名列样式 */
@@ -1299,15 +1899,46 @@ onMounted(() => {
   border-radius: var(--radius-md);
   font-weight: 500;
   transition: all 0.3s ease;
-}
-
-.footer-btn:hover {
-  transform: translateY(-2px);
+  border: none;
+  cursor: pointer;
 }
 
 .footer-btn svg {
   width: 18px;
   height: 18px;
+}
+
+.footer-btn.primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.footer-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+.footer-btn.assign-primary {
+  background: linear-gradient(135deg, var(--color-warning) 0%, rgba(251, 191, 36, 0.8) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.footer-btn.assign-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+.footer-btn.ghost {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-light);
+}
+
+.footer-btn.ghost:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: var(--color-border);
 }
 
 /* 表单样式 */
@@ -1318,6 +1949,143 @@ onMounted(() => {
 .custom-form :deep(.el-form-item__label) {
   font-weight: 500;
   color: var(--color-text-secondary);
+}
+
+/* ========== 批量分配对话框 ========== */
+.batch-assign-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.selected-employees-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(6, 182, 212, 0.04) 100%);
+  border: 1px solid rgba(79, 70, 229, 0.15);
+  border-radius: var(--radius-lg);
+}
+
+.info-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  flex-shrink: 0;
+}
+
+.info-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.info-title strong {
+  color: var(--color-primary);
+  font-size: 18px;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.info-desc {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+
+.batch-assign-form {
+  margin-top: 8px;
+}
+
+.batch-assign-form :deep(.el-form-item__label) {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.batch-assign-form :deep(.el-cascader),
+.batch-assign-form :deep(.el-select) {
+  width: 100%;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.footer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  min-width: 100px;
+}
+
+.footer-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.footer-btn.cancel {
+  background: var(--color-gray-100);
+  color: var(--color-text-secondary);
+}
+
+.footer-btn.cancel:hover {
+  background: var(--color-gray-200);
+}
+
+.footer-btn.confirm {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.footer-btn.confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+.footer-btn.confirm:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 响应式 */
