@@ -11,7 +11,7 @@
  Target Server Version : 80027 (8.0.27)
  File Encoding         : 65001
 
- Date: 27/01/2026 12:34:55
+ Date: 27/01/2026 15:29:00
 */
 
 SET NAMES utf8mb4;
@@ -41,7 +41,7 @@ CREATE TABLE `accounts_rolepermission`  (
 -- Records of accounts_rolepermission
 -- ----------------------------
 INSERT INTO `accounts_rolepermission` VALUES (1, 'employee', '[\"employeeDashboard\", \"profile\", \"attendanceCenter\", \"applicationCenter\", \"salary\", \"myPerformance\", \"notices\", \"exceptionReport\"]', '[\"checkIn\", \"checkOut\", \"applyLeave\", \"applyOvertime\", \"viewSalary\", \"reportException\"]', 'self', 'self', 'self', 0, 1, '2026-01-25 06:18:05.928470', '2026-01-27 04:33:30.497714');
-INSERT INTO `accounts_rolepermission` VALUES (2, 'hr', '[\"dashboard\", \"employees\", \"departments\", \"posts\", \"onboarding\", \"resignation\", \"attendance\", \"approval\", \"salary\", \"salaryException\", \"performanceReview\", \"notices\"]', '[\"createEmployee\", \"editEmployee\", \"deleteEmployee\", \"approveLeave\", \"approveOvertime\", \"calculateSalary\", \"publishSalary\", \"createNotice\"]', 'all', 'all', 'all', 1, 1, '2026-01-25 06:18:05.931487', '2026-01-27 04:33:30.503891');
+INSERT INTO `accounts_rolepermission` VALUES (2, 'hr', '[\"dashboard\", \"employees\", \"departments\", \"posts\", \"onboarding\", \"resignation\", \"attendance\", \"approval\", \"salary\", \"salaryException\", \"performanceReview\", \"notices\", \"profile\"]', '[\"createEmployee\", \"editEmployee\", \"deleteEmployee\", \"approveLeave\", \"approveOvertime\", \"calculateSalary\", \"publishSalary\", \"createNotice\"]', 'all', 'all', 'all', 1, 1, '2026-01-25 06:18:05.931487', '2026-01-27 06:59:41.558369');
 INSERT INTO `accounts_rolepermission` VALUES (3, 'admin', '[\"dashboard\", \"users\", \"permissionConfig\", \"securityConfig\", \"dataCenter\", \"noticeManagement\", \"salaryException\", \"profile\"]', '[\"manageUsers\", \"resetPassword\", \"configurePermissions\", \"viewSalary\"]', 'all', 'all', 'all', 1, 1, '2026-01-25 06:18:05.934544', '2026-01-26 15:12:39.435318');
 
 -- ----------------------------
@@ -62,6 +62,7 @@ CREATE TABLE `accounts_systemconfig`  (
   `allow_multiple_sessions` tinyint(1) NOT NULL,
   `created_at` datetime(6) NOT NULL,
   `updated_at` datetime(6) NOT NULL,
+  `password_storage_mode` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   CONSTRAINT `accounts_systemconfig_chk_1` CHECK (`password_min_length` >= 0),
   CONSTRAINT `accounts_systemconfig_chk_2` CHECK (`max_login_attempts` >= 0),
@@ -72,7 +73,7 @@ CREATE TABLE `accounts_systemconfig`  (
 -- ----------------------------
 -- Records of accounts_systemconfig
 -- ----------------------------
-INSERT INTO `accounts_systemconfig` VALUES (1, 0, 6, 0, 1, 1, 0, 5, 30, 120, 1, '2026-01-25 09:38:48.100085', '2026-01-25 09:41:45.061112');
+INSERT INTO `accounts_systemconfig` VALUES (1, 0, 6, 0, 1, 1, 0, 5, 30, 120, 1, '2026-01-25 09:38:48.100085', '2026-01-27 07:28:16.459183', 'encrypted');
 
 -- ----------------------------
 -- Table structure for accounts_user
@@ -100,7 +101,7 @@ CREATE TABLE `accounts_user`  (
   UNIQUE INDEX `username`(`username` ASC) USING BTREE,
   UNIQUE INDEX `phone`(`phone` ASC) USING BTREE,
   UNIQUE INDEX `email`(`email` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 418 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 420 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of accounts_user
@@ -522,6 +523,8 @@ INSERT INTO `accounts_user` VALUES (414, 'pbkdf2_sha256$1000000$jvYT8esvy8dqFSaE
 INSERT INTO `accounts_user` VALUES (415, 'pbkdf2_sha256$1000000$jvYT8esvy8dqFSaE1Pul7b$F9aFo9R4opyBsRAKIFrok6LQKWZ0ZzG3a5rwwNDtHQg=', NULL, 0, 'deng建0283', '', '', 0, 1, '2025-12-29 00:00:00.000000', '18697590879', 'employee', '邓建', 'deng建0283@example.com', NULL, NULL, NULL);
 INSERT INTO `accounts_user` VALUES (416, 'pbkdf2_sha256$1000000$jvYT8esvy8dqFSaE1Pul7b$F9aFo9R4opyBsRAKIFrok6LQKWZ0ZzG3a5rwwNDtHQg=', NULL, 0, 'feng文0271', '', '', 0, 1, '2026-01-22 00:00:00.000000', '13833305291', 'employee', '冯文', 'feng文0271@test.com', NULL, NULL, NULL);
 INSERT INTO `accounts_user` VALUES (417, 'pbkdf2_sha256$1000000$jvYT8esvy8dqFSaE1Pul7b$F9aFo9R4opyBsRAKIFrok6LQKWZ0ZzG3a5rwwNDtHQg=', NULL, 0, 'zhu杰0115', '', '', 0, 1, '2026-01-01 00:00:00.000000', '13876362281', 'employee', '朱杰', 'zhu杰0115@test.com', NULL, NULL, NULL);
+INSERT INTO `accounts_user` VALUES (418, 'pbkdf2_sha256$1200000$lM446u3AXKKo0CfufaX2RB$TuYMi/+D9zD6PQMVya/Gonc1IXXAQwhmHJ88rM2/gHA=', NULL, 0, 'yuwen', '', '', 0, 1, '2026-01-27 06:45:40.785460', '18998766789', 'employee', 'yuwen', 'yuwen@qq.com', NULL, NULL, NULL);
+INSERT INTO `accounts_user` VALUES (419, 'zhoucan123.', NULL, 0, 'zhoucan', '', '', 0, 1, '2026-01-27 07:27:27.872769', '17887655678', 'employee', 'zhoucan', 'zhoucan@qq.com', NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for accounts_user_groups
@@ -582,7 +585,7 @@ CREATE TABLE `accounts_usereditrequest`  (
   INDEX `accounts_usereditrequest_user_id_cc6cea50_fk_accounts_user_id`(`user_id` ASC) USING BTREE,
   CONSTRAINT `accounts_usereditreq_reviewer_id_c8450615_fk_accounts_` FOREIGN KEY (`reviewer_id`) REFERENCES `accounts_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `accounts_usereditrequest_user_id_cc6cea50_fk_accounts_user_id` FOREIGN KEY (`user_id`) REFERENCES `accounts_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of accounts_usereditrequest
@@ -593,6 +596,7 @@ INSERT INTO `accounts_usereditrequest` VALUES (3, 'email', 'lina@hrms.com', 'lin
 INSERT INTO `accounts_usereditrequest` VALUES (4, 'department', '技术研发部', '产品部', '内部转岗', 'approved', '同意转岗申请', '2026-01-25 19:53:50.000000', '2026-01-25 19:53:50.000000', 2, 6);
 INSERT INTO `accounts_usereditrequest` VALUES (5, 'post', '初级开发工程师', '中级开发工程师', '职级晋升', 'approved', '晋升评审通过', '2026-01-25 19:53:50.000000', '2026-01-25 19:53:50.000000', 2, 7);
 INSERT INTO `accounts_usereditrequest` VALUES (6, 'salary_base', '9000.00', '10000.00', '年度调薪', 'approved', '符合调薪标准', '2026-01-25 19:53:50.000000', '2026-01-25 19:53:50.000000', 2, 8);
+INSERT INTO `accounts_usereditrequest` VALUES (7, 'emergency_contact', '', '15512345543', 'test', 'pending', '', '2026-01-27 04:37:18.263190', '2026-01-27 04:37:18.263190', NULL, 6);
 
 -- ----------------------------
 -- Table structure for approval_approvalrequest
@@ -2995,7 +2999,7 @@ CREATE TABLE `django_migrations`  (
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `applied` datetime(6) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 40 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 41 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of django_migrations
@@ -3039,6 +3043,7 @@ INSERT INTO `django_migrations` VALUES (36, 'organization', '0004_alter_post_opt
 INSERT INTO `django_migrations` VALUES (37, 'attendance', '0002_attendance_checker_attendance_department_and_more', '2026-01-27 02:33:49.979945');
 INSERT INTO `django_migrations` VALUES (38, 'attendance', '0003_remove_attendance_checker', '2026-01-27 02:33:50.130846');
 INSERT INTO `django_migrations` VALUES (39, 'accounts', '0005_user_address_user_emergency_contact_user_id_card_and_more', '2026-01-27 04:23:38.831460');
+INSERT INTO `django_migrations` VALUES (40, 'accounts', '0006_systemconfig_password_storage_mode', '2026-01-27 07:20:24.530956');
 
 -- ----------------------------
 -- Table structure for django_session
