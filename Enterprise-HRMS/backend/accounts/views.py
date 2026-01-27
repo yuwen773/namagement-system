@@ -310,6 +310,12 @@ class UserEditRequestViewSet(viewsets.ModelViewSet):
             old_value = user.phone
         elif edit_type == 'email':
             old_value = user.email
+        elif edit_type == 'emergency_contact':
+            old_value = user.emergency_contact or ''
+        elif edit_type == 'address':
+            old_value = user.address or ''
+        elif edit_type == 'id_card':
+            old_value = user.id_card or ''
         else:
             old_value = ''
 
@@ -442,6 +448,12 @@ class UserEditRequestViewSet(viewsets.ModelViewSet):
             user.phone = edit_request.new_value
         elif edit_request.edit_type == 'email':
             user.email = edit_request.new_value
+        elif edit_request.edit_type == 'emergency_contact':
+            user.emergency_contact = edit_request.new_value
+        elif edit_request.edit_type == 'address':
+            user.address = edit_request.new_value
+        elif edit_request.edit_type == 'id_card':
+            user.id_card = edit_request.new_value
 
         user.save()
 

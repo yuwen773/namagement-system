@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password, MinimumLengthValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import exceptions
 
 User = get_user_model()
 
@@ -59,13 +60,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[password_strength_validator.validate],
-        style={'input_type': 'password'}
+        style={'input_type': 'text'}
     )
     password2 = serializers.CharField(
         write_only=True,
         required=True,
-        style={'input_type': 'password'}
+        style={'input_type': 'text'}
     )
 
     class Meta:
@@ -129,7 +129,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'real_name', 'phone', 'email', 'role', 'is_active', 'date_joined']
+        fields = ['id', 'username', 'real_name', 'phone', 'email', 'role', 'is_active', 'date_joined', 'id_card', 'address', 'emergency_contact']
         read_only_fields = ['id', 'username', 'date_joined']
 
 
@@ -138,7 +138,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     自定义登录序列化器，添加 real_name 和 role 到 token 响应中
     """
     def validate(self, attrs):
-        data = super().validate(attrs)
+        try:
+            data = super().validate(attrs)
+        except Exception:
+            raise exceptions.AuthenticationFailed('账号或者密码错误')
 
         # 添加自定义字段
         data['user_id'] = self.user.id
@@ -156,7 +159,6 @@ class AdminResetPasswordSerializer(serializers.ModelSerializer):
     new_password = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[password_strength_validator.validate],
         style={'input_type': 'password'}
     )
 
@@ -173,7 +175,7 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'real_name', 'phone', 'email', 'role', 'is_active', 'status', 'date_joined']
+        fields = ['id', 'username', 'real_name', 'phone', 'email', 'role', 'is_active', 'status', 'date_joined', 'id_card', 'address', 'emergency_contact']
 
     def get_status(self, obj):
         """返回用户状态文本"""
@@ -212,13 +214,12 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     old_password = serializers.CharField(
         write_only=True,
         required=True,
-        style={'input_type': 'password'}
+        style={'input_type': 'text'}
     )
     new_password = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[password_strength_validator.validate],
-        style={'input_type': 'password'}
+        style={'input_type': 'text'}
     )
     new_password2 = serializers.CharField(
         write_only=True,
@@ -242,7 +243,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         """验证旧密码"""
         user = self.context.get('request').user
         if not user.check_password(value):
-            raise serializers.ValidationError('旧密码不正确')
+            raise serializers.ValidationError('账号或者密码错误')
         return value
 
     def validate_new_password(self, value):
