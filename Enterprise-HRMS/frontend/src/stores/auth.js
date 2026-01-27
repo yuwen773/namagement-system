@@ -210,7 +210,9 @@ export const useAuthStore = defineStore('auth', () => {
       const errorData = error.response?.data
       
       if (errorData) {
-        if (typeof errorData.detail === 'string') {
+        if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (typeof errorData.detail === 'string') {
           errorMessage = errorData.detail
         } else if (Array.isArray(errorData.detail)) {
           errorMessage = errorData.detail[0]

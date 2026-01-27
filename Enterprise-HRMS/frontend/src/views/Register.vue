@@ -64,6 +64,7 @@ async function handleRegister() {
         await register({
           username: form.username,
           password: form.password,
+          password2: form.confirmPassword,
           real_name: form.real_name,
           email: form.email,
           phone: form.phone
@@ -71,7 +72,27 @@ async function handleRegister() {
         ElMessage.success('注册成功，请登录')
         router.push('/login')
       } catch (error) {
-        // 错误已在 api 中处理
+        console.error('注册失败:', error)
+        let message = '注册失败，请稍后再试'
+        
+        if (error.response && error.response.data) {
+          const data = error.response.data
+          // 优先使用后端统一封装的错误消息
+          if (data.message) {
+            message = data.message
+          } else if (typeof data === 'object') {
+            // 备选方案：处理原始 DRF 错误格式
+            const firstKey = Object.keys(data)[0]
+            const errorValue = data[firstKey]
+            if (Array.isArray(errorValue)) {
+              message = errorValue[0]
+            } else if (typeof errorValue === 'string') {
+              message = errorValue
+            }
+          }
+        }
+        
+        ElMessage.error(message)
       } finally {
         loading.value = false
       }
