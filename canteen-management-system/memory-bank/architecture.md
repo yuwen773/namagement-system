@@ -157,6 +157,134 @@ router.register(r'', UserViewSet, basename='user')
 
 ---
 
+### `employees` 应用 - 员工档案管理
+
+员工档案管理模块，负责员工业务信息的创建、维护和查询。
+
+#### 文件结构与职责
+
+```
+employees/
+├── __init__.py
+├── admin.py              # Django Admin 配置
+├── apps.py               # 应用配置
+├── migrations/           # 数据库迁移文件
+│   └── 0001_initial.py  # 创建 EmployeeProfile 表
+├── models.py             # 数据模型定义
+├── serializers.py        # DRF 序列化器
+├── urls.py               # 应用 URL 路由
+└── views.py              # API 视图
+```
+
+#### 核心模型：EmployeeProfile
+
+```python
+class EmployeeProfile(models.Model):
+    # 基础信息
+    name                      # 姓名
+    gender                    # 性别：MALE/FEMALE
+    phone                     # 联系方式
+    id_card                   # 身份证号（唯一，可为空）
+    address                   # 家庭住址
+
+    # 岗位信息
+    position                  # 岗位：CHEF/PASTRY/PREP/CLEANER/SERVER/MANAGER
+    entry_date                # 入职时间
+    status                    # 在职状态：ACTIVE/INACTIVE/LEAVE_WITHOUT_PAY
+
+    # 资质证书
+    health_certificate_no         # 健康证号
+    health_certificate_expiry     # 健康证有效期
+    health_certificate_url        # 健康证图片地址
+    chef_certificate_level        # 厨师等级证
+
+    # 时间戳
+    created_at                # 创建时间
+    updated_at                # 更新时间
+```
+
+**架构设计要点**：
+- 使用 `TextChoices` 定义枚举类型，提供类型安全和中文标签
+- `id_card` 字段设置为唯一但允许为空，适应不同场景需求
+- 岗位类型覆盖食堂行业所有典型岗位，从厨师到保洁员
+- 资质证书字段均为可选，根据岗位需求灵活配置
+- `__str__` 方法返回 `姓名 (岗位)` 格式，便于后台管理显示
+
+#### 序列化器设计
+
+| 序列化器 | 用途 | 特点 |
+|---------|------|------|
+| `EmployeeProfileSerializer` | 员工档案详情 CRUD | 支持完整字段，包含所有显示字段 |
+| `EmployeeProfileListSerializer` | 员工列表展示 | 简化字段，提升列表查询性能 |
+
+**设计理念**：
+- 列表和详情使用不同序列化器，避免传输不必要的数据
+- 详情序列化器包含所有 `*_display` 字段，方便前端直接显示中文标签
+- 自定义 `validate_id_card()` 方法，在更新时排除当前记录进行唯一性验证
+
+#### 视图设计：EmployeeProfileViewSet
+
+基于 DRF 的 `ModelViewSet`，提供标准的 CRUD 操作和高级筛选功能：
+
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 列表 | GET | `/api/employees/` | 支持筛选、搜索、排序 |
+| 创建 | POST | `/api/employees/` | 标准操作 |
+| 详情 | GET | `/api/employees/{id}/` | 标准操作 |
+| 更新 | PUT/PATCH | `/api/employees/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/employees/{id}/` | 标准操作 |
+
+**高级筛选功能**：
+- **字段筛选**：使用 `django_filters` 的 `DjangoFilterBackend`
+  - 按岗位筛选：`?position=CHEF`
+  - 按状态筛选：`?status=ACTIVE`
+  - 组合筛选：`?position=CHEF&status=ACTIVE`
+- **全文搜索**：使用 DRF 的 `SearchFilter`
+  - 搜索字段：姓名、电话、身份证号
+  - 示例：`?search=张三`
+- **排序**：使用 DRF 的 `OrderingFilter`
+  - 支持字段：创建时间、入职日期、姓名
+  - 示例：`?ordering=-created_at`（倒序）
+
+#### 路由配置
+
+使用 DRF 的 `DefaultRouter` 自动生成标准 RESTful 路由：
+
+```python
+router = DefaultRouter()
+router.register(r'', EmployeeProfileViewSet, basename='employee')
+```
+
+**路由映射**：
+- 空字符串 `''` → 主路由为 `/api/employees/`
+- `basename='employee'` → 用于生成 URL 名称（如 `employee-detail`）
+
+#### Django Admin 配置
+
+`EmployeeProfileAdmin` 类提供后台管理界面：
+- 列表展示：id, name, gender, phone, position, entry_date, status, created_at
+- 过滤器：按岗位、状态、性别、创建时间筛选
+- 搜索：支持姓名、电话、身份证号搜索
+- 字段分组：基础信息、岗位信息、资质证书、时间信息（可折叠）
+- 只读字段：创建时间、更新时间
+
+#### 与 User 模型的关系
+
+| 方面 | EmployeeProfile | User |
+|------|-----------------|------|
+| **用途** | 业务层面的员工信息 | 系统登录账号 |
+| **存在形式** | 可独立存在 | 可独立存在 |
+| **关联方式** | 通过 `employee_id` 外键可选关联 | 通过 `employee_id` 外键可选关联 |
+| **典型场景** | 所有员工都需要档案 | 只有需要登录系统的员工需要账号 |
+| **包含信息** | 姓名、岗位、健康证等业务数据 | 用户名、密码、角色等认证数据 |
+
+**架构意义**：
+- 这种分离设计允许"无账号员工"（如大龄保洁人员）的存在
+- 员工离职时，只需禁用 User 账号，EmployeeProfile 档案可保留用于历史记录
+- 灵活支持未来的业务扩展（如临时工、外包人员等）
+
+---
+
 ## 重要文件说明
 
 ### `backend/config/settings.py`
@@ -182,6 +310,7 @@ Python 依赖列表，包含：
 - `djangorestframework` - REST API 框架
 - `mysqlclient` - MySQL 数据库驱动
 - `django-cors-headers` - 跨域请求处理
+- `django-filter` - 查询过滤功能（支持高级筛选）
 
 ### `backend/manage.py`
 
@@ -403,6 +532,7 @@ export default defineConfig({
 
 #### 已实现
 
+**用户认证 API (`/api/accounts/`)**
 ```
 POST   /api/accounts/register/   # 用户注册
 POST   /api/accounts/login/      # 用户登录
@@ -413,13 +543,31 @@ PUT    /api/accounts/{id}/       # 更新用户
 DELETE /api/accounts/{id}/       # 删除用户
 ```
 
+**员工档案 API (`/api/employees/`)**
+```
+GET    /api/employees/           # 员工列表（支持筛选和搜索）
+POST   /api/employees/           # 创建员工档案
+GET    /api/employees/{id}/      # 员工详情
+PUT    /api/employees/{id}/      # 更新员工档案
+DELETE /api/employees/{id}/      # 删除员工档案
+```
+
+**筛选参数示例**：
+- 按岗位筛选：`/api/employees/?position=CHEF`
+- 按状态筛选：`/api/employees/?status=ACTIVE`
+- 组合筛选：`/api/employees/?position=CHEF&status=ACTIVE`
+- 搜索：`/api/employees/?search=张三`
+- 排序：`/api/employees/?ordering=-created_at`
+
 #### 计划中
 
-### RESTful 规范
-
-- 资源使用名词复数：`/api/employees/`
-- HTTP 方法：GET（查询）、POST（创建）、PUT/PATCH（更新）、DELETE（删除）
-- 使用 Django REST Framework 的 ViewSets 和 Serializers
+```
+/api/schedules/       # 排班管理
+/api/attendance/      # 考勤记录
+/api/leaves/          # 请假申请
+/api/salaries/        # 薪资记录
+/api/analytics/       # 统计数据
+```
 
 ### API 端点结构（计划）
 

@@ -188,9 +188,83 @@ DELETE /api/accounts/{id}/       # 删除用户
 
 ---
 
+### ✅ 步骤 2.2：创建员工档案模型与 API
+
+**实施内容**：
+
+1. **创建 EmployeeProfile 模型** (`employees/models.py`)
+   - 字段定义：
+     - 基础信息：`name`, `gender`, `phone`, `id_card`（唯一）, `address`
+     - 岗位信息：`position`, `entry_date`, `status`
+     - 资质证书：`health_certificate_no`, `health_certificate_expiry`, `health_certificate_url`, `chef_certificate_level`
+     - 时间戳：`created_at`, `updated_at`
+   - 枚举类定义：`Gender`, `Position`, `Status` 使用 Django 的 `TextChoices`
+   - 岗位类型：厨师(CHEF)、面点(PASTRY)、切配(PREP)、保洁(CLEANER)、服务员(SERVER)、经理(MANAGER)
+
+2. **创建序列化器** (`employees/serializers.py`)
+   - `EmployeeProfileSerializer` - 员工档案详情序列化器（支持 CRUD 操作）
+   - `EmployeeProfileListSerializer` - 员工列表序列化器（简化版）
+   - 身份证号唯一性验证（更新时排除当前记录）
+
+3. **创建视图集** (`employees/views.py`)
+   - `EmployeeProfileViewSet` - 基于 DRF 的 `ModelViewSet`
+   - 支持筛选：按岗位(`position`)、状态(`status`)筛选
+   - 支持搜索：按姓名(`name`)、电话(`phone`)、身份证号(`id_card`)搜索
+   - 支持排序：按创建时间、入职日期、姓名排序
+   - 统一的响应格式：`{code, message, data}`
+
+4. **配置 URL 路由**
+   - 创建 `employees/urls.py` - 使用 DRF 的 `DefaultRouter`
+   - 更新 `config/urls.py` - 包含 employees 路由：`/api/employees/`
+
+5. **注册 Django Admin** (`employees/admin.py`)
+   - 配置 `EmployeeProfileAdmin` 类
+   - 列表显示字段：id, name, gender, phone, position, entry_date, status, created_at
+   - 过滤器：position, status, gender, created_at
+   - 搜索字段：name, phone, id_card
+   - 字段分组展示：基础信息、岗位信息、资质证书、时间信息
+
+6. **数据库迁移**
+   - 创建迁移：`employees/migrations/0001_initial.py`
+   - 应用迁移到数据库
+
+7. **新增依赖**
+   - 添加 `django-filter` 到 `requirements.txt`
+   - 添加 `django_filters` 到 `INSTALLED_APPS`
+
+**API 端点清单**：
+```
+GET    /api/employees/           # 员工列表（支持筛选和搜索）
+POST   /api/employees/           # 创建员工档案
+GET    /api/employees/{id}/      # 员工详情
+PUT    /api/employees/{id}/      # 更新员工档案
+DELETE /api/employees/{id}/      # 删除员工档案
+```
+
+**筛选和搜索参数**：
+- 筛选：`?position=CHEF&status=ACTIVE`
+- 搜索：`?search=张三`
+- 排序：`?ordering=-created_at`
+
+**测试验证**：
+- ✅ 创建新员工档案，返回 201，所有字段保存成功
+- ✅ 获取员工列表，返回 200，支持筛选和搜索
+- ✅ 获取员工详情，返回 200，显示完整信息
+- ✅ 更新员工信息，返回 200，信息更新成功
+- ✅ 删除员工档案，返回 200，删除成功
+- ✅ 身份证号唯一性验证生效
+- ✅ Django Admin 界面正常显示和管理员工档案
+
+**注意事项**：
+- 员工档案（EmployeeProfile）与用户账号（User）是独立概念，需要分别创建
+- `id_card` 字段设置为唯一，但可为空，允许部分员工不录入身份证号
+- `position` 枚举类型覆盖了食堂行业的所有典型岗位
+- 健康证和厨师等级证字段为可选，适应不同岗位需求
+
+---
+
 ## 待完成
 
-- [ ] 步骤 2.2：创建员工档案模型与 API
 - [ ] 步骤 2.3：创建排班相关模型与 API
 - [ ] 步骤 2.4：创建考勤模型与 API
 - [ ] 步骤 2.5：创建请假模型与 API
