@@ -99,6 +99,88 @@ const dataPermissionOptions = [
   { value: "self", label: "仅本人", description: "只能访问自己的数据" },
 ];
 
+// 不同角色的权限项过滤规则
+const roleExclusionRules = {
+  employee: {
+    menus: [
+      "dashboard",
+      "dataCenter",
+      "employees",
+      "departments",
+      "posts",
+      "onboarding",
+      "resignation",
+      "salaryException",
+      "performanceReview",
+      "performanceTemplate",
+      "noticeManagement",
+      "users",
+      "permissionConfig",
+      "securityConfig",
+    ],
+    buttons: [
+      "createEmployee",
+      "editEmployee",
+      "deleteEmployee",
+      "approveLeave",
+      "approveOvertime",
+      "calculateSalary",
+      "publishSalary",
+      "createNotice",
+      "manageUsers",
+      "resetPassword",
+      "configurePermissions",
+    ],
+    features: ["can_access_datacenter", "can_access_performance"],
+    dataPermissions: ["all", "department"], // 员工通常只保留 self
+  },
+  hr: {
+    menus: ["users", "permissionConfig", "securityConfig"],
+    buttons: ["manageUsers", "resetPassword", "configurePermissions"],
+    features: [],
+    dataPermissions: [],
+  },
+};
+
+// 计算过滤后的菜单选项
+const filteredMenuOptions = computed(() => {
+  if (!activeRole.value || !roleExclusionRules[activeRole.value])
+    return menuOptions;
+  const excluded = roleExclusionRules[activeRole.value].menus || [];
+  return menuOptions.filter((item) => !excluded.includes(item.value));
+});
+
+// 计算过滤后的按钮选项
+const filteredButtonOptions = computed(() => {
+  if (!activeRole.value || !roleExclusionRules[activeRole.value])
+    return buttonOptions;
+  const excluded = roleExclusionRules[activeRole.value].buttons || [];
+  return buttonOptions.filter((item) => !excluded.includes(item.value));
+});
+
+// 计算过滤后的数据权限选项
+const filteredDataPermissionOptions = computed(() => {
+  if (!activeRole.value || !roleExclusionRules[activeRole.value])
+    return dataPermissionOptions;
+  const excluded = roleExclusionRules[activeRole.value].dataPermissions || [];
+  return dataPermissionOptions.filter((item) => !excluded.includes(item.value));
+});
+
+// 判断是否显示某个功能特性开关
+const showFeature = (featureKey) => {
+  if (!activeRole.value || !roleExclusionRules[activeRole.value]) return true;
+  const excluded = roleExclusionRules[activeRole.value].features || [];
+  return !excluded.includes(featureKey);
+};
+
+// 是否有可见的功能权限
+const hasVisibleFeatures = computed(() => {
+  return (
+    showFeature("can_access_datacenter") ||
+    showFeature("can_access_performance")
+  );
+});
+
 // 编辑表单
 const editForm = reactive({
   menu_permissions: [],
@@ -470,7 +552,7 @@ onMounted(() => {
               >
                 <div class="menu-grid">
                   <div
-                    v-for="menu in menuOptions"
+                    v-for="menu in filteredMenuOptions"
                     :key="menu.value"
                     class="menu-item"
                   >
@@ -504,7 +586,7 @@ onMounted(() => {
               >
                 <div class="button-grid">
                   <div
-                    v-for="btn in buttonOptions"
+                    v-for="btn in filteredButtonOptions"
                     :key="btn.value"
                     class="button-item"
                   >
@@ -540,7 +622,7 @@ onMounted(() => {
                   <label>通用数据权限</label>
                   <el-radio-group v-model="editForm.data_permission">
                     <el-radio-button
-                      v-for="opt in dataPermissionOptions"
+                      v-for="opt in filteredDataPermissionOptions"
                       :key="opt.value"
                       :label="opt.value"
                     >
@@ -560,7 +642,7 @@ onMounted(() => {
                   <label>考勤数据权限</label>
                   <el-radio-group v-model="editForm.attendance_permission">
                     <el-radio-button
-                      v-for="opt in dataPermissionOptions"
+                      v-for="opt in filteredDataPermissionOptions"
                       :key="opt.value"
                       :label="opt.value"
                     >
@@ -573,7 +655,7 @@ onMounted(() => {
                   <label>薪资数据权限</label>
                   <el-radio-group v-model="editForm.salary_permission">
                     <el-radio-button
-                      v-for="opt in dataPermissionOptions"
+                      v-for="opt in filteredDataPermissionOptions"
                       :key="opt.value"
                       :label="opt.value"
                     >
@@ -585,7 +667,7 @@ onMounted(() => {
             </div>
 
             <!-- 功能权限配置 -->
-            <div class="form-section">
+            <div v-if="hasVisibleFeatures" class="form-section">
               <h4 class="section-title">
                 <svg
                   class="section-icon"
@@ -602,7 +684,7 @@ onMounted(() => {
               <p class="section-desc">设置该角色可以使用的高级功能</p>
 
               <div class="feature-permission-group">
-                <div class="feature-item">
+                <div v-if="showFeature('can_access_datacenter')" class="feature-item">
                   <div class="feature-info">
                     <span class="feature-name">访问数据中心</span>
                     <span class="feature-desc">查看企业数据统计分析</span>
@@ -610,7 +692,7 @@ onMounted(() => {
                   <el-switch v-model="editForm.can_access_datacenter" />
                 </div>
 
-                <div class="feature-item">
+                <div v-if="showFeature('can_access_performance')" class="feature-item">
                   <div class="feature-info">
                     <span class="feature-name">访问绩效管理</span>
                     <span class="feature-desc">查看和参与绩效评估流程</span>
