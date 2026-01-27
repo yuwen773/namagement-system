@@ -60,17 +60,31 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
-        style={'input_type': 'text'}
+        style={'input_type': 'password'},
+        error_messages={
+            'required': '请输入密码',
+            'blank': '密码不能为空'
+        }
     )
     password2 = serializers.CharField(
         write_only=True,
         required=True,
-        style={'input_type': 'text'}
+        style={'input_type': 'password'},
+        error_messages={
+            'required': '请再次输入密码以确认',
+            'blank': '确认密码不能为空'
+        }
     )
 
     class Meta:
         model = User
         fields = ['username', 'password', 'password2', 'real_name', 'phone', 'email']
+        extra_kwargs = {
+            'username': {'error_messages': {'required': '请输入用户名', 'blank': '用户名不能为空'}},
+            'real_name': {'error_messages': {'required': '请输入真实姓名', 'blank': '姓名不能为空'}},
+            'phone': {'error_messages': {'required': '请输入手机号', 'blank': '手机号不能为空'}},
+            'email': {'error_messages': {'required': '请输入邮箱', 'blank': '邮箱不能为空'}},
+        }
 
     def validate(self, attrs):
         """
