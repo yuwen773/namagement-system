@@ -13,31 +13,34 @@ class TimeFieldFormatted(serializers.TimeField):
 class AttendanceSerializer(serializers.ModelSerializer):
     """考勤记录详情序列化器"""
     user_name = serializers.CharField(source='user.real_name', read_only=True)
-    department_name = serializers.CharField(source='user.employeeprofile.department.name', read_only=True, default=None)
+    department_name = serializers.CharField(source='department.name', read_only=True, default=None)
+    post_name = serializers.CharField(source='post.name', read_only=True, default=None)
     check_in_time = TimeFieldFormatted()
     check_out_time = TimeFieldFormatted()
 
     class Meta:
         model = Attendance
         fields = [
-            'id', 'user', 'user_name', 'department_name',
-            'date', 'check_in_time', 'check_out_time', 'status',
-            'created_at', 'updated_at'
+            'id', 'user', 'user_name', 'department', 'department_name', 
+            'post', 'post_name', 'date', 'check_in_time', 'check_out_time', 
+            'status', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['status', 'created_at', 'updated_at']
+        read_only_fields = ['status', 'created_at', 'updated_at', 'department_name', 'post_name']
 
 
 class AttendanceListSerializer(serializers.ModelSerializer):
     """考勤记录列表序列化器（轻量版）"""
     user_name = serializers.CharField(source='user.real_name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True, default=None)
+    post_name = serializers.CharField(source='post.name', read_only=True, default=None)
     check_in_time = TimeFieldFormatted()
     check_out_time = TimeFieldFormatted()
 
     class Meta:
         model = Attendance
         fields = [
-            'id', 'user', 'user_name', 'date',
-            'check_in_time', 'check_out_time', 'status'
+            'id', 'user', 'user_name', 'department_name', 'post_name', 
+            'date', 'check_in_time', 'check_out_time', 'status'
         ]
         read_only_fields = ['status']
 

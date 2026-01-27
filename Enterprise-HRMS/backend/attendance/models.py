@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from organization.models import Department, Post
 
 
 class Attendance(models.Model):
@@ -17,6 +18,20 @@ class Attendance(models.Model):
         on_delete=models.CASCADE,
         related_name='attendances',
         verbose_name='用户'
+    )
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='部门'
+    )
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='岗位'
     )
     date = models.DateField(
         db_index=True,
@@ -85,8 +100,26 @@ class Attendance(models.Model):
             return self.Status.ABSENT
 
     def save(self, *args, **kwargs):
-        """保存时自动计算状态"""
+        """保存时自动计算状态并补充部门岗位信息"""
         # 如果有打卡时间，先计算状态
         if self.check_in_time or self.check_out_time:
             self.status = self.calculate_status()
+        
+        # 自动补充部门和岗位信息（快照）
+        if not self.department or not self.post:
+            try:
+                # 优先使用 profile 关联名（根据 employee/models.py）
+                profile = getattr(self.user, 'profile', None)
+                if not profile:
+                    # 备选使用 employeeprofile (防止关联名冲突或未定义)
+                    profile = getattr(self.user, 'employeeprofile', None)
+                
+                if profile:
+                    if not self.department:
+                        self.department = profile.department
+                    if not self.post:
+                        self.post = profile.post
+            except Exception:
+                pass
+
         super().save(*args, **kwargs)
