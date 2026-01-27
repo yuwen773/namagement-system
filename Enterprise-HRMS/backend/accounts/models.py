@@ -21,6 +21,11 @@ class User(AbstractUser):
     )
     real_name = models.CharField(max_length=50, verbose_name='真实姓名')
     email = models.EmailField(unique=True, verbose_name='邮箱')
+    
+    # 新增个人信息字段
+    id_card = models.CharField(max_length=18, blank=True, null=True, verbose_name='身份证号')
+    address = models.CharField(max_length=255, blank=True, null=True, verbose_name='通讯地址')
+    emergency_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='紧急联系人')
 
     # 设置手机号和邮箱为必填
     REQUIRED_FIELDS = ['phone', 'email', 'real_name']
@@ -43,6 +48,8 @@ class UserEditRequest(models.Model):
         ('phone', '手机号'),
         ('email', '邮箱'),
         ('emergency_contact', '紧急联系人'),
+        ('address', '通讯地址'),
+        ('id_card', '身份证号'),
     ]
 
     STATUS_CHOICES = [
@@ -185,21 +192,20 @@ class RolePermission(models.Model):
         获取默认权限配置（严格按照 docs/requirements.md 配置）
         """
         defaults = {
-            # 普通员工 (6个页面)
+            # 普通员工 (7个页面)
             'employee': {
-                # 首页、个人信息、部门岗位、考勤、申请中心、薪资绩效
+                # 首页、个人信息、部门岗位、考勤中心、申请中心、薪资绩效、异常上报
                 'menu_permissions': [
-                    'employeeDashboard',  # 首页
-                    'profile',            # 个人信息编辑
-                    'departments',        # 部门信息（只读）
-                    'posts',              # 岗位信息（只读）
-                    'attendance',         # 考勤中心
-                    'approval',           # 申请中心
-                    'salary',             # 薪资明细查询
-                    'myPerformance',      # 绩效评分查看
-                    'notices'             # 公告列表
+                    'employeeDashboard',    # 首页
+                    'profile',              # 个人信息编辑
+                    'attendanceCenter',     # 考勤中心
+                    'applicationCenter',    # 申请中心
+                    'salary',               # 薪资明细查询
+                    'myPerformance',        # 绩效评分查看
+                    'notices',              # 公告列表
+                    'exceptionReport'       # 异常上报
                 ],
-                'button_permissions': ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary'],
+                'button_permissions': ['checkIn', 'checkOut', 'applyLeave', 'applyOvertime', 'viewSalary', 'reportException'],
                 'data_permission': 'self',
                 'attendance_permission': 'self',
                 'salary_permission': 'self',
@@ -221,7 +227,6 @@ class RolePermission(models.Model):
                     'salary',             # 薪资管理
                     'salaryException',    # 异常处理
                     'performanceReview',  # 绩效评估
-                    'performanceTemplate',# 绩效模板
                     'notices'             # 公告查看
                 ],
                 'button_permissions': [
