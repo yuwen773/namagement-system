@@ -488,9 +488,8 @@ onMounted(() => {
           <el-form-item label="新密码">
             <el-input
               v-model="resetPasswordDialog.newPassword"
-              type="password"
-              placeholder="请输入新密码（至少6位）"
-              show-password
+              type="text"
+              placeholder="请输入新密码"
               clearable
             />
           </el-form-item>

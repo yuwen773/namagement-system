@@ -107,27 +107,27 @@
         <el-form-item label="旧密码" prop="old_password">
           <el-input
             v-model="passwordForm.old_password"
-            type="password"
+            type="text"
             placeholder="请输入旧密码"
-            show-password
+            clearable
             autocomplete="off"
           />
         </el-form-item>
         <el-form-item label="新密码" prop="new_password">
           <el-input
             v-model="passwordForm.new_password"
-            type="password"
-            placeholder="请输入新密码（至少8位，包含字母、数字、特殊字符）"
-            show-password
+            type="text"
+            placeholder="请输入新密码"
+            clearable
             autocomplete="off"
           />
         </el-form-item>
         <el-form-item label="确认密码" prop="new_password2">
           <el-input
             v-model="passwordForm.new_password2"
-            type="password"
+            type="text"
             placeholder="请再次输入新密码"
-            show-password
+            clearable
             autocomplete="off"
           />
         </el-form-item>

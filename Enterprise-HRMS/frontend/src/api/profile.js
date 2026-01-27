@@ -38,12 +38,18 @@ export function rejectEditRequest(id, data) {
 export const EDIT_TYPE = {
   PHONE: "phone",
   EMAIL: "email",
+  EMERGENCY_CONTACT: "emergency_contact",
+  ADDRESS: "address",
+  ID_CARD: "id_card",
 };
 
 // 修改类型显示文本
 export const EDIT_TYPE_TEXT = {
   phone: "手机号",
   email: "邮箱",
+  emergency_contact: "紧急联系人",
+  address: "通讯地址",
+  id_card: "身份证号",
 };
 
 // 状态常量
