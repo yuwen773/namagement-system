@@ -56,11 +56,11 @@ class DashboardStatsView(APIView):
             resigned_date__lte=today
         ).count()
 
-        # 4. 本月薪资总额（已发布的薪资记录）
+        # 4. 本月薪资总额（包含草稿和已发布）
         month_str = today.strftime('%Y-%m')
         total_salary_this_month = SalaryRecord.objects.filter(
             month=month_str,
-            status='published'
+            status__in=['draft', 'published']
         ).aggregate(
             total=Coalesce(Sum('final_salary'), Value(0, output_field=DecimalField()))
         )['total'] or 0
@@ -100,7 +100,7 @@ class DashboardStatsView(APIView):
 
             month_stats = SalaryRecord.objects.filter(
                 month=month_str,
-                status='published'
+                status__in=['draft', 'published']
             ).aggregate(
                 count=Count('id'),
                 total_amount=Sum('final_salary')
