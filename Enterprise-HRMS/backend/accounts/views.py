@@ -363,8 +363,9 @@ class UserEditRequestViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_201_CREATED)
 
     def list(self, request, *args, **kwargs):
-        """获取申请列表"""
-        queryset = self.get_queryset()
+        """获取申请列表（个人中心始终只返回当前用户的申请）"""
+        # 个人中心：始终只返回当前登录用户的申请
+        queryset = UserEditRequest.objects.filter(user=request.user)
 
         # 支持状态筛选
         status_filter = request.query_params.get('status')
