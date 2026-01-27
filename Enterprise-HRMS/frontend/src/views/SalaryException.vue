@@ -4,19 +4,32 @@
     <div class="page-header">
       <div class="header-left">
         <div class="header-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+            />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         </div>
         <span class="page-title">薪资异常处理</span>
       </div>
       <div class="header-right" v-if="isHR">
         <el-button type="primary" @click="showReportDialog = true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:4px;">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="width: 16px; height: 16px; margin-right: 4px"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           上报异常
         </el-button>
@@ -27,9 +40,14 @@
     <div class="stats-cards" v-if="isHR">
       <div class="stat-card">
         <div class="stat-icon pending">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
           </svg>
         </div>
         <div class="stat-content">
@@ -39,9 +57,14 @@
       </div>
       <div class="stat-card">
         <div class="stat-icon resolved">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
         </div>
         <div class="stat-content">
@@ -51,9 +74,16 @@
       </div>
       <div class="stat-card">
         <div class="stat-icon total">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+            />
+            <polyline points="14 2 14 8 20 8" />
           </svg>
         </div>
         <div class="stat-content">
@@ -65,21 +95,40 @@
 
     <!-- 筛选区域 -->
     <div class="filter-section" v-if="isHR">
-      <el-select v-model="filterForm.status" placeholder="处理状态" clearable @change="handleFilterChange" class="filter-select">
-        <el-option label="待处理" value="pending"/>
-        <el-option label="处理中" value="processing"/>
-        <el-option label="已解决" value="resolved"/>
-        <el-option label="已关闭" value="closed"/>
+      <el-select
+        v-model="filterForm.status"
+        placeholder="处理状态"
+        clearable
+        @change="handleFilterChange"
+        class="filter-select"
+      >
+        <el-option label="待处理" value="pending" />
+        <el-option label="处理中" value="processing" />
+        <el-option label="已解决" value="resolved" />
+        <el-option label="已关闭" value="closed" />
       </el-select>
-      <el-select v-model="filterForm.exception_type" placeholder="异常类型" clearable @change="handleFilterChange" class="filter-select">
-        <el-option label="薪资计算错误" value="salary_error"/>
-        <el-option label="考勤数据错误" value="attendance_error"/>
-        <el-option label="加班记录缺失" value="overtime_missing"/>
-        <el-option label="扣款异常" value="deduction_error"/>
-        <el-option label="员工申诉" value="employee_appeal"/>
-        <el-option label="其他" value="other"/>
+      <el-select
+        v-model="filterForm.exception_type"
+        placeholder="异常类型"
+        clearable
+        @change="handleFilterChange"
+        class="filter-select"
+      >
+        <el-option label="薪资计算错误" value="salary_error" />
+        <el-option label="考勤数据错误" value="attendance_error" />
+        <el-option label="加班记录缺失" value="overtime_missing" />
+        <el-option label="扣款异常" value="deduction_error" />
+        <el-option label="员工申诉" value="employee_appeal" />
+        <el-option label="其他" value="other" />
       </el-select>
-      <el-select v-model="filterForm.user_id" placeholder="选择员工" clearable filterable @change="handleFilterChange" class="filter-select">
+      <el-select
+        v-model="filterForm.user_id"
+        placeholder="选择员工"
+        clearable
+        filterable
+        @change="handleFilterChange"
+        class="filter-select"
+      >
         <el-option
           v-for="emp in employeeOptions"
           :key="emp.user_id"
@@ -95,22 +144,15 @@
         end-placeholder="结束日期"
         value-format="YYYY-MM-DD"
         format="YYYY-MM-DD"
-        style="width: 240px"
+        style="width: 120px"
         @change="handleFilterChange"
-      />
-      <el-input
-        v-model="filterForm.month"
-        placeholder="薪资月份 (YYYY-MM)"
-        clearable
-        style="width: 150px"
-        @keyup.enter="handleFilterChange"
       />
     </div>
 
     <!-- 异常列表 -->
     <div class="table-section" v-loading="loading">
       <el-table :data="exceptionList" stripe class="custom-table">
-        <el-table-column prop="id" label="ID" width="80"/>
+        <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="员工" min-width="120">
           <template #default="{ row }">
             <div class="employee-cell">
@@ -119,10 +161,13 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="month" label="薪资月份" width="100"/>
+        <el-table-column prop="month" label="薪资月份" width="100" />
         <el-table-column label="异常类型" min-width="140">
           <template #default="{ row }">
-            <el-tag :type="getExceptionTypeTag(row.exception_type)" size="small">
+            <el-tag
+              :type="getExceptionTypeTag(row.exception_type)"
+              size="small"
+            >
               {{ row.exception_type_display }}
             </el-tag>
           </template>
@@ -134,10 +179,28 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="adjustment_amount" label="调整金额" width="120" align="right">
+        <el-table-column
+          prop="adjustment_amount"
+          label="调整金额"
+          width="120"
+          align="right"
+        >
           <template #default="{ row }">
-            <span :class="row.adjustment_amount > 0 ? 'amount-positive' : row.adjustment_amount < 0 ? 'amount-negative' : ''">
-              {{ row.adjustment_amount ? (row.adjustment_amount > 0 ? '+' : '') + row.adjustment_amount.toLocaleString() : '-' }}
+            <span
+              :class="
+                row.adjustment_amount > 0
+                  ? 'amount-positive'
+                  : row.adjustment_amount < 0
+                    ? 'amount-negative'
+                    : ''
+              "
+            >
+              {{
+                row.adjustment_amount
+                  ? (row.adjustment_amount > 0 ? "+" : "") +
+                    row.adjustment_amount.toLocaleString()
+                  : "-"
+              }}
             </span>
           </template>
         </el-table-column>
@@ -148,23 +211,41 @@
         </el-table-column>
         <el-table-column label="操作" min-width="150" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="viewDetail(row)" class="action-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
+            <el-button
+              type="primary"
+              link
+              size="small"
+              @click="viewDetail(row)"
+              class="action-btn"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
               </svg>
               查看
             </el-button>
             <el-button
-              v-if="isHR && row.status !== 'resolved' && row.status !== 'closed'"
+              v-if="
+                isHR && row.status !== 'resolved' && row.status !== 'closed'
+              "
               type="success"
               link
               size="small"
               @click="openResolveDialog(row)"
               class="action-btn"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
               </svg>
               处理
             </el-button>
@@ -185,7 +266,10 @@
       </div>
     </div>
 
-    <el-empty v-if="!loading && exceptionList.length === 0" description="暂无异常记录"/>
+    <el-empty
+      v-if="!loading && exceptionList.length === 0"
+      description="暂无异常记录"
+    />
 
     <!-- 异常详情抽屉 -->
     <el-drawer v-model="detailDrawerVisible" title="异常详情" size="480px">
@@ -193,23 +277,42 @@
         <div class="detail-header">
           <div class="header-info">
             <h3>{{ currentException.exception_type_display }}</h3>
-            <p>{{ currentException.employee_name }} - {{ currentException.month }} 月薪资</p>
+            <p>
+              {{ currentException.employee_name }} -
+              {{ currentException.month }} 月薪资
+            </p>
           </div>
-          <el-tag :type="getStatusTag(currentException.status)" class="status-badge">
+          <el-tag
+            :type="getStatusTag(currentException.status)"
+            class="status-badge"
+          >
             {{ currentException.status_display }}
           </el-tag>
         </div>
 
         <el-descriptions :column="1" border class="info-descriptions">
           <el-descriptions-item label="异常类型">
-            <el-tag :type="getExceptionTypeTag(currentException.exception_type)" size="small">
+            <el-tag
+              :type="getExceptionTypeTag(currentException.exception_type)"
+              size="small"
+            >
               {{ currentException.exception_type_display }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="上报人">{{ currentException.reported_by_name || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="处理人">{{ currentException.assigned_to_name || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="上报时间">{{ formatDate(currentException.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="解决时间">{{ currentException.resolved_at ? formatDate(currentException.resolved_at) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="上报人">{{
+            currentException.reported_by_name || "-"
+          }}</el-descriptions-item>
+          <el-descriptions-item label="处理人">{{
+            currentException.assigned_to_name || "-"
+          }}</el-descriptions-item>
+          <el-descriptions-item label="上报时间">{{
+            formatDate(currentException.created_at)
+          }}</el-descriptions-item>
+          <el-descriptions-item label="解决时间">{{
+            currentException.resolved_at
+              ? formatDate(currentException.resolved_at)
+              : "-"
+          }}</el-descriptions-item>
         </el-descriptions>
 
         <div class="detail-section">
@@ -222,10 +325,20 @@
           <p class="description-text">{{ currentException.resolution }}</p>
         </div>
 
-        <div class="adjustment-amount" v-if="currentException.adjustment_amount != 0">
+        <div
+          class="adjustment-amount"
+          v-if="currentException.adjustment_amount != 0"
+        >
           <span>调整金额</span>
-          <span :class="currentException.adjustment_amount > 0 ? 'amount-positive' : 'amount-negative'">
-            {{ currentException.adjustment_amount > 0 ? '+' : '' }}{{ currentException.adjustment_amount.toLocaleString() }} 元
+          <span
+            :class="
+              currentException.adjustment_amount > 0
+                ? 'amount-positive'
+                : 'amount-negative'
+            "
+          >
+            {{ currentException.adjustment_amount > 0 ? "+" : ""
+            }}{{ currentException.adjustment_amount.toLocaleString() }} 元
           </span>
         </div>
       </div>
@@ -233,9 +346,20 @@
 
     <!-- 上报异常对话框 -->
     <el-dialog v-model="showReportDialog" title="上报薪资异常" width="500px">
-      <el-form ref="reportFormRef" :model="reportForm" :rules="reportRules" label-width="100px" class="custom-form">
+      <el-form
+        ref="reportFormRef"
+        :model="reportForm"
+        :rules="reportRules"
+        label-width="100px"
+        class="custom-form"
+      >
         <el-form-item label="薪资记录" prop="salary_record">
-          <el-select v-model="reportForm.salary_record" placeholder="选择薪资记录" filterable class="form-input">
+          <el-select
+            v-model="reportForm.salary_record"
+            placeholder="选择薪资记录"
+            filterable
+            class="form-input"
+          >
             <el-option
               v-for="record in salaryRecords"
               :key="record.id"
@@ -245,13 +369,17 @@
           </el-select>
         </el-form-item>
         <el-form-item label="异常类型" prop="exception_type">
-          <el-select v-model="reportForm.exception_type" placeholder="选择异常类型" class="form-input">
-            <el-option label="薪资计算错误" value="salary_error"/>
-            <el-option label="考勤数据错误" value="attendance_error"/>
-            <el-option label="加班记录缺失" value="overtime_missing"/>
-            <el-option label="扣款异常" value="deduction_error"/>
-            <el-option label="员工申诉" value="employee_appeal"/>
-            <el-option label="其他" value="other"/>
+          <el-select
+            v-model="reportForm.exception_type"
+            placeholder="选择异常类型"
+            class="form-input"
+          >
+            <el-option label="薪资计算错误" value="salary_error" />
+            <el-option label="考勤数据错误" value="attendance_error" />
+            <el-option label="加班记录缺失" value="overtime_missing" />
+            <el-option label="扣款异常" value="deduction_error" />
+            <el-option label="员工申诉" value="employee_appeal" />
+            <el-option label="其他" value="other" />
           </el-select>
         </el-form-item>
         <el-form-item label="异常描述" prop="description">
@@ -273,12 +401,22 @@
 
     <!-- 处理异常对话框 -->
     <el-dialog v-model="showResolveDialog" title="处理薪资异常" width="500px">
-      <el-form ref="resolveFormRef" :model="resolveForm" :rules="resolveRules" label-width="100px" class="custom-form">
+      <el-form
+        ref="resolveFormRef"
+        :model="resolveForm"
+        :rules="resolveRules"
+        label-width="100px"
+        class="custom-form"
+      >
         <el-form-item label="处理状态" prop="status">
-          <el-select v-model="resolveForm.status" placeholder="选择处理状态" class="form-input">
-            <el-option label="处理中" value="processing"/>
-            <el-option label="已解决" value="resolved"/>
-            <el-option label="已关闭" value="closed"/>
+          <el-select
+            v-model="resolveForm.status"
+            placeholder="选择处理状态"
+            class="form-input"
+          >
+            <el-option label="处理中" value="processing" />
+            <el-option label="已解决" value="resolved" />
+            <el-option label="已关闭" value="closed" />
           </el-select>
         </el-form-item>
         <el-form-item label="调整金额" prop="adjustment_amount">
@@ -312,299 +450,310 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
+import { ref, reactive, computed, onMounted } from "vue";
+import { ElMessage } from "element-plus";
+import { useAuthStore } from "@/stores/auth";
 import {
   getExceptionList,
   getExceptionDetail,
   reportException,
   resolveException,
   getExceptionStatistics,
-  getSalaryRecordsForException
-} from '@/api/salary'
-import { getEmployeeOptions } from '@/api/employee'
+  getSalaryRecordsForException,
+} from "@/api/salary";
+import { getEmployeeOptions } from "@/api/employee";
 
 // 状态
-const loading = ref(false)
-const reporting = ref(false)
-const resolving = ref(false)
-const exceptionList = ref([])
-const currentException = ref(null)
-const detailDrawerVisible = ref(false)
-const showReportDialog = ref(false)
-const showResolveDialog = ref(false)
-const reportFormRef = ref(null)
-const resolveFormRef = ref(null)
-const salaryRecords = ref([])
-const employeeOptions = ref([])
+const loading = ref(false);
+const reporting = ref(false);
+const resolving = ref(false);
+const exceptionList = ref([]);
+const currentException = ref(null);
+const detailDrawerVisible = ref(false);
+const showReportDialog = ref(false);
+const showResolveDialog = ref(false);
+const reportFormRef = ref(null);
+const resolveFormRef = ref(null);
+const salaryRecords = ref([]);
+const employeeOptions = ref([]);
 const statistics = reactive({
   pending: 0,
   resolved: 0,
-  total: 0
-})
+  total: 0,
+});
 
 // 筛选表单
 const filterForm = reactive({
-  status: '',
-  exception_type: '',
-  user_id: '',
+  status: "",
+  exception_type: "",
+  user_id: "",
   dateRange: [],
-  month: ''
-})
+  month: "",
+});
 
 // 分页状态
 const pagination = reactive({
   page: 1,
   pageSize: 10,
-  total: 0
-})
+  total: 0,
+});
 
 // 上报表单
 const reportForm = ref({
   salary_record: null,
-  exception_type: '',
-  description: ''
-})
+  exception_type: "",
+  description: "",
+});
 
 const reportRules = {
-  salary_record: [{ required: true, message: '请选择薪资记录', trigger: 'change' }],
-  exception_type: [{ required: true, message: '请选择异常类型', trigger: 'change' }],
-  description: [{ required: true, message: '请填写异常描述', trigger: 'blur' }]
-}
+  salary_record: [
+    { required: true, message: "请选择薪资记录", trigger: "change" },
+  ],
+  exception_type: [
+    { required: true, message: "请选择异常类型", trigger: "change" },
+  ],
+  description: [{ required: true, message: "请填写异常描述", trigger: "blur" }],
+};
 
 // 处理表单
 const resolveForm = ref({
-  status: 'resolved',
+  status: "resolved",
   adjustment_amount: 0,
-  resolution: ''
-})
+  resolution: "",
+});
 
 const resolveRules = {
-  status: [{ required: true, message: '请选择处理状态', trigger: 'change' }],
-  resolution: [{ required: true, message: '请填写处理方案', trigger: 'blur' }]
-}
+  status: [{ required: true, message: "请选择处理状态", trigger: "change" }],
+  resolution: [{ required: true, message: "请填写处理方案", trigger: "blur" }],
+};
 
 // 权限判断
-const authStore = useAuthStore()
-const user = computed(() => authStore.user)
-const isHR = computed(() => ['hr', 'admin'].includes(user.value?.role))
+const authStore = useAuthStore();
+const user = computed(() => authStore.user);
+const isHR = computed(() => ["hr", "admin"].includes(user.value?.role));
 
 // 获取异常列表
 const fetchExceptions = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const params = {
       page: pagination.page,
-      page_size: pagination.pageSize
-    }
+      page_size: pagination.pageSize,
+    };
 
     if (filterForm.status) {
-      params.status = filterForm.status
+      params.status = filterForm.status;
     }
     if (filterForm.exception_type) {
-      params.exception_type = filterForm.exception_type
+      params.exception_type = filterForm.exception_type;
     }
     if (filterForm.user_id) {
-      params.user_id = filterForm.user_id
+      params.user_id = filterForm.user_id;
     }
     if (filterForm.dateRange && filterForm.dateRange.length === 2) {
-      params.date_start = filterForm.dateRange[0]
-      params.date_end = filterForm.dateRange[1]
+      params.date_start = filterForm.dateRange[0];
+      params.date_end = filterForm.dateRange[1];
     }
     if (filterForm.month) {
-      params.month = filterForm.month
+      params.month = filterForm.month;
     }
 
-    const res = await getExceptionList(params)
+    const res = await getExceptionList(params);
     if (res.data?.code === 0) {
-      exceptionList.value = res.data.data || []
-      pagination.total = res.data.total || 0
+      exceptionList.value = res.data.data || [];
+      pagination.total = res.data.total || 0;
     }
   } catch (error) {
-    console.error('获取异常列表失败:', error)
-    ElMessage.error('获取异常列表失败')
+    console.error("获取异常列表失败:", error);
+    ElMessage.error("获取异常列表失败");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 获取统计数据
 const fetchStatistics = async () => {
-  if (!isHR.value) return
+  if (!isHR.value) return;
 
   try {
-    const res = await getExceptionStatistics()
+    const res = await getExceptionStatistics();
     if (res.data?.code === 0) {
-      Object.assign(statistics, res.data.data)
+      Object.assign(statistics, res.data.data);
     }
   } catch (error) {
-    console.error('获取统计信息失败:', error)
+    console.error("获取统计信息失败:", error);
   }
-}
+};
 
 // 获取薪资记录列表
 const fetchSalaryRecords = async () => {
   try {
     // 只获取已发布的薪资记录
-    const params = { page_size: 100 }
-    if (user.value?.role === 'employee') {
-      params.month = new Date().toISOString().slice(0, 7)
+    const params = { page_size: 100 };
+    if (user.value?.role === "employee") {
+      params.month = new Date().toISOString().slice(0, 7);
     }
-    const res = await getSalaryRecordsForException(params)
+    const res = await getSalaryRecordsForException(params);
     if (res.data?.code === 0) {
-      salaryRecords.value = res.data.data || []
+      salaryRecords.value = res.data.data || [];
     }
   } catch (error) {
-    console.error('获取薪资记录失败:', error)
+    console.error("获取薪资记录失败:", error);
   }
-}
+};
 
 // 获取员工选项
 const fetchEmployeeOptions = async () => {
   try {
-    const res = await getEmployeeOptions({})
+    const res = await getEmployeeOptions({});
     if (res.data?.code === 0) {
-      employeeOptions.value = res.data.data || []
+      employeeOptions.value = res.data.data || [];
     }
   } catch (error) {
-    console.error('获取员工列表失败:', error)
+    console.error("获取员工列表失败:", error);
   }
-}
+};
 
 // 筛选变化
 const handleFilterChange = () => {
-  pagination.page = 1
-  fetchExceptions()
-}
+  pagination.page = 1;
+  fetchExceptions();
+};
 
 // 页码变化
 const handlePageChange = (page) => {
-  pagination.page = page
-  fetchExceptions()
-}
+  pagination.page = page;
+  fetchExceptions();
+};
 
 // 查看详情
 const viewDetail = async (row) => {
   try {
-    const res = await getExceptionDetail(row.id)
+    const res = await getExceptionDetail(row.id);
     if (res.data?.code === 0) {
-      currentException.value = res.data.data
-      detailDrawerVisible.value = true
+      currentException.value = res.data.data;
+      detailDrawerVisible.value = true;
     }
   } catch (error) {
-    console.error('获取详情失败:', error)
-    ElMessage.error('获取详情失败')
+    console.error("获取详情失败:", error);
+    ElMessage.error("获取详情失败");
   }
-}
+};
 
 // 打开处理对话框
 const openResolveDialog = (row) => {
-  currentException.value = row
+  currentException.value = row;
   resolveForm.value = {
-    status: 'resolved',
+    status: "resolved",
     adjustment_amount: 0,
-    resolution: ''
-  }
-  showResolveDialog.value = true
-}
+    resolution: "",
+  };
+  showResolveDialog.value = true;
+};
 
 // 上报异常
 const handleReport = async () => {
-  if (!reportFormRef.value) return
+  if (!reportFormRef.value) return;
 
   try {
-    await reportFormRef.value.validate()
-    reporting.value = true
+    await reportFormRef.value.validate();
+    reporting.value = true;
 
-    const res = await reportException(reportForm.value)
+    const res = await reportException(reportForm.value);
     if (res.data?.code === 0) {
-      ElMessage.success('异常已上报')
-      showReportDialog.value = false
-      reportForm.value = { salary_record: null, exception_type: '', description: '' }
-      fetchExceptions()
-      fetchStatistics()
+      ElMessage.success("异常已上报");
+      showReportDialog.value = false;
+      reportForm.value = {
+        salary_record: null,
+        exception_type: "",
+        description: "",
+      };
+      fetchExceptions();
+      fetchStatistics();
     } else {
-      ElMessage.error(res.data?.message || '上报失败')
+      ElMessage.error(res.data?.message || "上报失败");
     }
   } catch (error) {
     if (error.response?.data?.message) {
-      ElMessage.error(error.response.data.message)
+      ElMessage.error(error.response.data.message);
     } else {
-      ElMessage.error('上报失败')
+      ElMessage.error("上报失败");
     }
   } finally {
-    reporting.value = false
+    reporting.value = false;
   }
-}
+};
 
 // 处理异常
 const handleResolve = async () => {
-  if (!resolveFormRef.value || !currentException.value) return
+  if (!resolveFormRef.value || !currentException.value) return;
 
   try {
-    await resolveFormRef.value.validate()
-    resolving.value = true
+    await resolveFormRef.value.validate();
+    resolving.value = true;
 
-    const res = await resolveException(currentException.value.id, resolveForm.value)
+    const res = await resolveException(
+      currentException.value.id,
+      resolveForm.value,
+    );
     if (res.data?.code === 0) {
-      ElMessage.success('异常已处理')
-      showResolveDialog.value = false
-      fetchExceptions()
-      fetchStatistics()
+      ElMessage.success("异常已处理");
+      showResolveDialog.value = false;
+      fetchExceptions();
+      fetchStatistics();
     } else {
-      ElMessage.error(res.data?.message || '处理失败')
+      ElMessage.error(res.data?.message || "处理失败");
     }
   } catch (error) {
     if (error.response?.data?.message) {
-      ElMessage.error(error.response.data.message)
+      ElMessage.error(error.response.data.message);
     } else {
-      ElMessage.error('处理失败')
+      ElMessage.error("处理失败");
     }
   } finally {
-    resolving.value = false
+    resolving.value = false;
   }
-}
+};
 
 // 获取状态标签类型
 const getStatusTag = (status) => {
   const map = {
-    pending: 'warning',
-    processing: 'info',
-    resolved: 'success',
-    closed: 'info'
-  }
-  return map[status] || 'info'
-}
+    pending: "warning",
+    processing: "info",
+    resolved: "success",
+    closed: "info",
+  };
+  return map[status] || "info";
+};
 
 // 获取异常类型标签类型
 const getExceptionTypeTag = (type) => {
   const map = {
-    salary_error: 'danger',
-    attendance_error: 'warning',
-    overtime_missing: 'info',
-    deduction_error: 'danger',
-    employee_appeal: 'primary',
-    other: 'info'
-  }
-  return map[type] || 'info'
-}
+    salary_error: "danger",
+    attendance_error: "warning",
+    overtime_missing: "info",
+    deduction_error: "danger",
+    employee_appeal: "primary",
+    other: "info",
+  };
+  return map[type] || "info";
+};
 
 // 格式化日期
 const formatDate = (dateStr) => {
-  if (!dateStr) return '-'
-  return dateStr.replace('T', ' ').substring(0, 19)
-}
+  if (!dateStr) return "-";
+  return dateStr.replace("T", " ").substring(0, 19);
+};
 
 // 初始化
 onMounted(() => {
-  fetchExceptions()
+  fetchExceptions();
   if (isHR.value) {
-    fetchStatistics()
-    fetchSalaryRecords()
-    fetchEmployeeOptions()
+    fetchStatistics();
+    fetchSalaryRecords();
+    fetchEmployeeOptions();
   }
-})
+});
 </script>
 
 <style scoped>
@@ -634,7 +783,11 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-warning) 0%,
+    var(--color-warning-light) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -750,7 +903,11 @@ onMounted(() => {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light) 100%
+  );
   color: white;
   display: flex;
   align-items: center;
@@ -855,7 +1012,11 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: linear-gradient(135deg, var(--color-success-subtle) 0%, var(--color-bg-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-success-subtle) 0%,
+    var(--color-bg-secondary) 100%
+  );
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-success-subtle);
   font-size: 14px;
