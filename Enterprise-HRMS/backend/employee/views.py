@@ -87,8 +87,16 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             from django.db.models import Q
             queryset = queryset.filter(
                 Q(user__real_name__icontains=keyword) |
-                Q(emp_no__icontains=keyword)
+                Q(employee_no__icontains=keyword)
             )
+
+        # 按入职日期范围筛选
+        hire_date_start = request.query_params.get('hire_date_start')
+        hire_date_end = request.query_params.get('hire_date_end')
+        if hire_date_start:
+            queryset = queryset.filter(hire_date__gte=hire_date_start)
+        if hire_date_end:
+            queryset = queryset.filter(hire_date__lte=hire_date_end)
 
         # 分页
         total = queryset.count()

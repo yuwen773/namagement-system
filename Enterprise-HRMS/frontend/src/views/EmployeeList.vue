@@ -4,18 +4,28 @@
     <div class="page-header">
       <div class="header-left">
         <div class="header-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
           </svg>
         </div>
         <span class="page-title">员工管理</span>
       </div>
       <div class="header-right">
         <el-button type="primary" @click="handleOnboarding">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           入职办理
         </el-button>
@@ -27,20 +37,105 @@
       <div class="filter-content">
         <div class="filter-item">
           <label class="filter-label">状态</label>
-          <el-select v-model="filterForm.status" placeholder="全部" clearable @change="fetchEmployees" class="filter-select">
+          <el-select
+            v-model="filterForm.status"
+            placeholder="全部"
+            clearable
+            @change="fetchEmployees"
+            class="filter-select"
+          >
             <el-option label="在职" value="active" />
             <el-option label="待入职" value="pending" />
             <el-option label="已离职" value="resigned" />
           </el-select>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label">部门</label>
+          <el-select
+            v-model="filterForm.department_id"
+            placeholder="全部"
+            clearable
+            @change="handleDepartmentChange"
+            class="filter-select"
+          >
+            <el-option
+              v-for="dept in allDepartments"
+              :key="dept.id"
+              :label="dept.name"
+              :value="dept.id"
+            />
+          </el-select>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label">岗位</label>
+          <el-select
+            v-model="filterForm.post_id"
+            placeholder="全部"
+            clearable
+            @change="fetchEmployees"
+            class="filter-select"
+            :disabled="!filterForm.department_id"
+          >
+            <el-option
+              v-for="post in filterPosts"
+              :key="post.id"
+              :label="post.name"
+              :value="post.id"
+            />
+          </el-select>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label">搜索</label>
+          <el-input
+            v-model="filterForm.keyword"
+            placeholder="姓名/工号"
+            clearable
+            @clear="fetchEmployees"
+            @keyup.enter="fetchEmployees"
+            class="filter-input"
+          >
+            <template #suffix>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                style="width: 16px; height: 16px; cursor: pointer"
+                @click="fetchEmployees"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </template>
+          </el-input>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label">入职日期</label>
+          <el-date-picker
+            v-model="filterForm.hireDateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            @change="fetchEmployees"
+            class="filter-date-range"
+            clearable
+          />
         </div>
       </div>
     </div>
 
     <!-- 员工列表 -->
     <div class="table-section">
-      <el-table :data="employeeList" v-loading="loading" stripe class="custom-table">
+      <el-table
+        :data="employeeList"
+        v-loading="loading"
+        stripe
+        class="custom-table"
+      >
         <el-table-column prop="employee_no" label="工号" width="160" />
-        <el-table-column prop="real_name" label="姓名" width="100">
+        <el-table-column prop="real_name" label="姓名" width="150">
           <template #default="{ row }">
             <div class="employee-name">
               <div class="name-avatar">{{ row.real_name?.charAt(0) }}</div>
@@ -48,22 +143,37 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="department_name" label="部门" min-width="120" />
-        <el-table-column prop="post_name" label="岗位" width="120" />
+        <el-table-column prop="department_name" label="部门" min-width="180" />
+        <el-table-column prop="post_name" label="岗位" width="160" />
         <el-table-column prop="hire_date" label="入职日期" width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small" class="status-tag">
+            <el-tag
+              :type="getStatusType(row.status)"
+              size="small"
+              class="status-tag"
+            >
               {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="viewDetail(row)" class="action-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
+            <el-button
+              type="primary"
+              link
+              size="small"
+              @click="viewDetail(row)"
+              class="action-btn"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
               </svg>
               查看详情
             </el-button>
@@ -75,8 +185,13 @@
               @click="handleResign(row)"
               class="action-btn"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="5" y1="12" x2="19" y2="12"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               离职
             </el-button>
@@ -98,56 +213,111 @@
     </div>
 
     <!-- 空状态 -->
-    <el-empty v-if="!loading && employeeList.length === 0" description="暂无员工数据" />
+    <el-empty
+      v-if="!loading && employeeList.length === 0"
+      description="暂无员工数据"
+    />
 
     <!-- 员工详情抽屉 -->
     <el-drawer v-model="drawerVisible" title="员工详情" size="420px">
       <div v-if="currentEmployee" class="drawer-content">
         <div class="employee-header">
           <div class="avatar-large">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
             </svg>
           </div>
           <div class="info">
             <h3>{{ currentEmployee.real_name }}</h3>
             <p>{{ currentEmployee.employee_no }}</p>
           </div>
-          <el-tag :type="getStatusType(currentEmployee.status)" class="status-badge">
+          <el-tag
+            :type="getStatusType(currentEmployee.status)"
+            class="status-badge"
+          >
             {{ getStatusText(currentEmployee.status) }}
           </el-tag>
         </div>
 
         <el-descriptions :column="1" border class="info-descriptions">
-          <el-descriptions-item label="用户名">{{ currentEmployee.username }}</el-descriptions-item>
-          <el-descriptions-item label="手机号">{{ currentEmployee.phone }}</el-descriptions-item>
-          <el-descriptions-item label="邮箱">{{ currentEmployee.email }}</el-descriptions-item>
-          <el-descriptions-item label="部门">{{ currentEmployee.department_name }}</el-descriptions-item>
-          <el-descriptions-item label="岗位">{{ currentEmployee.post_name }}</el-descriptions-item>
-          <el-descriptions-item label="入职日期">{{ currentEmployee.hire_date }}</el-descriptions-item>
+          <el-descriptions-item label="用户名">{{
+            currentEmployee.username
+          }}</el-descriptions-item>
+          <el-descriptions-item label="手机号">{{
+            currentEmployee.phone
+          }}</el-descriptions-item>
+          <el-descriptions-item label="邮箱">{{
+            currentEmployee.email
+          }}</el-descriptions-item>
+          <el-descriptions-item label="部门">{{
+            currentEmployee.department_name
+          }}</el-descriptions-item>
+          <el-descriptions-item label="岗位">{{
+            currentEmployee.post_name
+          }}</el-descriptions-item>
+          <el-descriptions-item label="入职日期">{{
+            currentEmployee.hire_date
+          }}</el-descriptions-item>
           <el-descriptions-item label="基本工资">
-            <span class="salary-highlight">¥{{ Number(currentEmployee?.salary_base || 0).toLocaleString() }}</span>
+            <span class="salary-highlight"
+              >¥{{
+                Number(currentEmployee?.salary_base || 0).toLocaleString()
+              }}</span
+            >
           </el-descriptions-item>
-          <el-descriptions-item v-if="currentEmployee.resigned_date" label="离职日期">
+          <el-descriptions-item
+            v-if="currentEmployee.resigned_date"
+            label="离职日期"
+          >
             {{ currentEmployee.resigned_date }}
           </el-descriptions-item>
-          <el-descriptions-item v-if="currentEmployee.resigned_reason" label="离职原因">
+          <el-descriptions-item
+            v-if="currentEmployee.resigned_reason"
+            label="离职原因"
+          >
             {{ currentEmployee.resigned_reason }}
           </el-descriptions-item>
         </el-descriptions>
 
         <div class="drawer-footer" v-if="currentEmployee?.status === 'active'">
-          <el-button type="primary" @click="handleEdit(currentEmployee)" class="footer-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          <el-button
+            type="primary"
+            @click="handleEdit(currentEmployee)"
+            class="footer-btn"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+              />
+              <path
+                d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+              />
             </svg>
             编辑信息
           </el-button>
-          <el-button type="warning" @click="handleResign(currentEmployee)" class="footer-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="5" y1="12" x2="19" y2="12"/>
+          <el-button
+            type="warning"
+            @click="handleResign(currentEmployee)"
+            class="footer-btn"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             办理离职
           </el-button>
@@ -157,12 +327,27 @@
 
     <!-- 编辑员工对话框 -->
     <el-dialog v-model="editVisible" title="编辑员工信息" width="500px">
-      <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="100px" class="custom-form">
+      <el-form
+        ref="editFormRef"
+        :model="editForm"
+        :rules="editRules"
+        label-width="100px"
+        class="custom-form"
+      >
         <el-form-item label="员工姓名">
-          <el-input :value="currentEmployee?.real_name" disabled class="form-input" />
+          <el-input
+            :value="currentEmployee?.real_name"
+            disabled
+            class="form-input"
+          />
         </el-form-item>
         <el-form-item label="部门" prop="department">
-          <el-select v-model="editForm.department" placeholder="请选择部门" class="form-input" @change="handleEditDepartmentChange">
+          <el-select
+            v-model="editForm.department"
+            placeholder="请选择部门"
+            class="form-input"
+            @change="handleEditDepartmentChange"
+          >
             <el-option
               v-for="dept in departments"
               :key="dept.id"
@@ -172,7 +357,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="岗位" prop="post">
-          <el-select v-model="editForm.post" placeholder="请先选择部门" class="form-input" :disabled="!editForm.department">
+          <el-select
+            v-model="editForm.post"
+            placeholder="请先选择部门"
+            class="form-input"
+            :disabled="!editForm.department"
+          >
             <el-option
               v-for="post in editPosts"
               :key="post.id"
@@ -191,20 +381,37 @@
           />
         </el-form-item>
         <el-form-item label="基本工资" prop="salary_base">
-          <el-input-number v-model="editForm.salary_base" :min="0" :precision="2" class="form-input" />
+          <el-input-number
+            v-model="editForm.salary_base"
+            :min="0"
+            :precision="2"
+            class="form-input"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitEdit" :loading="submitting">保存</el-button>
+        <el-button type="primary" @click="submitEdit" :loading="submitting"
+          >保存</el-button
+        >
       </template>
     </el-dialog>
 
     <!-- 离职办理对话框 -->
     <el-dialog v-model="resignVisible" title="办理离职" width="500px">
-      <el-form ref="resignFormRef" :model="resignForm" :rules="resignRules" label-width="100px" class="custom-form">
+      <el-form
+        ref="resignFormRef"
+        :model="resignForm"
+        :rules="resignRules"
+        label-width="100px"
+        class="custom-form"
+      >
         <el-form-item label="员工姓名">
-          <el-input :value="currentEmployee?.real_name" disabled class="form-input" />
+          <el-input
+            :value="currentEmployee?.real_name"
+            disabled
+            class="form-input"
+          />
         </el-form-item>
         <el-form-item label="离职日期" prop="resigned_date">
           <el-date-picker
@@ -227,15 +434,28 @@
       </el-form>
       <template #footer>
         <el-button @click="resignVisible = false">取消</el-button>
-        <el-button type="warning" @click="submitResign" :loading="submitting">确认离职</el-button>
+        <el-button type="warning" @click="submitResign" :loading="submitting"
+          >确认离职</el-button
+        >
       </template>
     </el-dialog>
 
     <!-- 入职办理对话框 -->
     <el-dialog v-model="onboardingVisible" title="入职办理" width="500px">
-      <el-form ref="onboardingFormRef" :model="onboardingForm" :rules="onboardingRules" label-width="100px" class="custom-form">
+      <el-form
+        ref="onboardingFormRef"
+        :model="onboardingForm"
+        :rules="onboardingRules"
+        label-width="100px"
+        class="custom-form"
+      >
         <el-form-item label="选择用户" prop="user_id">
-          <el-select v-model="onboardingForm.user_id" placeholder="请选择待入职用户" filterable class="form-input">
+          <el-select
+            v-model="onboardingForm.user_id"
+            placeholder="请选择待入职用户"
+            filterable
+            class="form-input"
+          >
             <el-option
               v-for="user in pendingUsers"
               :key="user.id"
@@ -245,7 +465,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="部门" prop="department">
-          <el-select v-model="onboardingForm.department" placeholder="请选择部门" class="form-input" @change="handleOnboardingDepartmentChange">
+          <el-select
+            v-model="onboardingForm.department"
+            placeholder="请选择部门"
+            class="form-input"
+            @change="handleOnboardingDepartmentChange"
+          >
             <el-option
               v-for="dept in departments"
               :key="dept.id"
@@ -255,7 +480,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="岗位" prop="post">
-          <el-select v-model="onboardingForm.post" placeholder="请先选择部门" class="form-input" :disabled="!onboardingForm.department">
+          <el-select
+            v-model="onboardingForm.post"
+            placeholder="请先选择部门"
+            class="form-input"
+            :disabled="!onboardingForm.department"
+          >
             <el-option
               v-for="post in onboardingPosts"
               :key="post.id"
@@ -274,349 +504,419 @@
           />
         </el-form-item>
         <el-form-item label="基本工资" prop="salary_base">
-          <el-input-number v-model="onboardingForm.salary_base" :min="0" :precision="2" class="form-input" />
+          <el-input-number
+            v-model="onboardingForm.salary_base"
+            :min="0"
+            :precision="2"
+            class="form-input"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="onboardingVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitOnboarding" :loading="submitting">确认入职</el-button>
+        <el-button
+          type="primary"
+          @click="submitOnboarding"
+          :loading="submitting"
+          >确认入职</el-button
+        >
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getEmployeeList, getEmployeeDetail, getPendingUsers, createEmployee, updateEmployee, resignEmployee } from '@/api/employee'
-import { getDepartmentList } from '@/api/department'
-import { getPostList, getPostsByDepartment } from '@/api/post'
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import {
+  getEmployeeList,
+  getEmployeeDetail,
+  getPendingUsers,
+  createEmployee,
+  updateEmployee,
+  resignEmployee,
+} from "@/api/employee";
+import { getDepartmentList } from "@/api/department";
+import { getPostList, getPostsByDepartment } from "@/api/post";
 
 // 员工列表
-const employeeList = ref([])
-const loading = ref(false)
+const employeeList = ref([]);
+const loading = ref(false);
 
 // 分页状态
 const pagination = reactive({
   page: 1,
   pageSize: 10,
-  total: 0
-})
+  total: 0,
+});
 
 // 筛选表单
 const filterForm = reactive({
-  status: ''
-})
+  status: "",
+  department_id: null,
+  post_id: null,
+  keyword: "",
+  hireDateRange: null,
+});
 
 // 详情抽屉
-const drawerVisible = ref(false)
-const currentEmployee = ref(null)
+const drawerVisible = ref(false);
+const currentEmployee = ref(null);
 
 // 编辑对话框
-const editVisible = ref(false)
-const editFormRef = ref(null)
+const editVisible = ref(false);
+const editFormRef = ref(null);
 const editForm = reactive({
   department: null,
   post: null,
-  hire_date: '',
-  salary_base: 0
-})
+  hire_date: "",
+  salary_base: 0,
+});
 const editRules = {
-  department: [{ required: true, message: '请选择部门', trigger: 'change' }],
-  post: [{ required: true, message: '请选择岗位', trigger: 'change' }],
-  hire_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }],
-  salary_base: [{ required: true, message: '请输入基本工资', trigger: 'blur' }]
-}
+  department: [{ required: true, message: "请选择部门", trigger: "change" }],
+  post: [{ required: true, message: "请选择岗位", trigger: "change" }],
+  hire_date: [{ required: true, message: "请选择入职日期", trigger: "change" }],
+  salary_base: [{ required: true, message: "请输入基本工资", trigger: "blur" }],
+};
 
 // 离职对话框
-const resignVisible = ref(false)
-const resignFormRef = ref(null)
+const resignVisible = ref(false);
+const resignFormRef = ref(null);
 const resignForm = reactive({
-  resigned_date: '',
-  resigned_reason: ''
-})
+  resigned_date: "",
+  resigned_reason: "",
+});
 const resignRules = {
-  resigned_date: [{ required: true, message: '请选择离职日期', trigger: 'change' }]
-}
+  resigned_date: [
+    { required: true, message: "请选择离职日期", trigger: "change" },
+  ],
+};
 
 // 入职办理
-const onboardingVisible = ref(false)
-const onboardingFormRef = ref(null)
-const submitting = ref(false)
+const onboardingVisible = ref(false);
+const onboardingFormRef = ref(null);
+const submitting = ref(false);
 const onboardingForm = reactive({
   user_id: null,
   department: null,
   post: null,
-  hire_date: '',
-  salary_base: 5000
-})
-const pendingUsers = ref([])
-const departments = ref([])
-const posts = ref([])
-const onboardingPosts = ref([])  // 入职表单：根据部门筛选的岗位
-const editPosts = ref([])         // 编辑表单：根据部门筛选的岗位
+  hire_date: "",
+  salary_base: 5000,
+});
+const pendingUsers = ref([]);
+const departments = ref([]);
+const allDepartments = ref([]); // 筛选用的所有部门
+const posts = ref([]);
+const filterPosts = ref([]); // 筛选用的岗位列表
+const onboardingPosts = ref([]); // 入职表单：根据部门筛选的岗位
+const editPosts = ref([]); // 编辑表单：根据部门筛选的岗位
 
 // 表单验证规则
 const onboardingRules = {
-  user_id: [{ required: true, message: '请选择用户', trigger: 'change' }],
-  department: [{ required: true, message: '请选择部门', trigger: 'change' }],
-  post: [{ required: true, message: '请选择岗位', trigger: 'change' }],
-  hire_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }],
-  salary_base: [{ required: true, message: '请输入基本工资', trigger: 'blur' }]
-}
+  user_id: [{ required: true, message: "请选择用户", trigger: "change" }],
+  department: [{ required: true, message: "请选择部门", trigger: "change" }],
+  post: [{ required: true, message: "请选择岗位", trigger: "change" }],
+  hire_date: [{ required: true, message: "请选择入职日期", trigger: "change" }],
+  salary_base: [{ required: true, message: "请输入基本工资", trigger: "blur" }],
+};
 
 // 状态映射
 const statusMap = {
-  active: { type: 'success', text: '在职' },
-  pending: { type: 'warning', text: '待入职' },
-  resigned: { type: 'info', text: '已离职' }
-}
+  active: { type: "success", text: "在职" },
+  pending: { type: "warning", text: "待入职" },
+  resigned: { type: "info", text: "已离职" },
+};
 
-const getStatusType = (status) => statusMap[status]?.type || 'info'
-const getStatusText = (status) => statusMap[status]?.text || status
+const getStatusType = (status) => statusMap[status]?.type || "info";
+const getStatusText = (status) => statusMap[status]?.text || status;
+
+// 筛选 - 部门变化时加载岗位
+const handleDepartmentChange = async (departmentId) => {
+  filterForm.post_id = null;
+  filterPosts.value = [];
+
+  if (!departmentId) return;
+
+  try {
+    const res = await getPostsByDepartment(departmentId);
+    if (res.data?.code === 0) {
+      filterPosts.value = res.data?.data || [];
+    }
+  } catch (error) {
+    console.error("获取岗位列表失败:", error);
+  }
+
+  fetchEmployees();
+};
+
+// 加载所有部门（用于筛选）
+const fetchAllDepartments = async () => {
+  try {
+    const res = await getDepartmentList({ only_root: true });
+    if (res.data?.code === 0) {
+      allDepartments.value = res.data?.data || [];
+    }
+  } catch (error) {
+    console.error("获取部门列表失败:", error);
+  }
+};
 
 // 获取员工列表
 const fetchEmployees = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const params = {
       page: pagination.page,
-      page_size: pagination.pageSize
-    }
+      page_size: pagination.pageSize,
+    };
     if (filterForm.status) {
-      params.status = filterForm.status
+      params.status = filterForm.status;
     }
-    const res = await getEmployeeList(params)
+    if (filterForm.department_id) {
+      params.department_id = filterForm.department_id;
+    }
+    if (filterForm.post_id) {
+      params.post_id = filterForm.post_id;
+    }
+    if (filterForm.keyword) {
+      params.keyword = filterForm.keyword;
+    }
+    if (filterForm.hireDateRange) {
+      params.hire_date_start = filterForm.hireDateRange[0];
+      params.hire_date_end = filterForm.hireDateRange[1];
+    }
+    const res = await getEmployeeList(params);
     if (res.data?.code === 0) {
-      employeeList.value = res.data?.data || []
-      pagination.total = res.data?.total || 0
+      employeeList.value = res.data?.data || [];
+      pagination.total = res.data?.total || 0;
     }
   } catch (error) {
-    console.error('获取员工列表失败:', error)
-    ElMessage.error('获取员工列表失败')
+    console.error("获取员工列表失败:", error);
+    ElMessage.error("获取员工列表失败");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 页码变化
 const handlePageChange = (page) => {
-  pagination.page = page
-  fetchEmployees()
-}
+  pagination.page = page;
+  fetchEmployees();
+};
 
 // 查看员工详情
 const viewDetail = async (row) => {
   try {
-    const res = await getEmployeeDetail(row.id)
-    currentEmployee.value = res.data.data
-    drawerVisible.value = true
+    const res = await getEmployeeDetail(row.id);
+    currentEmployee.value = res.data.data;
+    drawerVisible.value = true;
   } catch (error) {
-    console.error('获取员工详情失败:', error)
-    ElMessage.error('获取员工详情失败')
+    console.error("获取员工详情失败:", error);
+    ElMessage.error("获取员工详情失败");
   }
-}
+};
 
 // 编辑表单 - 部门变化时加载岗位
 const handleEditDepartmentChange = async (departmentId) => {
-  editForm.post = null
-  editPosts.value = []
+  editForm.post = null;
+  editPosts.value = [];
 
-  if (!departmentId) return
+  if (!departmentId) return;
 
   try {
-    const res = await getPostsByDepartment(departmentId)
+    const res = await getPostsByDepartment(departmentId);
     if (res.data?.code === 0) {
-      editPosts.value = res.data?.data || []
+      editPosts.value = res.data?.data || [];
     }
   } catch (error) {
-    console.error('获取岗位列表失败:', error)
-    ElMessage.error('获取岗位列表失败')
+    console.error("获取岗位列表失败:", error);
+    ElMessage.error("获取岗位列表失败");
   }
-}
+};
 
 // 打开编辑对话框
 const handleEdit = async (employee) => {
-  editForm.department = employee.department?.id
-  editForm.post = employee.post?.id
-  editForm.hire_date = employee.hire_date
-  editForm.salary_base = employee.salary_base
-  editPosts.value = []
+  editForm.department = employee.department?.id;
+  editForm.post = employee.post?.id;
+  editForm.hire_date = employee.hire_date;
+  editForm.salary_base = employee.salary_base;
+  editPosts.value = [];
 
   // 加载员工所在部门的岗位
   if (employee.department?.id) {
     try {
-      const res = await getPostsByDepartment(employee.department.id)
+      const res = await getPostsByDepartment(employee.department.id);
       if (res.data?.code === 0) {
-        editPosts.value = res.data?.data || []
+        editPosts.value = res.data?.data || [];
       }
     } catch (error) {
-      console.error('获取岗位列表失败:', error)
+      console.error("获取岗位列表失败:", error);
     }
   }
 
-  editVisible.value = true
-}
+  editVisible.value = true;
+};
 
 // 提交编辑
 const submitEdit = async () => {
-  if (!editFormRef.value) return
+  if (!editFormRef.value) return;
 
   try {
-    await editFormRef.value.validate()
-    submitting.value = true
+    await editFormRef.value.validate();
+    submitting.value = true;
 
     await updateEmployee(currentEmployee.value.id, {
       department_id: editForm.department,
       post_id: editForm.post,
       hire_date: editForm.hire_date,
-      salary_base: editForm.salary_base
-    })
+      salary_base: editForm.salary_base,
+    });
 
-    ElMessage.success('更新成功')
-    editVisible.value = false
-    drawerVisible.value = false
-    fetchEmployees()
+    ElMessage.success("更新成功");
+    editVisible.value = false;
+    drawerVisible.value = false;
+    fetchEmployees();
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('更新员工信息失败:', error)
-      ElMessage.error(error.response?.data?.message || '更新失败')
+    if (error !== "cancel") {
+      console.error("更新员工信息失败:", error);
+      ElMessage.error(error.response?.data?.message || "更新失败");
     }
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
 // 打开离职对话框
 const handleResign = (employee) => {
-  currentEmployee.value = employee
-  resignForm.resigned_date = ''
-  resignForm.resigned_reason = ''
-  resignVisible.value = true
-}
+  currentEmployee.value = employee;
+  resignForm.resigned_date = "";
+  resignForm.resigned_reason = "";
+  resignVisible.value = true;
+};
 
 // 提交离职
 const submitResign = async () => {
-  if (!resignFormRef.value) return
+  if (!resignFormRef.value) return;
 
   try {
-    await resignFormRef.value.validate()
-    submitting.value = true
+    await resignFormRef.value.validate();
+    submitting.value = true;
 
     await ElMessageBox.confirm(
-      '确定要办理离职吗？离职后该员工账号将被禁用。',
-      '离职确认',
+      "确定要办理离职吗？离职后该员工账号将被禁用。",
+      "离职确认",
       {
-        confirmButtonText: '确定离职',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
+        confirmButtonText: "确定离职",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
+    );
 
     await resignEmployee(currentEmployee.value.id, {
       resigned_date: resignForm.resigned_date,
-      resigned_reason: resignForm.resigned_reason
-    })
+      resigned_reason: resignForm.resigned_reason,
+    });
 
-    ElMessage.success('离职办理成功')
-    resignVisible.value = false
-    drawerVisible.value = false
-    fetchEmployees()
+    ElMessage.success("离职办理成功");
+    resignVisible.value = false;
+    drawerVisible.value = false;
+    fetchEmployees();
   } catch (error) {
-    if (error !== 'confirm') {
-      if (error !== 'cancel') {
-        console.error('离职办理失败:', error)
-        ElMessage.error(error.response?.data?.message || '离职办理失败')
+    if (error !== "confirm") {
+      if (error !== "cancel") {
+        console.error("离职办理失败:", error);
+        ElMessage.error(error.response?.data?.message || "离职办理失败");
       }
     }
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
 // 入职办理 - 部门变化时加载岗位
 const handleOnboardingDepartmentChange = async (departmentId) => {
-  onboardingForm.post = null
-  onboardingPosts.value = []
+  onboardingForm.post = null;
+  onboardingPosts.value = [];
 
-  if (!departmentId) return
+  if (!departmentId) return;
 
   try {
-    const res = await getPostsByDepartment(departmentId)
+    const res = await getPostsByDepartment(departmentId);
     if (res.data?.code === 0) {
-      onboardingPosts.value = res.data?.data || []
+      onboardingPosts.value = res.data?.data || [];
       if (onboardingPosts.value.length === 0) {
-        ElMessage.warning('该部门下暂无岗位，请联系管理员配置')
+        ElMessage.warning("该部门下暂无岗位，请联系管理员配置");
       }
     }
   } catch (error) {
-    console.error('获取岗位列表失败:', error)
-    ElMessage.error('获取岗位列表失败')
+    console.error("获取岗位列表失败:", error);
+    ElMessage.error("获取岗位列表失败");
   }
-}
+};
 
 // 入职办理
 const handleOnboarding = async () => {
-  onboardingForm.user_id = null
-  onboardingForm.department = null
-  onboardingForm.post = null
-  onboardingForm.hire_date = ''
-  onboardingForm.salary_base = 5000
-  onboardingPosts.value = []
+  onboardingForm.user_id = null;
+  onboardingForm.department = null;
+  onboardingForm.post = null;
+  onboardingForm.hire_date = "";
+  onboardingForm.salary_base = 5000;
+  onboardingPosts.value = [];
 
   try {
     const [usersRes, deptsRes] = await Promise.all([
       getPendingUsers({ page: 1, page_size: 100 }),
-      getDepartmentList({ only_root: true })
-    ])
-    pendingUsers.value = usersRes.data?.data || []
-    departments.value = deptsRes.data?.data || []
+      getDepartmentList({ only_root: true }),
+    ]);
+    pendingUsers.value = usersRes.data?.data || [];
+    departments.value = deptsRes.data?.data || [];
 
     if (pendingUsers.value.length === 0) {
-      ElMessage.warning('暂无待入职用户')
-      return
+      ElMessage.warning("暂无待入职用户");
+      return;
     }
 
-    onboardingVisible.value = true
+    onboardingVisible.value = true;
   } catch (error) {
-    console.error('加载数据失败:', error)
-    ElMessage.error('加载数据失败')
+    console.error("加载数据失败:", error);
+    ElMessage.error("加载数据失败");
   }
-}
+};
 
 // 提交入职
 const submitOnboarding = async () => {
-  if (!onboardingFormRef.value) return
+  if (!onboardingFormRef.value) return;
 
   try {
-    await onboardingFormRef.value.validate()
-    submitting.value = true
+    await onboardingFormRef.value.validate();
+    submitting.value = true;
 
     await createEmployee({
       user_id: onboardingForm.user_id,
-      emp_no: `EMP${new Date().toISOString().slice(0, 7).replace('-', '')}${String(onboardingForm.department).padStart(3, '0')}`,
+      emp_no: `EMP${new Date().toISOString().slice(0, 7).replace("-", "")}${String(onboardingForm.department).padStart(3, "0")}`,
       department_id: onboardingForm.department,
       post_id: onboardingForm.post,
       hire_date: onboardingForm.hire_date,
-      salary_base: onboardingForm.salary_base
-    })
+      salary_base: onboardingForm.salary_base,
+    });
 
-    ElMessage.success('入职办理成功')
-    onboardingVisible.value = false
-    fetchEmployees()
+    ElMessage.success("入职办理成功");
+    onboardingVisible.value = false;
+    fetchEmployees();
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('入职办理失败:', error)
-      ElMessage.error(error.response?.data?.message || '入职办理失败')
+    if (error !== "cancel") {
+      console.error("入职办理失败:", error);
+      ElMessage.error(error.response?.data?.message || "入职办理失败");
     }
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
 onMounted(() => {
-  fetchEmployees()
-})
+  fetchEmployees();
+  fetchAllDepartments();
+});
 </script>
 
 <style scoped>
@@ -631,13 +931,17 @@ onMounted(() => {
 }
 
 .employee-page::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50px;
   right: -30px;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.03) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(79, 70, 229, 0.03) 0%,
+    transparent 70%
+  );
   pointer-events: none;
   z-index: 0;
 }
@@ -658,13 +962,18 @@ onMounted(() => {
 }
 
 .page-header::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-success));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-primary-light),
+    var(--color-success)
+  );
 }
 
 .header-left {
@@ -677,7 +986,11 @@ onMounted(() => {
   width: 48px;
   height: 48px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -750,6 +1063,14 @@ onMounted(() => {
   width: 140px;
 }
 
+.filter-input {
+  width: 200px;
+}
+
+.filter-date-range {
+  width: 240px;
+}
+
 /* 表格区域 */
 .table-section {
   background: var(--color-bg-secondary);
@@ -799,7 +1120,11 @@ onMounted(() => {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light) 100%
+  );
   color: white;
   display: flex;
   align-items: center;
@@ -861,7 +1186,7 @@ onMounted(() => {
 }
 
 .employee-header::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -1px;
   left: 0;
@@ -874,7 +1199,11 @@ onMounted(() => {
   width: 72px;
   height: 72px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-light) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -884,14 +1213,22 @@ onMounted(() => {
 }
 
 .avatar-large::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -2px;
   border-radius: var(--radius-xl);
   padding: 2px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-success));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-success)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
@@ -943,7 +1280,7 @@ onMounted(() => {
   font-weight: 600;
   color: var(--color-success);
   font-size: 16px;
-  font-family: 'SF Mono', 'Monaco', monospace;
+  font-family: "SF Mono", "Monaco", monospace;
 }
 
 .drawer-footer {
