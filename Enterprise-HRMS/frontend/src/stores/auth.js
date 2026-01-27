@@ -208,11 +208,18 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       let errorMessage = '登录失败，请检查用户名和密码'
       const errorData = error.response?.data
-      
+
       if (errorData) {
-        if (errorData.message) {
+        // 优先使用 data.detail（后端返回的详细错误信息）
+        if (errorData.data?.detail) {
+          errorMessage = errorData.data.detail
+        }
+        // 其次使用 message（但排除通用的"请求失败"）
+        else if (errorData.message && errorData.message !== '请求失败') {
           errorMessage = errorData.message
-        } else if (typeof errorData.detail === 'string') {
+        }
+        // 然后检查顶层的 detail
+        else if (typeof errorData.detail === 'string') {
           errorMessage = errorData.detail
         } else if (Array.isArray(errorData.detail)) {
           errorMessage = errorData.detail[0]
@@ -220,7 +227,7 @@ export const useAuthStore = defineStore('auth', () => {
           errorMessage = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors
         }
       }
-      
+
       ElMessage.error(errorMessage)
       throw error
     } finally {

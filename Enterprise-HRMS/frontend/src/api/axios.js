@@ -21,11 +21,12 @@ api.interceptors.request.use(
   }
 )
 
-// 响应拦截器：401 自动跳转登录页
+// 响应拦截器：401 自动跳转登录页（仅在非登录页时）
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // 只有在非登录页时才自动跳转
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
