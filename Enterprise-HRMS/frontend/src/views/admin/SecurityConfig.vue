@@ -11,6 +11,7 @@ const config = reactive({
   // 注册配置
   require_registration_approval: false,
   // 密码策略配置
+  password_storage_mode: 'encrypted',
   password_min_length: 6,
   password_require_uppercase: false,
   password_require_lowercase: true,
@@ -37,6 +38,7 @@ const fetchConfig = async () => {
       // 更新响应式对象
       Object.assign(config, {
         require_registration_approval: data.require_registration_approval,
+        password_storage_mode: data.password_storage_mode,
         password_min_length: data.password_min_length,
         password_require_uppercase: data.password_require_uppercase,
         password_require_lowercase: data.password_require_lowercase,
@@ -163,6 +165,19 @@ onMounted(() => {
         </template>
 
         <div class="config-form">
+          <div class="form-item">
+            <div class="form-info">
+              <span class="form-label">密码存储模式</span>
+              <span class="form-desc">明文模式直接存储密码，密文模式使用哈希加密（推荐）</span>
+            </div>
+            <el-select v-model="config.password_storage_mode" style="width: 120px">
+              <el-option label="密文" value="encrypted" />
+              <el-option label="明文" value="plain" />
+            </el-select>
+          </div>
+
+          <div class="form-divider"></div>
+
           <div class="form-item">
             <div class="form-info">
               <span class="form-label">密码最小长度</span>
