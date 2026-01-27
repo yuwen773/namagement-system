@@ -102,6 +102,18 @@ export function getMyProfile() {
   return axios.get('/employee/me/')
 }
 
+/**
+ * 批量分配部门和岗位
+ * @param {Object} data - 分配数据
+ * @param {number[]} data.employee_ids - 员工ID列表
+ * @param {number} data.department_id - 部门ID
+ * @param {number} [data.post_id] - 岗位ID（可选）
+ * @returns {Promise}
+ */
+export function batchAssignDepartment(data) {
+  return axios.post('/employee/batch_assign/', data)
+}
+
 export default {
   getEmployeeList,
   getEmployeeDetail,
@@ -110,5 +122,6 @@ export default {
   updateEmployee,
   resignEmployee,
   getEmployeeOptions,
-  getMyProfile
+  getMyProfile,
+  batchAssignDepartment
 }

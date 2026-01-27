@@ -14,14 +14,20 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(source='user.phone', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
     post_name = serializers.CharField(source='post.name', read_only=True)
+    department_code = serializers.CharField(source='department.code', read_only=True)
+    is_unassigned = serializers.SerializerMethodField()
 
     class Meta:
         model = EmployeeProfile
         fields = [
             'id', 'user_id', 'employee_no', 'real_name', 'phone',
-            'department_name', 'post_name',
+            'department_name', 'post_name', 'department_code', 'is_unassigned',
             'hire_date', 'status'
         ]
+
+    def get_is_unassigned(self, obj):
+        """标识是否为待分配员工"""
+        return obj.department.code == 'UNASSIGNED'
 
 
 class EmployeeProfileSerializer(serializers.ModelSerializer):
@@ -35,18 +41,23 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     department_code = serializers.CharField(source='department.code', read_only=True)
     post_name = serializers.CharField(source='post.name', read_only=True)
     department_path = serializers.CharField(source='get_full_path', read_only=True)
+    is_unassigned = serializers.SerializerMethodField()
 
     class Meta:
         model = EmployeeProfile
         fields = [
             'id', 'user', 'user_id', 'username', 'real_name', 'phone', 'email',
             'employee_no', 'department', 'department_name', 'department_code',
-            'post', 'post_name', 'department_path',
+            'post', 'post_name', 'department_path', 'is_unassigned',
             'hire_date', 'salary_base', 'status',
             'resigned_date', 'resigned_reason',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['employee_no', 'created_at', 'updated_at']
+
+    def get_is_unassigned(self, obj):
+        """标识是否为待分配员工"""
+        return obj.department.code == 'UNASSIGNED'
 
 
 class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
@@ -167,3 +178,60 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
         if value is not None and value < 0:
             raise serializers.ValidationError("基本工资不能为负数")
         return value
+
+
+class BatchAssignSerializer(serializers.Serializer):
+    """批量分配部门和岗位序列化器"""
+    employee_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        min_length=1,
+        max_length=100,
+        help_text="员工ID列表"
+    )
+    department_id = serializers.IntegerField(help_text="目标部门ID")
+    post_id = serializers.IntegerField(help_text="目标岗位ID", required=False, allow_null=True)
+
+    def validate_employee_ids(self, value):
+        """验证员工ID存在"""
+        existing_ids = EmployeeProfile.objects.filter(
+            id__in=value
+        ).values_list('id', flat=True)
+        missing_ids = set(value) - set(existing_ids)
+        if missing_ids:
+            raise serializers.ValidationError(
+                f"以下员工ID不存在: {list(missing_ids)}"
+            )
+        return value
+
+    def validate_department_id(self, value):
+        """验证部门存在且启用"""
+        try:
+            dept = Department.objects.get(id=value, is_active=True)
+            # 不允许分配到待分配部门
+            if dept.code == 'UNASSIGNED':
+                raise serializers.ValidationError("不能分配到待分配部门")
+            return dept
+        except Department.DoesNotExist:
+            raise serializers.ValidationError("部门不存在或已停用")
+
+    def validate_post_id(self, value):
+        """验证岗位存在且启用（如果提供）"""
+        if value is None:
+            return None
+        try:
+            post = Post.objects.get(id=value, is_active=True)
+            if post.code == 'UNASSIGNED':
+                raise serializers.ValidationError("不能分配到待分配岗位")
+            return post
+        except Post.DoesNotExist:
+            raise serializers.ValidationError("岗位不存在或已停用")
+
+    def validate(self, attrs):
+        """验证部门和岗位的关联关系"""
+        department = attrs.get('department_id')
+        post = attrs.get('post_id')
+
+        if post and post.department_id != department.id:
+            raise serializers.ValidationError({"post_id": "岗位不属于所选部门"})
+
+        return attrs

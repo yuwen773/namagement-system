@@ -10,7 +10,9 @@ from .serializers import (
     EmployeeProfileSerializer,
     EmployeeProfileCreateSerializer,
     EmployeeProfileUpdateSerializer,
+    BatchAssignSerializer,
 )
+from organization.models import Department
 
 
 class EmployeeProfileViewSet(viewsets.ModelViewSet):
@@ -97,6 +99,11 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(hire_date__gte=hire_date_start)
         if hire_date_end:
             queryset = queryset.filter(hire_date__lte=hire_date_end)
+
+        # 按待分配筛选（筛选待分配部门的员工）
+        unassigned = request.query_params.get('unassigned')
+        if unassigned in ['true', '1', 'yes']:
+            queryset = queryset.filter(department__code='UNASSIGNED')
 
         # 分页
         total = queryset.count()
@@ -248,6 +255,79 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
             'message': '离职办理成功',
             'data': EmployeeProfileSerializer(instance).data
         })
+
+    @action(detail=False, methods=['post'], permission_classes=[IsHROrAdmin])
+    def batch_assign(self, request):
+        """
+        批量分配部门和岗位
+        POST /api/employee/batch_assign/
+        请求体：{
+            "employee_ids": [1, 2, 3],
+            "department_id": 5,
+            "post_id": 10
+        }
+        """
+        serializer = BatchAssignSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        employee_ids = serializer.validated_data['employee_ids']
+        department = serializer.validated_data['department_id']
+        post = serializer.validated_data.get('post_id')
+
+        with transaction.atomic():
+            # 查询待分配员工
+            employees = EmployeeProfile.objects.filter(
+                id__in=employee_ids
+            ).select_for_update()
+
+            updated_count = 0
+            failed_employees = []
+
+            for emp in employees:
+                try:
+                    # 更新部门和岗位
+                    emp.department = department
+                    emp.post = post
+                    # 重新生成工号
+                    emp.employee_no = self._generate_employee_no(department)
+                    emp.save()
+                    updated_count += 1
+                except Exception as e:
+                    failed_employees.append({
+                        'id': emp.id,
+                        'name': emp.user.real_name,
+                        'error': str(e)
+                    })
+
+            return Response({
+                'code': 0,
+                'message': f'成功分配 {updated_count} 名员工',
+                'data': {
+                    'updated_count': updated_count,
+                    'failed_count': len(failed_employees),
+                    'failed_employees': failed_employees
+                }
+            })
+
+    def _generate_employee_no(self, department):
+        """生成工号"""
+        from django.utils import timezone
+        year_month = timezone.now().strftime('%Y%m')
+        dept_code = department.code.upper() if department.code else 'UNK'
+        prefix = f"EMP{year_month}{dept_code}"
+
+        existing = EmployeeProfile.objects.filter(
+            employee_no__startswith=prefix
+        ).order_by('-employee_no')
+
+        first = existing.first()
+        if first:
+            last_seq = int(first.employee_no[-3:])
+            new_seq = last_seq + 1
+        else:
+            new_seq = 1
+
+        return f"{prefix}{new_seq:03d}"
 
     @action(detail=False, methods=['get'])
     def me(self, request):
