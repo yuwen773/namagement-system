@@ -7,7 +7,7 @@ from django.db.models.functions import Coalesce
 from django.db.models import Value
 from django.db.models.fields import DecimalField
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from HRMS.permissions import IsHROrAdmin
 from employee.models import EmployeeProfile
@@ -34,8 +34,16 @@ class DashboardStatsView(APIView):
 
     def get(self, request):
         """获取仪表盘统计数据"""
-        today = timezone.now().date()
-        first_day_of_month = today.replace(day=1)
+        now = timezone.now()
+        today = now.date()
+        # 使用当前时区的日期时间
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # 计算月末（下月第一天减1秒）
+        if today.month == 12:
+            end_of_month = first_day_of_month.replace(year=today.year + 1, month=1, day=1)
+        else:
+            end_of_month = first_day_of_month.replace(month=today.month + 1, day=1)
+        end_of_month = end_of_month - timedelta(seconds=1)
 
         # 1. 在职员工总数
         total_employees = EmployeeProfile.objects.filter(
@@ -56,14 +64,20 @@ class DashboardStatsView(APIView):
             resigned_date__lte=today
         ).count()
 
-        # 4. 本月薪资总额（包含草稿和已发布）
+        # 4. 本月薪资统计（包含草稿和已发布）
         month_str = today.strftime('%Y-%m')
-        total_salary_this_month = SalaryRecord.objects.filter(
+        salary_stats = SalaryRecord.objects.filter(
             month=month_str,
             status__in=['draft', 'published']
         ).aggregate(
-            total=Coalesce(Sum('final_salary'), Value(0, output_field=DecimalField()))
-        )['total'] or 0
+            total_salary=Coalesce(Sum('final_salary'), Value(0, output_field=DecimalField())),
+            employee_count=Count('id', distinct=True)
+        )
+        total_salary_this_month = salary_stats['total_salary'] or 0
+        salary_records_count = salary_stats['employee_count'] or 0
+
+        # 计算人均薪资（本月有薪资记录的员工的平均薪资）
+        average_salary_this_month = (total_salary_this_month / salary_records_count) if salary_records_count > 0 else 0
 
         # 5. 部门人数分布
         department_distribution = EmployeeProfile.objects.filter(
@@ -180,7 +194,7 @@ class DashboardStatsView(APIView):
             request_type='overtime',
             status='approved',
             start_time__gte=first_day_of_month,
-            start_time__lte=timezone.now()
+            start_time__lte=end_of_month
         ).values(
             'user__profile__department__name'
         ).annotate(
@@ -203,7 +217,7 @@ class DashboardStatsView(APIView):
             request_type='leave',
             status='approved',
             start_time__gte=first_day_of_month,
-            start_time__lte=timezone.now()
+            start_time__lte=end_of_month
         ).select_related('user__profile__department')
 
         # 按部门汇总请假数据
@@ -247,6 +261,7 @@ class DashboardStatsView(APIView):
                 'new_hires_this_month': new_hires_this_month,
                 'resigned_this_month': resigned_this_month,
                 'total_salary_this_month': float(total_salary_this_month),
+                'average_salary_this_month': float(average_salary_this_month),
                 'department_distribution': department_data,
                 'salary_trend': salary_trend,
                 'attendance_anomalies': anomaly_data,

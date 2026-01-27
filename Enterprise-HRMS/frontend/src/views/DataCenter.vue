@@ -52,12 +52,9 @@ const formatNumber = (num) => {
   return num.toLocaleString()
 }
 
-// 计算平均薪资
+// 计算平均薪资（使用后端返回的数据）
 const avgSalary = computed(() => {
-  if (stats.value.total_employees > 0 && stats.value.total_salary_this_month > 0) {
-    return Math.round(stats.value.total_salary_this_month / stats.value.total_employees)
-  }
-  return 0
+  return stats.value.average_salary_this_month || 0
 })
 
 // 计算考勤异常率
@@ -671,6 +668,7 @@ const fetchData = async () => {
       new_hires_this_month: data.new_hires_this_month || 0,
       resigned_this_month: data.resigned_this_month || 0,
       total_salary_this_month: data.total_salary_this_month || 0,
+      average_salary_this_month: data.average_salary_this_month || 0,
       department_distribution: data.department_distribution || [],
       salary_trend: data.salary_trend || [],
       attendance_anomalies: data.attendance_anomalies || [],
