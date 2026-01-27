@@ -37,10 +37,16 @@ class Department(models.Model):
 
 class Post(models.Model):
     """
-    岗位模型：扁平化结构，独立于部门存在
+    岗位模型：关联到部门
     """
     name = models.CharField("岗位名称", max_length=50)
     code = models.CharField("岗位编码", max_length=20, unique=True)
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.PROTECT,
+        related_name="posts",
+        verbose_name="所属部门"
+    )
     description = models.TextField("岗位描述", blank=True, default="")
     sort_order = models.IntegerField("排序", default=0)
     is_active = models.BooleanField("是否启用", default=True)
@@ -50,7 +56,7 @@ class Post(models.Model):
     class Meta:
         verbose_name = "岗位"
         verbose_name_plural = "岗位"
-        ordering = ["sort_order", "id"]
+        ordering = ["department__sort_order", "department_id", "sort_order", "id"]
 
     def __str__(self):
         return self.name

@@ -115,6 +115,11 @@ class PostViewSet(viewsets.ModelViewSet):
         if only_active == "true":
             queryset = queryset.filter(is_active=True)
 
+        # 按部门筛选
+        department_id = request.query_params.get("department_id")
+        if department_id:
+            queryset = queryset.filter(department_id=department_id)
+
         # 按名称搜索
         keyword = request.query_params.get("keyword")
         if keyword:
@@ -135,4 +140,37 @@ class PostViewSet(viewsets.ModelViewSet):
             'total': total,
             'page': page,
             'page_size': page_size
+        })
+
+    @action(detail=False, methods=["get"])
+    def by_department(self, request):
+        """
+        根据部门获取岗位列表
+        GET /api/organization/posts/by_department/?department_id=1
+        """
+        department_id = request.query_params.get("department_id")
+        if not department_id:
+            return Response({
+                'code': -1,
+                'message': '请提供 department_id 参数'
+            }, status=400)
+
+        # 验证部门存在
+        try:
+            department = Department.objects.get(id=department_id, is_active=True)
+        except Department.DoesNotExist:
+            return Response({
+                'code': -1,
+                'message': '部门不存在或已停用'
+            }, status=404)
+
+        queryset = self.get_queryset().filter(
+            department_id=department_id,
+            is_active=True
+        ).order_by('sort_order', 'id')
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'code': 0,
+            'data': serializer.data
         })
