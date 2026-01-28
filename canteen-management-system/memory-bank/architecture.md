@@ -1327,8 +1327,8 @@ frontend/
   - `SalaryView.vue` - 薪资信息查询
 
 - **auth/** - 认证相关页面
-  - `LoginView.vue` - 登录页面
-  - `RegisterView.vue` - 注册页面
+  - `LoginView.vue` - 登录页面（已实现）
+  - `RegisterView.vue` - 注册页面（占位）
 
 #### `src/components/` - 公共组件
 
@@ -1341,8 +1341,22 @@ frontend/
 #### `src/api/` - API 请求封装
 
 封装与后端 API 的交互逻辑：
-- `request.js` - Axios 实例配置（拦截器、基础 URL 等）
-- `auth.js` - 认证相关 API
+
+**`request.js`** - Axios 实例配置
+- 创建 axios 实例，配置 baseURL 为 `/api`
+- 请求拦截器：自动添加 Authorization 头（从 localStorage 读取 token）
+- 响应拦截器：
+  - 统一处理后端返回格式 `{code, message, data}`
+  - 处理 HTTP 错误状态（401、403、404、500 等）
+  - 401 时自动清除 token 并跳转登录页
+- 超时设置：10 秒
+
+**`auth.js`** - 认证相关 API
+- `login(username, password)` - 用户登录
+- `register(data)` - 用户注册
+- `getUserInfo(id)` - 获取用户信息
+
+**计划中**（待实现）：
 - `employee.js` - 员工档案 API
 - `schedule.js` - 排班管理 API
 - `attendance.js` - 考勤管理 API
@@ -1352,14 +1366,52 @@ frontend/
 
 #### `src/router/` - 路由配置
 
-- `index.js` - 路由配置文件
-  - 定义页面路径
-  - 配置导航守卫（权限控制、登录状态检查）
-  - 根据用户角色动态加载路由
+**`index.js`** - 路由配置文件
+
+**已配置路由**：
+- `/login` - 登录页面（无需认证）
+- `/register` - 注册页面（无需认证）
+- `/admin` - 管理员首页（需要 ADMIN 角色）
+- `/employee` - 员工首页（需要 EMPLOYEE 角色）
+- `/` - 默认重定向到登录页
+- `/:pathMatch(.*)*` - 404 页面（重定向到登录页）
+
+**导航守卫功能**：
+- 检查路由是否需要认证（`meta.requiresAuth`）
+- 未登录用户访问受保护路由时，重定向到登录页
+- 检查用户角色权限（`meta.role`）
+- 角色不匹配时，自动跳转到对应角色的首页
+- 已登录用户访问登录页时，自动跳转到对应角色的首页
+
+**路由元信息**：
+- `requiresAuth` - 是否需要登录
+- `role` - 所需角色（ADMIN/EMPLOYEE）
 
 #### `src/stores/` - Pinia 状态管理
 
-- `user.js` - 用户状态（登录信息、权限等）
+**`user.js`** - 用户状态管理
+
+**状态字段**：
+- `token` - 登录凭证（存储在 localStorage）
+- `userInfo` - 用户信息对象（包含 id、username、role 等）
+
+**计算属性**：
+- `isLoggedIn` - 是否已登录
+- `userRole` - 获取用户角色
+- `isAdmin` - 是否是管理员
+- `isEmployee` - 是否是员工
+
+**操作方法**：
+- `login(username, password)` - 用户登录
+  - 调用登录 API
+  - 保存 token 和用户信息到 store
+  - 持久化到 localStorage
+- `logout()` - 退出登录
+  - 清空 store 中的 token 和用户信息
+  - 清除 localStorage
+- `updateUserInfo(userInfo)` - 更新用户信息
+
+**计划中**（待实现）：
 - `app.js` - 应用全局状态（主题、语言等）
 
 ### 重要文件说明
@@ -1436,6 +1488,143 @@ export default defineConfig({
 - **字体**：清晰易读，考虑部分员工年龄偏大，适度放大
 - **圆角**：8px 圆角，营造亲和感
 - **间距**：统一的 16px 间距规则
+
+### 已实现组件
+
+#### 登录页面 (`LoginView.vue`)
+
+**布局结构**：
+- 左右分屏设计，充满视口（100vw × 100vh）
+- 左侧品牌区域（52%）：展示系统品牌形象
+- 右侧登录区域（48%）：登录表单和操作区
+
+**左侧品牌区域特性**：
+- 橙色渐变背景（#FF6B35 → #FF8C42 → #F7C52D）
+- Logo 动画效果（浮动 + 光晕脉冲）
+- 功能特性网格（员工管理、智能排班、考勤打卡、薪资核算）
+- 浮动装饰元素（餐具 emoji）
+- 底部统计信息（500+ 企业用户、99.9% 稳定性）
+- 背景图案叠加层和渐变叠加层
+
+**右侧登录表单特性**：
+- 表单验证：
+  - 用户名：必填，最少 2 个字符
+  - 密码：必填，最少 4 个字符
+- 记住账号功能（持久化到 localStorage）
+- 忘记密码链接（提示联系管理员）
+- 登录按钮加载状态
+- 支持回车键提交
+
+**交互体验**：
+- 表单字段焦点效果（边框变色 + 阴影）
+- 按钮悬停效果（上移 + 箭头滑动）
+- 输入框前缀图标（用户、锁图标）
+- 统一的错误提示（Element Plus Message）
+
+**响应式设计**：
+- 使用 `clamp()` 实现流畅响应式
+- 平板竖屏（≤768px）：上下布局
+- 手机（≤480px）：优化间距和字体大小
+
+**技术实现**：
+- Vue 3 Composition API（`<script setup>`）
+- Element Plus 组件库（el-form、el-input、el-button、el-checkbox）
+- Pinia 状态管理（调用 userStore.login）
+- Vue Router 导航（登录成功后根据角色跳转）
+- CSS 变量定义全局主题色
+- 自定义动画效果（浮动、渐入、脉冲）
+
+**路由跳转逻辑**：
+- 管理员（ADMIN）→ `/admin`
+- 员工（EMPLOYEE）→ `/employee`
+- 其他角色 → 保持登录页
+
+#### 注册页面 (`RegisterView.vue`)
+
+**布局结构**：
+- 左右分屏设计，充满视口（100vw × 100vh）
+- 左侧品牌区域（52%）：展示系统品牌形象和注册优势
+- 右侧注册区域（48%）：注册表单和操作区
+
+**左侧品牌区域特性**：
+- 橙色渐变背景（#FF6B35 → #FF8C42 → #F7C52D）
+- Logo 动画效果（浮动 + 光晕脉冲）
+- 注册优势网格（快速入职、安全可靠、移动办公、智能提醒）
+- 浮动装饰元素（餐具 emoji）
+- 底部统计信息（500+ 企业用户、99.9% 稳定性）
+- 背景图案叠加层和渐变叠加层
+
+**右侧注册表单特性**：
+- 表单字段：
+  - 用户名：必填，最少 2 个字符
+  - 密码：必填，最少 4 个字符，支持显示/隐藏切换
+  - 确认密码：必填，需与密码一致
+  - 手机号：必填，中国手机号格式验证
+  - 邮箱：选填，邮箱格式验证
+- 注册按钮加载状态
+- 已有账号提示链接
+- 支持回车键提交
+
+**表单验证逻辑**：
+- **用户名验证**：
+  - 必填校验
+  - 最小长度 2 字符
+- **密码验证**：
+  - 必填校验
+  - 最小长度 4 字符
+  - 密码修改时自动重新验证确认密码
+- **确认密码验证**：
+  - 必填校验
+  - 与密码值一致性校验
+- **手机号验证**：
+  - 必填校验
+  - 中国手机号格式（1[3-9]xxxxxxxxx）
+- **邮箱验证**：
+  - 选填字段
+  - 有值时验证邮箱格式
+
+**注册流程**：
+1. 用户填写表单
+2. 前端验证所有字段
+3. 调用后端 `/api/accounts/register/` 接口
+4. 注册成功（code 201）：
+   - 显示成功提示消息
+   - 延迟 1.5 秒后跳转到登录页
+5. 注册失败：
+   - 显示后端返回的错误信息
+   - 用户名已存在时提示"用户名已存在"
+   - 网络错误时提示"注册失败，请检查网络连接"
+
+**交互体验**：
+- 表单字段焦点效果（边框变色 + 阴影）
+- 按钮悬停效果（上移 + 阴影增强）
+- 输入框前缀图标（用户、锁、电话、邮件图标）
+- 统一的错误提示（Element Plus Message）
+
+**响应式设计**：
+- 使用 `clamp()` 实现流畅响应式
+- 平板竖屏（≤768px）：上下布局，简化装饰元素
+- 手机（≤480px）：优化间距和字体大小
+
+**技术实现**：
+- Vue 3 Composition API（`<script setup>`）
+- Element Plus 组件库（el-form、el-input、el-button）
+- 自定义验证器函数（validatePassword、validateConfirmPassword、validatePhone、validateEmail）
+- Vue Router 导航（注册成功后跳转到登录页）
+- CSS 变量定义全局主题色
+- 自定义动画效果（浮动、渐入、渐出）
+
+**与后端 API 对接**：
+- 接口地址：`/api/accounts/register/`
+- 请求方法：POST
+- 请求参数：`{ username, password, phone, email }`
+- 响应格式：`{ code: 201, message: "成功", data: { ... } }`
+- 错误处理：检查 `error.response.data.username` 或 `error.response.data.message`
+
+**路由配置**：
+- 路径：`/register`
+- 无需认证即可访问
+- meta 信息：`{ requiresAuth: false }`
 
 ---
 
