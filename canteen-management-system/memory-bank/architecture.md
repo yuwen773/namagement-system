@@ -806,6 +806,250 @@ router.register(r'', LeaveRequestViewSet, basename='leave-request')
 
 ---
 
+### `salaries` 应用 - 薪资管理
+
+薪资管理模块，负责薪资计算、薪资记录生成、异常申诉处理。
+
+#### 文件结构与职责
+
+```
+salaries/
+├── __init__.py
+├── admin.py              # Django Admin 配置
+├── apps.py               # 应用配置
+├── migrations/           # 数据库迁移文件
+│   └── 0001_initial.py  # 创建 SalaryRecord 和 Appeal 表
+├── models.py             # 数据模型定义
+├── serializers.py        # DRF 序列化器
+├── urls.py               # 应用 URL 路由
+└── views.py              # API 视图
+```
+
+#### 核心模型
+
+**SalaryRecord 模型** - 薪资记录
+```python
+class SalaryRecord(models.Model):
+    # 基本信息字段
+    employee                # 员工（外键 -> EmployeeProfile）
+    year_month              # 年月（格式：YYYY-MM）
+
+    # 薪资组成字段
+    base_salary             # 基本工资
+    position_allowance      # 岗位津贴
+    overtime_pay            # 加班费
+    deductions              # 扣款
+    total_salary            # 实发工资（自动计算）
+
+    # 统计字段
+    work_days               # 出勤天数
+    late_count              # 迟到次数
+    missing_count           # 缺卡次数
+    overtime_hours          # 加班时长（小时）
+
+    # 状态和备注
+    status                  # 状态：DRAFT/PUBLISHED/APPEALED/ADJUSTED
+    remark                  # 备注
+
+    # 时间戳
+    created_at              # 创建时间
+    updated_at              # 更新时间
+```
+
+**Appeal 模型** - 异常申诉
+```python
+class Appeal(models.Model):
+    # 基本信息字段
+    appeal_type             # 申诉类型：ATTENDANCE/SALARY
+    employee                # 申诉员工（外键 -> EmployeeProfile）
+    target_id               # 目标记录ID（考勤记录ID或薪资记录ID）
+
+    # 申诉信息
+    reason                  # 申诉原因
+
+    # 审批信息
+    status                  # 审批状态：PENDING/APPROVED/REJECTED
+    approver                # 审批人（外键 -> EmployeeProfile，可选）
+    approval_remark         # 审批意见
+
+    # 时间戳
+    created_at              # 创建时间
+    updated_at              # 更新时间
+```
+
+**架构设计要点**：
+- 使用 `TextChoices` 定义枚举类型，提供类型安全和中文标签
+- `total_salary` 字段在保存时自动计算（基础工资 + 岗位津贴 + 加班费 - 扣款）
+- 使用 `unique_together = [['employee', 'year_month']]` 防止重复生成薪资
+- 薪资申诉创建时，自动将关联的薪资记录状态更新为申诉中（APPEALED）
+- 数据库索引优化查询性能：employee + year_month, year_month, status
+
+#### 薪资计算规则
+
+| 项目 | 计算公式 | 说明 |
+|------|---------|------|
+| 日工资 | 月薪 ÷ 21.75 | 固定工作日21.75天 |
+| 时薪 | 日工资 ÷ 8 | 每日工作8小时 |
+| 加班费 | 时薪 × 1.5 × 加班小时数 | 加班按1.5倍计算 |
+| 迟到扣款 | 20 元 × 迟到次数 | 每次迟到扣20元 |
+| 缺卡扣款 | 50 元 × 缺卡次数 | 每次缺卡扣50元 |
+| 岗位津贴 | 固定金额 | CHEF(800)、PASTRY(700)、PREP(500)、CLEANER(300)、SERVER(400)、MANAGER(1000) |
+| 实发工资 | 基本工资 + 岗位津贴 + 加班费 - 扣款 | 自动计算 |
+
+**岗位津贴配置**（位于 `views.py`）：
+```python
+POSITION_ALLOWANCE_MAP = {
+    'CHEF': 800,       # 厨师
+    'PASTRY': 700,     # 面点
+    'PREP': 500,       # 切配
+    'CLEANER': 300,    # 保洁
+    'SERVER': 400,     # 服务员
+    'MANAGER': 1000,   # 经理
+}
+DEFAULT_BASE_SALARY = 3000  # 默认基本工资
+```
+
+#### 序列化器设计
+
+| 序列化器 | 用途 | 特点 |
+|---------|------|------|
+| `SalaryRecordSerializer` | 薪资记录详情 CRUD | 支持完整字段，包含员工名、岗位、状态显示 |
+| `SalaryRecordListSerializer` | 薪资记录列表展示 | 简化字段，提升列表查询性能 |
+| `SalaryRecordCreateSerializer` | 薪资记录创建 | 验证唯一性（员工+年月）、金额非负 |
+| `SalaryGenerateSerializer` | 薪资生成请求 | 验证年月格式、员工ID列表 |
+| `SalaryAdjustSerializer` | 薪资调整请求 | 验证调整金额、调整原因（必填） |
+| `AppealSerializer` | 异常申诉详情 CRUD | 支持完整字段，包含审批人、审批意见 |
+| `AppealListSerializer` | 异常申诉列表展示 | 简化字段，提升列表查询性能 |
+| `AppealCreateSerializer` | 异常申诉创建 | 验证目标记录ID是否存在 |
+| `AppealApprovalSerializer` | 异常申诉审批 | 验证审批参数 |
+| `MyAppealSerializer` | 我的申诉序列化器 | 员工查看自己的申诉记录 |
+
+**设计理念**：
+- 分离序列化器职责，避免单个序列化器过于复杂
+- 列表使用简化版序列化器，减少不必要的数据传输
+- 创建序列化器包含唯一性验证（同一员工同一月份只能有一条薪资记录）
+- 调整序列化器要求必填调整原因，便于审计追溯
+
+#### 视图设计
+
+**SalaryRecordViewSet** - 薪资记录管理
+
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 列表 | GET | `/api/salaries/` | 支持筛选、搜索、排序 |
+| 创建 | POST | `/api/salaries/` | 标准操作，返回统一格式 |
+| 详情 | GET | `/api/salaries/{id}/` | 标准操作 |
+| 更新 | PUT/PATCH | `/api/salaries/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/salaries/{id}/` | 标准操作 |
+| 薪资生成 | POST | `/api/salaries/generate/` | 根据考勤数据自动计算月薪 |
+| 薪资调整 | POST | `/api/salaries/{id}/adjust/` | 管理员手动调整金额（必填原因） |
+| 发布薪资 | POST | `/api/salaries/{id}/publish/` | 将状态从草稿改为已发布 |
+| 我的薪资 | GET | `/api/salaries/my-salaries/` | 员工查询自己的薪资记录 |
+
+**薪资生成接口逻辑**：
+1. 验证年月格式（YYYY-MM）
+2. 计算该月的起止日期
+3. 获取需要生成薪资的员工（可指定员工ID列表，或所有在职员工）
+4. 对每个员工：
+   - 检查是否已存在薪资记录（如存在则跳过）
+   - 统计考勤数据：迟到次数、缺卡次数、总加班时长、出勤天数
+   - 统计请假天数
+   - 计算各项薪资组成：基本工资、岗位津贴、加班费、扣款
+   - 创建薪资记录，状态为 DRAFT（草稿）
+5. 返回生成统计：创建数量、跳过数量、错误列表
+
+**薪资调整接口逻辑**：
+- 接收调整参数：基础工资、岗位津贴、加班费、扣款、调整原因（必填）
+- 更新薪资字段
+- 在备注中添加调整记录（原因 + 时间戳）
+- 更新状态为 ADJUSTED（已调整）
+
+**AppealViewSet** - 异常申诉管理
+
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 列表 | GET | `/api/appeals/` | 支持筛选、搜索、排序 |
+| 创建 | POST | `/api/appeals/` | 标准操作，返回统一格式 |
+| 详情 | GET | `/api/appeals/{id}/` | 标准操作 |
+| 更新 | PUT/PATCH | `/api/appeals/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/appeals/{id}/` | 标准操作 |
+| 申诉审批 | POST | `/api/appeals/{id}/approve/` | 批准或拒绝申诉（自动更新薪资状态） |
+| 待审批列表 | GET | `/api/appeals/pending/` | 管理员查看待审批列表 |
+| 我的申诉 | GET | `/api/appeals/my-appeals/` | 员工查询自己的申诉记录 |
+
+**申诉审批接口逻辑**：
+- 检查申诉状态，只有 PENDING 状态的申诉可以被审批
+- 批准时：状态变为 APPROVED
+- 拒绝时：状态变为 REJECTED；如果是薪资申诉，恢复薪资记录状态为 PUBLISHED
+- 记录审批人和审批意见，便于审计追溯
+
+#### 路由配置
+
+```python
+router = DefaultRouter()
+router.register(r'salaries', SalaryRecordViewSet, basename='salary-record')
+router.register(r'appeals', AppealViewSet, basename='appeal')
+```
+
+**路由映射**：
+- `/api/salaries/` → 薪资记录管理
+- `/api/appeals/` → 异常申诉管理
+
+#### Django Admin 配置
+
+**SalaryRecordAdmin** - 薪资记录管理界面
+- 列表展示：id, 员工姓名, 岗位, 年月, 薪资组成, 统计数据, 状态, 创建时间
+- 过滤器：状态、年月、岗位、创建时间
+- 搜索：员工姓名、电话、备注
+- 日期分层导航：按创建时间浏览
+- 字段分组：基本信息、薪资组成、统计数据、备注、时间信息（可折叠）
+- 只读字段：创建时间、更新时间、实发工资
+
+**AppealAdmin** - 异常申诉管理界面
+- 列表展示：id, 申诉类型, 申诉员工, 目标记录, 状态, 审批人, 创建时间
+- 过滤器：申诉类型、状态、创建时间
+- 搜索：员工姓名、申诉原因、审批意见
+- 日期分层导航：按创建时间浏览
+- 字段分组：申诉信息、审批信息、时间信息（可折叠）
+- 只读字段：创建时间、更新时间
+
+#### 业务流程
+
+**薪资生成流程**：
+1. 管理员选择年月（可选：选择员工）
+2. 调用薪资生成接口
+3. 系统统计每个员工的考勤数据（迟到、缺卡、加班时长）
+4. 系统根据薪资计算规则自动计算各项金额
+5. 系统创建薪资记录，状态为 DRAFT（草稿）
+6. 管理员审核并调整（如需要）
+7. 管理员发布薪资，状态变为 PUBLISHED（已发布）
+
+**薪资申诉流程**：
+1. 员工查看薪资记录，发现异议
+2. 员工提交薪资申诉（填写申诉原因）
+3. 系统创建申诉，状态为 PENDING，薪资记录状态变为 APPEALED
+4. 管理员在待审批列表中查看申诉
+5. 管理员处理申诉：
+   - 批准：调整薪资金额，申诉状态变为 APPROVED，薪资状态变为 ADJUSTED
+   - 拒绝：填写审批意见，申诉状态变为 REJECTED，薪资状态恢复为 PUBLISHED
+6. 员工查看处理结果
+
+#### 与其他模块的关系
+
+| 模块 | 关系 | 说明 |
+|------|------|------|
+| `employees` | 依赖 | `SalaryRecord.employee` 外键关联 `EmployeeProfile` |
+| `attendance` | 依赖 | 薪资计算需要考勤数据（迟到次数、缺卡次数、加班时长） |
+| `leaves` | 依赖 | 薪资计算需要考虑请假天数（影响工资） |
+| `schedules` | 依赖 | 薪资计算需要排班数据（统计出勤天数） |
+
+**数据依赖关系**：
+- 薪资计算依赖于考勤模块的数据统计
+- 考勤统计依赖于排班模块的班次定义
+- 请假数据影响薪资计算（请假期间的工资处理）
+
+---
+
 ## 重要文件说明
 
 ### `backend/config/settings.py`

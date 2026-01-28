@@ -556,8 +556,136 @@ POST   /api/leaves/{id}/approve/       # 请假审批（批准/拒绝）
 
 ---
 
+### ✅ 步骤 2.6：创建薪资模型与 API
+
+**实施内容**：
+
+1. **创建模型** (`salaries/models.py`)
+   - `SalaryRecord` 模型：薪资记录
+     - 基本信息字段：`employee`（外键）、`year_month`
+     - 薪资组成字段：`base_salary`、`position_allowance`、`overtime_pay`、`deductions`、`total_salary`
+     - 统计字段：`work_days`、`late_count`、`missing_count`、`overtime_hours`
+     - 状态和备注：`status`（枚举：DRAFT/PUBLISHED/APPEALED/ADJUSTED）、`remark`
+     - 时间戳：`created_at`、`updated_at`
+   - `Appeal` 模型：异常申诉
+     - 申诉信息：`appeal_type`（枚举：ATTENDANCE/SALARY）、`employee`（外键）、`target_id`、`reason`
+     - 审批信息：`status`（枚举：PENDING/APPROVED/REJECTED）、`approver`（外键）、`approval_remark`
+     - 时间戳：`created_at`、`updated_at`
+   - 使用 `unique_together` 防止同一员工在同一月份重复生成薪资
+   - 自动计算实发工资（在 `save` 方法中完成）
+
+2. **薪资计算规则**：
+   - 日工资 = 月基本工资 ÷ 21.75
+   - 时薪 = 日工资 ÷ 8
+   - 加班费 = 时薪 × 1.5 × 加班小时数
+   - 迟到扣款 = 20 元 × 迟到次数
+   - 缺卡扣款 = 50 元 × 缺卡次数
+   - 岗位津贴：CHEF(800)、PASTRY(700)、PREP(500)、CLEANER(300)、SERVER(400)、MANAGER(1000)
+   - 实发工资 = 基本工资 + 岗位津贴 + 加班费 - 迟到扣款 - 缺卡扣款
+
+3. **创建序列化器** (`salaries/serializers.py`)
+   - `SalaryRecordSerializer` - 薪资记录详情序列化器
+   - `SalaryRecordListSerializer` - 薪资记录列表序列化器
+   - `SalaryRecordCreateSerializer` - 薪资记录创建序列化器
+   - `SalaryGenerateSerializer` - 薪资生成请求序列化器
+   - `SalaryAdjustSerializer` - 薪资调整序列化器
+   - `AppealSerializer` - 异常申诉详情序列化器
+   - `AppealListSerializer` - 异常申诉列表序列化器
+   - `AppealCreateSerializer` - 异常申诉创建序列化器
+   - `AppealApprovalSerializer` - 异常申诉审批序列化器
+   - `MyAppealSerializer` - 我的申诉序列化器
+
+4. **创建视图集** (`salaries/views.py`)
+   - `SalaryRecordViewSet` - 薪资记录管理
+     - `generate_salary/` - 薪资生成接口（根据考勤数据自动计算月薪）
+     - `adjust/` - 薪资调整接口（管理员手动调整金额，必填调整原因）
+     - `publish/` - 发布薪资接口（将状态从草稿改为已发布）
+     - `my-salaries/` - 我的薪资记录接口（员工查询自己的薪资）
+   - `AppealViewSet` - 异常申诉管理
+     - `approve/` - 申诉审批接口（批准/拒绝，自动更新薪资状态）
+     - `pending/` - 待审批申诉列表（管理员）
+     - `my-appeals/` - 我的申诉接口（员工查询自己的申诉记录）
+   - 统一的响应格式：`{code, message, data}`
+
+5. **配置 URL 路由**
+   - 创建 `salaries/urls.py` - 使用 DRF 的 `DefaultRouter`
+   - 更新 `config/urls.py` - 包含 salaries 路由：`/api/`
+
+6. **注册 Django Admin** (`salaries/admin.py`)
+   - `SalaryRecordAdmin` - 薪资记录管理界面
+     - 列表显示：员工姓名、岗位、年月、薪资组成、统计数据、状态、创建时间
+     - 过滤器：状态、年月、岗位、创建时间
+     - 搜索：员工姓名、电话、备注
+     - 日期分层导航：按创建时间浏览
+     - 字段分组：基本信息、薪资组成、统计数据、备注、时间信息
+   - `AppealAdmin` - 异常申诉管理界面
+     - 列表显示：申诉类型、申诉员工、目标记录、状态、审批人、创建时间
+     - 过滤器：申诉类型、状态、创建时间
+     - 搜索：员工姓名、申诉原因、审批意见
+     - 日期分层导航：按创建时间浏览
+     - 字段分组：申诉信息、审批信息、时间信息
+
+7. **数据库迁移**
+   - 创建迁移：`salaries/migrations/0001_initial.py`
+   - 应用迁移到数据库
+
+**API 端点清单**：
+```
+# 薪资记录管理
+GET    /api/salaries/              # 薪资记录列表（支持筛选、搜索、排序）
+POST   /api/salaries/              # 创建薪资记录
+GET    /api/salaries/{id}/         # 薪资记录详情
+PUT    /api/salaries/{id}/         # 更新薪资记录
+DELETE /api/salaries/{id}/         # 删除薪资记录
+POST   /api/salaries/generate/     # 薪资生成
+POST   /api/salaries/{id}/adjust/  # 薪资调整
+POST   /api/salaries/{id}/publish/ # 发布薪资
+GET    /api/salaries/my-salaries/  # 我的薪资记录（员工查询）
+
+# 异常申诉管理
+GET    /api/appeals/               # 申诉列表（支持筛选、搜索、排序）
+POST   /api/appeals/               # 创建申诉
+GET    /api/appeals/{id}/          # 申诉详情
+PUT    /api/appeals/{id}/          # 更新申诉
+DELETE /api/appeals/{id}/          # 删除申诉
+POST   /api/appeals/{id}/approve/  # 申诉审批（批准/拒绝）
+GET    /api/appeals/pending/       # 待审批申诉列表（管理员）
+GET    /api/appeals/my-appeals/    # 我的申诉（员工查询）
+```
+
+**筛选和搜索参数**：
+- 薪资记录筛选：`?employee=1&year_month=2026-01&status=PUBLISHED`
+- 薪资记录搜索：`?search=张三`
+- 薪资记录排序：`?ordering=-year_month`
+- 我的薪资查询：`/api/salaries/my-salaries/?employee_id=1&year_month=2026-01`
+- 申诉列表筛选：`?appeal_type=SALARY&status=PENDING`
+- 申诉列表搜索：`?search=张三` 或 `?search=工资计算错误`
+
+**测试验证**：
+- ✅ 创建薪资记录，返回 201，薪资记录创建成功，实发工资自动计算
+- ✅ 薪资生成接口，返回 200，根据考勤数据自动生成薪资
+- ✅ 薪资调整接口，返回 200，手动调整薪资成功，记录调整原因和时间
+- ✅ 发布薪资接口，返回 200，状态从 DRAFT 变为 PUBLISHED
+- ✅ 我的薪资记录查询，返回 200，显示指定员工的薪资记录
+- ✅ 创建异常申诉，返回 201，申诉创建成功，薪资状态变为 APPEALED
+- ✅ 申诉审批接口（批准），返回 200，状态变为 APPROVED
+- ✅ 申诉审批接口（拒绝），返回 200，薪资状态恢复为 PUBLISHED
+- ✅ 待审批申诉列表，返回 200，仅显示待审批的申诉
+- ✅ 我的申诉查询，返回 200，显示指定员工的申诉记录
+- ✅ Django Admin 界面正常显示和管理薪资记录和申诉
+
+**注意事项**：
+- 薪资计算基于考勤数据统计（迟到次数、缺卡次数、加班时长）
+- 岗位津贴使用固定配置，后续可改为系统设置中可配置
+- 基本工资目前使用默认值（3000元），后续可扩展为从员工档案中读取
+- 薪资调整会记录调整原因和时间，便于审计追溯
+- 薪资申诉被拒绝时，自动恢复薪资记录状态为已发布
+- 同一员工在同一月份只能有一条薪资记录（通过 unique_together 约束）
+- 权限验证待后续实现（目前所有用户都可访问管理接口）
+
+---
+
 ## 待完成
 
-- [ ] 步骤 2.6：创建薪资模型与 API
 - [ ] 步骤 2.7：创建统计分析接口
 - [ ] ...（详见 IMPLEMENTATION_PLAN.md）
