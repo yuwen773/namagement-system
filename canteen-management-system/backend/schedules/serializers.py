@@ -110,9 +110,19 @@ class ShiftSwapRequestSerializer(serializers.ModelSerializer):
     requester_name = serializers.CharField(source='requester.name', read_only=True)
     original_date = serializers.DateField(source='original_schedule.work_date', read_only=True)
     original_shift_name = serializers.CharField(source='original_schedule.shift.name', read_only=True)
+    original_schedule_info = serializers.SerializerMethodField(read_only=True)
     target_shift_name = serializers.CharField(source='target_shift.name', read_only=True)
+    target_schedule_info = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     approver_name = serializers.CharField(source='approver.name', read_only=True)
+
+    def get_original_schedule_info(self, obj):
+        """获取原班次信息"""
+        return f"{obj.original_date} {obj.original_shift_name}"
+
+    def get_target_schedule_info(self, obj):
+        """获取目标班次信息"""
+        return f"{obj.target_date} {obj.target_shift_name}"
 
     class Meta:
         model = ShiftSwapRequest
