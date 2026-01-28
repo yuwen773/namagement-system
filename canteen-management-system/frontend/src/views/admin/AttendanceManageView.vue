@@ -1,18 +1,44 @@
 <template>
   <div class="attendance-manage-view">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h2 class="page-title">
+        <el-icon :size="24"><Clock /></el-icon>
+        考勤管理
+      </h2>
+      <p class="page-desc">管理员工的考勤记录、签到签退和异常处理</p>
+    </div>
+
     <!-- 顶部操作栏 -->
     <div class="action-bar">
-      <div class="date-picker">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          format="YYYY-MM-DD"
-          value-format="YYYY-MM-DD"
-          @change="handleDateChange"
-        />
+      <div class="left-area">
+        <div class="date-picker">
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            @change="handleDateChange"
+          />
+        </div>
+        <div class="filter-area">
+          <el-select
+            v-model="filters.status"
+            placeholder="状态筛选"
+            clearable
+            style="width: 140px"
+            @change="handleFilter"
+          >
+            <el-option label="正常" value="NORMAL" />
+            <el-option label="迟到" value="LATE" />
+            <el-option label="早退" value="EARLY_LEAVE" />
+            <el-option label="缺卡" value="MISSING" />
+            <el-option label="异常" value="ABNORMAL" />
+          </el-select>
+        </div>
       </div>
       <div class="search-area">
         <el-input
@@ -24,22 +50,8 @@
           @clear="handleSearch"
           @keyup.enter="handleSearch"
         />
-        <el-button :icon="Search" @click="handleSearch">搜索</el-button>
-      </div>
-      <div class="filter-area">
-        <el-select
-          v-model="filters.status"
-          placeholder="状态筛选"
-          clearable
-          style="width: 150px"
-          @change="handleFilter"
-        >
-          <el-option label="正常" value="NORMAL" />
-          <el-option label="迟到" value="LATE" />
-          <el-option label="早退" value="EARLY_LEAVE" />
-          <el-option label="缺卡" value="MISSING" />
-          <el-option label="异常" value="ABNORMAL" />
-        </el-select>
+        <el-button :icon="Search" @click="handleSearch">查询</el-button>
+        <el-button :icon="Refresh" @click="handleRefresh">刷新</el-button>
       </div>
     </div>
 
@@ -88,14 +100,14 @@
       v-loading="loading"
       :data="attendanceList"
       stripe
-      style="width: 100%"
+      class="data-table"
       :header-cell-style="{ background: '#FFF8F0', color: '#333' }"
       :row-class-name="getRowClassName"
     >
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="employee_name" label="姓名" width="120" />
-      <el-table-column prop="work_date" label="工作日期" width="120" />
-      <el-table-column prop="shift_name" label="班次" width="100">
+      <el-table-column prop="id" label="ID" width="70" align="center" />
+      <el-table-column prop="employee_name" label="姓名" min-width="100" />
+      <el-table-column prop="work_date" label="工作日期" width="110" align="center" />
+      <el-table-column prop="shift_name" label="班次" width="90" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.shift_name" type="info" size="small">
             {{ row.shift_name }}
@@ -103,19 +115,9 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="clock_in_time" label="签到时间" width="160">
-        <template #default="{ row }">
-          <span v-if="row.clock_in_time">{{ formatDateTime(row.clock_in_time) }}</span>
-          <span v-else class="text-muted">未签到</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="clock_out_time" label="签退时间" width="160">
-        <template #default="{ row }">
-          <span v-if="row.clock_out_time">{{ formatDateTime(row.clock_out_time) }}</span>
-          <span v-else class="text-muted">未签退</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="status_display" label="状态" width="100">
+      <el-table-column prop="clock_in_time" label="签到时间" min-width="150" />
+      <el-table-column prop="clock_out_time" label="签退时间" min-width="150" />
+      <el-table-column prop="status_display" label="状态" width="90" align="center">
         <template #default="{ row }">
           <el-tag :type="getStatusTagType(row.status)" size="small">
             {{ row.status_display }}
@@ -129,7 +131,7 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right" align="center">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="handleView(row)">
             查看
@@ -277,7 +279,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  User, Warning, Clock, Calendar, Search, Plus
+  User, Warning, Clock, Calendar, Search, Plus, Refresh
 } from '@element-plus/icons-vue'
 import {
   getAttendanceList,
@@ -451,6 +453,17 @@ const handleSearch = () => {
   loadAttendanceList()
 }
 
+// 刷新处理
+const handleRefresh = () => {
+  searchKeyword.value = ''
+  filters.status = ''
+  dateRange.value = []
+  pagination.page = 1
+  loadAttendanceList()
+  loadStatistics()
+  ElMessage.success('刷新成功')
+}
+
 // 筛选处理
 const handleFilter = () => {
   pagination.page = 1
@@ -569,17 +582,48 @@ onMounted(() => {
 
 <style scoped>
 .attendance-manage-view {
-  padding: 20px;
-  background: #f5f5f5;
-  min-height: 100vh;
+  background-color: transparent;
 }
 
+/* 页面标题 */
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #FF6B35;
+}
+
+.page-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+/* 操作栏 */
 .action-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
   flex-wrap: wrap;
+}
+
+.left-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .date-picker {
@@ -589,14 +633,19 @@ onMounted(() => {
 .search-area {
   display: flex;
   gap: 8px;
-  flex: 1;
-  min-width: 300px;
 }
 
 .filter-area {
   display: flex;
-  gap: 12px;
-  flex-shrink: 0;
+  gap: 8px;
+}
+
+/* 数据表格 */
+.data-table {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
 }
 
 /* 统计卡片区域 */

@@ -1,48 +1,60 @@
 <template>
   <div class="employee-manage-view">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h2 class="page-title">
+        <el-icon :size="24"><User /></el-icon>
+        员工管理
+      </h2>
+      <p class="page-desc">管理食堂员工档案信息、岗位分配和资质证书</p>
+    </div>
+
     <!-- 顶部操作栏 -->
     <div class="action-bar">
       <el-button type="primary" :icon="Plus" @click="handleAdd">
         新增员工
       </el-button>
-      <div class="search-area">
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索姓名、电话、身份证号"
-          :prefix-icon="Search"
-          clearable
-          style="width: 280px"
-          @clear="handleSearch"
-          @keyup.enter="handleSearch"
-        />
-        <el-button :icon="Search" @click="handleSearch">搜索</el-button>
-      </div>
-      <div class="filter-area">
-        <el-select
-          v-model="filters.position"
-          placeholder="岗位筛选"
-          clearable
-          style="width: 150px"
-          @change="handleFilter"
-        >
-          <el-option label="厨师" value="CHEF" />
-          <el-option label="面点" value="PASTRY" />
-          <el-option label="切配" value="PREP" />
-          <el-option label="保洁" value="CLEANER" />
-          <el-option label="服务员" value="SERVER" />
-          <el-option label="经理" value="MANAGER" />
-        </el-select>
-        <el-select
-          v-model="filters.status"
-          placeholder="状态筛选"
-          clearable
-          style="width: 150px"
-          @change="handleFilter"
-        >
-          <el-option label="在职" value="ACTIVE" />
-          <el-option label="离职" value="INACTIVE" />
-          <el-option label="停薪留职" value="LEAVE_WITHOUT_PAY" />
-        </el-select>
+      <div class="right-area">
+        <div class="filter-area">
+          <el-select
+            v-model="filters.position"
+            placeholder="岗位筛选"
+            clearable
+            style="width: 140px"
+            @change="handleFilter"
+          >
+            <el-option label="厨师" value="CHEF" />
+            <el-option label="面点" value="PASTRY" />
+            <el-option label="切配" value="PREP" />
+            <el-option label="保洁" value="CLEANER" />
+            <el-option label="服务员" value="SERVER" />
+            <el-option label="经理" value="MANAGER" />
+          </el-select>
+          <el-select
+            v-model="filters.status"
+            placeholder="状态筛选"
+            clearable
+            style="width: 140px"
+            @change="handleFilter"
+          >
+            <el-option label="在职" value="ACTIVE" />
+            <el-option label="离职" value="INACTIVE" />
+            <el-option label="停薪留职" value="LEAVE_WITHOUT_PAY" />
+          </el-select>
+        </div>
+        <div class="search-area">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索姓名、电话、身份证号"
+            :prefix-icon="Search"
+            clearable
+            style="width: 280px"
+            @clear="handleSearch"
+            @keyup.enter="handleSearch"
+          />
+          <el-button :icon="Search" @click="handleSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="handleRefresh">刷新</el-button>
+        </div>
       </div>
     </div>
 
@@ -51,36 +63,36 @@
       v-loading="loading"
       :data="employeeList"
       stripe
-      style="width: 100%"
+      class="data-table"
       :header-cell-style="{ background: '#FFF8F0', color: '#333' }"
     >
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="name" label="姓名" width="120" />
-      <el-table-column prop="gender_display" label="性别" width="80">
+      <el-table-column prop="id" label="ID" width="70" align="center" />
+      <el-table-column prop="name" label="姓名" min-width="100" />
+      <el-table-column prop="gender_display" label="性别" width="80" align="center">
         <template #default="{ row }">
           <el-tag :type="row.gender === 'MALE' ? 'primary' : 'danger'" size="small">
             {{ row.gender_display }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="position_display" label="岗位" width="100">
+      <el-table-column prop="position_display" label="岗位" width="100" align="center">
         <template #default="{ row }">
           <el-tag :type="getPositionTagType(row.position)" size="small">
             {{ row.position_display }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="phone" label="手机号" width="130" />
-      <el-table-column prop="id_card" label="身份证号" width="180" />
-      <el-table-column prop="entry_date" label="入职日期" width="120" />
-      <el-table-column prop="status_display" label="状态" width="100">
+      <el-table-column prop="phone" label="手机号" min-width="130" />
+      <el-table-column prop="id_card" label="身份证号" min-width="170" />
+      <el-table-column prop="entry_date" label="入职日期" width="110" align="center" />
+      <el-table-column prop="status_display" label="状态" width="90" align="center">
         <template #default="{ row }">
           <el-tag :type="getStatusTagType(row.status)" size="small">
             {{ row.status_display }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right" align="center">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="handleView(row)">
             查看
@@ -253,7 +265,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { Plus, Search, Refresh, User } from '@element-plus/icons-vue'
 import {
   getEmployeeList,
   getEmployeeDetail,
@@ -356,6 +368,16 @@ const loadEmployeeList = async () => {
 const handleSearch = () => {
   pagination.page = 1
   loadEmployeeList()
+}
+
+// 刷新
+const handleRefresh = () => {
+  searchKeyword.value = ''
+  filters.position = ''
+  filters.status = ''
+  pagination.page = 1
+  loadEmployeeList()
+  ElMessage.success('刷新成功')
 }
 
 // 筛选
@@ -526,31 +548,65 @@ onMounted(() => {
 
 <style scoped>
 .employee-manage-view {
-  padding: 20px;
-  background-color: #fff8f0;
-  min-height: 100vh;
+  background-color: transparent;
 }
 
+/* 页面标题 */
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #FF6B35;
+}
+
+.page-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+/* 操作栏 */
 .action-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
-  padding: 16px;
+  padding: 16px 20px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
 }
 
-.search-area {
+.right-area {
   display: flex;
-  gap: 8px;
-  margin-left: auto;
+  align-items: center;
+  gap: 16px;
 }
 
 .filter-area {
   display: flex;
   gap: 8px;
+}
+
+.search-area {
+  display: flex;
+  gap: 8px;
+}
+
+/* 数据表格 */
+.data-table {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
 }
 
 .pagination-wrapper {

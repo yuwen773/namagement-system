@@ -1,37 +1,48 @@
 <template>
   <div class="schedule-manage-view">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h2 class="page-title">
+        <el-icon :size="24"><Calendar /></el-icon>
+        排班管理
+      </h2>
+      <p class="page-desc">管理食堂员工的工作排班和调班申请</p>
+    </div>
+
     <!-- 顶部操作栏 -->
     <div class="top-bar">
-      <div class="date-picker-wrapper">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          format="YYYY-MM-DD"
-          value-format="YYYY-MM-DD"
-          @change="handleDateChange"
-        />
-      </div>
+      <div class="left-area">
+        <div class="date-picker-wrapper">
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            @change="handleDateChange"
+          />
+        </div>
 
-      <div class="view-switcher">
-        <el-radio-group v-model="viewMode" @change="handleViewModeChange">
-          <el-radio-button value="calendar">
-            <el-icon><Calendar /></el-icon>
-            日历视图
-          </el-radio-button>
-          <el-radio-button value="list">
-            <el-icon><List /></el-icon>
-            列表视图
-          </el-radio-button>
-        </el-radio-group>
+        <div class="view-switcher">
+          <el-radio-group v-model="viewMode" @change="handleViewModeChange">
+            <el-radio-button value="calendar">
+              <el-icon><Calendar /></el-icon>
+              日历视图
+            </el-radio-button>
+            <el-radio-button value="list">
+              <el-icon><List /></el-icon>
+              列表视图
+            </el-radio-button>
+          </el-radio-group>
+        </div>
       </div>
 
       <div class="actions">
         <el-button type="primary" @click="handleBatchCreate">
           <el-icon><Plus /></el-icon>
-          批量排班
+          新增排班
         </el-button>
         <el-button @click="handleRefresh">
           <el-icon><Refresh /></el-icon>
@@ -68,26 +79,26 @@
 
     <!-- 列表视图 -->
     <div v-else class="list-view" v-loading="loading">
-      <el-table :data="scheduleList" stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="employee_name" label="员工姓名" width="120" />
-        <el-table-column prop="shift_name" label="班次" width="120">
+      <el-table :data="scheduleList" stripe class="data-table">
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="employee_name" label="员工姓名" min-width="110" />
+        <el-table-column prop="shift_name" label="班次" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getShiftTagType(row.shift_name)">
               {{ row.shift_name }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="work_date" label="排班日期" width="120" />
-        <el-table-column prop="start_time" label="开始时间" width="100" />
-        <el-table-column prop="end_time" label="结束时间" width="100" />
-        <el-table-column prop="is_swapped" label="是否调班" width="100">
+        <el-table-column prop="work_date" label="排班日期" width="110" align="center" />
+        <el-table-column prop="start_time" label="开始时间" width="90" align="center" />
+        <el-table-column prop="end_time" label="结束时间" width="90" align="center" />
+        <el-table-column prop="is_swapped" label="是否调班" width="90" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.is_swapped" type="warning" size="small">已调班</el-tag>
             <el-tag v-else type="info" size="small">正常</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right" align="center">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleViewSchedule(row)">查看</el-button>
             <el-button link type="primary" @click="handleEditSchedule(row)">编辑</el-button>
@@ -395,8 +406,9 @@ async function loadShifts() {
 
 async function loadEmployees() {
   try {
-    const { data } = await getEmployeeList({ status: 'ACTIVE', page_size: 1000 })
-    employeeList.value = data.data.results || []
+    const { data } = await getEmployeeList({ status: 'ACTIVE', page_size: 100 })
+    // 后端返回的是数组，不是分页对象
+    employeeList.value = data.data || []
   } catch (error) {
     ElMessage.error('加载员工列表失败')
   }
@@ -619,22 +631,50 @@ function formatDate(dateString) {
 
 <style scoped>
 .schedule-manage-view {
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 8px;
-  min-height: 100vh;
+  background-color: transparent;
+}
+
+/* 页面标题 */
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #FF6B35;
+}
+
+.page-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
 }
 
 /* 顶部操作栏 */
 .top-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #FFF8F0 0%, #fff 100%);
-  border-radius: 8px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
   flex-wrap: wrap;
+}
+
+.left-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
 }
 
 .date-picker-wrapper {

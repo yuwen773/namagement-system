@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import AdminLayout from '../layouts/AdminLayout.vue'
+import EmployeeLayout from '../layouts/EmployeeLayout.vue'
 
 const routes = [
   {
@@ -14,43 +16,57 @@ const routes = [
     component: () => import('../views/auth/RegisterView.vue'),
     meta: { requiresAuth: false }
   },
-  // 管理员端路由
+  // 管理员端路由 - 使用 AdminLayout
   {
     path: '/admin',
-    name: 'AdminDashboard',
-    component: () => import('../views/admin/DashboardView.vue'),
-    meta: { requiresAuth: true, role: 'ADMIN' }
+    component: AdminLayout,
+    meta: { requiresAuth: true, role: 'ADMIN' },
+    children: [
+      {
+        path: '',
+        name: 'AdminDashboard',
+        component: () => import('../views/admin/DashboardView.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: 'employees',
+        name: 'EmployeeManage',
+        component: () => import('../views/admin/EmployeeManageView.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: 'schedules',
+        name: 'ScheduleManage',
+        component: () => import('../views/admin/ScheduleManageView.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: 'attendance',
+        name: 'AttendanceManage',
+        component: () => import('../views/admin/AttendanceManageView.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: 'leaves',
+        name: 'LeaveApprove',
+        component: () => import('../views/admin/LeaveApproveView.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      }
+    ]
   },
-  {
-    path: '/admin/employees',
-    name: 'EmployeeManage',
-    component: () => import('../views/admin/EmployeeManageView.vue'),
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/admin/schedules',
-    name: 'ScheduleManage',
-    component: () => import('../views/admin/ScheduleManageView.vue'),
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/admin/attendance',
-    name: 'AttendanceManage',
-    component: () => import('../views/admin/AttendanceManageView.vue'),
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/admin/leaves',
-    name: 'LeaveApprove',
-    component: () => import('../views/admin/LeaveApproveView.vue'),
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  // 员工端路由
+  // 员工端路由 - 使用 EmployeeLayout
   {
     path: '/employee',
-    name: 'EmployeeHome',
-    component: () => import('../views/employee/HomeView.vue'),
-    meta: { requiresAuth: true, role: 'EMPLOYEE' }
+    component: EmployeeLayout,
+    meta: { requiresAuth: true, role: 'EMPLOYEE' },
+    children: [
+      {
+        path: '',
+        name: 'EmployeeHome',
+        component: () => import('../views/employee/HomeView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      }
+    ]
   },
   // 默认重定向到登录页
   {

@@ -1,24 +1,12 @@
 <template>
   <div class="leave-approve-view">
-    <!-- 顶部标题和筛选 -->
-    <div class="header-bar">
+    <!-- 页面标题 -->
+    <div class="page-header">
       <h2 class="page-title">
-        <el-icon :size="24" style="margin-right: 8px"><DocumentChecked /></el-icon>
-        请假审批管理
+        <el-icon :size="24"><DocumentChecked /></el-icon>
+        请假审批
       </h2>
-      <div class="filter-actions">
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索姓名、电话、原因"
-          :prefix-icon="Search"
-          clearable
-          style="width: 280px"
-          @clear="handleSearch"
-          @keyup.enter="handleSearch"
-        />
-        <el-button :icon="Search" @click="handleSearch">搜索</el-button>
-        <el-button :icon="Refresh" @click="handleRefresh">刷新</el-button>
-      </div>
+      <p class="page-desc">审批员工的请假申请，管理请假记录</p>
     </div>
 
     <!-- 状态 Tab 切换 -->
@@ -43,6 +31,20 @@
           <span>已驳回</span>
         </el-radio-button>
       </el-radio-group>
+
+      <div class="filter-actions">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索姓名、电话、原因"
+          :prefix-icon="Search"
+          clearable
+          style="width: 280px"
+          @clear="handleSearch"
+          @keyup.enter="handleSearch"
+        />
+        <el-button :icon="Search" @click="handleSearch">查询</el-button>
+        <el-button :icon="Refresh" @click="handleRefresh">刷新</el-button>
+      </div>
     </div>
 
     <!-- 请假申请列表 -->
@@ -50,27 +52,27 @@
       v-loading="loading"
       :data="leaveList"
       stripe
-      style="width: 100%"
+      class="data-table"
       :header-cell-style="{ background: '#FFF8F0', color: '#333' }"
       :row-class-name="getRowClassName"
     >
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="employee_name" label="员工姓名" width="120" />
-      <el-table-column prop="employee_position" label="岗位" width="100">
+      <el-table-column prop="id" label="ID" width="70" align="center" />
+      <el-table-column prop="employee_name" label="员工姓名" min-width="100" />
+      <el-table-column prop="employee_position" label="岗位" width="100" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.employee_position" :type="getPositionTagType(row.employee_position)" size="small">
             {{ row.employee_position_display }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="leave_type_display" label="请假类型" width="100">
+      <el-table-column prop="leave_type_display" label="请假类型" width="100" align="center">
         <template #default="{ row }">
           <el-tag :type="getLeaveTypeTagType(row.leave_type)" size="small">
             {{ row.leave_type_display }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="请假时间" width="300">
+      <el-table-column label="请假时间" min-width="220">
         <template #default="{ row }">
           <div class="leave-time">
             <div>{{ formatDate(row.start_time) }} 至</div>
@@ -83,20 +85,16 @@
           <span class="duration-text">{{ row.leave_duration_days }} 天</span>
         </template>
       </el-table-column>
-      <el-table-column prop="reason" label="请假原因" min-width="200" show-overflow-tooltip />
-      <el-table-column prop="status" label="状态" width="100">
+      <el-table-column prop="reason" label="请假原因" min-width="150" show-overflow-tooltip />
+      <el-table-column prop="status" label="状态" width="90" align="center">
         <template #default="{ row }">
           <el-tag :type="getStatusTagType(row.status)" size="small">
             {{ row.status_display }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="created_at" label="申请时间" width="160">
-        <template #default="{ row }">
-          {{ formatDateTime(row.created_at) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column prop="created_at" label="申请时间" width="160" align="center" />
+      <el-table-column label="操作" width="200" fixed="right" align="center">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="handleView(row)">
             查看
@@ -535,35 +533,56 @@ onMounted(() => {
 
 <style scoped>
 .leave-approve-view {
-  padding: 20px;
-  background-color: #FFF8F0;
-  min-height: 100vh;
+  background-color: transparent;
 }
 
-.header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* 页面标题 */
+.page-header {
   margin-bottom: 20px;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
 }
 
 .page-title {
   display: flex;
   align-items: center;
-  margin: 0;
+  gap: 8px;
+  margin: 0 0 8px 0;
   font-size: 24px;
   font-weight: 600;
   color: #FF6B35;
 }
 
+.page-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+/* 状态 Tab */
+.status-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
+  flex-wrap: wrap;
+}
+
 .filter-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+}
+
+/* 数据表格 */
+.data-table {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.08);
 }
 
 .status-tabs {
