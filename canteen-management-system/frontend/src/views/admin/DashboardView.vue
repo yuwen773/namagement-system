@@ -200,6 +200,12 @@ const quickAccessItems = [
     description: '审批请假申请',
     icon: '📝',
     route: '/admin/leaves'
+  },
+  {
+    name: '薪资管理',
+    description: '生成调整薪资',
+    icon: '💰',
+    route: '/admin/salaries'
   }
 ]
 

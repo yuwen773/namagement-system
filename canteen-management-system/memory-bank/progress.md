@@ -8,7 +8,6 @@
 
 ### ✅ 步骤 1.1：创建后端 Django 项目
 
-**实施内容**：
 - 创建 Django 项目（`config/`）和 7 个应用：accounts、employees、schedules、attendance、leaves、salaries、analytics（原 statistics）
 - 配置 MySQL 数据库（端口 3307）、CORS、静态/媒体文件
 - 依赖：django>=5.2、djangorestframework、mysqlclient、django-cors-headers
@@ -19,7 +18,6 @@
 
 ### ✅ 步骤 1.2：创建前端 Vue 项目
 
-**实施内容**：
 - 使用 Vite 创建 Vue 3 项目（端口 5173）
 - 安装依赖：element-plus、echarts、axios、vue-router、pinia
 - 配置 API 代理（`/api` → `http://127.0.0.1:8000`）
@@ -31,114 +29,60 @@
 
 ### ✅ 步骤 2.1：用户账号模型与 API
 
-**模型** (`accounts/models.py`)：
-- User：username、password（明文）、employee_id（外键）、role（ADMIN/EMPLOYEE）、status
-
-**序列化器**：LoginSerializer、RegisterSerializer、UserSerializer、UserListSerializer
-
-**视图** (`accounts/views.py`)：
-- UserViewSet：login/、register/、标准 CRUD
+**模型** (`accounts/models.py`)：User（username、password明文、employee_id、role、status）
 
 **API 端点**：
 ```
 POST   /api/accounts/register/   # 注册
 POST   /api/accounts/login/      # 登录
 GET    /api/accounts/            # 用户列表
-GET    /api/accounts/{id}/       # 详情
 ```
-
-**验证**：注册、登录、唯一性验证正常
 
 ---
 
 ### ✅ 步骤 2.2：员工档案模型与 API
 
-**模型** (`employees/models.py`)：
-- EmployeeProfile：基础信息（name、gender、phone、id_card、address）
-  岗位信息（position：CHEF/PASTRY/PREP/CLEANER/SERVER/MANAGER、entry_date、status）
-  资质证书（health_certificate_*、chef_certificate_level）
-
-**序列化器**：EmployeeProfileSerializer、EmployeeProfileListSerializer
-
-**视图**：支持筛选（position、status）、搜索（name、phone、id_card）、排序
+**模型** (`employees/models.py`)：EmployeeProfile（基础信息、岗位信息、资质证书）
 
 **API 端点**：
 ```
 GET    /api/employees/           # 列表（?position=&status=&search=）
 POST   /api/employees/           # 创建
-GET    /api/employees/{id}/      # 详情
-PUT    /api/employees/{id}/      # 更新
-DELETE /api/employees/{id}/      # 删除
 ```
-
-**验证**：CRUD、身份证号唯一性、Django Admin 正常
 
 ---
 
 ### ✅ 步骤 2.3：排班相关模型与 API
 
-**模型** (`schedules/models.py`)：
-- Shift：班次定义（name、start_time、end_time）
-- Schedule：排班计划（employee、shift、work_date、is_swapped），unique_together 约束
-- ShiftSwapRequest：调班申请（requester、original_schedule、target_date、target_shift、reason、status、approver）
-
-**序列化器**：Shift、Schedule、ShiftSwapRequest 的详情/列表/批量/日历视图序列化器
-
-**视图**：
-- ShiftViewSet：标准 CRUD
-- ScheduleViewSet：batch_create/、calendar_view/
-- ShiftSwapRequestViewSet：approve/、my_requests/、pending/
+**模型** (`schedules/models.py`)：Shift、Schedule、ShiftSwapRequest
 
 **API 端点**：
 ```
-# 班次
-GET    /api/schedules/shifts/
-# 排班
 POST   /api/schedules/schedules/batch_create/
 POST   /api/schedules/schedules/calendar_view/
-# 调班
 POST   /api/schedules/shift-requests/{id}/approve/
-GET    /api/schedules/shift-requests/pending/
 ```
-
-**验证**：批量排班、日历视图、Django Admin 正常
 
 ---
 
 ### ✅ 步骤 2.4：考勤模型与 API
 
-**模型** (`attendance/models.py`)：
-- AttendanceRecord：employee、schedule、clock_in/out_time/location
-  status（NORMAL/LATE/EARLY_LEAVE/MISSING/ABNORMAL）、correction_remark
-  自动计算状态和加班时长
+**模型** (`attendance/models.py`)：AttendanceRecord（自动计算状态和加班时长）
 
 **考勤规则**：±5分钟宽限，签到>开始+5分钟=迟到，签退<结束-5分钟=早退，无签到或签退=缺卡
-
-**序列化器**：AttendanceRecord、ClockIn/Out、Statistics、Correction
-
-**视图**：clock_in/、clock_out/、statistics/、correct/、my_attendance/
 
 **API 端点**：
 ```
 POST   /api/attendance/clock_in/     # 签到
 POST   /api/attendance/clock_out/    # 签退
 POST   /api/attendance/statistics/   # 统计
-POST   /api/attendance/{id}/correct/ # 异常处理
-GET    /api/attendance/my_attendance/ # 我的考勤
 ```
 
 ---
 
 ### ✅ 步骤 2.5：请假模型与 API
 
-**模型** (`leaves/models.py`)：
-- LeaveRequest：employee、leave_type（SICK/PERSONAL/COMPENSATORY）
-  start/end_time、reason、status（PENDING/APPROVED/REJECTED）
-  approver、approval_remark、leave_duration_days（自动计算）
-
-**序列化器**：LeaveRequest（详情/列表/创建/审批/我的）
-
-**视图**：my_requests/、pending/、approve/（验证结束时间>开始时间）
+**模型** (`leaves/models.py`)：LeaveRequest（leave_type、自动计算请假天数）
 
 **API 端点**：
 ```
@@ -147,17 +91,11 @@ GET    /api/leaves/pending/         # 待审批列表
 POST   /api/leaves/{id}/approve/    # 审批
 ```
 
-**验证**：CRUD、审批流程、请假天数计算、Django Admin 正常
-
 ---
 
 ### ✅ 步骤 2.6：薪资模型与 API
 
-**模型** (`salaries/models.py`)：
-- SalaryRecord：employee、year_month、base_salary、position_allowance、overtime_pay
-  deductions、total_salary（自动计算）、work_days、late_count、missing_count
-  overtime_hours、status（DRAFT/PUBLISHED/APPEALED/ADJUSTED）、unique_together
-- Appeal：appeal_type（ATTENDANCE/SALARY）、employee、target_id、reason、status、approver
+**模型** (`salaries/models.py`)：SalaryRecord、Appeal
 
 **薪资计算规则**：
 ```
@@ -165,34 +103,21 @@ POST   /api/leaves/{id}/approve/    # 审批
 时薪 = 日工资 ÷ 8
 加班费 = 时薪 × 1.5 × 加班小时数
 实发工资 = 基本工资 + 岗位津贴 + 加班费 - 迟到扣款(20×次数) - 缺卡扣款(50×次数)
-岗位津贴：CHEF(800)、PASTRY(700)、PREP(500)、CLEANER(300)、SERVER(400)、MANAGER(1000)
 ```
-
-**视图**：
-- SalaryRecordViewSet：generate_salary/、adjust/、publish/、my-salaries/
-- AppealViewSet：approve/、pending/、my-appeals/
 
 **API 端点**：
 ```
 POST   /api/salaries/generate/         # 薪资生成
 POST   /api/salaries/{id}/adjust/      # 薪资调整
 POST   /api/salaries/{id}/publish/     # 发布薪资
-GET    /api/salaries/my-salaries/      # 我的薪资
-GET    /api/appeals/pending/           # 待审批申诉
 POST   /api/appeals/{id}/approve/      # 申诉审批
 ```
-
-**验证**：薪资自动计算、生成、调整、发布、申诉流程、Django Admin 正常
 
 ---
 
 ### ✅ 步骤 2.7：统计分析接口
 
-**视图** (`analytics/views.py`)：
-- employee_statistics：总人数、岗位分布（饼图）、持证率、入职状态
-- attendance_statistics：出勤率、迟到/早退/缺卡统计、加班时长、日期趋势（折线图）、岗位维度
-- salary_statistics：月度支出趋势（折线图）、岗位对比（柱状图）、薪资构成（饼图）
-- overview_statistics：Dashboard 首页（今日概览、待办事项、本月统计）
+**视图** (`analytics/views.py`)：employee_statistics、attendance_statistics、salary_statistics、overview_statistics
 
 **API 端点**：
 ```
@@ -204,177 +129,137 @@ GET    /api/analytics/overview/     # 总览统计
 
 **数据格式**：{code, message, data}，适配 ECharts（labels + data 结构）
 
-**验证**：所有接口返回正确格式，中文标签正常
-
 ---
 
 ### ✅ 步骤 3.1：登录页面及前端基础架构
 
-**API 请求封装** (`src/api/request.js`)：
-- axios 实例（baseURL: /api，超时 10s）
-- 请求拦截器：自动添加 Authorization 头
-- 响应拦截器：统一处理 {code, message, data}，401 自动跳转登录
+**API 请求封装** (`src/api/request.js`)：axios 实例（baseURL: /api）、请求/响应拦截器、401 自动跳转登录
 
-**用户状态管理** (`src/stores/user.js`)：
-- 状态：token、userInfo
-- 计算属性：isLoggedIn、userRole、isAdmin、isEmployee
-- 操作：login()、logout()、updateUserInfo()
+**用户状态管理** (`src/stores/user.js`)：token、userInfo、login()、logout()
 
-**路由配置** (`src/router/index.js`)：
-- /login、/register（无需认证）
-- /admin（ADMIN）、/employee（EMPLOYEE）
-- 导航守卫：检查认证、验证角色、自动跳转
+**路由配置** (`src/router/index.js`)：导航守卫（检查认证、验证角色、自动跳转）
 
-**登录页面** (`src/views/auth/LoginView.vue`)：
-- 左右分屏设计（品牌区 52% + 登录区 48%）
-- 品牌区：Logo 动画、功能特性网格、浮动装饰元素、底部统计
-- 登录表单：表单验证、记住账号、支持回车提交、加载状态
-- 响应式：clamp() 流畅响应，平板竖屏上下布局
-- 技术栈：Vue 3 Composition API、Element Plus、Pinia、Vue Router、CSS 变量
-
-**验证**：登录成功后根据角色跳转、路由守卫正常、记住账号功能正常
+**登录页面** (`src/views/auth/LoginView.vue`)：左右分屏设计（品牌区 52% + 登录区 48%）、表单验证、记住账号
 
 ---
 
 ### ✅ 步骤 3.2：注册页面
 
-**注册页面** (`src/views/auth/RegisterView.vue`)：
-- 左右分屏设计（品牌区 + 注册区）
-- 表单字段：用户名（≥2字符）、密码（≥4字符，显示/隐藏）、确认密码、手机号（中国格式）、邮箱（选填）
-- 表单验证：必填校验、格式验证、密码一致性、自动重新验证
-- 注册流程：调用 /api/accounts/register/，成功后延迟 1.5s 跳转登录页
-- UI 设计：与登录页一致配色（橙色 #FF6B35、黄色 #F7C52D、浅米色 #FFF8F0）
-
-**验证**：所有验证规则正确、注册成功跳转、用户名已存在提示正常
+**注册页面** (`src/views/auth/RegisterView.vue`)：用户名、密码（≥4字符，显示/隐藏）、确认密码、手机号（中国格式）、邮箱（选填）
 
 ---
 
 ### ✅ 步骤 4.1：管理员首页（Dashboard）
 
-**API 封装** (`src/api/analytics.js`)：
-- getEmployeeStatistics()、getAttendanceStatistics()、getSalaryStatistics()、getOverviewStatistics()
-
 **管理员首页** (`src/views/admin/DashboardView.vue`)：
 - 顶部导航栏：Logo、日期显示、用户信息、退出登录
-- 欢迎区域：动态欢迎语、当前日期
 - 快捷入口：人员新增、排班制定、考勤异常、薪资生成
-- 今日概览：出勤情况（应到/实到）、今日请假、今日异常
-- 待办事项：待审批请假、调班申请、申诉、待发布薪资（智能时间格式化）
+- 今日概览：出勤情况、今日请假、今日异常
+- 待办事项：待审批请假、调班申请、申诉、待发布薪资
 - 本月统计：员工总数、本月迟到、本月薪资支出
 
-**UI 设计**：食堂主题配色（橙色渐变）、食堂元素图标、卡片悬停动画、响应式布局
-
-**API 对接**：`GET /api/analytics/overview/`
-
-**验证**：数据正确显示、Loading 正常、退出登录功能正常
+**API**：`GET /api/analytics/overview/`
 
 ---
 
 ### ✅ 步骤 4.2：人员档案管理页面
 
-**API 封装** (`src/api/employee.js`)：
-- getEmployeeList（支持分页、筛选、搜索）、getEmployeeDetail、createEmployee、updateEmployee、deleteEmployee
-
-**人员档案管理页面** (`src/views/admin/EmployeeManageView.vue`)：
-- 顶部操作栏：新增员工、搜索（姓名/电话/身份证）、岗位筛选、状态筛选
-- 员工列表：ID、姓名、性别、岗位（彩色标签）、手机号、身份证号、入职日期、状态（徽章）、操作
-- 分页：10/20/50/100 条/页
+**人员档案管理** (`src/views/admin/EmployeeManageView.vue`)：
+- 员工列表：ID、姓名、性别、岗位（彩色标签）、手机号、身份证号、入职日期、状态（徽章）
 - 新增/编辑对话框：基础信息、岗位信息、资质证书（3 个标签页）
-- 详情对话框：使用 el-descriptions 展示完整档案
-- 删除确认：二次确认
+- 岗位颜色：厨师-橙色、面点-红色、切配-蓝色、保洁-绿色、服务员-灰色、经理-深蓝
 
-**表单验证**：姓名（2-20字符）、手机号（中国格式）、岗位/入职日期/状态必填
-
-**岗位颜色**：厨师-橙色、面点-红色、切配-蓝色、保洁-绿色、服务员-灰色、经理-深蓝
-**状态颜色**：在职-绿色、离职-灰色、停薪留职-橙色
-
-**API 对接**：`GET/POST /api/employees/`（支持 ?position=&status=&search=）
-
-**验证**：CRUD、搜索、筛选、分页、从首页快捷入口导航正常
+**API**：`GET/POST /api/employees/`（支持 ?position=&status=&search=）
 
 ---
 
 ### ✅ 步骤 4.3：排班安排管理页面
 
-**API 封装** (`src/api/schedule.js`)：
-- 班次定义：getShiftList、createShift、updateShift、deleteShift
-- 排班计划：getScheduleList、batchCreateSchedule、getCalendarView
-- 调班申请：getShiftRequestList、approveShiftRequest、getPendingShiftRequests
-
-**排班管理页面** (`src/views/admin/ScheduleManageView.vue`)：
-- 顶部操作栏：日期选择器、视图切换（日历/列表）、批量排班、刷新
+**排班管理** (`src/views/admin/ScheduleManageView.vue`)：
 - 日历视图：每日排班（员工+班次）、班次颜色标签、已调班特殊标记
-- 列表视图：ID、员工、班次、日期、时间、是否调班、操作
+- 列表视图：ID、员工、班次、日期、时间、是否调班
 - 批量排班对话框：多选员工、选择班次、日期范围
-- 详情对话框：员工姓名、岗位、班次、日期、时间
-- 编辑对话框：修改员工、班次、排班日期
-- 调班审批对话框：申请详情、审批意见、批准/拒绝
+- 班次颜色：早班-绿色、中班-橙色、晚班-红色、全天-蓝色
 
-**班次颜色**：早班-绿色、中班-橙色、晚班-红色、全天-蓝色
-
-**API 对接**：
+**API**：
 ```
 GET    /api/schedules/schedules/calendar_view/
 POST   /api/schedules/schedules/batch_create/
-GET    /api/schedules/shift-requests/pending/
 POST   /api/schedules/shift-requests/{id}/approve/
 ```
-
-**验证**：日历/列表视图、批量排班、调班审批、从首页快捷入口导航正常
 
 ---
 
 ### ✅ 步骤 4.4：考勤记录管理页面
 
-**API 封装** (`src/api/attendance.js`)：
-- getAttendanceList、clockIn、clockOut、getAttendanceStatistics、correctAttendance
-
-**考勤记录管理页面** (`src/views/admin/AttendanceManageView.vue`)：
-- 顶部操作栏：日期范围选择器、搜索（姓名/电话/地点）、状态筛选
-- 统计卡片：迟到次数、缺卡次数、加班时长、出勤天数（64px 圆角图标，渐变背景）
-- 考勤记录表格：ID、姓名、工作日期、班次、签到/签退时间、状态（彩色标签）、加班时长、操作
-  异常记录行高亮（黄色背景），加班>0 绿色高亮
-- 详情对话框：完整考勤信息
+**考勤管理** (`src/views/admin/AttendanceManageView.vue`)：
+- 统计卡片：迟到次数、缺卡次数、加班时长、出勤天数
+- 考勤记录表格：异常记录行高亮（黄色背景），加班>0 绿色高亮
 - 异常处理对话框：状态修改、备注（必填，5-200字符）
-- 删除确认：二次确认
+- 状态颜色：正常-绿色、迟到-橙色、早退-红色、缺卡-灰色、异常-红色
 
-**状态颜色**：正常-绿色、迟到-橙色、早退-红色、缺卡-灰色、异常-红色
-
-**API 对接**：
+**API**：
 ```
-GET    /api/attendance/（?search=&status=&created_at__gte=&created_at__lte=）
+GET    /api/attendance/
 POST   /api/attendance/statistics/
 POST   /api/attendance/{id}/correct/
 ```
-
-**验证**：筛选、搜索、统计卡片、详情、异常处理、从首页快捷入口导航正常
 
 ---
 
 ### ✅ 步骤 4.5：请假审批管理页面
 
-**API 封装** (`src/api/leave.js`)：
-- getLeaveList、getLeaveDetail、getPendingLeaves、approveLeave
-
-**请假审批管理页面** (`src/views/admin/LeaveApproveView.vue`)：
-- 顶部操作栏：页面标题、搜索、刷新
+**请假审批** (`src/views/admin/LeaveApproveView.vue`)：
 - 状态 Tab：全部、待审批（高亮）、已通过、已驳回（带徽章）
-- 请假列表：ID、员工、岗位、请假类型（病/事/调休，彩色标签）、时间、天数、原因、状态（待/通过/驳回，彩色标签）、申请时间、操作
-  待审批记录行高亮（黄色背景）
-- 详情对话框：完整请假信息
-- 审批对话框：申请摘要、操作提示、审批意见（驳回必填，批准选填）
+- 请假列表：待审批记录行高亮（黄色背景）
+- 审批对话框：申请摘要、审批意见（驳回必填，批准选填）
+- 请假类型颜色：病假-红色、事假-橙色、调休-绿色
 
-**请假类型颜色**：病假-红色、事假-橙色、调休-绿色
-**状态颜色**：待审批-橙色、已通过-绿色、已驳回-红色
-
-**API 对接**：
+**API**：
 ```
 GET    /api/leaves/（?status=&search=）
 GET    /api/leaves/pending/
 POST   /api/leaves/{id}/approve/
 ```
 
-**验证**：Tab 切换、搜索、批准/驳回（动态验证规则）、从首页待办事项导航正常
+---
+
+### ✅ 步骤 4.6：薪资信息管理页面
+
+**薪资管理** (`src/views/admin/SalaryManageView.vue` + `src/api/salary.js`)：
+- 顶部操作栏：月份选择器、生成薪资按钮、导出工资表按钮
+- 统计卡片：本月薪资总额、平均薪资、待发布薪资、待处理申诉
+- 薪资列表表格：员工姓名、岗位、月份、基本工资、岗位津贴、加班费、扣款、实发工资、状态、操作
+  - 金额列右对齐，保留两位小数，使用 ¥ 前缀
+  - 状态标签：草稿(灰色)、已发布(绿色)、已调整(橙色)、申诉中(红色)
+  - 操作按钮：详情、调整、发布、删除
+- 调整薪资对话框：显示当前薪资详情、可调整基本工资和加班费、调整原因必填
+- 薪资详情对话框：完整薪资构成、考勤统计（出勤天数、迟到/缺卡次数、加班时长）
+- 申诉处理对话框：批准/拒绝申诉、审批意见必填
+- 分页组件
+
+**API**：
+```
+GET    /api/salaries/salaries/           # 薪资列表（?year_month=&page=）
+POST   /api/salaries/salaries/generate/  # 生成薪资
+POST   /api/salaries/salaries/{id}/adjust/    # 调整薪资
+POST   /api/salaries/salaries/{id}/publish/   # 发布薪资
+DELETE /api/salaries/salaries/{id}/      # 删除薪资
+POST   /api/salaries/appeals/{id}/approve/    # 审批申诉
+```
+
+**UI 特色**：
+- 食堂主题配色渐变（对话框标题：橙黄、绿、红渐变）
+- 统计卡片悬停效果（边框高亮对应主题色）
+- 加班费高亮显示、扣款红色显示、实发工资橙色大字
+- 员工头像圆形渐变背景
+- 表格行 hover 浅米色背景
+- 响应式布局适配
+
+**路由更新**：
+- 添加 `/admin/salaries` 路由
+- AdminLayout 添加薪资管理菜单项（💰 图标）
+- Dashboard 快捷入口添加薪资管理
 
 ---
 
@@ -386,7 +271,7 @@ POST   /api/leaves/{id}/approve/
   - [x] 步骤 4.3：排班安排管理页面
   - [x] 步骤 4.4：考勤记录管理页面
   - [x] 步骤 4.5：请假审批管理页面
-  - [ ] 步骤 4.6：薪资信息管理页面
+  - [x] 步骤 4.6：薪资信息管理页面
   - [ ] 步骤 4.7：综合统计分析页面
   - [ ] 步骤 4.8：系统管理页面
 - [ ] ...（详见 IMPLEMENTATION_PLAN.md）
@@ -395,16 +280,9 @@ POST   /api/leaves/{id}/approve/
 
 ## 通用说明
 
-**技术栈**：
-- 后端：Django 5.2+、DRF、MySQL 8.0+、django-cors-headers
-- 前端：Vue 3、Element Plus、ECharts、Axios、Vue Router、Pinia、Vite
+**技术栈**：Django 5.2+、DRF、MySQL 8.0+、Vue 3、Element Plus、ECharts、Axios、Pinia、Vite
 
-**UI 主题**：
-- 主色：橙色 #FF6B35
-- 辅助色：黄色 #F7C52D、绿色 #4CAF50
-- 背景：浅米色 #FFF8F0
-- 圆角：8-24px
-- 食堂元素图标
+**UI 主题**：橙色 #FF6B35、黄色 #F7C52D、绿色 #4CAF50、浅米色 #FFF8F0、食堂元素图标
 
 **通用注意事项**：
 - 密码开发阶段明文存储/传输
@@ -412,1534 +290,3 @@ POST   /api/leaves/{id}/approve/
 - 管理页面路由需要 ADMIN 角色权限
 - 删除操作有二次确认
 - API 统一格式：{code, message, data}
-
-### ✅ 步骤 1.2：创建前端 Vue 项目
-
-**实施内容**：
-
-1. **项目初始化**
-   - 使用 Vite 创建了 Vue 3 项目，项目目录为 `frontend/`
-   - 使用 `npm create vite@latest frontend -- --template vue` 命令
-
-2. **安装依赖**
-   - 默认依赖：Vue 3 (^3.5.24)、Vite (^7.2.4)
-   - 额外依赖已安装：
-     - `element-plus` ^2.13.1 - UI 组件库
-     - `echarts` ^6.0.0 - 数据可视化图表库
-     - `axios` ^1.13.3 - HTTP 客户端
-     - `vue-router` ^4.6.4 - 路由管理
-     - `pinia` ^3.0.4 - 状态管理
-
-3. **配置 Vite** (`vite.config.js`)
-   - 添加服务器代理配置
-   - 将 `/api` 请求代理到后端 `http://127.0.0.1:8000`
-   - 设置 `changeOrigin: true` 以正确处理跨域
-
-4. **创建目录结构**
-   ```
-   src/
-   ├── views/
-   │   ├── admin/      # 管理员端页面
-   │   ├── employee/   # 员工端页面
-   │   └── auth/       # 认证相关页面（登录/注册）
-   ├── components/     # 公共组件
-   ├── api/            # API 请求封装
-   ├── router/         # Vue Router 配置
-   └── stores/         # Pinia 状态管理
-   ```
-
-5. **测试热更新**
-   - 修改 `App.vue` 添加测试文字，验证 Vite 热更新功能正常
-
-**测试验证**：
-- ✅ `npm run dev` - 开发服务器启动成功（运行在 http://localhost:5173/）
-- ✅ 访问开发服务器地址 - 看到 Vue 欢迎页面
-- ✅ 修改 `App.vue` 添加测试文字 - 热更新正常工作
-
-**注意事项**：
-- Vite 默认端口为 5173，如果被占用会自动尝试其他端口
-- 开发服务器运行时，修改代码会自动触发热更新
-- API 代理配置确保前端 `/api` 请求正确转发到后端
-
-- 注意事项：
-- Vite 默认端口为 5173，如果被占用会自动尝试其他端口
-- 开发服务器运行时，修改代码会自动触发热更新
-- API 代理配置确保前端 `/api` 请求正确转发到后端
-
----
-
-### ✅ 步骤 2.1：创建用户账号模型与 API
-
-**实施内容**：
-
-1. **创建 User 模型** (`accounts/models.py`)
-   - 字段定义：
-     - `username` - 登录账号（唯一）
-     - `password` - 登录密码（开发阶段明文存储）
-     - `employee_id` - 关联员工档案ID（可选，外键）
-     - `role` - 角色类型（ADMIN/EMPLOYEE）
-     - `status` - 账号状态（ENABLED/DISABLED）
-     - `created_at`, `updated_at` - 时间戳
-   - 枚举类定义：`Role` 和 `Status` 使用 Django 的 `TextChoices`
-   - 自定义方法：`verify_password()` 用于验证用户名和密码
-
-2. **创建序列化器** (`accounts/serializers.py`)
-   - `LoginSerializer` - 登录请求验证（username, password 必填）
-   - `RegisterSerializer` - 注册请求验证（包含用户名唯一性检查）
-   - `UserSerializer` - 用户详情序列化（支持 CRUD 操作）
-   - `UserListSerializer` - 用户列表序列化（简化版，用于列表展示）
-
-3. **创建视图集** (`accounts/views.py`)
-   - `UserViewSet` - 基于 DRF 的 `ModelViewSet`
-   - 自定义 action：
-     - `login/` - 用户登录接口
-     - `register/` - 用户注册接口（默认角色为 EMPLOYEE）
-   - 标准 CRUD 操作：list, retrieve, create, update, destroy
-   - 统一的响应格式：`{code, message, data}`
-
-4. **配置 URL 路由**
-   - 创建 `accounts/urls.py` - 使用 DRF 的 `DefaultRouter`
-   - 更新 `config/urls.py` - 包含 accounts 路由：`/api/accounts/`
-
-5. **注册 Django Admin** (`accounts/admin.py`)
-   - 配置 `UserAdmin` 类
-   - 列表显示字段：id, username, role, status, employee_id, created_at
-   - 过滤器：role, status, created_at
-   - 搜索字段：username, id
-   - 分组字段展示：基本信息、角色与状态、时间信息
-
-6. **数据库迁移**
-   - 创建迁移：`accounts/migrations/0001_initial.py`
-   - 应用迁移到数据库
-
-**API 端点清单**：
-```
-POST   /api/accounts/register/   # 用户注册
-POST   /api/accounts/login/      # 用户登录
-GET    /api/accounts/            # 用户列表
-GET    /api/accounts/{id}/       # 用户详情
-POST   /api/accounts/            # 创建用户（管理员）
-PUT    /api/accounts/{id}/       # 更新用户
-DELETE /api/accounts/{id}/       # 删除用户
-```
-
-**测试验证**：
-- ✅ 注册新用户 - 返回 201，用户创建成功，默认角色为 EMPLOYEE
-- ✅ 登录验证（正确凭证）- 返回 200，获取用户信息
-- ✅ 登录验证（错误密码）- 返回 401，提示"用户名或密码错误"
-- ✅ 重复用户名注册 - 返回 400，提示"用户名已存在"
-- ✅ 获取用户列表 - 返回 200，显示所有用户
-- ✅ 获取用户详情 - 返回 200，显示完整用户信息
-
-**注意事项**：
-- 密码开发阶段采用明文存储，生产环境需改用哈希加密
-- `employee_id` 外键将在步骤 2.2 创建员工档案模型后建立关联
-- 权限验证待后续实现（目前所有用户都可访问管理接口）
-
----
-
-### ✅ 步骤 2.2：创建员工档案模型与 API
-
-**实施内容**：
-
-1. **创建 EmployeeProfile 模型** (`employees/models.py`)
-   - 字段定义：
-     - 基础信息：`name`, `gender`, `phone`, `id_card`（唯一）, `address`
-     - 岗位信息：`position`, `entry_date`, `status`
-     - 资质证书：`health_certificate_no`, `health_certificate_expiry`, `health_certificate_url`, `chef_certificate_level`
-     - 时间戳：`created_at`, `updated_at`
-   - 枚举类定义：`Gender`, `Position`, `Status` 使用 Django 的 `TextChoices`
-   - 岗位类型：厨师(CHEF)、面点(PASTRY)、切配(PREP)、保洁(CLEANER)、服务员(SERVER)、经理(MANAGER)
-
-2. **创建序列化器** (`employees/serializers.py`)
-   - `EmployeeProfileSerializer` - 员工档案详情序列化器（支持 CRUD 操作）
-   - `EmployeeProfileListSerializer` - 员工列表序列化器（简化版）
-   - 身份证号唯一性验证（更新时排除当前记录）
-
-3. **创建视图集** (`employees/views.py`)
-   - `EmployeeProfileViewSet` - 基于 DRF 的 `ModelViewSet`
-   - 支持筛选：按岗位(`position`)、状态(`status`)筛选
-   - 支持搜索：按姓名(`name`)、电话(`phone`)、身份证号(`id_card`)搜索
-   - 支持排序：按创建时间、入职日期、姓名排序
-   - 统一的响应格式：`{code, message, data}`
-
-4. **配置 URL 路由**
-   - 创建 `employees/urls.py` - 使用 DRF 的 `DefaultRouter`
-   - 更新 `config/urls.py` - 包含 employees 路由：`/api/employees/`
-
-5. **注册 Django Admin** (`employees/admin.py`)
-   - 配置 `EmployeeProfileAdmin` 类
-   - 列表显示字段：id, name, gender, phone, position, entry_date, status, created_at
-   - 过滤器：position, status, gender, created_at
-   - 搜索字段：name, phone, id_card
-   - 字段分组展示：基础信息、岗位信息、资质证书、时间信息
-
-6. **数据库迁移**
-   - 创建迁移：`employees/migrations/0001_initial.py`
-   - 应用迁移到数据库
-
-7. **新增依赖**
-   - 添加 `django-filter` 到 `requirements.txt`
-   - 添加 `django_filters` 到 `INSTALLED_APPS`
-
-**API 端点清单**：
-```
-GET    /api/employees/           # 员工列表（支持筛选和搜索）
-POST   /api/employees/           # 创建员工档案
-GET    /api/employees/{id}/      # 员工详情
-PUT    /api/employees/{id}/      # 更新员工档案
-DELETE /api/employees/{id}/      # 删除员工档案
-```
-
-**筛选和搜索参数**：
-- 筛选：`?position=CHEF&status=ACTIVE`
-- 搜索：`?search=张三`
-- 排序：`?ordering=-created_at`
-
-**测试验证**：
-- ✅ 创建新员工档案，返回 201，所有字段保存成功
-- ✅ 获取员工列表，返回 200，支持筛选和搜索
-- ✅ 获取员工详情，返回 200，显示完整信息
-- ✅ 更新员工信息，返回 200，信息更新成功
-- ✅ 删除员工档案，返回 200，删除成功
-- ✅ 身份证号唯一性验证生效
-- ✅ Django Admin 界面正常显示和管理员工档案
-
-**注意事项**：
-- 员工档案（EmployeeProfile）与用户账号（User）是独立概念，需要分别创建
-- `id_card` 字段设置为唯一，但可为空，允许部分员工不录入身份证号
-- `position` 枚举类型覆盖了食堂行业的所有典型岗位
-- 健康证和厨师等级证字段为可选，适应不同岗位需求
-
----
-
-### ✅ 步骤 2.3：创建排班相关模型与 API
-
-**实施内容**：
-
-1. **创建模型** (`schedules/models.py`)
-   - `Shift` 模型：班次定义（name, start_time, end_time, created_at）
-   - `Schedule` 模型：排班计划（employee, shift, work_date, is_swapped, created_at）
-   - `ShiftSwapRequest` 模型：调班申请（requester, original_schedule, target_date, target_shift, reason, status, approver, approval_remark, created_at）
-   - 使用 `unique_together` 防止同一员工在同一日期重复排班
-
-2. **创建序列化器** (`schedules/serializers.py`)
-   - `ShiftSerializer` / `ShiftListSerializer` - 班次详情/列表序列化器
-   - `ScheduleSerializer` / `ScheduleListSerializer` / `ScheduleDetailSerializer` - 排班详情/列表/完整信息序列化器
-   - `ShiftSwapRequestSerializer` / `ShiftSwapRequestListSerializer` - 调班申请详情/列表序列化器
-   - `BatchScheduleSerializer` - 批量排班序列化器（支持多员工、日期范围）
-   - `ShiftSwapApprovalSerializer` - 调班审批序列化器
-   - `CalendarViewSerializer` - 日历视图序列化器
-
-3. **创建视图集** (`schedules/views.py`)
-   - `ShiftViewSet` - 班次定义的增删改查操作
-   - `ScheduleViewSet` - 排班计划的增删改查
-     - `batch_create/` - 批量排班接口
-     - `calendar_view/` - 日历视图接口（按日期分组返回排班数据）
-   - `ShiftSwapRequestViewSet` - 调班申请的增删改查
-     - `approve/` - 调班审核接口（批准/拒绝，自动更新排班）
-     - `my_requests/` - 我的调班申请接口
-     - `pending/` - 待审批调班申请列表
-   - 统一的响应格式：`{code, message, data}`
-
-4. **配置 URL 路由**
-   - 创建 `schedules/urls.py` - 使用 DRF 的 `DefaultRouter`
-   - 更新 `config/urls.py` - 包含 schedules 路由：`/api/schedules/`
-
-5. **注册 Django Admin** (`schedules/admin.py`)
-   - `ShiftAdmin` - 班次定义管理界面
-   - `ScheduleAdmin` - 排班计划管理界面（显示员工名、班次名、日期）
-   - `ShiftSwapRequestAdmin` - 调班申请管理界面（显示发起人、原定排班、目标排班、审批状态）
-
-6. **数据库迁移**
-   - 创建迁移：`schedules/migrations/0001_initial.py`
-   - 应用迁移到数据库
-
-**API 端点清单**：
-```
-# 班次定义
-GET    /api/schedules/shifts/           # 班次列表
-POST   /api/schedules/shifts/           # 创建班次
-GET    /api/schedules/shifts/{id}/      # 班次详情
-PUT    /api/schedules/shifts/{id}/      # 更新班次
-DELETE /api/schedules/shifts/{id}/      # 删除班次
-
-# 排班计划
-GET    /api/schedules/schedules/        # 排班列表（支持筛选、搜索、排序）
-POST   /api/schedules/schedules/        # 创建排班
-POST   /api/schedules/schedules/batch_create/  # 批量排班
-POST   /api/schedules/schedules/calendar_view/ # 日历视图
-GET    /api/schedules/schedules/{id}/   # 排班详情
-PUT    /api/schedules/schedules/{id}/   # 更新排班
-DELETE /api/schedules/schedules/{id}/   # 删除排班
-
-# 调班申请
-GET    /api/schedules/shift-requests/   # 调班申请列表
-POST   /api/schedules/shift-requests/   # 创建调班申请
-POST   /api/schedules/shift-requests/{id}/approve/  # 调班审核
-GET    /api/schedules/shift-requests/my_requests/   # 我的调班申请
-GET    /api/schedules/shift-requests/pending/       # 待审批列表
-GET    /api/schedules/shift-requests/{id}/  # 调班申请详情
-PUT    /api/schedules/shift-requests/{id}/  # 更新调班申请
-DELETE /api/schedules/shift-requests/{id}/  # 删除调班申请
-```
-
-**筛选和搜索参数**：
-- 排班筛选：`?employee=1&shift=2&work_date=2026-01-28`
-- 排班搜索：`?search=张三`
-- 排班排序：`?ordering=-work_date`
-- 调班申请筛选：`?requester=1&status=PENDING&target_date=2026-01-28`
-
-**测试验证**：
-- ✅ 创建班次，返回 200，班次创建成功
-- ✅ 查询班次列表，返回 200，显示所有班次
-- ✅ 创建排班，返回 200，排班创建成功
-- ✅ 批量排班，返回 200，创建 9 条记录（3 个员工 × 3 天）
-- ✅ 查询排班列表，返回 200，显示 10 条排班记录
-- ✅ 日历视图接口，返回 200，按日期分组显示排班数据
-- ✅ Django Admin 界面正常显示和管理排班数据
-
-**注意事项**：
-- 批量排班使用 `get_or_create` 避免重复创建
-- 调班审核通过后，自动更新排班记录（删除原排班，创建新排班）
-- 日历视图返回的数据格式适合前端日历组件使用
-- 权限验证待后续实现（目前所有用户都可访问管理接口）
-
----
-
-### ✅ 步骤 2.4：创建考勤模型与 API
-
-**实施内容**：
-
-1. **创建 AttendanceRecord 模型** (`attendance/models.py`)
-   - 字段定义：
-     - 关联信息：`employee`（外键）、`schedule`（外键，可为空）
-     - 签到信息：`clock_in_time`、`clock_in_location`
-     - 签退信息：`clock_out_time`、`clock_out_location`
-     - 考勤状态：`status`（枚举：NORMAL, LATE, EARLY_LEAVE, MISSING, ABNORMAL）
-     - 异常处理：`correction_remark`
-     - 时间戳：`created_at`、`updated_at`
-   - 枚举类定义：`Status` 使用 Django 的 `TextChoices`
-   - 自动考勤状态判断逻辑（`_calculate_status` 方法）
-   - 加班时长计算（`calculate_overtime_hours` 方法）
-   - 约束：同一员工在同一排班只能有一条考勤记录
-
-2. **考勤状态判断规则**：
-   - 无签到或无签退记录 → `MISSING`（缺卡）
-   - 签到时间 > 班次开始时间 + 5分钟 → `LATE`（迟到）
-   - 签退时间 < 班次结束时间 - 5分钟 → `EARLY_LEAVE`（早退）
-   - 其他情况 → `NORMAL`（正常）
-   - 加班计算：签退时间 > 班次结束时间，计算超出的小时数
-
-3. **创建序列化器** (`attendance/serializers.py`)
-   - `AttendanceRecordSerializer` - 考勤记录详情序列化器（支持完整字段）
-   - `AttendanceRecordListSerializer` - 考勤记录列表序列化器（简化版）
-   - `ClockInSerializer` - 签到请求验证序列化器
-   - `ClockOutSerializer` - 签退请求验证序列化器
-   - `AttendanceStatisticsSerializer` - 考勤统计请求序列化器
-   - `AttendanceStatisticsResponseSerializer` - 考勤统计响应序列化器
-   - `AttendanceCorrectionSerializer` - 异常处理序列化器
-
-4. **创建视图集** (`attendance/views.py`)
-   - `AttendanceRecordViewSet` - 基于 DRF 的 `ModelViewSet`
-   - 支持筛选：按员工、状态筛选
-   - 支持搜索：按姓名、电话、地点搜索
-   - 支持排序：按创建时间、签到时间、签退时间排序
-   - 自定义 action：
-     - `clock_in/` - 签到接口（记录签到时间和地点，自动判断考勤状态）
-     - `clock_out/` - 签退接口（记录签退时间和地点，自动判断考勤状态）
-     - `statistics/` - 考勤统计接口（汇总迟到次数、缺卡次数、加班时长）
-     - `correct/` - 异常处理接口（管理员可修改考勤状态并填写备注）
-     - `my_attendance/` - 我的考勤记录接口（员工查看自己的考勤记录）
-   - 统一的响应格式：`{code, message, data}`
-
-5. **配置 URL 路由**
-   - 创建 `attendance/urls.py` - 使用 DRF 的 `DefaultRouter`
-   - 更新 `config/urls.py` - 包含 attendance 路由：`/api/attendance/`
-
-6. **注册 Django Admin** (`attendance/admin.py`)
-   - 配置 `AttendanceRecordAdmin` 类
-   - 列表显示字段：id, 员工姓名, 工作日期, 班次, 签到时间, 签退时间, 状态, 迟到, 早退, 缺卡, 加班时长, 创建时间
-   - 过滤器：状态、创建时间、工作日期
-   - 搜索字段：姓名、电话、地点
-   - 日期分层导航：按工作日期浏览
-   - 字段分组展示：基本信息、签到信息、签退信息、考勤状态、异常处理、时间信息
-   - 只读字段：创建时间、更新时间、状态、加班时长
-
-7. **数据库迁移**
-   - 创建迁移：`attendance/migrations/0001_initial.py`
-   - 迁移文件已创建，等待应用（需要 MySQL 服务器运行）
-
-**API 端点清单**：
-```
-# 考勤记录管理
-GET    /api/attendance/              # 考勤记录列表（支持筛选、搜索、排序）
-POST   /api/attendance/              # 创建考勤记录（管理员手动创建）
-GET    /api/attendance/{id}/         # 考勤记录详情
-PUT    /api/attendance/{id}/         # 更新考勤记录
-DELETE /api/attendance/{id}/         # 删除考勤记录
-
-# 签到签退
-POST   /api/attendance/clock_in/     # 员工签到
-POST   /api/attendance/clock_out/    # 员工签退
-
-# 统计与异常处理
-POST   /api/attendance/statistics/   # 考勤统计
-POST   /api/attendance/{id}/correct/ # 异常处理（修改考勤状态）
-
-# 员工查询
-GET    /api/attendance/my_attendance/ # 我的考勤记录（员工查询）
-```
-
-**筛选和搜索参数**：
-- 考勤记录筛选：`?employee=1&status=LATE`
-- 考勤记录搜索：`?search=张三`
-- 考勤记录排序：`?ordering=-clock_in_time`
-- 我的考勤查询：`?employee_id=1&start_date=2026-01-01&end_date=2026-01-31`
-
-**测试验证**：
-- ⏳ 等待 MySQL 服务器启动后应用数据库迁移
-- ⏳ 员工签到测试（在班次开始时间前 5 分钟内签到，确认状态为 NORMAL）
-- ⏳ 员工签到测试（在班次开始时间后 6 分钟签到，确认状态为 LATE）
-- ⏳ 员工签退测试（提前签退超过 5 分钟，确认状态为 EARLY_LEAVE）
-- ⏳ 员工签退测试（只有签到没有签退，确认状态为 MISSING）
-- ⏳ 员工签退测试（签退时间超过班次结束时间，确认计算了加班时长）
-- ⏳ 管理员修改异常考勤（确认状态更新且有备注）
-
-**注意事项**：
-- 考勤状态在保存时自动判断，管理员也可以手动修改（需要填写更正备注）
-- 加班时长仅计算超出班次结束时间的部分，以小时为单位（保留2位小数）
-- 签到和签退接口需要员工ID，后续需要实现登录认证后从token中获取
-- 缺卡状态会在只有签到或只有签退时自动触发
-- 权限验证待后续实现（目前所有用户都可访问管理接口）
-
----
-
-### ✅ 步骤 2.5：创建请假模型与 API
-
-**实施内容**：
-
-1. **创建 LeaveRequest 模型** (`leaves/models.py`)
-   - 字段定义：
-     - 基本信息字段：`employee`（外键）、`leave_type`（枚举：SICK/PERSONAL/COMPENSATORY）、`start_time`、`end_time`、`reason`
-     - 审批信息字段：`status`（枚举：PENDING/APPROVED/REJECTED）、`approver`（外键，可选）、`approval_remark`
-     - 时间戳：`created_at`、`updated_at`
-   - 枚举类定义：`LeaveType` 和 `Status` 使用 Django 的 `TextChoices`
-   - 自定义属性：`leave_duration_days` 计算请假天数
-   - 数据库索引：employee, status, created_at, start_time
-
-2. **创建序列化器** (`leaves/serializers.py`)
-   - `LeaveRequestSerializer` - 请假申请详情序列化器（支持完整字段）
-   - `LeaveRequestListSerializer` - 请假申请列表序列化器（简化版）
-   - `LeaveRequestCreateSerializer` - 请假申请创建序列化器（验证请假时间）
-   - `LeaveRequestApprovalSerializer` - 请假审批序列化器
-   - `LeaveRequestMySerializer` - 我的请假申请序列化器（员工查看自己的请假记录）
-
-3. **创建视图集** (`leaves/views.py`)
-   - `LeaveRequestViewSet` - 基于 DRF 的 `ModelViewSet`
-   - 支持筛选：按员工、请假类型、状态筛选
-   - 支持搜索：按姓名、电话、原因、审批意见搜索
-   - 支持排序：按创建时间、开始时间、结束时间排序
-   - 自定义 action：
-     - `my_requests/` - 我的请假申请接口（查询当前员工的请假记录）
-     - `pending/` - 待审批列表接口（管理员）
-     - `approve/` - 请假审批接口（批准/拒绝，填写意见）
-   - 统一的响应格式：`{code, message, data}`
-   - 请假时间验证：结束时间必须大于开始时间
-
-4. **配置 URL 路由**
-   - 创建 `leaves/urls.py` - 使用 DRF 的 `DefaultRouter`
-   - 更新 `config/urls.py` - 包含 leaves 路由：`/api/leaves/`
-
-5. **注册 Django Admin** (`leaves/admin.py`)
-   - 配置 `LeaveRequestAdmin` 类
-   - 列表显示字段：id, 员工姓名, 请假类型, 开始时间, 结束时间, 请假天数, 审批状态, 审批人, 创建时间
-   - 过滤器：请假类型、审批状态、创建时间、开始时间
-   - 搜索字段：员工姓名、员工电话、原因、审批意见
-   - 日期分层导航：按开始时间浏览
-   - 字段分组展示：基本信息、审批信息、时间信息
-   - 只读字段：创建时间、更新时间、请假天数
-
-6. **数据库迁移**
-   - 创建迁移：`leaves/migrations/0001_initial.py`
-   - 应用迁移到数据库
-
-**API 端点清单**：
-```
-# 请假申请管理
-GET    /api/leaves/                    # 请假申请列表（支持筛选、搜索、排序）
-POST   /api/leaves/                    # 创建请假申请
-GET    /api/leaves/{id}/               # 请假申请详情
-PUT    /api/leaves/{id}/               # 更新请假申请
-DELETE /api/leaves/{id}/               # 删除请假申请
-
-# 自定义接口
-GET    /api/leaves/my-requests/        # 我的请假申请（员工查询）
-GET    /api/leaves/pending/            # 待审批列表（管理员）
-POST   /api/leaves/{id}/approve/       # 请假审批（批准/拒绝）
-```
-
-**筛选和搜索参数**：
-- 请假申请筛选：`?employee=1&leave_type=SICK&status=PENDING`
-- 请假申请搜索：`?search=张三` 或 `?search=身体不适`
-- 请假申请排序：`?ordering=-created_at`
-- 我的请假查询：`/api/leaves/my-requests/?employee_id=1&status=APPROVED`
-
-**测试验证**：
-- ✅ 创建请假申请，返回 201，请假申请创建成功，默认状态为 PENDING
-- ✅ 获取请假列表，返回 200，显示所有请假申请
-- ✅ 获取待审批列表，返回 200，仅显示待审批的申请
-- ✅ 查询我的请假记录，返回 200，显示指定员工的请假记录
-- ✅ 批准请假申请，返回 200，状态变为 APPROVED，记录审批人和审批意见
-- ✅ 拒绝请假申请，返回 200，状态变为 REJECTED，记录审批人和审批意见
-- ✅ 按状态筛选请假申请（APPROVED/REJECTED/PENDING），返回正确结果
-- ✅ 按请假类型筛选（SICK/PERSONAL/COMPENSATORY），返回正确结果
-- ✅ 请假天数自动计算（包含开始和结束日期）
-- ✅ Django Admin 界面正常显示和管理请假申请
-
-**注意事项**：
-- 请假时间验证确保结束时间大于开始时间
-- 审批时检查申请状态，只有 PENDING 状态的申请可以被审批
-- 审批通过或拒绝后，记录审批人和审批意见，便于追溯
-- 请假天数计算包含开始和结束日期（最少 1 天）
-- 权限验证待后续实现（目前所有用户都可访问管理接口）
-
----
-
-### ✅ 步骤 2.6：创建薪资模型与 API
-
-**实施内容**：
-
-1. **创建模型** (`salaries/models.py`)
-   - `SalaryRecord` 模型：薪资记录
-     - 基本信息字段：`employee`（外键）、`year_month`
-     - 薪资组成字段：`base_salary`、`position_allowance`、`overtime_pay`、`deductions`、`total_salary`
-     - 统计字段：`work_days`、`late_count`、`missing_count`、`overtime_hours`
-     - 状态和备注：`status`（枚举：DRAFT/PUBLISHED/APPEALED/ADJUSTED）、`remark`
-     - 时间戳：`created_at`、`updated_at`
-   - `Appeal` 模型：异常申诉
-     - 申诉信息：`appeal_type`（枚举：ATTENDANCE/SALARY）、`employee`（外键）、`target_id`、`reason`
-     - 审批信息：`status`（枚举：PENDING/APPROVED/REJECTED）、`approver`（外键）、`approval_remark`
-     - 时间戳：`created_at`、`updated_at`
-   - 使用 `unique_together` 防止同一员工在同一月份重复生成薪资
-   - 自动计算实发工资（在 `save` 方法中完成）
-
-2. **薪资计算规则**：
-   - 日工资 = 月基本工资 ÷ 21.75
-   - 时薪 = 日工资 ÷ 8
-   - 加班费 = 时薪 × 1.5 × 加班小时数
-   - 迟到扣款 = 20 元 × 迟到次数
-   - 缺卡扣款 = 50 元 × 缺卡次数
-   - 岗位津贴：CHEF(800)、PASTRY(700)、PREP(500)、CLEANER(300)、SERVER(400)、MANAGER(1000)
-   - 实发工资 = 基本工资 + 岗位津贴 + 加班费 - 迟到扣款 - 缺卡扣款
-
-3. **创建序列化器** (`salaries/serializers.py`)
-   - `SalaryRecordSerializer` - 薪资记录详情序列化器
-   - `SalaryRecordListSerializer` - 薪资记录列表序列化器
-   - `SalaryRecordCreateSerializer` - 薪资记录创建序列化器
-   - `SalaryGenerateSerializer` - 薪资生成请求序列化器
-   - `SalaryAdjustSerializer` - 薪资调整序列化器
-   - `AppealSerializer` - 异常申诉详情序列化器
-   - `AppealListSerializer` - 异常申诉列表序列化器
-   - `AppealCreateSerializer` - 异常申诉创建序列化器
-   - `AppealApprovalSerializer` - 异常申诉审批序列化器
-   - `MyAppealSerializer` - 我的申诉序列化器
-
-4. **创建视图集** (`salaries/views.py`)
-   - `SalaryRecordViewSet` - 薪资记录管理
-     - `generate_salary/` - 薪资生成接口（根据考勤数据自动计算月薪）
-     - `adjust/` - 薪资调整接口（管理员手动调整金额，必填调整原因）
-     - `publish/` - 发布薪资接口（将状态从草稿改为已发布）
-     - `my-salaries/` - 我的薪资记录接口（员工查询自己的薪资）
-   - `AppealViewSet` - 异常申诉管理
-     - `approve/` - 申诉审批接口（批准/拒绝，自动更新薪资状态）
-     - `pending/` - 待审批申诉列表（管理员）
-     - `my-appeals/` - 我的申诉接口（员工查询自己的申诉记录）
-   - 统一的响应格式：`{code, message, data}`
-
-5. **配置 URL 路由**
-   - 创建 `salaries/urls.py` - 使用 DRF 的 `DefaultRouter`
-   - 更新 `config/urls.py` - 包含 salaries 路由：`/api/`
-
-6. **注册 Django Admin** (`salaries/admin.py`)
-   - `SalaryRecordAdmin` - 薪资记录管理界面
-     - 列表显示：员工姓名、岗位、年月、薪资组成、统计数据、状态、创建时间
-     - 过滤器：状态、年月、岗位、创建时间
-     - 搜索：员工姓名、电话、备注
-     - 日期分层导航：按创建时间浏览
-     - 字段分组：基本信息、薪资组成、统计数据、备注、时间信息
-   - `AppealAdmin` - 异常申诉管理界面
-     - 列表显示：申诉类型、申诉员工、目标记录、状态、审批人、创建时间
-     - 过滤器：申诉类型、状态、创建时间
-     - 搜索：员工姓名、申诉原因、审批意见
-     - 日期分层导航：按创建时间浏览
-     - 字段分组：申诉信息、审批信息、时间信息
-
-7. **数据库迁移**
-   - 创建迁移：`salaries/migrations/0001_initial.py`
-   - 应用迁移到数据库
-
-**API 端点清单**：
-```
-# 薪资记录管理
-GET    /api/salaries/              # 薪资记录列表（支持筛选、搜索、排序）
-POST   /api/salaries/              # 创建薪资记录
-GET    /api/salaries/{id}/         # 薪资记录详情
-PUT    /api/salaries/{id}/         # 更新薪资记录
-DELETE /api/salaries/{id}/         # 删除薪资记录
-POST   /api/salaries/generate/     # 薪资生成
-POST   /api/salaries/{id}/adjust/  # 薪资调整
-POST   /api/salaries/{id}/publish/ # 发布薪资
-GET    /api/salaries/my-salaries/  # 我的薪资记录（员工查询）
-
-# 异常申诉管理
-GET    /api/appeals/               # 申诉列表（支持筛选、搜索、排序）
-POST   /api/appeals/               # 创建申诉
-GET    /api/appeals/{id}/          # 申诉详情
-PUT    /api/appeals/{id}/          # 更新申诉
-DELETE /api/appeals/{id}/          # 删除申诉
-POST   /api/appeals/{id}/approve/  # 申诉审批（批准/拒绝）
-GET    /api/appeals/pending/       # 待审批申诉列表（管理员）
-GET    /api/appeals/my-appeals/    # 我的申诉（员工查询）
-```
-
-**筛选和搜索参数**：
-- 薪资记录筛选：`?employee=1&year_month=2026-01&status=PUBLISHED`
-- 薪资记录搜索：`?search=张三`
-- 薪资记录排序：`?ordering=-year_month`
-- 我的薪资查询：`/api/salaries/my-salaries/?employee_id=1&year_month=2026-01`
-- 申诉列表筛选：`?appeal_type=SALARY&status=PENDING`
-- 申诉列表搜索：`?search=张三` 或 `?search=工资计算错误`
-
-**测试验证**：
-- ✅ 创建薪资记录，返回 201，薪资记录创建成功，实发工资自动计算
-- ✅ 薪资生成接口，返回 200，根据考勤数据自动生成薪资
-- ✅ 薪资调整接口，返回 200，手动调整薪资成功，记录调整原因和时间
-- ✅ 发布薪资接口，返回 200，状态从 DRAFT 变为 PUBLISHED
-- ✅ 我的薪资记录查询，返回 200，显示指定员工的薪资记录
-- ✅ 创建异常申诉，返回 201，申诉创建成功，薪资状态变为 APPEALED
-- ✅ 申诉审批接口（批准），返回 200，状态变为 APPROVED
-- ✅ 申诉审批接口（拒绝），返回 200，薪资状态恢复为 PUBLISHED
-- ✅ 待审批申诉列表，返回 200，仅显示待审批的申诉
-- ✅ 我的申诉查询，返回 200，显示指定员工的申诉记录
-- ✅ Django Admin 界面正常显示和管理薪资记录和申诉
-
-**注意事项**：
-- 薪资计算基于考勤数据统计（迟到次数、缺卡次数、加班时长）
-- 岗位津贴使用固定配置，后续可改为系统设置中可配置
-- 基本工资目前使用默认值（3000元），后续可扩展为从员工档案中读取
-- 薪资调整会记录调整原因和时间，便于审计追溯
-- 薪资申诉被拒绝时，自动恢复薪资记录状态为已发布
-- 同一员工在同一月份只能有一条薪资记录（通过 unique_together 约束）
-- 权限验证待后续实现（目前所有用户都可访问管理接口）
-
----
-
-### ✅ 步骤 2.7：创建统计分析接口
-
-**实施内容**：
-
-1. **创建视图函数** (`analytics/views.py`)
-   - `employee_statistics` - 人员统计接口
-     - 总人数统计
-     - 岗位分布（用于 ECharts 饼图）
-     - 持证率统计（健康证、厨师等级证）
-     - 入职状态分布
-   - `attendance_statistics` - 考勤统计接口
-     - 出勤率统计（基于排班和考勤记录）
-     - 迟到/早退/缺卡次数统计
-     - 加班时长统计
-     - 日期维度考勤趋势（用于 ECharts 折线图）
-     - 岗位维度考勤统计
-   - `salary_statistics` - 薪资统计接口
-     - 月度薪资支出趋势（用于 ECharts 折线图）
-     - 岗位薪资对比（用于 ECharts 柱状图）
-     - 薪资构成统计（用于 ECharts 饼图）
-   - `overview_statistics` - 总览统计接口（Dashboard 首页）
-     - 今日概览数据（应到/实到、请假、异常）
-     - 待办事项统计（待审批请假、薪资草稿数量）
-     - 本月考勤统计
-
-2. **数据格式设计**
-   - 所有接口返回统一格式：`{code, message, data}`
-   - 数据结构适配 ECharts 渲染需求
-   - 使用 `labels` + `data` 结构传递图表数据
-   - 中文标签映射（枚举值 → 中文显示）
-
-3. **查询参数支持**
-   - 考勤统计：支持日期范围筛选（`start_date`、`end_date`）或相对时间（`days`）
-   - 薪资统计：支持月份范围筛选（`months`）
-
-4. **配置 URL 路由** (`analytics/urls.py`)
-   - `/api/analytics/employees/` - 人员统计
-   - `/api/analytics/attendance/` - 考勤统计
-   - `/api/analytics/salaries/` - 薪资统计
-   - `/api/analytics/overview/` - 总览统计
-
-5. **更新主路由** (`config/urls.py`)
-   - 添加 `path("api/analytics/", include("analytics.urls"))`
-
-**API 端点清单**：
-```
-GET    /api/analytics/employees/    # 人员统计（岗位分布、持证率）
-GET    /api/analytics/attendance/   # 考勤统计（出勤率、趋势）
-GET    /api/analytics/salaries/     # 薪资统计（月度趋势、岗位对比）
-GET    /api/analytics/overview/     # 总览统计（Dashboard 首页）
-```
-
-**查询参数示例**：
-- 考勤统计（最近 7 天）：`/api/analytics/attendance/?days=7`
-- 考勤统计（日期范围）：`/api/analytics/attendance/?start_date=2026-01-01&end_date=2026-01-31`
-- 薪资统计（最近 12 个月）：`/api/analytics/salaries/?months=12`
-
-**测试验证**：
-- ✅ 人员统计接口返回 200，包含岗位分布和持证率数据
-- ✅ 考勤统计接口返回 200，包含出勤率和日期趋势数据
-- ✅ 薪资统计接口返回 200，无数据时返回空列表而非错误
-- ✅ 总览统计接口返回 200，包含今日概览和待办事项数据
-- ✅ 所有接口数据格式适配 ECharts 渲染需求
-- ✅ 中文标签正确显示
-
-**数据格式示例**：
-```json
-// 岗位分布（饼图数据）
-{
-  "labels": ["厨师", "面点", "切配", "保洁", "服务员", "经理"],
-  "data": [5, 3, 8, 4, 6, 2]
-}
-
-// 日期趋势（折线图数据）
-[
-  {"date": "2026-01-21", "normal": 8, "late": 1, "early_leave": 0, "missing": 0},
-  {"date": "2026-01-22", "normal": 9, "late": 0, "early_leave": 0, "missing": 1}
-]
-```
-
-**注意事项**：
-- `analytics` 应用没有自己的数据模型，使用其他应用的模型进行统计
-- 使用 Django ORM 的聚合函数（`Count`、`Sum`、`Avg`）提高查询效率
-- 空数据情况处理：返回空列表而非 404 错误
-- 出勤率计算基于排班记录（应出勤）和考勤记录（实出勤）
-- 薪资统计仅统计已发布（`PUBLISHED`）和已调整（`ADJUSTED`）的记录
-- 权限验证待后续实现（目前所有用户都可访问统计接口）
-
----
-
-### ✅ 步骤 3.1：实现登录页面及前端基础架构
-
-**实施内容**：
-
-1. **API 请求封装** (`src/api/request.js`)
-   - 创建 axios 实例，配置 baseURL 为 `/api`
-   - 请求拦截器：自动添加 Authorization 头（从 localStorage 读取 token）
-   - 响应拦截器：
-     - 统一处理后端返回格式 `{code, message, data}`
-     - 处理 HTTP 错误状态（401、403、404、500 等）
-     - 401 时自动清除 token 并跳转登录页
-   - 超时设置：10 秒
-
-2. **认证 API 封装** (`src/api/auth.js`)
-   - `login(username, password)` - 用户登录
-   - `register(data)` - 用户注册
-   - `getUserInfo(id)` - 获取用户信息
-
-3. **用户状态管理** (`src/stores/user.js`)
-   - 状态字段：token、userInfo
-   - 计算属性：isLoggedIn、userRole、isAdmin、isEmployee
-   - 操作方法：
-     - `login()` - 用户登录并保存凭证
-     - `logout()` - 退出登录并清除状态
-     - `updateUserInfo()` - 更新用户信息
-   - 数据持久化：使用 localStorage
-
-4. **路由配置** (`src/router/index.js`)
-   - 已配置路由：
-     - `/login` - 登录页面（无需认证）
-     - `/register` - 注册页面（占位，无需认证）
-     - `/admin` - 管理员首页（需要 ADMIN 角色）
-     - `/employee` - 员工首页（需要 EMPLOYEE 角色）
-     - `/` - 默认重定向到登录页
-     - 404 页面 - 重定向到登录页
-   - 导航守卫功能：
-     - 检查路由是否需要认证
-     - 验证用户角色权限
-     - 自动跳转到对应角色的首页
-     - 已登录用户访问登录页时自动跳转
-
-5. **登录页面** (`src/views/auth/LoginView.vue`)
-   - **布局结构**：
-     - 左右分屏设计，充满视口（100vw × 100vh）
-     - 左侧品牌区域（52%）：橙色渐变背景、Logo、功能特性展示
-     - 右侧登录区域（48%）：登录表单
-   - **品牌区域特性**：
-     - Logo 动画效果（浮动 + 光晕脉冲）
-     - 功能特性网格（员工管理、智能排班、考勤打卡、薪资核算）
-     - 浮动装饰元素（餐具 emoji）
-     - 底部统计信息（500+ 企业用户、99.9% 稳定性）
-   - **登录表单特性**：
-     - 表单验证（用户名最少 2 字符、密码最少 4 字符）
-     - 记住账号功能（持久化到 localStorage）
-     - 忘记密码链接
-     - 支持回车键提交
-     - 登录按钮加载状态
-   - **交互体验**：
-     - 表单字段焦点效果（边框变色 + 阴影）
-     - 按钮悬停效果（上移 + 箭头滑动）
-     - 统一错误提示（Element Plus Message）
-   - **响应式设计**：
-     - 使用 `clamp()` 实现流畅响应式
-     - 平板竖屏（≤768px）：上下布局
-     - 手机（≤480px）：优化间距和字体
-   - **技术实现**：
-     - Vue 3 Composition API（`<script setup>`）
-     - Element Plus 组件库
-     - Pinia 状态管理
-     - Vue Router 导航
-     - CSS 变量和自定义动画
-
-6. **占位页面**
-   - `RegisterView.vue` - 注册页面（占位）
-   - `DashboardView.vue` - 管理员首页（占位）
-   - `HomeView.vue` - 员工首页（占位）
-
-7. **全局样式优化**
-   - 隐藏滚动条但保持滚动功能
-   - CSS 变量定义主题色
-
-**技术优化**：
-- 使用 `clamp()` 实现流畅响应式，避免媒体查询断点
-- 使用 CSS 变量统一管理主题色
-- 封装统一的 API 请求处理逻辑
-- 实现完整的用户认证流程
-- 路由守卫确保权限控制
-
-**测试验证**：
-- ✅ 登录页面正常显示
-- ✅ 表单验证生效（用户名、密码长度校验）
-- ✅ 登录成功后根据角色正确跳转（ADMIN → /admin, EMPLOYEE → /employee）
-- ✅ 记住账号功能正常工作
-- ✅ 路由守卫正确拦截未登录用户
-- ✅ 已登录用户访问登录页自动跳转
-- ✅ 响应式布局在不同屏幕尺寸下正常显示
-
-**注意事项**：
-- Token 目前使用用户 ID 或用户名，后续需要改用 JWT
-- 密码开发阶段采用明文传输和存储，生产环境需加密
-- 注册页面为占位页面，需要后续完善
-- 管理员首页和员工首页需要后续实现具体功能
-
----
-
-### ✅ 步骤 3.2：完善注册页面
-
-**实施内容**：
-
-1. **注册页面布局** (`src/views/auth/RegisterView.vue`)
-   - **布局结构**：
-     - 左右分屏设计，充满视口（100vw × 100vh）
-     - 左侧品牌区域（52%）：橙色渐变背景、Logo、注册优势展示
-     - 右侧注册区域（48%）：注册表单
-   - **品牌区域特性**：
-     - Logo 动画效果（浮动 + 光晕脉冲）
-     - 注册优势网格（快速入职、安全可靠、移动办公、智能提醒）
-     - 浮动装饰元素（餐具 emoji）
-     - 底部统计信息（500+ 企业用户、99.9% 稳定性）
-   - **注册表单特性**：
-     - 用户名输入框（必填，最少 2 字符）
-     - 密码输入框（必填，最少 4 字符，显示/隐藏切换）
-     - 确认密码输入框（必填，需与密码一致）
-     - 手机号输入框（必填，中国手机号格式验证）
-     - 邮箱输入框（选填，邮箱格式验证）
-     - 注册按钮（带加载状态）
-     - 已有账号提示链接
-   - **交互体验**：
-     - 表单字段焦点效果（边框变色 + 阴影）
-     - 按钮悬停效果（上移 + 阴影增强）
-     - 统一错误提示（Element Plus Message）
-     - 注册成功后延迟跳转到登录页
-   - **响应式设计**：
-     - 使用 `clamp()` 实现流畅响应式
-     - 平板竖屏（≤768px）：上下布局
-     - 手机（≤480px）：优化间距和字体
-   - **技术实现**：
-     - Vue 3 Composition API（`<script setup>`）
-     - Element Plus 组件库
-     - Vue Router 导航
-     - CSS 变量和自定义动画
-
-2. **表单验证逻辑**
-   - **用户名验证**：
-     - 必填校验
-     - 最小长度 2 字符
-   - **密码验证**：
-     - 必填校验
-     - 最小长度 4 字符
-     - 密码修改时自动重新验证确认密码
-   - **确认密码验证**：
-     - 必填校验
-     - 与密码值一致性校验
-   - **手机号验证**：
-     - 必填校验
-     - 中国手机号格式（1[3-9]xxxxxxxxx）
-   - **邮箱验证**：
-     - 选填字段
-     - 有值时验证邮箱格式
-
-3. **注册流程**
-   - 调用后端 `/api/accounts/register/` 接口
-   - 注册成功（code 201）：
-     - 显示成功提示
-     - 延迟 1.5 秒后跳转到登录页
-   - 注册失败：
-     - 显示后端返回的错误信息
-     - 用户名已存在时提示"用户名已存在"
-     - 网络错误时提示"注册失败，请检查网络连接"
-   - 支持回车键提交表单
-
-4. **UI/UX 设计**
-   - 配色方案与登录页一致：
-     - 主色：橙色 #FF6B35
-     - 辅助色：黄色 #F7C52D
-     - 背景色：浅米色 #FFF8F0
-   - 使用食堂主题图标（餐具、食物 emoji）
-   - 卡片式表单容器，圆角 24px
-   - 渐变背景叠加层营造氛围感
-   - 浮动动画增加视觉趣味性
-
-**测试验证**：
-- ✅ 访问 `/register` 页面，UI 正常显示
-- ✅ 表单验证生效（所有字段验证规则正确）
-- ✅ 密码与确认密码不一致时显示错误提示
-- ✅ 手机号格式错误时显示错误提示
-- ✅ 邮箱格式错误时显示错误提示（选填字段）
-- ✅ 提交注册，成功后显示提示并跳转到登录页
-- ✅ 用户名已存在时显示正确错误提示
-- ✅ 响应式布局在不同屏幕尺寸下正常显示
-
-**注意事项**：
-- 注册成功后默认角色为 EMPLOYEE（由后端控制）
-- 注册完成后跳转到登录页，用户需手动登录
-- 邮箱字段为选填，适应不同用户需求
-- 密码在开发阶段采用明文传输和存储
-- UI 设计与登录页保持一致，使用相同的配色和设计语言
-
----
-
-### ✅ 步骤 4.1：管理员首页（Dashboard）
-
-**实施内容**：
-
-1. **创建统计分析 API 封装** (`frontend/src/api/analytics.js`)
-   - `getEmployeeStatistics()` - 获取人员统计数据（岗位分布、持证率等）
-   - `getAttendanceStatistics(params)` - 获取考勤统计数据（支持日期范围筛选）
-   - `getSalaryStatistics(params)` - 获取薪资统计数据（支持月份范围筛选）
-   - `getOverviewStatistics()` - 获取总览统计数据（Dashboard 首页专用）
-
-2. **完善管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
-   - **顶部导航栏**：
-     - Logo 区域（厨师帽图标 + 系统标题）
-     - 日期显示（自动格式化）
-     - 用户信息展示（用户名 + 角色）
-     - 退出登录按钮
-   - **欢迎区域**：
-     - 动态欢迎语（带挥手动画）
-     - 当前日期和星期显示
-   - **快捷入口区域**（4 个卡片）：
-     - 人员新增（跳转至员工管理页面）
-     - 排班制定（跳转至排班管理页面）
-     - 考勤异常（跳转至考勤管理页面）
-     - 薪资生成（跳转至薪资管理页面）
-   - **今日概览区域**（3 个统计卡片）：
-     - 出勤情况（应到/实到人数）
-     - 今日请假（请假人数）
-     - 今日异常（异常记录数）
-   - **待办事项区域**：
-     - 待审批请假申请
-     - 待审批调班申请
-     - 待审批申诉
-     - 待发布薪资
-     - 智能时间格式化（刚刚、X分钟前、X小时前、X天前）
-   - **本月统计区域**（3 个卡片）：
-     - 员工总数
-     - 本月迟到次数
-     - 本月薪资支出
-
-3. **UI 设计特点**：
-   - **食堂主题配色**：橙色渐变顶部栏（#FF6B35 → #FF8C42 → #F7C52D）、浅米色背景（#FFF8F0）
-   - **食堂元素图标**：厨师帽、餐具、食物 emoji
-   - **卡片设计**：圆角 16px、阴影效果、悬停动画
-   - **动画效果**：
-     - Logo 浮动动画（上下浮动 8px）
-     - 挥手动画（左右摇摆 20 度）
-     - 卡片悬停上移效果
-     - 箭头滑动显示效果
-   - **响应式布局**：
-     - 使用 CSS Grid 自适应布局
-     - 平板竖屏（≤768px）：单列布局
-     - 手机（≤480px）：优化间距和字体
-
-4. **数据交互**：
-   - 组件挂载时自动调用 `/api/analytics/overview/` 接口
-   - Loading 状态显示（使用 Element Plus 的 v-loading）
-   - 错误处理（显示错误提示消息）
-   - 空状态友好提示（暂无待办事项时显示庆祝图标）
-
-5. **技术实现**：
-   - Vue 3 Composition API（`<script setup>`）
-   - Pinia 状态管理（获取用户信息）
-   - Element Plus 组件库（el-button、loading 指令）
-   - Vue Router（页面跳转）
-   - 自定义时间格式化函数
-
-**API 对接**：
-```
-GET /api/analytics/overview/
-```
-
-**响应数据格式**：
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "expected_attendance": 10,
-    "actual_attendance": 8,
-    "today_leaves": 2,
-    "today_abnormal": 1,
-    "total_employees": 25,
-    "monthly_late": 5,
-    "monthly_salary": 75000,
-    "pending_leaves": [...],
-    "pending_shift_swaps": [...],
-    "pending_appeals": [...],
-    "draft_salaries": 3
-  }
-}
-```
-
-**测试验证**：
-- ✅ 管理员首页正常显示
-- ✅ 顶部导航栏显示用户名和日期
-- ✅ 快捷入口卡片点击显示提示（路由功能待后续步骤实现）
-- ✅ 今日概览数据正确显示
-- ✅ 待办事项列表正确显示
-- ✅ 本月统计数据正确显示
-- ✅ Loading 状态正常工作
-- ✅ 退出登录功能正常
-- ✅ 响应式布局在不同屏幕尺寸下正常显示
-
-**注意事项**：
-- 快捷入口和待办事项的点击跳转功能将在后续步骤中实现
-- 待办事项数据由后端 `overview_statistics` 接口返回，包含多种类型的待办数据
-- 时间格式化函数自动计算相对时间（刚刚、X分钟前等）
-- UI 设计严格遵循食堂主题，使用暖色调和食堂相关图标
-
----
-
-### ✅ 步骤 4.2：人员档案管理页面
-
-**实施内容**：
-
-1. **创建员工 API 封装** (`frontend/src/api/employee.js`)
-   - `getEmployeeList(params)` - 获取员工列表（支持分页、筛选、搜索）
-   - `getEmployeeDetail(id)` - 获取员工详情
-   - `createEmployee(data)` - 创建员工档案
-   - `updateEmployee(id, data)` - 更新员工档案
-   - `patchEmployee(id, data)` - 部分更新员工档案
-   - `deleteEmployee(id)` - 删除员工档案
-
-2. **创建人员档案管理页面** (`frontend/src/views/admin/EmployeeManageView.vue`)
-   - **顶部操作栏**：
-     - 新增员工按钮
-     - 搜索框（支持姓名、电话、身份证号搜索）
-     - 岗位筛选器（厨师、面点、切配、保洁、服务员、经理）
-     - 状态筛选器（在职、离职、停薪留职）
-   - **员工列表表格**：
-     - 显示字段：ID、姓名、性别、岗位、手机号、身份证号、入职日期、状态、操作
-     - 岗位列使用彩色标签（厨师-橙色、保洁-绿色等）
-     - 状态列使用不同颜色徽章（在职-绿色、离职-灰色等）
-   - **分页组件**：
-     - 支持 10、20、50、100 条/页
-     - 显示总数、页码跳转
-   - **新增/编辑对话框**（带 3 个标签页）：
-     - 基础信息：姓名、性别、手机、身份证、地址
-     - 岗位信息：岗位、入职日期、状态
-     - 资质证书：健康证号、有效期、图片URL、厨师等级证
-   - **详情对话框**：
-     - 使用 `el-descriptions` 组件展示完整档案信息
-     - 显示所有字只读视图
-   - **删除确认对话框**：
-     - 二次确认删除操作
-     - 显示员工姓名提示
-
-3. **更新路由配置** (`frontend/src/router/index.js`)
-   - 添加路由 `/admin/employees` → `EmployeeManageView`
-   - 需要认证和 ADMIN 角色权限
-
-4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
-   - 修改 `handleQuickAccess` 函数
-   - "人员新增" 快捷入口卡片点击后导航到员工管理页面
-
-5. **表单验证规则**：
-   - 姓名：必填，2-20 字符
-   - 性别：必选
-   - 手机号：必填，中国手机号格式验证
-   - 岗位：必选
-   - 入职日期：必选
-   - 状态：必选
-   - 身份证号：选填
-   - 地址：选填
-   - 健康证相关：选填
-
-6. **UI 设计特点**：
-   - **食堂主题配色**：
-     - 主色：橙色 #FF6B35
-     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
-     - 背景色：浅米色 #FFF8F0
-   - **岗位标签颜色映射**：
-     - 厨师 (CHEF) → warning (橙色)
-     - 面点 (PASTRY) → danger (红色)
-     - 切配 (PREP) → info (蓝色)
-     - 保洁 (CLEANER) → success (绿色)
-     - 服务员 (SERVER) → 默认灰色
-     - 经理 (MANAGER) → primary (深蓝色)
-   - **状态徽章颜色映射**：
-     - 在职 (ACTIVE) → success (绿色)
-     - 离职 (INACTIVE) → info (灰色)
-     - 停薪留职 (LEAVE_WITHOUT_PAY) → warning (橙色)
-   - **交互效果**：
-     - 表格行悬停效果
-     - 按钮悬停动画
-     - 对话框圆角和阴影
-     - Loading 状态显示
-
-7. **技术实现**：
-   - Vue 3 Composition API（`<script setup>`）
-   - Element Plus 组件库（el-table、el-dialog、el-form、el-pagination 等）
-   - 响应式数据管理（ref、reactive、computed）
-   - 自定义样式覆盖（:deep() 选择器）
-   - 表单验证（el-form 的 rules 属性）
-
-**API 对接**：
-```
-GET    /api/employees/           # 员工列表（支持 ?position= & ?status= & ?search=）
-GET    /api/employees/{id}/      # 员工详情
-POST   /api/employees/           # 创建员工
-PUT    /api/employees/{id}/      # 更新员工
-DELETE /api/employees/{id}/      # 删除员工
-```
-
-**测试验证**：
-- ✅ 员工列表正常加载并显示
-- ✅ 搜索功能正常（按姓名、电话、身份证号）
-- ✅ 岗位筛选正常
-- ✅ 状态筛选正常
-- ✅ 分页功能正常
-- ✅ 新增员工功能正常（表单验证生效）
-- ✅ 编辑员工功能正常（数据预填充）
-- ✅ 查看员工详情正常
-- ✅ 删除员工功能正常（确认对话框显示）
-- ✅ 从管理员首页快捷入口导航正常
-- ✅ 岗位标签颜色正确显示
-- ✅ 状态徽章颜色正确显示
-- ✅ 食堂主题配色应用正确
-- ✅ 响应式布局在不同屏幕尺寸下正常显示
-
-**注意事项**：
-- 员工档案（EmployeeProfile）与用户账号（User）是独立概念
-- 创建员工档案时不会自动创建登录账号
-- 身份证号字段设置为唯一，但可为空
-- 健康证和厨师等级证字段根据岗位需求灵活配置
-- 删除操作有二次确认，防止误操作
-- 路由导航需要 ADMIN 角色权限
-
----
-
-### ✅ 步骤 4.3：排班安排管理页面
-
-**实施内容**：
-
-1. **创建排班管理 API 封装** (`frontend/src/api/schedule.js`)
-   - **班次定义 API**：
-     - `getShiftList(params)` - 获取班次列表
-     - `getShiftDetail(id)` - 获取班次详情
-     - `createShift(data)` - 创建班次
-     - `updateShift(id, data)` - 更新班次
-     - `deleteShift(id)` - 删除班次
-   - **排班计划 API**：
-     - `getScheduleList(params)` - 获取排班列表（支持筛选、搜索、排序）
-     - `getScheduleDetail(id)` - 获取排班详情
-     - `createSchedule(data)` - 创建排班
-     - `updateSchedule(id, data)` - 更新排班
-     - `deleteSchedule(id)` - 删除排班
-     - `batchCreateSchedule(data)` - 批量创建排班
-     - `getCalendarView(data)` - 获取日历视图数据
-   - **调班申请 API**：
-     - `getShiftRequestList(params)` - 获取调班申请列表
-     - `createShiftRequest(data)` - 创建调班申请
-     - `approveShiftRequest(id, data)` - 调班审批
-     - `getMyShiftRequests(params)` - 我的调班申请
-     - `getPendingShiftRequests()` - 待审批调班列表
-
-2. **创建排班管理页面** (`frontend/src/views/admin/ScheduleManageView.vue`)
-   - **顶部操作栏**：
-     - 日期选择器：选择日期范围筛选排班
-     - 视图切换器：日历视图 / 列表视图切换
-     - 操作按钮：批量排班、刷新
-   - **日历视图**：
-     - 使用 Element Plus 日历组件
-     - 显示每日排班情况（员工姓名 + 班次名称）
-     - 不同班次使用不同颜色标签
-     - 已调班的排班显示特殊标记（橙色边框 + 刷新图标）
-     - 点击排班项查看详情
-   - **列表视图**：
-     - 显示字段：ID、员工姓名、班次、排班日期、开始/结束时间、是否调班
-     - 操作按钮：查看、编辑、删除
-   - **批量排班对话框**：
-     - 多选员工（支持搜索）
-     - 选择班次（显示班次时间）
-     - 选择日期范围
-     - 返回创建成功/跳过数量统计
-   - **排班详情对话框**：
-     - 使用 `el-descriptions` 组件展示完整信息
-     - 显示员工姓名、岗位、班次、日期、时间
-   - **编辑排班对话框**：
-     - 修改员工、班次、排班日期
-     - 表单验证
-   - **调班审批对话框**：
-     - 显示申请详情（申请人、原班次、目标班次、申请原因）
-     - 审批意见输入框（必填）
-     - 批准/拒绝按钮
-
-3. **更新路由配置** (`frontend/src/router/index.js`)
-   - 添加路由 `/admin/schedules` → `ScheduleManageView`
-   - 需要认证和 ADMIN 角色权限
-
-4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
-   - 修改 `handleQuickAccess` 函数
-   - "排班制定" 快捷入口卡片点击后导航到排班管理页面
-
-5. **UI 设计特点**：
-   - **食堂主题配色**：
-     - 主色：橙色 #FF6B35
-     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
-     - 背景色：浅米色 #FFF8F0
-   - **班次标签颜色映射**：
-     - 早班 → success (绿色)
-     - 中班 → warning (橙色)
-     - 晚班 → danger (红色)
-     - 全天 → info (蓝色)
-   - **交互效果**：
-     - 日历单元格悬停效果
-     - 排班项点击查看详情
-     - 按钮悬停动画
-     - 对话框圆角和阴影
-
-6. **技术实现**：
-   - Vue 3 Composition API（`<script setup>`）
-   - Element Plus 组件库：
-     - `el-calendar` - 日历组件
-     - `el-table` - 数据表格
-     - `el-dialog` - 对话框
-     - `el-form` - 表单
-     - `el-date-picker` - 日期选择器
-     - `el-select` - 下拉选择
-     - `el-tag` - 标签
-     - `el-radio-group` - 视图切换
-   - 响应式数据管理（ref、reactive、computed）
-   - 自定义样式覆盖（:deep() 选择器）
-
-**API 对接**：
-```
-# 班次定义
-GET    /api/schedules/shifts/           # 班次列表
-POST   /api/schedules/shifts/           # 创建班次
-GET    /api/schedules/shifts/{id}/      # 班次详情
-PUT    /api/schedules/shifts/{id}/      # 更新班次
-DELETE /api/schedules/shifts/{id}/      # 删除班次
-
-# 排班计划
-GET    /api/schedules/schedules/        # 排班列表（支持 ?work_date__gte= & ?work_date__lte=）
-POST   /api/schedules/schedules/batch_create/  # 批量排班
-POST   /api/schedules/schedules/calendar_view/ # 日历视图
-GET    /api/schedules/schedules/{id}/   # 排班详情
-PUT    /api/schedules/schedules/{id}/   # 更新排班
-DELETE /api/schedules/schedules/{id}/   # 删除排班
-
-# 调班申请
-GET    /api/schedules/shift-requests/pending/       # 待审批列表
-POST   /api/schedules/shift-requests/{id}/approve/  # 调班审批
-```
-
-**测试验证**：
-- ✅ 排班管理页面正常显示
-- ✅ 日期选择器筛选正常
-- ✅ 日历视图正确显示每日排班
-- ✅ 列表视图正确显示所有排班记录
-- ✅ 视图切换功能正常
-- ✅ 批量排班对话框正常打开和提交
-- ✅ 排班详情对话框正常显示
-- ✅ 编辑排班功能正常
-- ✅ 删除排班功能正常（含二次确认）
-- ✅ 从管理员首页快捷入口导航正常
-- ✅ 班次标签颜色正确显示
-- ✅ 已调班排班显示特殊标记
-- ✅ 响应式布局在不同屏幕尺寸下正常显示
-
-**注意事项**：
-- 日历视图数据按日期分组返回，适合前端日历组件直接使用
-- 批量排班使用 `get_or_create` 避免重复创建
-- 调班审核通过后，后端自动更新排班记录（删除原排班，创建新排班）
-- 不同班次使用不同颜色标签，便于视觉区分
-- 删除操作有二次确认，防止误操作
-- 路由导航需要 ADMIN 角色权限
-
----
-
-### ✅ 步骤 4.4：考勤记录管理页面
-
-**实施内容**：
-
-1. **创建考勤管理 API 封装** (`frontend/src/api/attendance.js`)
-   - `getAttendanceList(params)` - 获取考勤列表（支持分页、筛选、搜索）
-   - `getAttendanceDetail(id)` - 获取考勤详情
-   - `createAttendance(data)` - 创建考勤记录
-   - `updateAttendance(id, data)` - 更新考勤记录
-   - `patchAttendance(id, data)` - 部分更新考勤记录
-   - `deleteAttendance(id)` - 删除考勤记录
-   - `clockIn(data)` - 员工签到
-   - `clockOut(data)` - 员工签退
-   - `getAttendanceStatistics(data)` - 考勤统计
-   - `correctAttendance(id, data)` - 异常处理（修改考勤状态）
-   - `getMyAttendance(params)` - 我的考勤记录
-
-2. **创建考勤记录管理页面** (`frontend/src/views/admin/AttendanceManageView.vue`)
-   - **顶部操作栏**：
-     - 日期范围选择器：筛选考勤记录的创建时间范围
-     - 搜索框：支持姓名、电话、地点搜索
-     - 状态筛选器：正常、迟到、早退、缺卡、异常
-   - **统计卡片区域**（4 个卡片）：
-     - 迟到次数（橙色渐变背景 + 用户图标）
-     - 缺卡次数（黄色渐变背景 + 警告图标）
-     - 加班时长（绿色渐变背景 + 时钟图标）
-     - 出勤天数（蓝色渐变背景 + 日历图标）
-   - **考勤记录表格**：
-     - 显示字段：ID、姓名、工作日期、班次、签到时间、签退时间、状态、加班时长、操作
-     - 状态列使用彩色标签（正常-绿色、迟到-橙色、早退/异常-红色、缺卡-灰色）
-     - 异常记录行高亮显示（黄色背景）
-     - 加班时长大于 0 时显示绿色高亮
-     - 未签到/未签退显示灰色提示文字
-   - **详情对话框**：
-     - 使用 `el-descriptions` 组件展示完整考勤信息
-     - 显示员工姓名、岗位、工作日期、班次、签到/签退时间、地点、状态、加班时长、更正备注
-   - **异常处理对话框**：
-     - 显示员工姓名、工作日期、原状态
-     - 状态修改下拉框（正常、迟到、早退、缺卡、异常）
-     - 修改备注输入框（必填，最少 5 字符，最多 200 字符）
-     - 表单验证：状态必选、备注必填
-   - **删除确认对话框**：
-     - 二次确认删除操作
-     - 显示员工姓名和日期提示
-
-3. **更新路由配置** (`frontend/src/router/index.js`)
-   - 添加路由 `/admin/attendance` → `AttendanceManageView`
-   - 需要认证和 ADMIN 角色权限
-
-4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
-   - 修改 `handleQuickAccess` 函数
-   - "考勤异常" 快捷入口卡片点击后导航到考勤管理页面
-
-5. **UI 设计特点**：
-   - **食堂主题配色**：
-     - 主色：橙色 #FF6B35
-     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
-     - 背景色：浅米色 #FFF8F0
-   - **状态标签颜色映射**：
-     - 正常 (NORMAL) → success (绿色)
-     - 迟到 (LATE) → warning (橙色)
-     - 早退 (EARLY_LEAVE) → danger (红色)
-     - 缺卡 (MISSING) → info (灰色)
-     - 异常 (ABNORMAL) → danger (红色)
-   - **统计卡片设计**：
-     - 64px 圆角图标容器，渐变背景
-     - 大号数字显示，橙色高亮
-     - 悬停效果：上移 4px + 阴影增强
-   - **交互效果**：
-     - 异常记录行高亮（黄色背景 #fff7e6）
-     - 卡片悬停动画
-     - 按钮悬停效果
-
-6. **技术实现**：
-   - Vue 3 Composition API（`<script setup>`）
-   - Element Plus 组件库：
-     - `el-date-picker` - 日期范围选择器
-     - `el-table` - 数据表格
-     - `el-dialog` - 对话框
-     - `el-form` - 表单
-     - `el-descriptions` - 描述列表
-     - `el-tag` - 标签
-     - `el-pagination` - 分页
-   - 响应式数据管理（ref、reactive、computed）
-   - 自定义样式覆盖（`:deep()` 选择器）
-   - 表单验证（el-form 的 rules 属性）
-
-**API 对接**：
-```
-GET    /api/attendance/              # 考勤列表（支持 ?search= & ?status= & ?created_at__gte= & ?created_at__lte=）
-GET    /api/attendance/{id}/         # 考勤详情
-DELETE /api/attendance/{id}/         # 删除考勤记录
-POST   /api/attendance/statistics/   # 考勤统计
-POST   /api/attendance/{id}/correct/ # 异常处理（修改考勤状态）
-```
-
-**测试验证**：
-- ✅ 考勤管理页面正常显示
-- ✅ 日期选择器筛选正常
-- ✅ 搜索功能正常（按姓名、电话、地点）
-- ✅ 状态筛选正常
-- ✅ 统计卡片数据正确显示
-- ✅ 查看考勤详情对话框正常显示
-- ✅ 异常记录行高亮显示（黄色背景）
-- ✅ 异常处理对话框正常打开和提交
-- ✅ 从管理员首页快捷入口导航正常
-- ✅ 响应式布局在不同屏幕尺寸下正常显示
-
-**注意事项**：
-- 异常处理对话框中，修改备注为必填字段，最少 5 字符
-- 删除操作有二次确认，防止误操作
-- 统计数据默认显示最近 30 天的数据
-- 异常记录（迟到、早退、缺卡、异常）在表格中高亮显示
-- 加班时长保留一位小数显示
-- 日期时间格式化为 `YYYY-MM-DD HH:mm` 格式
-- 路由导航需要 ADMIN 角色权限
-
----
-
-### ✅ 步骤 4.5：请假审批管理页面
-
-**实施内容**：
-
-1. **创建请假管理 API 封装** (`frontend/src/api/leave.js`)
-   - `getLeaveList(params)` - 获取请假申请列表（支持分页、筛选、搜索）
-   - `getLeaveDetail(id)` - 获取请假申请详情
-   - `createLeave(data)` - 创建请假申请
-   - `updateLeave(id, data)` - 更新请假申请
-   - `patchLeave(id, data)` - 部分更新请假申请
-   - `deleteLeave(id)` - 删除请假申请
-   - `getMyLeaves(params)` - 查询我的请假申请
-   - `getPendingLeaves()` - 获取待审批列表
-   - `approveLeave(id, data)` - 审批请假申请
-
-2. **创建请假审批管理页面** (`frontend/src/views/admin/LeaveApproveView.vue`)
-   - **顶部操作栏**：
-     - 页面标题（带 DocumentChecked 图标）
-     - 搜索框（支持姓名、电话、原因搜索）
-     - 刷新按钮
-   - **状态 Tab 切换**：
-     - 全部（带列表总数徽章）
-     - 待审批（带待审批数量徽章，高亮显示）
-     - 已通过
-     - 已驳回
-   - **请假申请列表表格**：
-     - 显示字段：ID、员工姓名、岗位、请假类型、请假时间、天数、请假原因、状态、申请时间、操作
-     - 请假类型标签（病假-红色、事假-橙色、调休-绿色）
-     - 状态标签（待审批-橙色、已通过-绿色、已驳回-红色）
-     - 待审批记录行高亮显示（黄色背景）
-   - **详情对话框**：
-     - 使用 `el-descriptions` 组件展示完整请假信息
-     - 显示员工姓名、岗位、请假类型、天数、开始/结束时间、原因、状态、申请时间、审批人、审批时间、审批意见
-   - **审批对话框**：
-     - 显示申请摘要（员工、类型、时间、天数、原因）
-     - 操作提示（批准/驳回确认信息）
-     - 审批意见输入框（驳回到必填，批准到选填）
-     - 批准/驳回按钮
-
-3. **更新路由配置** (`frontend/src/router/index.js`)
-   - 添加路由 `/admin/leaves` → `LeaveApproveView`
-   - 需要认证和 ADMIN 角色权限
-
-4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
-   - 修改 `handleQuickAccess` 函数，支持 `/admin/leaves` 导航
-   - 修改 `handleTodoClick` 函数，支持请假审批待办事项导航
-
-5. **UI 设计特点**：
-   - **食堂主题配色**：
-     - 主色：橙色 #FF6B35
-     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
-     - 背景色：浅米色 #FFF8F0
-   - **状态 Tab 设计**：
-     - 大号按钮（48px 高度），带图标和徽章
-     - 激活状态：橙色渐变背景 + 阴影效果
-     - 徽章：黄色背景，显示数量
-   - **请假类型标签颜色映射**：
-     - 病假 (SICK) → danger (红色)
-     - 事假 (PERSONAL) → warning (橙色)
-     - 调休 (COMPENSATORY) → success (绿色)
-   - **状态标签颜色映射**：
-     - 待审批 (PENDING) → warning (橙色)
-     - 已通过 (APPROVED) → success (绿色)
-     - 已驳回 (REJECTED) → danger (红色)
-   - **交互效果**：
-     - 待审批记录行高亮（黄色背景 #fff7e6）
-     - 按钮悬停动画（上移 2px）
-     - Tab 切换过渡动画
-
-6. **技术实现**：
-   - Vue 3 Composition API（`<script setup>`）
-   - Element Plus 组件库：
-     - `el-radio-group` / `el-radio-button` - Tab 切换
-     - `el-badge` - 数量徽章
-     - `el-table` - 数据表格
-     - `el-dialog` - 对话框
-     - `el-alert` - 操作提示
-     - `el-descriptions` - 描述列表
-     - `el-tag` - 标签
-     - `el-pagination` - 分页
-   - 响应式数据管理（ref、reactive、computed）
-   - 自定义样式覆盖（`:deep()` 选择器）
-   - 表单验证（el-form 的 rules 属性，动态验证规则）
-   - 计算属性（approveDialogTitle、approveRules）
-
-**API 对接**：
-```
-GET    /api/leaves/                    # 请假列表（支持 ?status= & ?search=）
-GET    /api/leaves/pending/            # 待审批列表
-POST   /api/leaves/{id}/approve/       # 请假审批（批准/驳回）
-```
-
-**测试验证**：
-- ✅ 请假审批管理页面正常显示
-- ✅ Tab 切换功能正常（全部、待审批、已通过、已驳回）
-- ✅ 搜索功能正常（按姓名、电话、原因）
-- ✅ 查看请假详情对话框正常显示
-- ✅ 批准请假申请功能正常（状态变为已通过）
-- ✅ 驳回请假申请功能正常（必填审批意见，状态变为已驳回）
-- ✅ 待审批记录行高亮显示（黄色背景）
-- ✅ 从管理员首页快捷入口导航正常
-- ✅ 从管理员首页待办事项导航正常
-- ✅ 响应式布局在不同屏幕尺寸下正常显示
-
-**注意事项**：
-- 审批对话框中，驳回操作时审批意见为必填字段，批准时为选填
-- 表单验证规则使用 computed 动态计算，根据审批类型（批准/驳回）变化
-- 待审批数量通过单独的 API (`/api/leaves/pending/`) 获取，实时更新徽章
-- 请假时间显示为两行（开始时间、结束时间），便于阅读
-- 请假天数使用橙色高亮显示
-- 详情对话框中，根据状态显示审批人和审批信息
-- 删除操作暂未实现（可由后续步骤补充）
-- 路由导航需要 ADMIN 角色权限
-
----
-
-## 待完成
-
-- [ ] 第四阶段：管理员端页面
-  - [x] 步骤 4.1：管理员首页（Dashboard）
-  - [x] 步骤 4.2：人员档案管理页面
-  - [x] 步骤 4.3：排班安排管理页面
-  - [x] 步骤 4.4：考勤记录管理页面
-  - [x] 步骤 4.5：请假审批管理页面
-  - [ ] 步骤 4.6：薪资信息管理页面
-  - [ ] 步骤 4.7：综合统计分析页面
-  - [ ] 步骤 4.8：系统管理页面
-- [ ] ...（详见 IMPLEMENTATION_PLAN.md）

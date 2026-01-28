@@ -46,6 +46,11 @@
           <el-icon><DocumentChecked /></el-icon>
           <template #title>请假审批</template>
         </el-menu-item>
+
+        <el-menu-item index="/admin/salaries">
+          <el-icon><Wallet /></el-icon>
+          <template #title>薪资管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -119,6 +124,7 @@ import {
   Calendar,
   Clock,
   DocumentChecked,
+  Wallet,
   DArrowLeft,
   DArrowRight,
   UserFilled,
@@ -154,7 +160,8 @@ const currentMenuTitle = computed(() => {
     '/admin/employees': '员工管理',
     '/admin/schedules': '排班管理',
     '/admin/attendance': '考勤管理',
-    '/admin/leaves': '请假审批'
+    '/admin/leaves': '请假审批',
+    '/admin/salaries': '薪资管理'
   }
   return titleMap[route.path] || ''
 })
