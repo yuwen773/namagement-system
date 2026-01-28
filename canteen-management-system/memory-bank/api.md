@@ -159,6 +159,91 @@
 
 ---
 
+### 1.8 获取角色列表
+
+**接口**: `GET /api/accounts/roles/`
+
+**响应**:
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": [
+        {
+            "value": "ADMIN",
+            "label": "管理员",
+            "description": "拥有系统全部管理权限，可进行所有操作"
+        },
+        {
+            "value": "EMPLOYEE",
+            "label": "普通员工",
+            "description": "仅可查看和操作个人相关功能"
+        }
+    ]
+}
+```
+
+---
+
+### 1.9 获取系统设置
+
+**接口**: `GET /api/accounts/settings/`
+
+**响应**:
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "grace_period_minutes": 5,
+        "early_leave_grace_minutes": 5,
+        "late_deduction": "20.00",
+        "missing_deduction": "50.00",
+        "days_per_month": "21.75",
+        "hours_per_day": "8.00",
+        "overtime_rate": "1.50"
+    }
+}
+```
+
+---
+
+### 1.10 更新系统设置
+
+**接口**: `PUT /api/accounts/settings/`
+
+**请求体**:
+```json
+{
+    "grace_period_minutes": 5,
+    "early_leave_grace_minutes": 5,
+    "late_deduction": 20.00,
+    "missing_deduction": 50.00,
+    "days_per_month": 21.75,
+    "hours_per_day": 8.00,
+    "overtime_rate": 1.50
+}
+```
+
+**响应**:
+```json
+{
+    "code": 200,
+    "message": "设置保存成功",
+    "data": {
+        "grace_period_minutes": 5,
+        "early_leave_grace_minutes": 5,
+        "late_deduction": "20.00",
+        "missing_deduction": "50.00",
+        "days_per_month": "21.75",
+        "hours_per_day": "8.00",
+        "overtime_rate": "1.50"
+    }
+}
+```
+
+---
+
 ## 2. 员工管理 (employees)
 
 ### 2.1 获取员工列表

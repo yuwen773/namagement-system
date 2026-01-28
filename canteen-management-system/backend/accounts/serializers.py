@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, SystemSettings
 
 
 class LoginSerializer(serializers.Serializer):
@@ -81,3 +81,81 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'role', 'role_display', 'status', 'status_display', 'created_at']
+
+
+class SystemSettingsSerializer(serializers.ModelSerializer):
+    """
+    系统设置序列化器
+    """
+    class Meta:
+        model = SystemSettings
+        fields = [
+            'id',
+            'grace_period_minutes',
+            'early_leave_grace_minutes',
+            'late_deduction',
+            'missing_deduction',
+            'days_per_month',
+            'hours_per_day',
+            'overtime_rate',
+            'created_at',
+            'updated_at'
+        ]
+        extra_kwargs = {
+            'grace_period_minutes': {
+                'min_value': 0,
+                'max_value': 60,
+                'error_messages': {
+                    'min_value': '宽限时间不能小于0分钟',
+                    'max_value': '宽限时间不能超过60分钟'
+                }
+            },
+            'early_leave_grace_minutes': {
+                'min_value': 0,
+                'max_value': 60,
+                'error_messages': {
+                    'min_value': '宽限时间不能小于0分钟',
+                    'max_value': '宽限时间不能超过60分钟'
+                }
+            },
+            'late_deduction': {
+                'min_value': 0,
+                'max_value': 500,
+                'error_messages': {
+                    'min_value': '迟到扣款不能小于0',
+                    'max_value': '迟到扣款不能超过500元'
+                }
+            },
+            'missing_deduction': {
+                'min_value': 0,
+                'max_value': 500,
+                'error_messages': {
+                    'min_value': '缺卡扣款不能小于0',
+                    'max_value': '缺卡扣款不能超过500元'
+                }
+            },
+            'days_per_month': {
+                'min_value': 20,
+                'max_value': 23,
+                'error_messages': {
+                    'min_value': '月计薪天数不能小于20天',
+                    'max_value': '月计薪天数不能超过23天'
+                }
+            },
+            'hours_per_day': {
+                'min_value': 4,
+                'max_value': 12,
+                'error_messages': {
+                    'min_value': '日工作小时数不能小于4小时',
+                    'max_value': '日工作小时数不能超过12小时'
+                }
+            },
+            'overtime_rate': {
+                'min_value': 1,
+                'max_value': 3,
+                'error_messages': {
+                    'min_value': '加班倍率不能小于1',
+                    'max_value': '加班倍率不能超过3'
+                }
+            }
+        }

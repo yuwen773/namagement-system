@@ -56,6 +56,11 @@
           <el-icon><TrendCharts /></el-icon>
           <template #title>统计分析</template>
         </el-menu-item>
+
+        <el-menu-item index="/admin/system">
+          <el-icon><Setting /></el-icon>
+          <template #title>系统管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -159,7 +164,8 @@ const currentMenuTitle = computed(() => {
     '/admin/attendance': '考勤管理',
     '/admin/leaves': '请假审批',
     '/admin/salaries': '薪资管理',
-    '/admin/statistics': '统计分析'
+    '/admin/statistics': '统计分析',
+    '/admin/system': '系统管理'
   }
   return titleMap[route.path] || ''
 })
@@ -194,7 +200,7 @@ const handleUserAction = (command) => {
       ElMessage.info('个人信息功能开发中')
       break
     case 'settings':
-      ElMessage.info('系统设置功能开发中')
+      router.push('/admin/system')
       break
     case 'logout':
       handleLogout()

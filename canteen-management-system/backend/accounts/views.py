@@ -1,12 +1,13 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 
-from .models import User
+from .models import User, SystemSettings
 from .serializers import (
     LoginSerializer,
     RegisterSerializer,
     UserSerializer,
-    UserListSerializer
+    UserListSerializer,
+    SystemSettingsSerializer
 )
 from utils.response import ApiResponse
 
@@ -122,3 +123,100 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.delete()
         return ApiResponse.success(message='删除成功')
+
+    @action(detail=False, methods=['get'], url_path='settings')
+    def get_settings(self, request):
+        """
+        获取系统设置
+
+        GET /api/accounts/settings/
+
+        返回系统当前的考勤规则和薪资计算配置
+
+        Returns:
+            {
+                "code": 200,
+                "message": "获取成功",
+                "data": {
+                    "grace_period_minutes": 5,
+                    "early_leave_grace_minutes": 5,
+                    "late_deduction": "20.00",
+                    "missing_deduction": "50.00",
+                    "days_per_month": "21.75",
+                    "hours_per_day": "8.00",
+                    "overtime_rate": "1.50"
+                }
+            }
+        """
+        settings = SystemSettings.get_settings()
+        serializer = SystemSettingsSerializer(settings)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
+
+    @action(detail=False, methods=['put', 'patch'], url_path='settings')
+    def update_settings(self, request):
+        """
+        更新系统设置
+
+        PUT /api/accounts/settings/
+        PATCH /api/accounts/settings/
+
+        请求参数：
+            - grace_period_minutes: 迟到宽限时间（分钟），范围 0-60
+            - early_leave_grace_minutes: 早退宽限时间（分钟），范围 0-60
+            - late_deduction: 迟到扣款（元/次），范围 0-500
+            - missing_deduction: 缺卡扣款（元/次），范围 0-500
+            - days_per_month: 月计薪天数，范围 20-23
+            - hours_per_day: 日工作小时数，范围 4-12
+            - overtime_rate: 加班工资倍率，范围 1-3
+
+        Returns:
+            更新后的系统设置数据
+        """
+        settings = SystemSettings.get_settings()
+        serializer = SystemSettingsSerializer(settings, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return ApiResponse.success(data=serializer.data, message='设置保存成功')
+
+        return ApiResponse.error(message='设置保存失败', errors=serializer.errors)
+
+    @action(detail=False, methods=['get'], url_path='roles')
+    def get_roles(self, request):
+        """
+        获取角色列表
+
+        GET /api/accounts/roles/
+
+        返回系统中可用的角色及其说明
+
+        Returns:
+            {
+                "code": 200,
+                "message": "获取成功",
+                "data": [
+                    {
+                        "value": "ADMIN",
+                        "label": "管理员",
+                        "description": "拥有系统全部管理权限"
+                    },
+                    {
+                        "value": "EMPLOYEE",
+                        "label": "普通员工",
+                        "description": "仅可查看和操作个人相关功能"
+                    }
+                ]
+            }
+        """
+        roles = [
+            {
+                'value': User.Role.ADMIN,
+                'label': User.Role.ADMIN.label,
+                'description': '拥有系统全部管理权限，可进行所有操作'
+            },
+            {
+                'value': User.Role.EMPLOYEE,
+                'label': User.Role.EMPLOYEE.label,
+                'description': '仅可查看和操作个人相关功能'
+            }
+        ]
+        return ApiResponse.success(data=roles, message='获取成功')
