@@ -4,11 +4,11 @@
     <el-aside :width="isCollapse ? '64px' : '200px'" class="sidebar">
       <div class="logo-area">
         <div v-if="!isCollapse" class="logo-full">
-          <el-icon :size="32" class="logo-icon"><FoodIcon /></el-icon>
+          <el-icon :size="32" class="logo-icon"><Grid /></el-icon>
           <span class="logo-text">食堂管理系统</span>
         </div>
         <div v-else class="logo-mini">
-          <el-icon :size="28"><FoodIcon /></el-icon>
+          <el-icon :size="28"><Grid /></el-icon>
         </div>
       </div>
 
@@ -50,6 +50,11 @@
         <el-menu-item index="/admin/salaries">
           <el-icon><Wallet /></el-icon>
           <template #title>薪资管理</template>
+        </el-menu-item>
+
+        <el-menu-item index="/admin/statistics">
+          <el-icon><TrendCharts /></el-icon>
+          <template #title>统计分析</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -125,6 +130,8 @@ import {
   Clock,
   DocumentChecked,
   Wallet,
+  TrendCharts,
+  Grid,
   DArrowLeft,
   DArrowRight,
   UserFilled,
@@ -132,16 +139,6 @@ import {
   Setting,
   SwitchButton
 } from '@element-plus/icons-vue'
-
-// 自定义食物图标组件
-const FoodIcon = {
-  template: `
-    <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-      <path fill="currentColor" d="M128 256h768a32 32 0 0 1 32 32v640a32 32 0 0 1-32 32H128a32 32 0 0 1-32-32V288a32 32 0 0 1 32-32z m0-64a96 96 0 0 0-96 96v640a96 96 0 0 0 96 96h768a96 96 0 0 0 96-96V288a96 96 0 0 0-96-96H128z"/>
-      <path fill="currentColor" d="M416 512h192a32 32 0 0 1 32 32v192a32 32 0 0 1-32 32H416a32 32 0 0 1-32-32V544a32 32 0 0 1 32-32z m32 64v128h128V576H448z"/>
-    </svg>
-  `
-}
 
 const router = useRouter()
 const route = useRoute()
@@ -161,7 +158,8 @@ const currentMenuTitle = computed(() => {
     '/admin/schedules': '排班管理',
     '/admin/attendance': '考勤管理',
     '/admin/leaves': '请假审批',
-    '/admin/salaries': '薪资管理'
+    '/admin/salaries': '薪资管理',
+    '/admin/statistics': '统计分析'
   }
   return titleMap[route.path] || ''
 })
