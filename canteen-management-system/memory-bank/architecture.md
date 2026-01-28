@@ -1311,7 +1311,7 @@ frontend/
   - `DashboardView.vue` - 管理员首页/仪表板（已实现）
   - `EmployeeManageView.vue` - 人员档案管理（已实现）
   - `ScheduleManageView.vue` - 排班安排管理（已实现）
-  - `AttendanceManageView.vue` - 考勤记录管理（待实现）
+  - `AttendanceManageView.vue` - 考勤记录管理（已实现）
   - `LeaveApproveView.vue` - 请假审批管理（待实现）
   - `SalaryManageView.vue` - 薪资信息管理（待实现）
   - `StatisticsView.vue` - 综合统计分析（待实现）
@@ -1359,7 +1359,7 @@ frontend/
 - `analytics.js` - 统计分析 API（已实现）
 - `employee.js` - 员工档案 API（已实现）
 - `schedule.js` - 排班管理 API（已实现）
-- `attendance.js` - 考勤管理 API（计划中）
+- `attendance.js` - 考勤管理 API（已实现）
 - `leave.js` - 请假管理 API（计划中）
 - `salary.js` - 薪资管理 API（计划中）
 
@@ -1405,8 +1405,19 @@ frontend/
   - `getMyShiftRequests(params)` - 我的调班申请
   - `getPendingShiftRequests()` - 待审批调班列表
 
-- `attendance.js` - 考勤管理 API（计划中）
-- `attendance.js` - 考勤管理 API（计划中）
+**`attendance.js`** - 考勤管理 API（已实现）
+- `getAttendanceList(params)` - 获取考勤记录列表（支持分页、筛选、搜索）
+- `getAttendanceDetail(id)` - 获取考勤记录详情
+- `createAttendance(data)` - 创建考勤记录（管理员手动创建）
+- `updateAttendance(id, data)` - 更新考勤记录（完整更新）
+- `patchAttendance(id, data)` - 部分更新考勤记录
+- `deleteAttendance(id)` - 删除考勤记录
+- `clockIn(data)` - 员工签到
+- `clockOut(data)` - 员工签退
+- `getAttendanceStatistics(data)` - 考勤统计（支持日期范围筛选）
+- `correctAttendance(id, data)` - 异常处理（修改考勤状态，必填备注）
+- `getMyAttendance(params)` - 我的考勤记录（员工查询）
+
 - `leave.js` - 请假管理 API（计划中）
 - `salary.js` - 薪资管理 API（计划中）
 
@@ -1420,6 +1431,7 @@ frontend/
 - `/admin` - 管理员首页（需要 ADMIN 角色）
 - `/admin/employees` - 人员档案管理页面（需要 ADMIN 角色）
 - `/admin/schedules` - 排班安排管理页面（需要 ADMIN 角色）
+- `/admin/attendance` - 考勤记录管理页面（需要 ADMIN 角色）
 - `/employee` - 员工首页（需要 EMPLOYEE 角色）
 - `/` - 默认重定向到登录页
 - `/:pathMatch(.*)*` - 404 页面（重定向到登录页）
@@ -2145,6 +2157,241 @@ export default defineConfig({
 
 **路由配置**：
 - 路径：`/admin/schedules`
+- 需要认证：是
+- 需要角色：ADMIN
+- meta 信息：`{ requiresAuth: true, role: 'ADMIN' }`
+
+---
+
+#### 考勤记录管理页面 (`AttendanceManageView.vue`)
+
+**布局结构**：
+- 充满视口（100vh）的单页布局
+- 顶部操作栏：日期选择器 + 搜索框 + 状态筛选器
+- 统计卡片区域：4 个统计卡片（迟到次数、缺卡次数、加班时长、出勤天数）
+- 考勤记录表格：显示考勤信息和操作按钮
+- 分页组件：底部居中显示
+- 对话框：详情对话框、异常处理对话框
+
+**顶部操作栏特性**：
+- 日期范围选择器：
+  - 支持选择日期范围筛选（按创建时间）
+  - 格式：YYYY-MM-DD
+  - 日期变化时自动重新加载数据
+- 搜索框：
+  - 支持搜索姓名、电话、地点
+  - 带清空功能
+  - 支持回车键搜索
+- 状态筛选器：
+  - 正常、迟到、早退、缺卡、异常
+  - 清除后显示所有状态
+
+**统计卡片区域特性**（4 个卡片）：
+- 迟到次数卡片：
+  - 橙色渐变背景图标（#FF6B35 → #FF8C42）
+  - 用户图标（User）
+  - 大号数字显示
+- 缺卡次数卡片：
+  - 黄色渐变背景图标（#F7C52D → #FFA726）
+  - 警告图标（Warning）
+  - 大号数字显示
+- 加班时长卡片：
+  - 绿色渐变背景图标（#4CAF50 → #66BB6A）
+  - 时钟图标（Clock）
+  - 大号数字显示，保留一位小数
+- 出勤天数卡片：
+  - 蓝色渐变背景图标（#2196F3 → #42A5F5）
+  - 日历图标（Calendar）
+  - 大号数字显示
+- 卡片悬停效果：上移 4px + 阴影增强
+
+**考勤记录表格特性**：
+- 显示字段：ID、姓名、工作日期、班次、签到时间、签退时间、状态、加班时长、操作
+- 状态列彩色标签：
+  - 正常 → success (绿色)
+  - 迟到 → warning (橙色)
+  - 早退 → danger (红色)
+  - 缺卡 → info (灰色)
+  - 异常 → danger (红色)
+- 异常记录行高亮：
+  - 使用 CSS 类 `warning-row` 添加黄色背景（#fff7e6）
+  - 迟到、早退、缺卡、异常状态的记录都会高亮
+- 加班时长列：
+  - 大于 0 时显示绿色高亮
+  - 保留一位小数
+  - 无加班时显示 "-"
+- 签到/签退时间：
+  - 未签到/未签退时显示灰色"未签到"/"未签退"
+  - 已签到/签退时显示格式化时间（YYYY-MM-DD HH:mm）
+- 操作按钮：查看、修正（仅异常记录显示）、删除（link 样式）
+- 表头样式：浅米色背景（#FFF8F0）
+
+**详情对话框特性**：
+- 使用 `el-descriptions` 组件展示
+- 2 列布局，带边框
+- 显示字段：
+  - 员工姓名、岗位（彩色标签）
+  - 工作日期、班次
+  - 签到时间、签到地点
+  - 签退时间、签退地点
+  - 考勤状态（彩色标签）、加班时长
+  - 更正备注（跨 2 列）
+  - 创建时间（跨 2 列）
+- 底部按钮：关闭
+
+**异常处理对话框特性**：
+- 只读字段显示：员工姓名、工作日期、原状态（彩色标签）
+- 状态修改下拉框：
+  - 必填字段
+  - 选项：正常、迟到、早退、缺卡、异常
+- 修改备注输入框：
+  - 必填字段，最少 5 字符
+  - 多行文本框（3 行）
+  - 最多 200 字符
+  - 显示字符计数
+- 操作按钮：取消、确认修改（带 loading 状态）
+- 表单验证：
+  - 状态必选
+  - 备注必填且最少 5 字符
+
+**删除确认特性**：
+- 二次确认对话框（警告类型）
+- 显示员工姓名和工作日期提示
+- 确认后调用删除 API
+- 删除成功后刷新列表和统计数据
+
+**交互体验**：
+- 组件挂载时自动加载考勤列表和统计数据
+- Loading 状态显示（表格级别和统计卡片级别）
+- 操作成功/失败提示
+- 搜索和筛选自动触发第一页
+- 分页变化时自动加载数据
+- 异常处理成功后自动刷新列表和统计数据
+- 删除操作需要确认，防止误操作
+
+**响应式设计**：
+- 桌面端：操作栏水平布局，统计卡片网格布局
+- 平板竖屏（≤768px）：
+  - 操作栏垂直布局
+  - 统计卡片变为 2 列布局
+  - 卡片内边距减小
+  - 图标和字体尺寸缩小
+- 手机（≤480px）：
+  - 统计卡片变为单列布局
+  - 页面内边距减小到 12px
+
+**技术实现**：
+- Vue 3 Composition API（`<script setup>`）
+- Element Plus 组件库：
+  - `el-date-picker` - 日期范围选择器
+  - `el-table` - 数据表格
+  - `el-dialog` - 对话框
+  - ` `el-form` - 表单
+  - `el-descriptions` - 描述列表
+  - `el-tag` - 标签
+  - `el-pagination` - 分页
+  - `el-select` - 下拉选择
+  - `el-input` - 输入框
+  - `el-message-box` - 确认对话框
+- 响应式数据管理：
+  - `ref()` - 单个值响应式（loading、dialogVisible、dateRange 等）
+  - `reactive()` - 对象响应式（pagination、filters、correctForm）
+  - `computed()` - 计算属性
+- 自定义方法：
+  - `loadAttendanceList()` - 加载考勤列表
+  - `loadStatistics()` - 加载统计数据（默认最近 30 天）
+  - `handleSearch()` - 搜索处理
+  - `handleFilter()` - 筛选处理
+  - `handleDateChange()` - 日期变化处理
+  - `handleView()` - 查看详情
+  - `handleCorrect()` - 异常处理
+  - `handleConfirmCorrect()` - 确认异常处理
+  - `handleDelete()` - 删除考勤记录
+  - `getRowClassName()` - 获取表格行类名（用于异常记录高亮）
+  - `formatDateTime()` - 格式化日期时间
+- 工具函数：
+  - `getStatusTagType()` - 状态标签颜色映射
+  - `getPositionTagType()` - 岗位标签颜色映射
+
+**数据对接**：
+- 接口地址：
+  - 考勤列表：`/api/attendance/`
+  - 考勤详情：`/api/attendance/{id}/`
+  - 删除考勤：`/api/attendance/{id}/`
+  - 考勤统计：`/api/attendance/statistics/`
+  - 异常处理：`/api/attendance/{id}/correct/`
+- 请求参数：
+  - 考勤列表：`{ page, page_size, search, status, created_at__gte, created_at__lte, ordering }`
+  - 考勤统计：`{ start_date, end_date }`（默认最近 30 天）
+  - 异常处理：`{ status, correction_remark }`
+- 响应格式：
+  ```json
+  // 考勤列表响应
+  {
+    "code": 200,
+    "message": "成功",
+    "data": {
+      "count": 100,
+      "results": [...],
+      "next": null,
+      "previous": null
+    }
+  }
+
+  // 统计数据响应
+  {
+    "code": 200,
+    "message": "成功",
+    "data": {
+      "late_count": 5,
+      "missing_count": 2,
+      "overtime_hours": 12.5,
+      "present_days": 20
+    }
+  }
+  ```
+
+**颜色映射函数**：
+- `getStatusTagType(status)` - 状态标签颜色映射
+  - 正常 (NORMAL) → success (绿色)
+  - 迟到 (LATE) → warning (橙色)
+  - 早退 (EARLY_LEAVE) → danger (红色)
+  - 缺卡 (MISSING) → info (灰色)
+  - 异常 (ABNORMAL) → danger (红色)
+- `getPositionTagType(position)` - 岗位标签颜色映射
+  - 厨师 (CHEF) → warning (橙色)
+  - 面点 (PASTRY) → danger (红色)
+  - 切配 (PREP) → info (蓝色)
+  - 保洁 (CLEANER) → success (绿色)
+  - 服务员 (SERVER) → 默认灰色
+  - 经理 (MANAGER) → primary (深蓝色)
+
+**表格行类名逻辑**：
+```javascript
+const getRowClassName = ({ row }) => {
+  if (row.status === 'LATE' || row.status === 'EARLY_LEAVE' ||
+      row.status === 'MISSING' || row.status === 'ABNORMAL') {
+    return 'warning-row'
+  }
+  return ''
+}
+```
+- 使用 `:deep(.el-table .warning-row)` 添加黄色背景样式
+
+**设计亮点**：
+1. **统计卡片可视化**：4 个统计卡片直观展示考勤概况，渐变背景图标醒目
+2. **异常记录高亮**：使用黄色背景行突出显示异常考勤记录
+3. **双筛选功能**：日期范围筛选 + 状态筛选，精确定位目标记录
+4. **表单验证完善**：异常处理时状态必选、备注必填（最少 5 字符）
+5. **删除二次确认**：防止误操作删除重要数据
+6. **统计数据联动**：异常处理或删除后自动刷新统计数据
+7. **响应式设计**：适配不同屏幕尺寸，统计卡片自适应布局
+8. **Loading 状态**：提升用户体验，明确数据加载状态
+9. **时间格式化**：统一格式化为 `YYYY-MM-DD HH:mm` 格式，提升可读性
+10. **加班时长高亮**：加班时长大于 0 时显示绿色，便于识别
+
+**路由配置**：
+- 路径：`/admin/attendance`
 - 需要认证：是
 - 需要角色：ADMIN
 - meta 信息：`{ requiresAuth: true, role: 'ADMIN' }`

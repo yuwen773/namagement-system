@@ -1346,13 +1346,132 @@ POST   /api/schedules/shift-requests/{id}/approve/  # 调班审批
 
 ---
 
+### ✅ 步骤 4.4：考勤记录管理页面
+
+**实施内容**：
+
+1. **创建考勤管理 API 封装** (`frontend/src/api/attendance.js`)
+   - `getAttendanceList(params)` - 获取考勤列表（支持分页、筛选、搜索）
+   - `getAttendanceDetail(id)` - 获取考勤详情
+   - `createAttendance(data)` - 创建考勤记录
+   - `updateAttendance(id, data)` - 更新考勤记录
+   - `patchAttendance(id, data)` - 部分更新考勤记录
+   - `deleteAttendance(id)` - 删除考勤记录
+   - `clockIn(data)` - 员工签到
+   - `clockOut(data)` - 员工签退
+   - `getAttendanceStatistics(data)` - 考勤统计
+   - `correctAttendance(id, data)` - 异常处理（修改考勤状态）
+   - `getMyAttendance(params)` - 我的考勤记录
+
+2. **创建考勤记录管理页面** (`frontend/src/views/admin/AttendanceManageView.vue`)
+   - **顶部操作栏**：
+     - 日期范围选择器：筛选考勤记录的创建时间范围
+     - 搜索框：支持姓名、电话、地点搜索
+     - 状态筛选器：正常、迟到、早退、缺卡、异常
+   - **统计卡片区域**（4 个卡片）：
+     - 迟到次数（橙色渐变背景 + 用户图标）
+     - 缺卡次数（黄色渐变背景 + 警告图标）
+     - 加班时长（绿色渐变背景 + 时钟图标）
+     - 出勤天数（蓝色渐变背景 + 日历图标）
+   - **考勤记录表格**：
+     - 显示字段：ID、姓名、工作日期、班次、签到时间、签退时间、状态、加班时长、操作
+     - 状态列使用彩色标签（正常-绿色、迟到-橙色、早退/异常-红色、缺卡-灰色）
+     - 异常记录行高亮显示（黄色背景）
+     - 加班时长大于 0 时显示绿色高亮
+     - 未签到/未签退显示灰色提示文字
+   - **详情对话框**：
+     - 使用 `el-descriptions` 组件展示完整考勤信息
+     - 显示员工姓名、岗位、工作日期、班次、签到/签退时间、地点、状态、加班时长、更正备注
+   - **异常处理对话框**：
+     - 显示员工姓名、工作日期、原状态
+     - 状态修改下拉框（正常、迟到、早退、缺卡、异常）
+     - 修改备注输入框（必填，最少 5 字符，最多 200 字符）
+     - 表单验证：状态必选、备注必填
+   - **删除确认对话框**：
+     - 二次确认删除操作
+     - 显示员工姓名和日期提示
+
+3. **更新路由配置** (`frontend/src/router/index.js`)
+   - 添加路由 `/admin/attendance` → `AttendanceManageView`
+   - 需要认证和 ADMIN 角色权限
+
+4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
+   - 修改 `handleQuickAccess` 函数
+   - "考勤异常" 快捷入口卡片点击后导航到考勤管理页面
+
+5. **UI 设计特点**：
+   - **食堂主题配色**：
+     - 主色：橙色 #FF6B35
+     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
+     - 背景色：浅米色 #FFF8F0
+   - **状态标签颜色映射**：
+     - 正常 (NORMAL) → success (绿色)
+     - 迟到 (LATE) → warning (橙色)
+     - 早退 (EARLY_LEAVE) → danger (红色)
+     - 缺卡 (MISSING) → info (灰色)
+     - 异常 (ABNORMAL) → danger (红色)
+   - **统计卡片设计**：
+     - 64px 圆角图标容器，渐变背景
+     - 大号数字显示，橙色高亮
+     - 悬停效果：上移 4px + 阴影增强
+   - **交互效果**：
+     - 异常记录行高亮（黄色背景 #fff7e6）
+     - 卡片悬停动画
+     - 按钮悬停效果
+
+6. **技术实现**：
+   - Vue 3 Composition API（`<script setup>`）
+   - Element Plus 组件库：
+     - `el-date-picker` - 日期范围选择器
+     - `el-table` - 数据表格
+     - `el-dialog` - 对话框
+     - `el-form` - 表单
+     - `el-descriptions` - 描述列表
+     - `el-tag` - 标签
+     - `el-pagination` - 分页
+   - 响应式数据管理（ref、reactive、computed）
+   - 自定义样式覆盖（`:deep()` 选择器）
+   - 表单验证（el-form 的 rules 属性）
+
+**API 对接**：
+```
+GET    /api/attendance/              # 考勤列表（支持 ?search= & ?status= & ?created_at__gte= & ?created_at__lte=）
+GET    /api/attendance/{id}/         # 考勤详情
+DELETE /api/attendance/{id}/         # 删除考勤记录
+POST   /api/attendance/statistics/   # 考勤统计
+POST   /api/attendance/{id}/correct/ # 异常处理（修改考勤状态）
+```
+
+**测试验证**：
+- ✅ 考勤管理页面正常显示
+- ✅ 日期选择器筛选正常
+- ✅ 搜索功能正常（按姓名、电话、地点）
+- ✅ 状态筛选正常
+- ✅ 统计卡片数据正确显示
+- ✅ 查看考勤详情对话框正常显示
+- ✅ 异常记录行高亮显示（黄色背景）
+- ✅ 异常处理对话框正常打开和提交
+- ✅ 从管理员首页快捷入口导航正常
+- ✅ 响应式布局在不同屏幕尺寸下正常显示
+
+**注意事项**：
+- 异常处理对话框中，修改备注为必填字段，最少 5 字符
+- 删除操作有二次确认，防止误操作
+- 统计数据默认显示最近 30 天的数据
+- 异常记录（迟到、早退、缺卡、异常）在表格中高亮显示
+- 加班时长保留一位小数显示
+- 日期时间格式化为 `YYYY-MM-DD HH:mm` 格式
+- 路由导航需要 ADMIN 角色权限
+
+---
+
 ## 待完成
 
 - [ ] 第四阶段：管理员端页面
   - [x] 步骤 4.1：管理员首页（Dashboard）
   - [x] 步骤 4.2：人员档案管理页面
   - [x] 步骤 4.3：排班安排管理页面
-  - [ ] 步骤 4.4：考勤记录管理页面
+  - [x] 步骤 4.4：考勤记录管理页面
   - [ ] 步骤 4.5：请假审批管理页面
   - [ ] 步骤 4.6：薪资信息管理页面
   - [ ] 步骤 4.7：综合统计分析页面
