@@ -338,7 +338,7 @@ const formatDate = (dateString) => {
 
 // 快捷入口点击处理
 const handleQuickAccess = (route) => {
-  if (route === '/admin/employees') {
+  if (route === '/admin/employees' || route === '/admin/schedules') {
     router.push(route)
   } else {
     // 其他路由功能在阶段四其他步骤实现

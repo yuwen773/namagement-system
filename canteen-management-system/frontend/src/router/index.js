@@ -27,6 +27,12 @@ const routes = [
     component: () => import('../views/admin/EmployeeManageView.vue'),
     meta: { requiresAuth: true, role: 'ADMIN' }
   },
+  {
+    path: '/admin/schedules',
+    name: 'ScheduleManage',
+    component: () => import('../views/admin/ScheduleManageView.vue'),
+    meta: { requiresAuth: true, role: 'ADMIN' }
+  },
   // 员工端路由
   {
     path: '/employee',

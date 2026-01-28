@@ -1205,12 +1205,153 @@ DELETE /api/employees/{id}/      # 删除员工
 
 ---
 
+### ✅ 步骤 4.3：排班安排管理页面
+
+**实施内容**：
+
+1. **创建排班管理 API 封装** (`frontend/src/api/schedule.js`)
+   - **班次定义 API**：
+     - `getShiftList(params)` - 获取班次列表
+     - `getShiftDetail(id)` - 获取班次详情
+     - `createShift(data)` - 创建班次
+     - `updateShift(id, data)` - 更新班次
+     - `deleteShift(id)` - 删除班次
+   - **排班计划 API**：
+     - `getScheduleList(params)` - 获取排班列表（支持筛选、搜索、排序）
+     - `getScheduleDetail(id)` - 获取排班详情
+     - `createSchedule(data)` - 创建排班
+     - `updateSchedule(id, data)` - 更新排班
+     - `deleteSchedule(id)` - 删除排班
+     - `batchCreateSchedule(data)` - 批量创建排班
+     - `getCalendarView(data)` - 获取日历视图数据
+   - **调班申请 API**：
+     - `getShiftRequestList(params)` - 获取调班申请列表
+     - `createShiftRequest(data)` - 创建调班申请
+     - `approveShiftRequest(id, data)` - 调班审批
+     - `getMyShiftRequests(params)` - 我的调班申请
+     - `getPendingShiftRequests()` - 待审批调班列表
+
+2. **创建排班管理页面** (`frontend/src/views/admin/ScheduleManageView.vue`)
+   - **顶部操作栏**：
+     - 日期选择器：选择日期范围筛选排班
+     - 视图切换器：日历视图 / 列表视图切换
+     - 操作按钮：批量排班、刷新
+   - **日历视图**：
+     - 使用 Element Plus 日历组件
+     - 显示每日排班情况（员工姓名 + 班次名称）
+     - 不同班次使用不同颜色标签
+     - 已调班的排班显示特殊标记（橙色边框 + 刷新图标）
+     - 点击排班项查看详情
+   - **列表视图**：
+     - 显示字段：ID、员工姓名、班次、排班日期、开始/结束时间、是否调班
+     - 操作按钮：查看、编辑、删除
+   - **批量排班对话框**：
+     - 多选员工（支持搜索）
+     - 选择班次（显示班次时间）
+     - 选择日期范围
+     - 返回创建成功/跳过数量统计
+   - **排班详情对话框**：
+     - 使用 `el-descriptions` 组件展示完整信息
+     - 显示员工姓名、岗位、班次、日期、时间
+   - **编辑排班对话框**：
+     - 修改员工、班次、排班日期
+     - 表单验证
+   - **调班审批对话框**：
+     - 显示申请详情（申请人、原班次、目标班次、申请原因）
+     - 审批意见输入框（必填）
+     - 批准/拒绝按钮
+
+3. **更新路由配置** (`frontend/src/router/index.js`)
+   - 添加路由 `/admin/schedules` → `ScheduleManageView`
+   - 需要认证和 ADMIN 角色权限
+
+4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
+   - 修改 `handleQuickAccess` 函数
+   - "排班制定" 快捷入口卡片点击后导航到排班管理页面
+
+5. **UI 设计特点**：
+   - **食堂主题配色**：
+     - 主色：橙色 #FF6B35
+     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
+     - 背景色：浅米色 #FFF8F0
+   - **班次标签颜色映射**：
+     - 早班 → success (绿色)
+     - 中班 → warning (橙色)
+     - 晚班 → danger (红色)
+     - 全天 → info (蓝色)
+   - **交互效果**：
+     - 日历单元格悬停效果
+     - 排班项点击查看详情
+     - 按钮悬停动画
+     - 对话框圆角和阴影
+
+6. **技术实现**：
+   - Vue 3 Composition API（`<script setup>`）
+   - Element Plus 组件库：
+     - `el-calendar` - 日历组件
+     - `el-table` - 数据表格
+     - `el-dialog` - 对话框
+     - `el-form` - 表单
+     - `el-date-picker` - 日期选择器
+     - `el-select` - 下拉选择
+     - `el-tag` - 标签
+     - `el-radio-group` - 视图切换
+   - 响应式数据管理（ref、reactive、computed）
+   - 自定义样式覆盖（:deep() 选择器）
+
+**API 对接**：
+```
+# 班次定义
+GET    /api/schedules/shifts/           # 班次列表
+POST   /api/schedules/shifts/           # 创建班次
+GET    /api/schedules/shifts/{id}/      # 班次详情
+PUT    /api/schedules/shifts/{id}/      # 更新班次
+DELETE /api/schedules/shifts/{id}/      # 删除班次
+
+# 排班计划
+GET    /api/schedules/schedules/        # 排班列表（支持 ?work_date__gte= & ?work_date__lte=）
+POST   /api/schedules/schedules/batch_create/  # 批量排班
+POST   /api/schedules/schedules/calendar_view/ # 日历视图
+GET    /api/schedules/schedules/{id}/   # 排班详情
+PUT    /api/schedules/schedules/{id}/   # 更新排班
+DELETE /api/schedules/schedules/{id}/   # 删除排班
+
+# 调班申请
+GET    /api/schedules/shift-requests/pending/       # 待审批列表
+POST   /api/schedules/shift-requests/{id}/approve/  # 调班审批
+```
+
+**测试验证**：
+- ✅ 排班管理页面正常显示
+- ✅ 日期选择器筛选正常
+- ✅ 日历视图正确显示每日排班
+- ✅ 列表视图正确显示所有排班记录
+- ✅ 视图切换功能正常
+- ✅ 批量排班对话框正常打开和提交
+- ✅ 排班详情对话框正常显示
+- ✅ 编辑排班功能正常
+- ✅ 删除排班功能正常（含二次确认）
+- ✅ 从管理员首页快捷入口导航正常
+- ✅ 班次标签颜色正确显示
+- ✅ 已调班排班显示特殊标记
+- ✅ 响应式布局在不同屏幕尺寸下正常显示
+
+**注意事项**：
+- 日历视图数据按日期分组返回，适合前端日历组件直接使用
+- 批量排班使用 `get_or_create` 避免重复创建
+- 调班审核通过后，后端自动更新排班记录（删除原排班，创建新排班）
+- 不同班次使用不同颜色标签，便于视觉区分
+- 删除操作有二次确认，防止误操作
+- 路由导航需要 ADMIN 角色权限
+
+---
+
 ## 待完成
 
 - [ ] 第四阶段：管理员端页面
   - [x] 步骤 4.1：管理员首页（Dashboard）
   - [x] 步骤 4.2：人员档案管理页面
-  - [ ] 步骤 4.3：排班安排管理页面
+  - [x] 步骤 4.3：排班安排管理页面
   - [ ] 步骤 4.4：考勤记录管理页面
   - [ ] 步骤 4.5：请假审批管理页面
   - [ ] 步骤 4.6：薪资信息管理页面

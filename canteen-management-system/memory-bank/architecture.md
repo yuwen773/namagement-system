@@ -1308,14 +1308,14 @@ frontend/
 #### `src/views/` - 页面视图组件
 
 - **admin/** - 管理员端页面
-  - `DashboardView.vue` - 管理员首页/仪表板
-  - `EmployeeManageView.vue` - 人员档案管理
-  - `ScheduleManageView.vue` - 排班安排管理
-  - `AttendanceManageView.vue` - 考勤记录管理
-  - `LeaveApproveView.vue` - 请假审批管理
-  - `SalaryManageView.vue` - 薪资信息管理
-  - `StatisticsView.vue` - 综合统计分析
-  - `SystemManageView.vue` - 系统管理
+  - `DashboardView.vue` - 管理员首页/仪表板（已实现）
+  - `EmployeeManageView.vue` - 人员档案管理（已实现）
+  - `ScheduleManageView.vue` - 排班安排管理（已实现）
+  - `AttendanceManageView.vue` - 考勤记录管理（待实现）
+  - `LeaveApproveView.vue` - 请假审批管理（待实现）
+  - `SalaryManageView.vue` - 薪资信息管理（待实现）
+  - `StatisticsView.vue` - 综合统计分析（待实现）
+  - `SystemManageView.vue` - 系统管理（待实现）
 
 - **employee/** - 员工端页面
   - `HomeView.vue` - 员工端首页
@@ -1357,8 +1357,8 @@ frontend/
 - `getUserInfo(id)` - 获取用户信息
 
 - `analytics.js` - 统计分析 API（已实现）
-- `employee.js` - 员工档案 API（计划中）
-- `schedule.js` - 排班管理 API（计划中）
+- `employee.js` - 员工档案 API（已实现）
+- `schedule.js` - 排班管理 API（已实现）
 - `attendance.js` - 考勤管理 API（计划中）
 - `leave.js` - 请假管理 API（计划中）
 - `salary.js` - 薪资管理 API（计划中）
@@ -1377,7 +1377,35 @@ frontend/
 - `patchEmployee(id, data)` - 部分更新员工档案
 - `deleteEmployee(id)` - 删除员工档案
 
-- `schedule.js` - 排班管理 API（计划中）
+**`schedule.js`** - 排班管理 API
+- **班次定义**：
+  - `getShiftList(params)` - 获取班次列表
+  - `getShiftDetail(id)` - 获取班次详情
+  - `createShift(data)` - 创建班次
+  - `updateShift(id, data)` - 更新班次
+  - `patchShift(id, data)` - 部分更新班次
+  - `deleteShift(id)` - 删除班次
+- **排班计划**：
+  - `getScheduleList(params)` - 获取排班列表（支持筛选、搜索、排序）
+  - `getScheduleDetail(id)` - 获取排班详情
+  - `createSchedule(data)` - 创建排班
+  - `updateSchedule(id, data)` - 更新排班
+  - `patchSchedule(id, data)` - 部分更新排班
+  - `deleteSchedule(id)` - 删除排班
+  - `batchCreateSchedule(data)` - 批量创建排班
+  - `getCalendarView(data)` - 获取日历视图数据
+- **调班申请**：
+  - `getShiftRequestList(params)` - 获取调班申请列表
+  - `getShiftRequestDetail(id)` - 获取调班申请详情
+  - `createShiftRequest(data)` - 创建调班申请
+  - `updateShiftRequest(id, data)` - 更新调班申请
+  - `patchShiftRequest(id, data)` - 部分更新调班申请
+  - `deleteShiftRequest(id)` - 删除调班申请
+  - `approveShiftRequest(id, data)` - 调班审批
+  - `getMyShiftRequests(params)` - 我的调班申请
+  - `getPendingShiftRequests()` - 待审批调班列表
+
+- `attendance.js` - 考勤管理 API（计划中）
 - `attendance.js` - 考勤管理 API（计划中）
 - `leave.js` - 请假管理 API（计划中）
 - `salary.js` - 薪资管理 API（计划中）
@@ -1391,6 +1419,7 @@ frontend/
 - `/register` - 注册页面（无需认证）
 - `/admin` - 管理员首页（需要 ADMIN 角色）
 - `/admin/employees` - 人员档案管理页面（需要 ADMIN 角色）
+- `/admin/schedules` - 排班安排管理页面（需要 ADMIN 角色）
 - `/employee` - 员工首页（需要 EMPLOYEE 角色）
 - `/` - 默认重定向到登录页
 - `/:pathMatch(.*)*` - 404 页面（重定向到登录页）
@@ -1922,6 +1951,200 @@ export default defineConfig({
 
 **路由配置**：
 - 路径：`/admin/employees`
+- 需要认证：是
+- 需要角色：ADMIN
+- meta 信息：`{ requiresAuth: true, role: 'ADMIN' }`
+
+---
+
+#### 排班管理页面 (`ScheduleManageView.vue`)
+
+**布局结构**：
+- 充满视口（100vh）的单页布局
+- 顶部操作栏：日期选择器 + 视图切换 + 操作按钮
+- 日历视图/列表视图：根据视图模式动态切换
+- 对话框：批量排班、详情、编辑、调班审批
+
+**顶部操作栏特性**：
+- 日期选择器：
+  - 支持选择日期范围筛选
+  - 格式：YYYY-MM-DD
+  - 日期变化时自动重新加载数据
+- 视图切换器：
+  - 日历视图（默认）
+  - 列表视图
+  - 使用 `el-radio-group` + `el-radio-button`
+- 操作按钮：
+  - 批量排班按钮（橙色主色调）
+  - 刷新按钮
+
+**日历视图特性**：
+- 使用 Element Plus 的 `el-calendar` 组件
+- 自定义日期单元格：
+  - 显示日期数字
+  - 显示当日所有排班记录
+  - 排班项包含：员工姓名标签 + 班次名称 + 调班图标（如有）
+- 排班项样式：
+  - 不同班次使用不同颜色标签
+  - 已调班的排班有特殊标记（橙色边框 + 刷新图标）
+  - 悬停效果（背景变色 + 平移）
+  - 点击查看详情
+- 日期单元格高度：120px
+
+**列表视图特性**：
+- 使用 `el-table` 组件显示排班记录
+- 显示字段：ID、员工姓名、班次、排班日期、开始时间、结束时间、是否调班
+- 班次列使用彩色标签
+- 是否调班列显示状态标签
+- 操作按钮：查看、编辑、删除（link 样式）
+- 表头样式：浅米色背景
+
+**批量排班对话框特性**：
+- 多选员工下拉框：
+  - 支持搜索过滤
+  - 显示格式：姓名 - 岗位
+  - 仅显示在职员工（ACTIVE）
+- 班次选择下拉框：
+  - 显示格式：班次名称 (开始时间 - 结束时间)
+- 日期范围选择器：
+  - 必填字段
+  - 格式：YYYY-MM-DD
+- 表单验证：
+  - 员工：必选
+  - 班次：必选
+  - 日期范围：必选
+- 提交后显示创建成功数量
+
+**排班详情对话框特性**：
+- 使用 `el-descriptions` 组件展示
+- 2 列布局，带边框
+- 显示字段：
+  - 员工姓名、岗位
+  - 班次（彩色标签）
+  - 排班日期、开始时间、结束时间
+  - 是否调班（状态标签）
+- 底部按钮：关闭、编辑
+
+**编辑排班对话框特性**：
+- 员工选择下拉框
+- 班次选择下拉框
+- 排班日期选择器
+- 表单验证：所有字段必填
+- 提交后自动刷新列表
+
+**调班审批对话框特性**：
+- 使用 `el-descriptions` 显示申请详情：
+  - 申请人、申请时间
+  - 原班次信息
+  - 期望调整信息
+  - 申请原因
+- 审批意见输入框：
+  - 必填字段
+  - 多行文本框（3 行）
+- 操作按钮：
+  - 取消
+  - 拒绝（红色）
+  - 批准（主色调）
+
+**交互体验**：
+- 组件挂载时自动加载班次和员工列表
+- 日期变化时自动加载排班数据
+- 视图切换时自动重新加载数据
+- Loading 状态显示（视图级别）
+- 操作成功/失败提示
+- 删除操作需要二次确认
+
+**响应式设计**：
+- 桌面端：操作栏水平布局
+- 平板竖屏（≤768px）：
+  - 操作栏垂直布局
+  - 日历单元格高度减小到 100px
+- 手机（≤480px）：
+  - 减小内边距和字体大小
+  - 日期数字和排班项字体缩小
+
+**技术实现**：
+- Vue 3 Composition API（`<script setup>`）
+- Element Plus 组件库：
+  - `el-calendar` - 日历组件
+  - `el-table` - 数据表格
+  - `el-dialog` - 对话框
+  - `el-form` - 表单
+  - `el-date-picker` - 日期选择器
+  - `el-select` - 下拉选择
+  - `el-tag` - 标签
+  - `el-radio-group` / `el-radio-button` - 视图切换
+- 响应式数据管理：
+  - `ref()` - 单个值响应式（loading、dialogVisible、viewMode 等）
+  - `reactive()` - 对象响应式（batchForm、editForm、approvalForm）
+  - `computed()` - 计算属性（userName、currentDate）
+- 自定义方法：
+  - `loadShifts()` - 加载班次列表
+  - `loadEmployees()` - 加载员工列表
+  - `loadSchedules()` - 加载排班数据（根据视图模式）
+  - `handleDateChange()` - 日期变化处理
+  - `handleViewModeChange()` - 视图切换处理
+  - `handleBatchCreate()` - 批量排班
+  - `handleConfirmBatch()` - 确认批量排班
+  - `handleViewSchedule()` - 查看排班详情
+  - `handleEditSchedule()` - 编辑排班
+  - `handleConfirmEdit()` - 确认编辑
+  - `handleDeleteSchedule()` - 删除排班
+  - `handleApprove()` - 批准调班
+  - `handleReject()` - 拒绝调班
+- 工具函数：
+  - `getSchedulesForDate()` - 获取指定日期的排班列表
+  - `getShiftTagType()` - 根据班次名称返回标签颜色
+  - `formatDate()` - 格式化日期时间
+
+**数据对接**：
+- 接口地址：
+  - 班次列表：`/api/schedules/shifts/`
+  - 员工列表：`/api/employees/`
+  - 排班列表：`/api/schedules/schedules/`
+  - 日历视图：`/api/schedules/schedules/calendar_view/`
+  - 批量排班：`/api/schedules/schedules/batch_create/`
+  - 更新排班：`/api/schedules/schedules/{id}/`
+  - 删除排班：`/api/schedules/schedules/{id}/`
+  - 调班审批：`/api/schedules/shift-requests/{id}/approve/`
+- 请求参数：
+  - 日历视图：`{ start_date, end_date, employee_id? }`
+  - 排班列表：`{ work_date__gte, work_date__lte, ordering }`
+  - 批量排班：`{ employee_ids[], shift_id, start_date, end_date }`
+- 响应格式：
+  ```json
+  // 日历视图响应
+  {
+    "code": 200,
+    "message": "成功",
+    "data": {
+      "2026-01-28": [
+        { "id": 1, "employee_name": "张三", "shift_name": "早班", "is_swapped": false },
+        { "id": 2, "employee_name": "李四", "shift_name": "中班", "is_swapped": true }
+      ]
+    }
+  }
+  ```
+
+**颜色映射函数**：
+- `getShiftTagType(shiftName)` - 班次标签颜色映射
+  - 早班 → success (绿色)
+  - 中班 → warning (橙色)
+  - 晚班 → danger (红色)
+  - 全天 → info (蓝色)
+
+**设计亮点**：
+1. **双视图模式**：日历视图和列表视图满足不同使用场景
+2. **直观的日历展示**：每日排班一目了然
+3. **批量操作支持**：一次性为多个员工创建排班
+4. **视觉标识清晰**：不同班次颜色区分，调班特殊标记
+5. **表单验证完善**：所有必填字段都有验证
+6. **删除二次确认**：防止误操作删除重要数据
+7. **响应式设计**：适配不同屏幕尺寸
+8. **Loading 状态**：提升用户体验
+
+**路由配置**：
+- 路径：`/admin/schedules`
 - 需要认证：是
 - 需要角色：ADMIN
 - meta 信息：`{ requiresAuth: true, role: 'ADMIN' }`
