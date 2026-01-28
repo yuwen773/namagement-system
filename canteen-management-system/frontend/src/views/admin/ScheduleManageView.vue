@@ -106,6 +106,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页组件 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handlePageSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 批量排班对话框 -->
@@ -335,6 +348,13 @@ const calendarData = ref({})
 const shiftList = ref([])
 const employeeList = ref([])
 
+// ==================== 分页状态 ====================
+const pagination = ref({
+  page: 1,
+  pageSize: 10,
+  total: 0
+})
+
 // ==================== 对话框状态 ====================
 const batchDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
@@ -466,34 +486,41 @@ async function loadSchedules() {
         calendarData.value = {}
       }
     } else {
-      // 加载列表视图数据
+      // 加载列表视图数据（带分页）
       const result = await getScheduleList({
         work_date__gte: dateRange.value[0],
         work_date__lte: dateRange.value[1],
-        ordering: 'work_date,employee_id'
+        ordering: 'work_date,employee_id',
+        page: pagination.value.page,
+        page_size: pagination.value.pageSize
       })
       // 安全处理响应数据
       if (result && result.data) {
-        // 如果 data 是数组，直接使用
-        if (Array.isArray(result.data)) {
-          scheduleList.value = result.data
-        }
-        // 如果 data 是对象且有 results，取 results
-        else if (result.data.results && Array.isArray(result.data.results)) {
+        // 如果 data 是对象且有 results，取 results（分页格式）
+        if (result.data.results && Array.isArray(result.data.results)) {
           scheduleList.value = result.data.results
+          pagination.value.total = result.data.count || 0
+        }
+        // 如果 data 是数组，直接使用（非分页格式）
+        else if (Array.isArray(result.data)) {
+          scheduleList.value = result.data
+          pagination.value.total = result.data.length
         }
         // 兜底处理
         else {
           scheduleList.value = []
+          pagination.value.total = 0
         }
       } else {
         scheduleList.value = []
+        pagination.value.total = 0
       }
     }
   } catch (error) {
     console.error('加载排班数据失败:', error)
     scheduleList.value = []
     calendarData.value = {}
+    pagination.value.total = 0
     ElMessage.error('加载排班数据失败: ' + (error.message || '未知错误'))
   } finally {
     loading.value = false
@@ -502,16 +529,33 @@ async function loadSchedules() {
 
 // ==================== 事件处理 ====================
 function handleDateChange() {
+  // 重置分页到第一页
+  pagination.value.page = 1
   loadSchedules()
 }
 
 function handleViewModeChange() {
+  // 切换到列表视图时重置分页到第一页
+  if (viewMode.value === 'list') {
+    pagination.value.page = 1
+  }
   loadSchedules()
 }
 
 function handleRefresh() {
   loadSchedules()
   ElMessage.success('刷新成功')
+}
+
+function handlePageChange(page) {
+  pagination.value.page = page
+  loadSchedules()
+}
+
+function handlePageSizeChange(pageSize) {
+  pagination.value.pageSize = pageSize
+  pagination.value.page = 1
+  loadSchedules()
 }
 
 function handleBatchCreate() {
@@ -850,6 +894,45 @@ function formatDate(dateString) {
   background-color: #FFF8F0;
   color: #333;
   font-weight: 600;
+}
+
+/* 分页组件样式 */
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e4e7ed;
+}
+
+:deep(.el-pagination) {
+  --el-pagination-button-bg-color: #f5f7fa;
+  --el-pagination-button-color: #606266;
+  --el-pagination-hover-color: #FF6B35;
+}
+
+:deep(.el-pagination .el-pager li) {
+  border-radius: 6px;
+  margin: 0 2px;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background-color: #FF6B35;
+  color: #fff;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next) {
+  border-radius: 6px;
+}
+
+:deep(.el-pagination.is-background .el-pager li:not(.disabled).is-active) {
+  background-color: #FF6B35;
+}
+
+:deep(.el-pagination .el-pagination__sizes .el-select .el-input__wrapper) {
+  border-radius: 6px;
 }
 
 /* 对话框样式 */

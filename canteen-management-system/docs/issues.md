@@ -107,11 +107,53 @@
 
 ---
 
+### 问题 5: Element Plus 组件显示英文
+
+**描述**:
+Element Plus 组件（如 `el-pagination`、`el-calendar`、`el-date-picker`）显示英文而非中文
+
+**原因**:
+- `main.js` 中注册 Element Plus 时未配置中文语言包
+
+**修复**:
+1. 导入 Element Plus 中文语言包：`import zhCn from 'element-plus/dist/locale/zh-cn.mjs'`
+2. 注册时配置语言选项：`app.use(ElementPlus, { locale: zhCn })`
+
+**影响文件**:
+- `frontend/src/main.js`
+
+**状态**: ✅ 已解决
+
+---
+
+### 问题 6: 排班管理页面显示英文
+
+**描述**:
+排班管理页面中岗位显示英文（如 "CHEF"）而非中文（如 "厨师"）
+
+**原因**:
+1. 前端使用了 `employee_position` 字段（返回英文枚举值）而非 `position_display`（返回中文显示值）
+2. 后端 `ShiftSwapRequestSerializer` 缺少格式化的班次信息字段
+3. 前端 `getShiftTagType` 函数未支持所有班次类型
+
+**修复**:
+1. 前端将 `employee_position` 改为 `position_display`
+2. 后端添加 `original_schedule_info` 和 `target_schedule_info` 方法
+3. 扩展前端班次类型映射，支持早餐班、中餐班、晚餐班、早中连班、中晚连班、夜宵班、行政班、保洁早班、保洁晚班
+
+**影响文件**:
+- `frontend/src/views/admin/ScheduleManageView.vue`
+- `backend/schedules/serializers.py`
+
+**状态**: ✅ 已解决
+
+---
+
 ## 问题状态统计
 
 | 状态 | 数量 |
 |:-----|:-----|
-| ✅ 已解决 | 4 |
+| ✅ 已解决 | 6 |
 | 🔄 进行中 | 0 |
 | ⏳ 待处理 | 0 |
 | ❌ 已关闭 | 0 |
