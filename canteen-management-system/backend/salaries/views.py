@@ -2,9 +2,8 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from django.db.models import Sum, Q, Count
 from django.utils import timezone
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -19,20 +18,21 @@ from employees.models import EmployeeProfile
 from schedules.models import Schedule
 from attendance.models import AttendanceRecord
 from leaves.models import LeaveRequest
-
-
-# 岗位津贴配置（单位：元）
-POSITION_ALLOWANCE_MAP = {
-    'CHEF': 800,       # 厨师
-    'PASTRY': 700,     # 面点
-    'PREP': 500,       # 切配
-    'CLEANER': 300,    # 保洁
-    'SERVER': 400,     # 服务员
-    'MANAGER': 1000,   # 经理
-}
-
-# 默认基本工资（单位：元）
-DEFAULT_BASE_SALARY = 3000
+from utils.response import ApiResponse
+from utils.pagination import StandardPagination
+from utils.constants import (
+    POSITION_ALLOWANCE_MAP,
+    DEFAULT_BASE_SALARY,
+    DAYS_PER_MONTH,
+    HOURS_PER_DAY,
+    OVERTIME_RATE,
+    LATE_DEDUCTION,
+    MISSING_DEDUCTION,
+    SALARY_STATUS_DRAFT,
+    SALARY_STATUS_PUBLISHED,
+    SALARY_STATUS_ADJUSTED,
+    SALARY_STATUS_APPEALED,
+)
 
 
 def get_position_allowance(position):
@@ -42,34 +42,35 @@ def get_position_allowance(position):
 
 def calculate_daily_salary(base_salary):
     """计算日工资"""
-    return Decimal(str(base_salary)) / Decimal('21.75')
+    return Decimal(str(base_salary)) / Decimal(str(DAYS_PER_MONTH))
 
 
 def calculate_hourly_salary(daily_salary):
     """计算时薪"""
-    return daily_salary / Decimal('8')
+    return daily_salary / Decimal(str(HOURS_PER_DAY))
 
 
 def calculate_overtime_pay(overtime_hours, base_salary):
     """计算加班费"""
     daily_salary = calculate_daily_salary(base_salary)
     hourly_salary = calculate_hourly_salary(daily_salary)
-    return hourly_salary * Decimal('1.5') * Decimal(str(overtime_hours))
+    return hourly_salary * Decimal(str(OVERTIME_RATE)) * Decimal(str(overtime_hours))
 
 
 def calculate_late_deduction(late_count):
     """计算迟到扣款"""
-    return Decimal(str(late_count)) * Decimal('20')
+    return Decimal(str(late_count)) * Decimal(str(LATE_DEDUCTION))
 
 
 def calculate_missing_deduction(missing_count):
     """计算缺卡扣款"""
-    return Decimal(str(missing_count)) * Decimal('50')
+    return Decimal(str(missing_count)) * Decimal(str(MISSING_DEDUCTION))
 
 
 class SalaryRecordViewSet(viewsets.ModelViewSet):
     """薪资记录视图集"""
     queryset = SalaryRecord.objects.select_related('employee').all()
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['employee', 'year_month', 'status']
     search_fields = ['employee__name', 'employee__phone']
@@ -84,6 +85,23 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
             return SalaryRecordCreateSerializer
         return SalaryRecordSerializer
 
+    def list(self, request, *args, **kwargs):
+        """获取薪资记录列表"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+
+        serializer = self.get_serializer(queryset, many=True)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取薪资记录详情"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
+
     def create(self, request, *args, **kwargs):
         """创建薪资记录"""
         serializer = self.get_serializer(data=request.data)
@@ -93,11 +111,7 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         # 返回完整的薪资记录信息
         instance = serializer.instance
         response_serializer = SalaryRecordSerializer(instance)
-        return Response({
-            'code': 200,
-            'message': '薪资记录创建成功',
-            'data': response_serializer.data
-        }, status=status.HTTP_201_CREATED)
+        return ApiResponse.success(data=response_serializer.data, message='薪资记录创建成功', code=201)
 
     def update(self, request, *args, **kwargs):
         """更新薪资记录"""
@@ -109,20 +123,13 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
 
         # 返回完整的薪资记录信息
         response_serializer = SalaryRecordSerializer(instance)
-        return Response({
-            'code': 200,
-            'message': '薪资记录更新成功',
-            'data': response_serializer.data
-        })
+        return ApiResponse.success(data=response_serializer.data, message='薪资记录更新成功')
 
     def destroy(self, request, *args, **kwargs):
         """删除薪资记录"""
         instance = self.get_object()
         self.perform_destroy(instance)
-        return Response({
-            'code': 200,
-            'message': '薪资记录删除成功'
-        })
+        return ApiResponse.success(message='薪资记录删除成功')
 
     @action(detail=False, methods=['post'], url_path='generate')
     def generate_salary(self, request):
@@ -235,15 +242,11 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 errors.append(f"员工 {employee.name} 薪资生成失败: {str(e)}")
 
-        return Response({
-            'code': 200,
-            'message': '薪资生成完成',
-            'data': {
-                'created': created_count,
-                'skipped': skipped_count,
-                'errors': errors
-            }
-        })
+        return ApiResponse.success(data={
+            'created': created_count,
+            'skipped': skipped_count,
+            'errors': errors
+        }, message='薪资生成完成')
 
     @action(detail=True, methods=['post'], url_path='adjust')
     def adjust_salary(self, request, pk=None):
@@ -284,11 +287,7 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
 
         # 返回更新后的薪资记录
         response_serializer = SalaryRecordSerializer(instance)
-        return Response({
-            'code': 200,
-            'message': '薪资调整成功',
-            'data': response_serializer.data
-        })
+        return ApiResponse.success(data=response_serializer.data, message='薪资调整成功')
 
     @action(detail=True, methods=['post'], url_path='publish')
     def publish_salary(self, request, pk=None):
@@ -299,20 +298,13 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         if instance.status != 'DRAFT':
-            return Response({
-                'code': 400,
-                'message': '只有草稿状态的薪资记录才能发布'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='只有草稿状态的薪资记录才能发布')
 
         instance.status = 'PUBLISHED'
         instance.save()
 
         response_serializer = SalaryRecordSerializer(instance)
-        return Response({
-            'code': 200,
-            'message': '薪资发布成功',
-            'data': response_serializer.data
-        })
+        return ApiResponse.success(data=response_serializer.data, message='薪资发布成功')
 
     @action(detail=False, methods=['get'], url_path='my-salaries')
     def my_salaries(self, request):
@@ -322,10 +314,7 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         """
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
-            return Response({
-                'code': 400,
-                'message': '请提供 employee_id 参数'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='请提供 employee_id 参数')
 
         queryset = self.queryset.filter(employee_id=employee_id)
 
@@ -345,23 +334,16 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = SalaryRecordSerializer(page, many=True)
-            return self.get_paginated_response({
-                'code': 200,
-                'message': '查询成功',
-                'data': serializer.data
-            })
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = SalaryRecordSerializer(queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '查询成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='查询成功')
 
 
 class AppealViewSet(viewsets.ModelViewSet):
     """异常申诉视图集"""
     queryset = Appeal.objects.select_related('employee', 'approver').all()
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['appeal_type', 'employee', 'status']
     search_fields = ['employee__name', 'reason', 'approval_remark']
@@ -375,6 +357,23 @@ class AppealViewSet(viewsets.ModelViewSet):
         elif self.action == 'create':
             return AppealCreateSerializer
         return AppealSerializer
+
+    def list(self, request, *args, **kwargs):
+        """获取异常申诉列表"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+
+        serializer = self.get_serializer(queryset, many=True)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取异常申诉详情"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def create(self, request, *args, **kwargs):
         """创建异常申诉"""
@@ -392,11 +391,7 @@ class AppealViewSet(viewsets.ModelViewSet):
 
         # 返回完整的申诉信息
         response_serializer = AppealSerializer(appeal)
-        return Response({
-            'code': 200,
-            'message': '申诉提交成功',
-            'data': response_serializer.data
-        }, status=status.HTTP_201_CREATED)
+        return ApiResponse.success(data=response_serializer.data, message='申诉提交成功', code=201)
 
     def update(self, request, *args, **kwargs):
         """更新异常申诉"""
@@ -407,20 +402,13 @@ class AppealViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         response_serializer = AppealSerializer(instance)
-        return Response({
-            'code': 200,
-            'message': '申诉更新成功',
-            'data': response_serializer.data
-        })
+        return ApiResponse.success(data=response_serializer.data, message='申诉更新成功')
 
     def destroy(self, request, *args, **kwargs):
         """删除异常申诉"""
         instance = self.get_object()
         self.perform_destroy(instance)
-        return Response({
-            'code': 200,
-            'message': '申诉删除成功'
-        })
+        return ApiResponse.success(message='申诉删除成功')
 
     @action(detail=True, methods=['post'], url_path='approve')
     def approve_appeal(self, request, pk=None):
@@ -431,10 +419,7 @@ class AppealViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         if instance.status != 'PENDING':
-            return Response({
-                'code': 400,
-                'message': '只有待审批状态的申诉才能审批'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='只有待审批状态的申诉才能审批')
 
         serializer = AppealApprovalSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -444,18 +429,12 @@ class AppealViewSet(viewsets.ModelViewSet):
         approver_id = request.data.get('approver_id')
 
         if not approver_id:
-            return Response({
-                'code': 400,
-                'message': '请提供 approver_id（审批人ID）'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='请提供 approver_id（审批人ID）')
 
         try:
             approver = EmployeeProfile.objects.get(id=approver_id)
         except EmployeeProfile.DoesNotExist:
-            return Response({
-                'code': 400,
-                'message': '审批人不存在'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='审批人不存在')
 
         # 更新申诉状态
         instance.status = 'APPROVED' if approve else 'REJECTED'
@@ -472,11 +451,7 @@ class AppealViewSet(viewsets.ModelViewSet):
 
         # 返回更新后的申诉信息
         response_serializer = AppealSerializer(instance)
-        return Response({
-            'code': 200,
-            'message': '申诉审批完成',
-            'data': response_serializer.data
-        })
+        return ApiResponse.success(data=response_serializer.data, message='申诉审批完成')
 
     @action(detail=False, methods=['get'], url_path='pending')
     def pending_appeals(self, request):
@@ -497,18 +472,10 @@ class AppealViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = AppealListSerializer(page, many=True)
-            return self.get_paginated_response({
-                'code': 200,
-                'message': '查询成功',
-                'data': serializer.data
-            })
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = AppealListSerializer(queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '查询成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='查询成功')
 
     @action(detail=False, methods=['get'], url_path='my-appeals')
     def my_appeals(self, request):
@@ -518,10 +485,7 @@ class AppealViewSet(viewsets.ModelViewSet):
         """
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
-            return Response({
-                'code': 400,
-                'message': '请提供 employee_id 参数'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='请提供 employee_id 参数')
 
         queryset = self.queryset.filter(employee_id=employee_id)
 
@@ -541,15 +505,7 @@ class AppealViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = MyAppealSerializer(page, many=True)
-            return self.get_paginated_response({
-                'code': 200,
-                'message': '查询成功',
-                'data': serializer.data
-            })
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = MyAppealSerializer(queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '查询成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='查询成功')

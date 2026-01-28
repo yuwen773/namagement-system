@@ -152,3 +152,40 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Static files
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+
+# Django REST Framework 配置
+REST_FRAMEWORK = {
+    # 分页配置
+    'DEFAULT_PAGINATION_CLASS': 'utils.pagination.StandardPagination',
+    'PAGE_SIZE': 20,
+    'PAGE_SIZE_QUERY_PARAM': 'page_size',
+    'MAX_PAGE_SIZE': 100,
+
+    # 异常处理配置
+    'EXCEPTION_HANDLER': 'utils.handlers.custom_exception_handler',
+
+    # 默认权限配置（开发阶段允许所有，生产环境需修改）
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+
+    # 默认渲染器
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+
+    # 过滤器后端
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+
+    # 认证配置（生产环境需启用）
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # 'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+    ],
+}

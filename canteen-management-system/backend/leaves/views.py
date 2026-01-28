@@ -1,6 +1,5 @@
-from rest_framework import viewsets, filters, status
+from rest_framework import viewsets, filters
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -12,6 +11,8 @@ from .serializers import (
     LeaveRequestApprovalSerializer,
     LeaveRequestMySerializer,
 )
+from utils.response import ApiResponse
+from utils.pagination import StandardPagination
 
 
 class LeaveRequestViewSet(viewsets.ModelViewSet):
@@ -19,6 +20,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     请假申请视图集
     """
     queryset = LeaveRequest.objects.all()
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['employee', 'leave_type', 'status']
     search_fields = ['employee__name', 'employee__phone', 'reason', 'approval_remark']
@@ -47,21 +49,13 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         instance = serializer.instance
         response_serializer = LeaveRequestSerializer(instance)
 
-        return Response({
-            'code': 200,
-            'message': '请假申请提交成功',
-            'data': response_serializer.data
-        }, status=status.HTTP_201_CREATED)
+        return ApiResponse.success(data=response_serializer.data, message='请假申请提交成功', code=201)
 
     def retrieve(self, request, *args, **kwargs):
         """获取详情，返回统一格式"""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def list(self, request, *args, **kwargs):
         """获取列表，返回统一格式"""
@@ -70,18 +64,10 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
 
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response({
-                'code': 200,
-                'message': '获取成功',
-                'data': serializer.data
-            })
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def update(self, request, *args, **kwargs):
         """更新请假申请，返回统一格式"""
@@ -91,20 +77,13 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        return Response({
-            'code': 200,
-            'message': '更新成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='更新成功')
 
     def destroy(self, request, *args, **kwargs):
         """删除请假申请，返回统一格式"""
         instance = self.get_object()
         self.perform_destroy(instance)
-        return Response({
-            'code': 200,
-            'message': '删除成功'
-        })
+        return ApiResponse.success(message='删除成功')
 
     @action(detail=False, methods=['get'], url_path='my-requests')
     def my_requests(self, request):
@@ -115,10 +94,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         employee_id = request.query_params.get('employee_id')
 
         if not employee_id:
-            return Response({
-                'code': 400,
-                'message': '缺少 employee_id 参数'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='缺少 employee_id 参数')
 
         queryset = self.queryset.filter(employee_id=employee_id)
 
@@ -130,11 +106,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         queryset = queryset.order_by('-created_at')
         serializer = self.get_serializer(queryset, many=True)
 
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     @action(detail=False, methods=['get'], url_path='pending')
     def pending(self, request):
@@ -146,11 +118,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         queryset = queryset.order_by('-created_at')
         serializer = LeaveRequestListSerializer(queryset, many=True)
 
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     @action(detail=True, methods=['post'], url_path='approve')
     def approve(self, request, pk=None):
@@ -162,10 +130,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
 
         # 检查状态
         if leave_request.status != LeaveRequest.Status.PENDING:
-            return Response({
-                'code': 400,
-                'message': '该请假申请已被处理'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='该请假申请已被处理')
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -198,8 +163,4 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         # 返回更新后的请假申请信息
         response_serializer = LeaveRequestSerializer(leave_request)
 
-        return Response({
-            'code': 200,
-            'message': '审批成功',
-            'data': response_serializer.data
-        })
+        return ApiResponse.success(data=response_serializer.data, message='审批成功')

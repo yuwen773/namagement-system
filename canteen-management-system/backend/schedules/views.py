@@ -1,6 +1,5 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Q
@@ -14,6 +13,8 @@ from .serializers import (
     ShiftSwapRequestSerializer, ShiftSwapRequestListSerializer,
     ShiftSwapApprovalSerializer, CalendarViewSerializer
 )
+from utils.response import ApiResponse
+from utils.pagination import StandardPagination
 
 
 class ShiftViewSet(viewsets.ModelViewSet):
@@ -22,6 +23,7 @@ class ShiftViewSet(viewsets.ModelViewSet):
     提供班次的增删改查操作
     """
     queryset = Shift.objects.all()
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['name']
     ordering_fields = ['start_time', 'created_at']
@@ -32,20 +34,44 @@ class ShiftViewSet(viewsets.ModelViewSet):
             return ShiftListSerializer
         return ShiftSerializer
 
-    def create_response(self, data, message='成功', code=200):
-        """统一的响应格式"""
-        return Response({
-            'code': code,
-            'message': message,
-            'data': data
-        }, status=status.HTTP_200_OK if code == 200 else status.HTTP_400_BAD_REQUEST)
+    def list(self, request, *args, **kwargs):
+        """获取班次列表"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+
+        serializer = self.get_serializer(queryset, many=True)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取班次详情"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def create(self, request, *args, **kwargs):
         """创建班次"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        return self.create_response(serializer.data, '班次创建成功')
+        return ApiResponse.success(data=serializer.data, message='班次创建成功', code=201)
+
+    def update(self, request, *args, **kwargs):
+        """更新班次"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return ApiResponse.success(data=serializer.data, message='班次更新成功')
+
+    def destroy(self, request, *args, **kwargs):
+        """删除班次"""
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return ApiResponse.success(message='班次删除成功')
 
 
 class ScheduleViewSet(viewsets.ModelViewSet):
@@ -54,6 +80,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     提供排班的增删改查、批量排班和日历视图功能
     """
     queryset = Schedule.objects.select_related('employee', 'shift').all()
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['employee', 'shift', 'work_date', 'is_swapped']
     search_fields = ['employee__name', 'employee__phone']
@@ -67,13 +94,22 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             return ScheduleDetailSerializer
         return ScheduleSerializer
 
-    def create_response(self, data, message='成功', code=200):
-        """统一的响应格式"""
-        return Response({
-            'code': code,
-            'message': message,
-            'data': data
-        }, status=status.HTTP_200_OK if code == 200 else status.HTTP_400_BAD_REQUEST)
+    def list(self, request, *args, **kwargs):
+        """获取排班列表"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+
+        serializer = self.get_serializer(queryset, many=True)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取排班详情"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def create(self, request, *args, **kwargs):
         """创建排班"""
@@ -83,8 +119,23 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
         # 检查是否创建成功
         if serializer.data:
-            return self.create_response(serializer.data, '排班创建成功')
-        return self.create_response(None, '排班创建失败', 400)
+            return ApiResponse.success(data=serializer.data, message='排班创建成功', code=201)
+        return ApiResponse.error(message='排班创建失败')
+
+    def update(self, request, *args, **kwargs):
+        """更新排班"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return ApiResponse.success(data=serializer.data, message='排班更新成功')
+
+    def destroy(self, request, *args, **kwargs):
+        """删除排班"""
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return ApiResponse.success(message='排班删除成功')
 
     @action(detail=False, methods=['post'])
     def batch_create(self, request):
@@ -94,7 +145,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         """
         serializer = BatchScheduleSerializer(data=request.data)
         if not serializer.is_valid():
-            return self.create_response(serializer.errors, '参数验证失败', 400)
+            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
 
         data = serializer.validated_data
         employee_ids = data['employee_ids']
@@ -141,7 +192,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         if errors:
             result['errors'] = errors[:5]  # 只返回前5个错误
 
-        return self.create_response(result, f'批量排班完成，创建 {created_count} 条记录')
+        return ApiResponse.success(data=result, message=f'批量排班完成，创建 {created_count} 条记录')
 
     @action(detail=False, methods=['post'])
     def calendar_view(self, request):
@@ -151,7 +202,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         """
         serializer = CalendarViewSerializer(data=request.data)
         if not serializer.is_valid():
-            return self.create_response(serializer.errors, '参数验证失败', 400)
+            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
 
         data = serializer.validated_data
         start_date = data['start_date']
@@ -185,7 +236,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                 'is_swapped': schedule.is_swapped
             })
 
-        return self.create_response({
+        return ApiResponse.success(data={
             'start_date': start_date.strftime('%Y-%m-%d'),
             'end_date': end_date.strftime('%Y-%m-%d'),
             'schedules': result,
@@ -202,6 +253,7 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         'requester', 'original_schedule', 'original_schedule__shift',
         'target_shift', 'approver'
     ).all()
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['requester', 'status', 'target_date']
     search_fields = ['requester__name', 'reason']
@@ -213,13 +265,22 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
             return ShiftSwapRequestListSerializer
         return ShiftSwapRequestSerializer
 
-    def create_response(self, data, message='成功', code=200):
-        """统一的响应格式"""
-        return Response({
-            'code': code,
-            'message': message,
-            'data': data
-        }, status=status.HTTP_200_OK if code == 200 else status.HTTP_400_BAD_REQUEST)
+    def list(self, request, *args, **kwargs):
+        """获取调班申请列表"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+
+        serializer = self.get_serializer(queryset, many=True)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
+
+    def retrieve(self, request, *args, **kwargs):
+        """获取调班申请详情"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def create(self, request, *args, **kwargs):
         """创建调班申请"""
@@ -241,7 +302,22 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
             pass
 
         self.perform_create(serializer)
-        return self.create_response(serializer.data, '调班申请提交成功')
+        return ApiResponse.success(data=serializer.data, message='调班申请提交成功', code=201)
+
+    def update(self, request, *args, **kwargs):
+        """更新调班申请"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return ApiResponse.success(data=serializer.data, message='调班申请更新成功')
+
+    def destroy(self, request, *args, **kwargs):
+        """删除调班申请"""
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return ApiResponse.success(message='调班申请删除成功')
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
@@ -253,14 +329,14 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
 
         # 检查当前申请状态
         if swap_request.status != 'PENDING':
-            return self.create_response(
-                None, f'该申请已被{swap_request.get_status_display()}，无法重复操作', 400
+            return ApiResponse.error(
+                message=f'该申请已被{swap_request.get_status_display()}，无法重复操作'
             )
 
         # 验证审批参数
         serializer = ShiftSwapApprovalSerializer(data=request.data)
         if not serializer.is_valid():
-            return self.create_response(serializer.errors, '参数验证失败', 400)
+            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
 
         data = serializer.validated_data
         approve_status = data['approve']
@@ -309,9 +385,9 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
                     is_swapped=True
                 )
 
-        return self.create_response(
-            ShiftSwapRequestSerializer(swap_request).data,
-            f'调班申请已{swap_request.get_status_display()}'
+        return ApiResponse.success(
+            data=ShiftSwapRequestSerializer(swap_request).data,
+            message=f'调班申请已{swap_request.get_status_display()}'
         )
 
     @action(detail=False, methods=['get'])
@@ -325,16 +401,16 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         employee_id = request.query_params.get('employee_id')
 
         if not employee_id:
-            return self.create_response(None, '请提供员工ID', 400)
+            return ApiResponse.error(message='请提供员工ID')
 
         requests = self.queryset.filter(requester_id=employee_id)
         page = self.paginate_queryset(requests)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = self.get_serializer(requests, many=True)
-        return self.create_response(serializer.data)
+        return ApiResponse.success(data=serializer.data)
 
     @action(detail=False, methods=['get'])
     def pending(self, request):
@@ -346,7 +422,7 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(pending_requests)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = self.get_serializer(pending_requests, many=True)
-        return self.create_response(serializer.data)
+        return ApiResponse.success(data=serializer.data, message='获取成功')

@@ -1,5 +1,4 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
+from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
@@ -8,6 +7,8 @@ from .serializers import (
     EmployeeProfileSerializer,
     EmployeeProfileListSerializer
 )
+from utils.response import ApiResponse
+from utils.pagination import StandardPagination
 
 
 class EmployeeProfileViewSet(viewsets.ModelViewSet):
@@ -17,6 +18,7 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = EmployeeProfile.objects.all()
     serializer_class = EmployeeProfileSerializer
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['position', 'status']
     search_fields = ['name', 'phone', 'id_card']
@@ -39,12 +41,14 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         支持搜索：name, phone, id_card
         """
         queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+
         serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -53,11 +57,7 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         """
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def create(self, request, *args, **kwargs):
         """
@@ -67,17 +67,9 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                'code': 201,
-                'message': '创建成功',
-                'data': serializer.data
-            }, status=status.HTTP_201_CREATED)
+            return ApiResponse.success(data=serializer.data, message='创建成功', code=201)
 
-        return Response({
-            'code': 400,
-            'message': '创建失败',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return ApiResponse.error(message='创建失败', errors=serializer.errors)
 
     def update(self, request, *args, **kwargs):
         """
@@ -88,17 +80,9 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                'code': 200,
-                'message': '更新成功',
-                'data': serializer.data
-            })
+            return ApiResponse.success(data=serializer.data, message='更新成功')
 
-        return Response({
-            'code': 400,
-            'message': '更新失败',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return ApiResponse.error(message='更新失败', errors=serializer.errors)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -107,7 +91,4 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         """
         instance = self.get_object()
         instance.delete()
-        return Response({
-            'code': 200,
-            'message': '删除成功'
-        })
+        return ApiResponse.success(message='删除成功')

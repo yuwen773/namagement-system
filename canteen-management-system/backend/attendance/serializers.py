@@ -9,15 +9,35 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
 
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     employee_position = serializers.CharField(source='employee.position', read_only=True)
-    shift_name = serializers.CharField(source='schedule.shift.name', read_only=True, allow_null=True)
-    work_date = serializers.DateField(source='schedule.work_date', read_only=True, allow_null=True)
-    shift_start_time = serializers.TimeField(source='schedule.shift.start_time', read_only=True, allow_null=True)
-    shift_end_time = serializers.TimeField(source='schedule.shift.end_time', read_only=True, allow_null=True)
+    shift_name = serializers.SerializerMethodField(read_only=True)
+    work_date = serializers.SerializerMethodField(read_only=True)
+    shift_start_time = serializers.SerializerMethodField(read_only=True)
+    shift_end_time = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     is_late = serializers.BooleanField(read_only=True)
     is_early_leave = serializers.BooleanField(read_only=True)
     is_missing = serializers.BooleanField(read_only=True)
     overtime_hours = serializers.FloatField(read_only=True)
+
+    def get_shift_name(self, obj):
+        if obj.schedule and obj.schedule.shift:
+            return obj.schedule.shift.name
+        return None
+
+    def get_work_date(self, obj):
+        if obj.schedule:
+            return obj.schedule.work_date
+        return None
+
+    def get_shift_start_time(self, obj):
+        if obj.schedule and obj.schedule.shift:
+            return obj.schedule.shift.start_time
+        return None
+
+    def get_shift_end_time(self, obj):
+        if obj.schedule and obj.schedule.shift:
+            return obj.schedule.shift.end_time
+        return None
 
     class Meta:
         model = AttendanceRecord
@@ -53,9 +73,19 @@ class AttendanceRecordListSerializer(serializers.ModelSerializer):
 
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     employee_position = serializers.CharField(source='employee.position', read_only=True)
-    shift_name = serializers.CharField(source='schedule.shift.name', read_only=True, allow_null=True)
-    work_date = serializers.DateField(source='schedule.work_date', read_only=True, allow_null=True)
+    shift_name = serializers.SerializerMethodField(read_only=True)
+    work_date = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    def get_shift_name(self, obj):
+        if obj.schedule and obj.schedule.shift:
+            return obj.schedule.shift.name
+        return None
+
+    def get_work_date(self, obj):
+        if obj.schedule:
+            return obj.schedule.work_date
+        return None
 
     class Meta:
         model = AttendanceRecord

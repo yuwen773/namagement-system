@@ -138,10 +138,14 @@ class AttendanceRecord(models.Model):
         shift = self.schedule.shift
         work_date = self.schedule.work_date
 
-        # 构建班次开始和结束时间
-        from datetime import datetime
-        shift_start = datetime.combine(work_date, shift.start_time)
-        shift_end = datetime.combine(work_date, shift.end_time)
+        # 构建班次开始和结束时间（使用时区感知的datetime）
+        from django.utils import timezone
+        shift_start = timezone.make_aware(
+            timezone.datetime.combine(work_date, shift.start_time)
+        )
+        shift_end = timezone.make_aware(
+            timezone.datetime.combine(work_date, shift.end_time)
+        )
 
         # 弹性时间：5分钟
         grace_period = timedelta(minutes=5)
@@ -170,9 +174,11 @@ class AttendanceRecord(models.Model):
         shift = self.schedule.shift
         work_date = self.schedule.work_date
 
-        # 构建班次结束时间
-        from datetime import datetime
-        shift_end = datetime.combine(work_date, shift.end_time)
+        # 构建班次结束时间（使用时区感知的datetime）
+        from django.utils import timezone
+        shift_end = timezone.make_aware(
+            timezone.datetime.combine(work_date, shift.end_time)
+        )
 
         # 计算加班时长
         if self.clock_out_time > shift_end:

@@ -1,7 +1,5 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.utils import timezone
 
 from .models import User
 from .serializers import (
@@ -10,6 +8,7 @@ from .serializers import (
     UserSerializer,
     UserListSerializer
 )
+from utils.response import ApiResponse
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -43,22 +42,11 @@ class UserViewSet(viewsets.ModelViewSet):
             user = User.verify_password(username, password)
             if user:
                 user_data = UserSerializer(user).data
-                return Response({
-                    'code': 200,
-                    'message': '登录成功',
-                    'data': user_data
-                }, status=status.HTTP_200_OK)
+                return ApiResponse.success(data=user_data, message='登录成功')
 
-            return Response({
-                'code': 401,
-                'message': '用户名或密码错误'
-            }, status=status.HTTP_401_UNAUTHORIZED)
+            return ApiResponse.unauthorized(message='用户名或密码错误')
 
-        return Response({
-            'code': 400,
-            'message': '请求参数错误',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return ApiResponse.error(message='请求参数错误', errors=serializer.errors)
 
     @action(detail=False, methods=['post'], url_path='register')
     def register(self, request):
@@ -77,17 +65,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=User.Status.ENABLED
             )
             user_data = UserSerializer(user).data
-            return Response({
-                'code': 201,
-                'message': '注册成功',
-                'data': user_data
-            }, status=status.HTTP_201_CREATED)
+            return ApiResponse.success(data=user_data, message='注册成功', code=201)
 
-        return Response({
-            'code': 400,
-            'message': '注册失败',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return ApiResponse.error(message='注册失败', errors=serializer.errors)
 
     def list(self, request, *args, **kwargs):
         """
@@ -96,11 +76,7 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         # TODO: 添加权限验证，只允许管理员访问
         serializer = UserListSerializer(self.queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -109,11 +85,7 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         instance = self.get_object()
         serializer = UserSerializer(instance)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def create(self, request, *args, **kwargs):
         """
@@ -125,17 +97,9 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                'code': 201,
-                'message': '创建成功',
-                'data': serializer.data
-            }, status=status.HTTP_201_CREATED)
+            return ApiResponse.success(data=serializer.data, message='创建成功', code=201)
 
-        return Response({
-            'code': 400,
-            'message': '创建失败',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return ApiResponse.error(message='创建失败', errors=serializer.errors)
 
     def update(self, request, *args, **kwargs):
         """
@@ -146,17 +110,9 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                'code': 200,
-                'message': '更新成功',
-                'data': serializer.data
-            })
+            return ApiResponse.success(data=serializer.data, message='更新成功')
 
-        return Response({
-            'code': 400,
-            'message': '更新失败',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return ApiResponse.error(message='更新失败', errors=serializer.errors)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -165,7 +121,4 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         instance = self.get_object()
         instance.delete()
-        return Response({
-            'code': 200,
-            'message': '删除成功'
-        })
+        return ApiResponse.success(message='删除成功')

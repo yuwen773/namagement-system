@@ -1,9 +1,8 @@
 from django.shortcuts import render
-from django.db.models import Q, Sum, F
+from django.db.models import Q, F
 from django.utils import timezone
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -19,12 +18,15 @@ from .serializers import (
 )
 from employees.models import EmployeeProfile
 from schedules.models import Schedule
+from utils.response import ApiResponse
+from utils.pagination import StandardPagination
 
 
 class AttendanceRecordViewSet(viewsets.ModelViewSet):
     """考勤记录视图集"""
 
     queryset = AttendanceRecord.objects.all()
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['employee', 'status']
     search_fields = ['employee__name', 'employee__phone', 'clock_in_location', 'clock_out_location']
@@ -43,25 +45,17 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(
-            {
-                'code': 200,
-                'message': '考勤记录创建成功',
-                'data': serializer.data
-            },
-            status=status.HTTP_201_CREATED,
-            headers=headers
+        return ApiResponse.success(
+            data=serializer.data,
+            message='考勤记录创建成功',
+            code=201
         )
 
     def retrieve(self, request, *args, **kwargs):
         """获取考勤记录详情"""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def list(self, request, *args, **kwargs):
         """获取考勤记录列表"""
@@ -69,18 +63,10 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response({
-                'code': 200,
-                'message': '获取成功',
-                'data': serializer.data
-            })
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def update(self, request, *args, **kwargs):
         """更新考勤记录"""
@@ -90,21 +76,13 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        return Response({
-            'code': 200,
-            'message': '更新成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='更新成功')
 
     def destroy(self, request, *args, **kwargs):
         """删除考勤记录"""
         instance = self.get_object()
         self.perform_destroy(instance)
-        return Response({
-            'code': 200,
-            'message': '删除成功',
-            'data': None
-        })
+        return ApiResponse.success(message='删除成功')
 
     @action(detail=False, methods=['post'])
     def clock_in(self, request):
@@ -118,20 +96,12 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         # TODO: 从请求中获取员工ID（后续需要实现登录认证后从token中获取）
         employee_id = request.data.get('employee_id')
         if not employee_id:
-            return Response({
-                'code': 400,
-                'message': '缺少员工ID',
-                'data': None
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='缺少员工ID')
 
         try:
             employee = EmployeeProfile.objects.get(id=employee_id)
         except EmployeeProfile.DoesNotExist:
-            return Response({
-                'code': 404,
-                'message': '员工不存在',
-                'data': None
-            }, status=status.HTTP_404_NOT_FOUND)
+            return ApiResponse.not_found(message='员工不存在')
 
         # 验证请求参数
         serializer = ClockInSerializer(data=request.data)
@@ -157,14 +127,13 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         ).first()
 
         if existing_attendance and existing_attendance.clock_in_time:
-            return Response({
-                'code': 400,
-                'message': '今日已签到，请勿重复签到',
-                'data': {
+            return ApiResponse.error(
+                message='今日已签到，请勿重复签到',
+                data={
                     'clock_in_time': existing_attendance.clock_in_time,
                     'status': existing_attendance.get_status_display()
                 }
-            }, status=status.HTTP_400_BAD_REQUEST)
+            )
 
         # 创建或更新考勤记录
         clock_in_location = data.get('clock_in_location', '')
@@ -186,11 +155,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         # 返回签到结果
         result_serializer = AttendanceRecordSerializer(attendance)
-        return Response({
-            'code': 200,
-            'message': '签到成功',
-            'data': result_serializer.data
-        })
+        return ApiResponse.success(data=result_serializer.data, message='签到成功')
 
     @action(detail=False, methods=['post'])
     def clock_out(self, request):
@@ -203,20 +168,12 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         # TODO: 从请求中获取员工ID（后续需要实现登录认证后从token中获取）
         employee_id = request.data.get('employee_id')
         if not employee_id:
-            return Response({
-                'code': 400,
-                'message': '缺少员工ID',
-                'data': None
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='缺少员工ID')
 
         try:
             employee = EmployeeProfile.objects.get(id=employee_id)
         except EmployeeProfile.DoesNotExist:
-            return Response({
-                'code': 404,
-                'message': '员工不存在',
-                'data': None
-            }, status=status.HTTP_404_NOT_FOUND)
+            return ApiResponse.not_found(message='员工不存在')
 
         # 验证请求参数
         serializer = ClockOutSerializer(data=request.data)
@@ -234,28 +191,19 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             attendance = None
 
         if not attendance:
-            return Response({
-                'code': 400,
-                'message': '未找到今日签到记录，请先签到',
-                'data': None
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='未找到今日签到记录，请先签到')
 
         if not attendance.clock_in_time:
-            return Response({
-                'code': 400,
-                'message': '未找到签到记录，请先签到',
-                'data': None
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='未找到签到记录，请先签到')
 
         if attendance.clock_out_time:
-            return Response({
-                'code': 400,
-                'message': '今日已签退，请勿重复签退',
-                'data': {
+            return ApiResponse.error(
+                message='今日已签退，请勿重复签退',
+                data={
                     'clock_out_time': attendance.clock_out_time,
                     'status': attendance.get_status_display()
                 }
-            }, status=status.HTTP_400_BAD_REQUEST)
+            )
 
         # 更新签退信息
         attendance.clock_out_time = timezone.now()
@@ -264,11 +212,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         # 返回签退结果
         result_serializer = AttendanceRecordSerializer(attendance)
-        return Response({
-            'code': 200,
-            'message': '签退成功',
-            'data': result_serializer.data
-        })
+        return ApiResponse.success(data=result_serializer.data, message='签退成功')
 
     @action(detail=False, methods=['post'])
     def statistics(self, request):
@@ -314,11 +258,11 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         early_leave_count = queryset.filter(status=AttendanceRecord.Status.EARLY_LEAVE).count()
         missing_count = queryset.filter(status=AttendanceRecord.Status.MISSING).count()
 
-        # 计算总加班时长
-        overtime_result = queryset.aggregate(
-            total_overtime=Sum('overtime_hours')
+        # 计算总加班时长（overtime_hours是属性，不是数据库字段）
+        overtime_hours = sum(
+            record.overtime_hours for record in queryset
         )
-        overtime_hours = overtime_result['total_overtime'] or 0
+        overtime_hours = round(overtime_hours, 2)
 
         # 返回统计结果
         result_data = {
@@ -332,11 +276,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         result_serializer = AttendanceStatisticsResponseSerializer(result_data)
 
-        return Response({
-            'code': 200,
-            'message': '统计成功',
-            'data': result_serializer.data
-        })
+        return ApiResponse.success(data=result_serializer.data, message='统计成功')
 
     @action(detail=True, methods=['post'])
     def correct(self, request, pk=None):
@@ -361,11 +301,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         # 返回更新结果
         result_serializer = AttendanceRecordSerializer(attendance)
-        return Response({
-            'code': 200,
-            'message': '考勤状态修改成功',
-            'data': result_serializer.data
-        })
+        return ApiResponse.success(data=result_serializer.data, message='考勤状态修改成功')
 
     @action(detail=False, methods=['get'])
     def my_attendance(self, request):
@@ -379,11 +315,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         """
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
-            return Response({
-                'code': 400,
-                'message': '缺少员工ID',
-                'data': None
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return ApiResponse.error(message='缺少员工ID')
 
         # 构建查询条件
         queryset = AttendanceRecord.objects.filter(employee_id=employee_id)
@@ -401,15 +333,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = AttendanceRecordListSerializer(page, many=True)
-            return self.get_paginated_response({
-                'code': 200,
-                'message': '获取成功',
-                'data': serializer.data
-            })
+            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
 
         serializer = AttendanceRecordListSerializer(queryset, many=True)
-        return Response({
-            'code': 200,
-            'message': '获取成功',
-            'data': serializer.data
-        })
+        return ApiResponse.success(data=serializer.data, message='获取成功')
