@@ -177,7 +177,7 @@
           {{ currentSchedule.employee_name }}
         </el-descriptions-item>
         <el-descriptions-item label="岗位">
-          {{ currentSchedule.employee_position }}
+          {{ currentSchedule.position_display }}
         </el-descriptions-item>
         <el-descriptions-item label="班次">
           <el-tag :type="getShiftTagType(currentSchedule.shift_name)">
@@ -397,20 +397,53 @@ onMounted(() => {
 // ==================== 数据加载 ====================
 async function loadShifts() {
   try {
-    const { data } = await getShiftList()
-    shiftList.value = data.data || []
+    const result = await getShiftList()
+    // 安全处理响应数据
+    if (result && result.data) {
+      // 如果 data 是数组，直接使用
+      if (Array.isArray(result.data)) {
+        shiftList.value = result.data
+      }
+      // 如果 data 是对象且有 results，取 results
+      else if (result.data.results && Array.isArray(result.data.results)) {
+        shiftList.value = result.data.results
+      }
+      // 兜底处理
+      else {
+        shiftList.value = []
+      }
+    } else {
+      shiftList.value = []
+    }
   } catch (error) {
-    ElMessage.error('加载班次列表失败')
+    console.error('加载班次列表失败:', error)
+    shiftList.value = []
   }
 }
 
 async function loadEmployees() {
   try {
-    const { data } = await getEmployeeList({ status: 'ACTIVE', page_size: 100 })
-    // 后端返回的是数组，不是分页对象
-    employeeList.value = data.data || []
+    const result = await getEmployeeList({ status: 'ACTIVE', page_size: 100 })
+    // 安全处理响应数据
+    if (result && result.data) {
+      // 如果 data 是数组，直接使用
+      if (Array.isArray(result.data)) {
+        employeeList.value = result.data
+      }
+      // 如果 data 是对象且有 results，取 results
+      else if (result.data.results && Array.isArray(result.data.results)) {
+        employeeList.value = result.data.results
+      }
+      // 兜底处理
+      else {
+        employeeList.value = []
+      }
+    } else {
+      employeeList.value = []
+    }
   } catch (error) {
-    ElMessage.error('加载员工列表失败')
+    console.error('加载员工列表失败:', error)
+    employeeList.value = []
   }
 }
 
@@ -423,22 +456,45 @@ async function loadSchedules() {
   try {
     if (viewMode.value === 'calendar') {
       // 加载日历视图数据
-      const { data } = await getCalendarView({
+      const result = await getCalendarView({
         start_date: dateRange.value[0],
         end_date: dateRange.value[1]
       })
-      calendarData.value = data.data || {}
+      if (result && result.data) {
+        calendarData.value = result.data.schedules || {}
+      } else {
+        calendarData.value = {}
+      }
     } else {
       // 加载列表视图数据
-      const { data } = await getScheduleList({
+      const result = await getScheduleList({
         work_date__gte: dateRange.value[0],
         work_date__lte: dateRange.value[1],
         ordering: 'work_date,employee_id'
       })
-      scheduleList.value = data.data.results || []
+      // 安全处理响应数据
+      if (result && result.data) {
+        // 如果 data 是数组，直接使用
+        if (Array.isArray(result.data)) {
+          scheduleList.value = result.data
+        }
+        // 如果 data 是对象且有 results，取 results
+        else if (result.data.results && Array.isArray(result.data.results)) {
+          scheduleList.value = result.data.results
+        }
+        // 兜底处理
+        else {
+          scheduleList.value = []
+        }
+      } else {
+        scheduleList.value = []
+      }
     }
   } catch (error) {
-    ElMessage.error('加载排班数据失败')
+    console.error('加载排班数据失败:', error)
+    scheduleList.value = []
+    calendarData.value = {}
+    ElMessage.error('加载排班数据失败: ' + (error.message || '未知错误'))
   } finally {
     loading.value = false
   }
@@ -615,10 +671,20 @@ function getSchedulesForDate(date) {
 function getShiftTagType(shiftName) {
   // 根据班次名称返回不同的标签颜色
   const typeMap = {
+    '早餐班': 'success',
     '早班': 'success',
+    '中餐班': 'warning',
     '中班': 'warning',
+    '晚餐班': 'danger',
     '晚班': 'danger',
-    '全天': 'info'
+    '全天班': 'info',
+    '全天': 'info',
+    '早中连班': 'primary',
+    '中晚连班': 'primary',
+    '夜宵班': 'info',
+    '行政班': '',
+    '保洁早班': 'success',
+    '保洁晚班': 'warning'
   }
   return typeMap[shiftName] || 'default'
 }
