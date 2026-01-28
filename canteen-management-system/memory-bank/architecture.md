@@ -1050,6 +1050,161 @@ router.register(r'appeals', AppealViewSet, basename='appeal')
 
 ---
 
+### `analytics` 应用 - 统计分析
+
+统计分析模块，负责跨模块的数据聚合和报表生成，为 Dashboard 和统计页面提供数据支持。
+
+#### 文件结构与职责
+
+```
+analytics/
+├── __init__.py
+├── admin.py              # Django Admin 配置（空）
+├── apps.py               # 应用配置
+├── migrations/           # 数据库迁移文件（空，无模型）
+├── models.py             # 数据模型定义（空，使用其他应用模型）
+├── urls.py               # 应用 URL 路由
+└── views.py              # 统计分析视图
+```
+
+#### 架构设计要点
+
+**无模型设计**：
+- `analytics` 应用没有自己的数据模型
+- 直接使用其他应用的模型进行数据聚合
+- 避免数据冗余和同步问题
+
+**视图函数而非 ViewSet**：
+- 使用 `@api_view` 装饰器定义视图函数
+- 每个接口对应一个统计维度
+- 返回数据格式专为 ECharts 优化
+
+**路由配置**：
+```python
+# analytics/urls.py
+urlpatterns = [
+    path("employees/", views.employee_statistics, name="employee_statistics"),
+    path("attendance/", views.attendance_statistics, name="attendance_statistics"),
+    path("salaries/", views.salary_statistics, name="salary_statistics"),
+    path("overview/", views.overview_statistics, name="overview_statistics"),
+]
+```
+
+#### 统计接口设计
+
+**人员统计接口** (`employee_statistics`)
+- **数据源**：`EmployeeProfile` 模型
+- **统计维度**：
+  - 总人数：在职员工总数
+  - 岗位分布：各岗位人数统计（饼图数据）
+  - 持证率：健康证、厨师等级证持有率
+  - 入职状态分布：在职/离职/停薪留职
+- **聚合操作**：使用 `Count` 聚合函数
+
+**考勤统计接口** (`attendance_statistics`)
+- **数据源**：`AttendanceRecord`、`Schedule` 模型
+- **统计维度**：
+  - 出勤率：实到 / 应到 × 100%
+  - 状态分布：正常/迟到/早退/缺卡/异常（饼图数据）
+  - 日期趋势：每日考勤状态变化（折线图数据）
+  - 岗位维度：各岗位考勤对比
+- **查询参数**：支持日期范围筛选或相对时间（最近 N 天）
+
+**薪资统计接口** (`salary_statistics`)
+- **数据源**：`SalaryRecord`、`EmployeeProfile` 模型
+- **统计维度**：
+  - 月度趋势：每月薪资支出（折线图数据）
+  - 岗位对比：各岗位平均薪资（柱状图数据）
+  - 薪资构成：基本工资/岗位津贴/加班费/扣款（饼图数据）
+- **过滤条件**：仅统计已发布（`PUBLISHED`）和已调整（`ADJUSTED`）的记录
+
+**总览统计接口** (`overview_statistics`)
+- **数据源**：所有核心模型
+- **统计维度**：
+  - 今日概览：应到/实到/请假/异常
+  - 待办事项：待审批请假、薪资草稿数量
+  - 总览统计：员工总数、岗位总数
+  - 本月考勤：迟到/缺卡统计
+- **用途**：Dashboard 首页数据展示
+
+#### 数据格式设计（适配 ECharts）
+
+**饼图数据格式**：
+```python
+{
+  "labels": ["厨师", "面点", "切配", "保洁", "服务员", "经理"],
+  "data": [5, 3, 8, 4, 6, 2]
+}
+```
+
+**折线图数据格式**：
+```python
+[
+  {"date": "2026-01-21", "normal": 8, "late": 1, "missing": 0},
+  {"date": "2026-01-22", "normal": 9, "late": 0, "missing": 1}
+]
+```
+
+**柱状图数据格式**：
+```python
+[
+  {"position": "厨师", "avg_salary": 4500},
+  {"position": "面点", "avg_salary": 3800}
+]
+```
+
+#### 路由配置
+
+```python
+# config/urls.py
+urlpatterns = [
+    # ...
+    path("api/analytics/", include("analytics.urls")),
+]
+```
+
+**路由映射**：
+- `/api/analytics/employees/` → 人员统计
+- `/api/analytics/attendance/` → 考勤统计
+- `/api/analytics/salaries/` → 薪资统计
+- `/api/analytics/overview/` → 总览统计
+
+#### 性能优化策略
+
+1. **聚合查询**：使用 Django ORM 的 `Count`、`Sum`、`Avg` 减少数据库查询次数
+2. **索引利用**：利用其他应用定义的数据库索引（如 `employee_id`、`created_at`）
+3. **空数据处理**：无数据时返回空列表而非 404，避免前端错误处理
+4. **中文标签映射**：在 Python 层完成枚举值到中文的转换，减轻前端负担
+
+#### 与其他模块的关系
+
+| 模块 | 关系 | 说明 |
+|------|------|------|
+| `employees` | 依赖 | 人员统计依赖 `EmployeeProfile` 模型 |
+| `attendance` | 依赖 | 考勤统计依赖 `AttendanceRecord` 模型 |
+| `salaries` | 依赖 | 薪资统计依赖 `SalaryRecord` 模型 |
+| `schedules` | 依赖 | 考勤统计需要 `Schedule` 模型计算应出勤人数 |
+| `leaves` | 依赖 | 总览统计需要 `LeaveRequest` 模型 |
+
+#### 架构设计意义
+
+**跨模块数据聚合**：
+- 统计分析是典型的跨模块业务
+- 将所有统计接口集中在一个应用中，便于维护
+- 避免在各应用中分散实现统计逻辑
+
+**前后端分离优化**：
+- 数据格式专为 ECharts 优化
+- 前端无需复杂的数据转换
+- 减少网络传输和前端计算负担
+
+**无状态设计**：
+- 不存储统计数据，每次实时计算
+- 确保数据的实时性和准确性
+- 避免数据同步和一致性问题
+
+---
+
 ## 重要文件说明
 
 ### `backend/config/settings.py`

@@ -685,7 +685,100 @@ GET    /api/appeals/my-appeals/    # 我的申诉（员工查询）
 
 ---
 
+### ✅ 步骤 2.7：创建统计分析接口
+
+**实施内容**：
+
+1. **创建视图函数** (`analytics/views.py`)
+   - `employee_statistics` - 人员统计接口
+     - 总人数统计
+     - 岗位分布（用于 ECharts 饼图）
+     - 持证率统计（健康证、厨师等级证）
+     - 入职状态分布
+   - `attendance_statistics` - 考勤统计接口
+     - 出勤率统计（基于排班和考勤记录）
+     - 迟到/早退/缺卡次数统计
+     - 加班时长统计
+     - 日期维度考勤趋势（用于 ECharts 折线图）
+     - 岗位维度考勤统计
+   - `salary_statistics` - 薪资统计接口
+     - 月度薪资支出趋势（用于 ECharts 折线图）
+     - 岗位薪资对比（用于 ECharts 柱状图）
+     - 薪资构成统计（用于 ECharts 饼图）
+   - `overview_statistics` - 总览统计接口（Dashboard 首页）
+     - 今日概览数据（应到/实到、请假、异常）
+     - 待办事项统计（待审批请假、薪资草稿数量）
+     - 本月考勤统计
+
+2. **数据格式设计**
+   - 所有接口返回统一格式：`{code, message, data}`
+   - 数据结构适配 ECharts 渲染需求
+   - 使用 `labels` + `data` 结构传递图表数据
+   - 中文标签映射（枚举值 → 中文显示）
+
+3. **查询参数支持**
+   - 考勤统计：支持日期范围筛选（`start_date`、`end_date`）或相对时间（`days`）
+   - 薪资统计：支持月份范围筛选（`months`）
+
+4. **配置 URL 路由** (`analytics/urls.py`)
+   - `/api/analytics/employees/` - 人员统计
+   - `/api/analytics/attendance/` - 考勤统计
+   - `/api/analytics/salaries/` - 薪资统计
+   - `/api/analytics/overview/` - 总览统计
+
+5. **更新主路由** (`config/urls.py`)
+   - 添加 `path("api/analytics/", include("analytics.urls"))`
+
+**API 端点清单**：
+```
+GET    /api/analytics/employees/    # 人员统计（岗位分布、持证率）
+GET    /api/analytics/attendance/   # 考勤统计（出勤率、趋势）
+GET    /api/analytics/salaries/     # 薪资统计（月度趋势、岗位对比）
+GET    /api/analytics/overview/     # 总览统计（Dashboard 首页）
+```
+
+**查询参数示例**：
+- 考勤统计（最近 7 天）：`/api/analytics/attendance/?days=7`
+- 考勤统计（日期范围）：`/api/analytics/attendance/?start_date=2026-01-01&end_date=2026-01-31`
+- 薪资统计（最近 12 个月）：`/api/analytics/salaries/?months=12`
+
+**测试验证**：
+- ✅ 人员统计接口返回 200，包含岗位分布和持证率数据
+- ✅ 考勤统计接口返回 200，包含出勤率和日期趋势数据
+- ✅ 薪资统计接口返回 200，无数据时返回空列表而非错误
+- ✅ 总览统计接口返回 200，包含今日概览和待办事项数据
+- ✅ 所有接口数据格式适配 ECharts 渲染需求
+- ✅ 中文标签正确显示
+
+**数据格式示例**：
+```json
+// 岗位分布（饼图数据）
+{
+  "labels": ["厨师", "面点", "切配", "保洁", "服务员", "经理"],
+  "data": [5, 3, 8, 4, 6, 2]
+}
+
+// 日期趋势（折线图数据）
+[
+  {"date": "2026-01-21", "normal": 8, "late": 1, "early_leave": 0, "missing": 0},
+  {"date": "2026-01-22", "normal": 9, "late": 0, "early_leave": 0, "missing": 1}
+]
+```
+
+**注意事项**：
+- `analytics` 应用没有自己的数据模型，使用其他应用的模型进行统计
+- 使用 Django ORM 的聚合函数（`Count`、`Sum`、`Avg`）提高查询效率
+- 空数据情况处理：返回空列表而非 404 错误
+- 出勤率计算基于排班记录（应出勤）和考勤记录（实出勤）
+- 薪资统计仅统计已发布（`PUBLISHED`）和已调整（`ADJUSTED`）的记录
+- 权限验证待后续实现（目前所有用户都可访问统计接口）
+
+---
+
 ## 待完成
 
-- [ ] 步骤 2.7：创建统计分析接口
+- [ ] 第三阶段：前端公共模块
+  - [ ] 步骤 3.1：创建登录页面
+  - [ ] 步骤 3.2：创建注册页面
+  - [ ] 步骤 3.3：配置路由与导航守卫
 - [ ] ...（详见 IMPLEMENTATION_PLAN.md）
