@@ -1086,11 +1086,130 @@ GET /api/analytics/overview/
 
 ---
 
+### ✅ 步骤 4.2：人员档案管理页面
+
+**实施内容**：
+
+1. **创建员工 API 封装** (`frontend/src/api/employee.js`)
+   - `getEmployeeList(params)` - 获取员工列表（支持分页、筛选、搜索）
+   - `getEmployeeDetail(id)` - 获取员工详情
+   - `createEmployee(data)` - 创建员工档案
+   - `updateEmployee(id, data)` - 更新员工档案
+   - `patchEmployee(id, data)` - 部分更新员工档案
+   - `deleteEmployee(id)` - 删除员工档案
+
+2. **创建人员档案管理页面** (`frontend/src/views/admin/EmployeeManageView.vue`)
+   - **顶部操作栏**：
+     - 新增员工按钮
+     - 搜索框（支持姓名、电话、身份证号搜索）
+     - 岗位筛选器（厨师、面点、切配、保洁、服务员、经理）
+     - 状态筛选器（在职、离职、停薪留职）
+   - **员工列表表格**：
+     - 显示字段：ID、姓名、性别、岗位、手机号、身份证号、入职日期、状态、操作
+     - 岗位列使用彩色标签（厨师-橙色、保洁-绿色等）
+     - 状态列使用不同颜色徽章（在职-绿色、离职-灰色等）
+   - **分页组件**：
+     - 支持 10、20、50、100 条/页
+     - 显示总数、页码跳转
+   - **新增/编辑对话框**（带 3 个标签页）：
+     - 基础信息：姓名、性别、手机、身份证、地址
+     - 岗位信息：岗位、入职日期、状态
+     - 资质证书：健康证号、有效期、图片URL、厨师等级证
+   - **详情对话框**：
+     - 使用 `el-descriptions` 组件展示完整档案信息
+     - 显示所有字只读视图
+   - **删除确认对话框**：
+     - 二次确认删除操作
+     - 显示员工姓名提示
+
+3. **更新路由配置** (`frontend/src/router/index.js`)
+   - 添加路由 `/admin/employees` → `EmployeeManageView`
+   - 需要认证和 ADMIN 角色权限
+
+4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
+   - 修改 `handleQuickAccess` 函数
+   - "人员新增" 快捷入口卡片点击后导航到员工管理页面
+
+5. **表单验证规则**：
+   - 姓名：必填，2-20 字符
+   - 性别：必选
+   - 手机号：必填，中国手机号格式验证
+   - 岗位：必选
+   - 入职日期：必选
+   - 状态：必选
+   - 身份证号：选填
+   - 地址：选填
+   - 健康证相关：选填
+
+6. **UI 设计特点**：
+   - **食堂主题配色**：
+     - 主色：橙色 #FF6B35
+     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
+     - 背景色：浅米色 #FFF8F0
+   - **岗位标签颜色映射**：
+     - 厨师 (CHEF) → warning (橙色)
+     - 面点 (PASTRY) → danger (红色)
+     - 切配 (PREP) → info (蓝色)
+     - 保洁 (CLEANER) → success (绿色)
+     - 服务员 (SERVER) → 默认灰色
+     - 经理 (MANAGER) → primary (深蓝色)
+   - **状态徽章颜色映射**：
+     - 在职 (ACTIVE) → success (绿色)
+     - 离职 (INACTIVE) → info (灰色)
+     - 停薪留职 (LEAVE_WITHOUT_PAY) → warning (橙色)
+   - **交互效果**：
+     - 表格行悬停效果
+     - 按钮悬停动画
+     - 对话框圆角和阴影
+     - Loading 状态显示
+
+7. **技术实现**：
+   - Vue 3 Composition API（`<script setup>`）
+   - Element Plus 组件库（el-table、el-dialog、el-form、el-pagination 等）
+   - 响应式数据管理（ref、reactive、computed）
+   - 自定义样式覆盖（:deep() 选择器）
+   - 表单验证（el-form 的 rules 属性）
+
+**API 对接**：
+```
+GET    /api/employees/           # 员工列表（支持 ?position= & ?status= & ?search=）
+GET    /api/employees/{id}/      # 员工详情
+POST   /api/employees/           # 创建员工
+PUT    /api/employees/{id}/      # 更新员工
+DELETE /api/employees/{id}/      # 删除员工
+```
+
+**测试验证**：
+- ✅ 员工列表正常加载并显示
+- ✅ 搜索功能正常（按姓名、电话、身份证号）
+- ✅ 岗位筛选正常
+- ✅ 状态筛选正常
+- ✅ 分页功能正常
+- ✅ 新增员工功能正常（表单验证生效）
+- ✅ 编辑员工功能正常（数据预填充）
+- ✅ 查看员工详情正常
+- ✅ 删除员工功能正常（确认对话框显示）
+- ✅ 从管理员首页快捷入口导航正常
+- ✅ 岗位标签颜色正确显示
+- ✅ 状态徽章颜色正确显示
+- ✅ 食堂主题配色应用正确
+- ✅ 响应式布局在不同屏幕尺寸下正常显示
+
+**注意事项**：
+- 员工档案（EmployeeProfile）与用户账号（User）是独立概念
+- 创建员工档案时不会自动创建登录账号
+- 身份证号字段设置为唯一，但可为空
+- 健康证和厨师等级证字段根据岗位需求灵活配置
+- 删除操作有二次确认，防止误操作
+- 路由导航需要 ADMIN 角色权限
+
+---
+
 ## 待完成
 
 - [ ] 第四阶段：管理员端页面
   - [x] 步骤 4.1：管理员首页（Dashboard）
-  - [ ] 步骤 4.2：人员档案管理页面
+  - [x] 步骤 4.2：人员档案管理页面
   - [ ] 步骤 4.3：排班安排管理页面
   - [ ] 步骤 4.4：考勤记录管理页面
   - [ ] 步骤 4.5：请假审批管理页面
