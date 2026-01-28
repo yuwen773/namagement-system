@@ -1465,6 +1465,122 @@ POST   /api/attendance/{id}/correct/ # 异常处理（修改考勤状态）
 
 ---
 
+### ✅ 步骤 4.5：请假审批管理页面
+
+**实施内容**：
+
+1. **创建请假管理 API 封装** (`frontend/src/api/leave.js`)
+   - `getLeaveList(params)` - 获取请假申请列表（支持分页、筛选、搜索）
+   - `getLeaveDetail(id)` - 获取请假申请详情
+   - `createLeave(data)` - 创建请假申请
+   - `updateLeave(id, data)` - 更新请假申请
+   - `patchLeave(id, data)` - 部分更新请假申请
+   - `deleteLeave(id)` - 删除请假申请
+   - `getMyLeaves(params)` - 查询我的请假申请
+   - `getPendingLeaves()` - 获取待审批列表
+   - `approveLeave(id, data)` - 审批请假申请
+
+2. **创建请假审批管理页面** (`frontend/src/views/admin/LeaveApproveView.vue`)
+   - **顶部操作栏**：
+     - 页面标题（带 DocumentChecked 图标）
+     - 搜索框（支持姓名、电话、原因搜索）
+     - 刷新按钮
+   - **状态 Tab 切换**：
+     - 全部（带列表总数徽章）
+     - 待审批（带待审批数量徽章，高亮显示）
+     - 已通过
+     - 已驳回
+   - **请假申请列表表格**：
+     - 显示字段：ID、员工姓名、岗位、请假类型、请假时间、天数、请假原因、状态、申请时间、操作
+     - 请假类型标签（病假-红色、事假-橙色、调休-绿色）
+     - 状态标签（待审批-橙色、已通过-绿色、已驳回-红色）
+     - 待审批记录行高亮显示（黄色背景）
+   - **详情对话框**：
+     - 使用 `el-descriptions` 组件展示完整请假信息
+     - 显示员工姓名、岗位、请假类型、天数、开始/结束时间、原因、状态、申请时间、审批人、审批时间、审批意见
+   - **审批对话框**：
+     - 显示申请摘要（员工、类型、时间、天数、原因）
+     - 操作提示（批准/驳回确认信息）
+     - 审批意见输入框（驳回到必填，批准到选填）
+     - 批准/驳回按钮
+
+3. **更新路由配置** (`frontend/src/router/index.js`)
+   - 添加路由 `/admin/leaves` → `LeaveApproveView`
+   - 需要认证和 ADMIN 角色权限
+
+4. **更新管理员首页** (`frontend/src/views/admin/DashboardView.vue`)
+   - 修改 `handleQuickAccess` 函数，支持 `/admin/leaves` 导航
+   - 修改 `handleTodoClick` 函数，支持请假审批待办事项导航
+
+5. **UI 设计特点**：
+   - **食堂主题配色**：
+     - 主色：橙色 #FF6B35
+     - 辅助色：黄色 #F7C52D、绿色 #4CAF50
+     - 背景色：浅米色 #FFF8F0
+   - **状态 Tab 设计**：
+     - 大号按钮（48px 高度），带图标和徽章
+     - 激活状态：橙色渐变背景 + 阴影效果
+     - 徽章：黄色背景，显示数量
+   - **请假类型标签颜色映射**：
+     - 病假 (SICK) → danger (红色)
+     - 事假 (PERSONAL) → warning (橙色)
+     - 调休 (COMPENSATORY) → success (绿色)
+   - **状态标签颜色映射**：
+     - 待审批 (PENDING) → warning (橙色)
+     - 已通过 (APPROVED) → success (绿色)
+     - 已驳回 (REJECTED) → danger (红色)
+   - **交互效果**：
+     - 待审批记录行高亮（黄色背景 #fff7e6）
+     - 按钮悬停动画（上移 2px）
+     - Tab 切换过渡动画
+
+6. **技术实现**：
+   - Vue 3 Composition API（`<script setup>`）
+   - Element Plus 组件库：
+     - `el-radio-group` / `el-radio-button` - Tab 切换
+     - `el-badge` - 数量徽章
+     - `el-table` - 数据表格
+     - `el-dialog` - 对话框
+     - `el-alert` - 操作提示
+     - `el-descriptions` - 描述列表
+     - `el-tag` - 标签
+     - `el-pagination` - 分页
+   - 响应式数据管理（ref、reactive、computed）
+   - 自定义样式覆盖（`:deep()` 选择器）
+   - 表单验证（el-form 的 rules 属性，动态验证规则）
+   - 计算属性（approveDialogTitle、approveRules）
+
+**API 对接**：
+```
+GET    /api/leaves/                    # 请假列表（支持 ?status= & ?search=）
+GET    /api/leaves/pending/            # 待审批列表
+POST   /api/leaves/{id}/approve/       # 请假审批（批准/驳回）
+```
+
+**测试验证**：
+- ✅ 请假审批管理页面正常显示
+- ✅ Tab 切换功能正常（全部、待审批、已通过、已驳回）
+- ✅ 搜索功能正常（按姓名、电话、原因）
+- ✅ 查看请假详情对话框正常显示
+- ✅ 批准请假申请功能正常（状态变为已通过）
+- ✅ 驳回请假申请功能正常（必填审批意见，状态变为已驳回）
+- ✅ 待审批记录行高亮显示（黄色背景）
+- ✅ 从管理员首页快捷入口导航正常
+- ✅ 从管理员首页待办事项导航正常
+- ✅ 响应式布局在不同屏幕尺寸下正常显示
+
+**注意事项**：
+- 审批对话框中，驳回操作时审批意见为必填字段，批准时为选填
+- 表单验证规则使用 computed 动态计算，根据审批类型（批准/驳回）变化
+- 待审批数量通过单独的 API (`/api/leaves/pending/`) 获取，实时更新徽章
+- 请假时间显示为两行（开始时间、结束时间），便于阅读
+- 请假天数使用橙色高亮显示
+- 详情对话框中，根据状态显示审批人和审批信息
+- 删除操作暂未实现（可由后续步骤补充）
+- 路由导航需要 ADMIN 角色权限
+
+---
+
 ## 待完成
 
 - [ ] 第四阶段：管理员端页面
@@ -1472,7 +1588,7 @@ POST   /api/attendance/{id}/correct/ # 异常处理（修改考勤状态）
   - [x] 步骤 4.2：人员档案管理页面
   - [x] 步骤 4.3：排班安排管理页面
   - [x] 步骤 4.4：考勤记录管理页面
-  - [ ] 步骤 4.5：请假审批管理页面
+  - [x] 步骤 4.5：请假审批管理页面
   - [ ] 步骤 4.6：薪资信息管理页面
   - [ ] 步骤 4.7：综合统计分析页面
   - [ ] 步骤 4.8：系统管理页面

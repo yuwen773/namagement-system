@@ -1312,7 +1312,7 @@ frontend/
   - `EmployeeManageView.vue` - 人员档案管理（已实现）
   - `ScheduleManageView.vue` - 排班安排管理（已实现）
   - `AttendanceManageView.vue` - 考勤记录管理（已实现）
-  - `LeaveApproveView.vue` - 请假审批管理（待实现）
+  - `LeaveApproveView.vue` - 请假审批管理（已实现）
   - `SalaryManageView.vue` - 薪资信息管理（待实现）
   - `StatisticsView.vue` - 综合统计分析（待实现）
   - `SystemManageView.vue` - 系统管理（待实现）
@@ -1418,7 +1418,17 @@ frontend/
 - `correctAttendance(id, data)` - 异常处理（修改考勤状态，必填备注）
 - `getMyAttendance(params)` - 我的考勤记录（员工查询）
 
-- `leave.js` - 请假管理 API（计划中）
+**`leave.js`** - 请假管理 API（已实现）
+- `getLeaveList(params)` - 获取请假申请列表（支持分页、筛选、搜索）
+- `getLeaveDetail(id)` - 获取请假申请详情
+- `createLeave(data)` - 创建请假申请
+- `updateLeave(id, data)` - 更新请假申请（完整更新）
+- `patchLeave(id, data)` - 部分更新请假申请
+- `deleteLeave(id)` - 删除请假申请
+- `getMyLeaves(params)` - 查询我的请假申请
+- `getPendingLeaves()` - 获取待审批列表
+- `approveLeave(id, data)` - 审批请假申请（批准/驳回）
+
 - `salary.js` - 薪资管理 API（计划中）
 
 #### `src/router/` - 路由配置
@@ -1432,6 +1442,7 @@ frontend/
 - `/admin/employees` - 人员档案管理页面（需要 ADMIN 角色）
 - `/admin/schedules` - 排班安排管理页面（需要 ADMIN 角色）
 - `/admin/attendance` - 考勤记录管理页面（需要 ADMIN 角色）
+- `/admin/leaves` - 请假审批管理页面（需要 ADMIN 角色）
 - `/employee` - 员工首页（需要 EMPLOYEE 角色）
 - `/` - 默认重定向到登录页
 - `/:pathMatch(.*)*` - 404 页面（重定向到登录页）
@@ -2392,6 +2403,247 @@ const getRowClassName = ({ row }) => {
 
 **路由配置**：
 - 路径：`/admin/attendance`
+- 需要认证：是
+- 需要角色：ADMIN
+- meta 信息：`{ requiresAuth: true, role: 'ADMIN' }`
+
+---
+
+#### 请假审批管理页面 (`LeaveApproveView.vue`)
+
+**布局结构**：
+- 充满视口（100vh）的单页布局
+- 顶部标题和操作栏：页面标题 + 搜索框 + 刷新按钮
+- 状态 Tab 切换：全部、待审批、已通过、已驳回（带数量徽章）
+- 请假申请列表表格：显示请假信息和操作按钮
+- 分页组件：底部居中显示
+- 对话框：详情对话框、审批对话框
+
+**顶部操作栏特性**：
+- 页面标题：
+  - DocumentChecked 图标（24px）
+  - 标题文字："请假审批管理"
+  - 橙色主题（#FF6B35）
+- 搜索框：
+  - 支持搜索姓名、电话、原因
+  - 带清空功能
+  - 支持回车键搜索
+- 刷新按钮：重新加载列表数据
+
+**状态 Tab 切换特性**（4 个 Tab）：
+- 全部 Tab：
+  - 带列表图标（List）
+  - 显示请假申请总数徽章（黄色背景）
+- 待审批 Tab：
+  - 带时钟图标（Clock）
+  - 显示待审批数量徽章（黄色背景，高亮显示）
+  - 高亮背景（橙色渐变）
+- 已通过 Tab：
+  - 带选择图标（Select）
+  - 无徽章
+- 已驳回 Tab：
+  - 带关闭图标（Close）
+  - 无徽章
+- Tab 样式：
+  - 48px 高度，带图标和文字
+  - 激活状态：橙色渐变背景 + 阴影效果
+  - 徽章：黄色背景（#F7C52D）
+
+**请假申请列表表格特性**：
+- 显示字段：ID、员工姓名、岗位、请假类型、请假时间、天数、请假原因、状态、申请时间、操作
+- 请假类型标签：
+  - 病假 → danger (红色)
+  - 事假 → warning (橙色)
+  - 调休 → success (绿色)
+- 状态标签：
+  - 待审批 → warning (橙色)
+  - 已通过 → success (绿色)
+  - 已驳回 → danger (红色)
+- 请假时间列：
+  - 显示两行（开始时间、结束时间）
+  - 格式：YYYY-MM-DD
+- 请假天数列：
+  - 橙色高亮显示
+  - 居中对齐
+- 待审批记录行高亮：
+  - 使用 CSS 类 `pending-row` 添加黄色背景（#fff7e6）
+- 操作按钮：查看、审批（仅待审批记录显示）、驳回（仅待审批记录显示）
+- 表头样式：浅米色背景（#FFF8F0）
+
+**详情对话框特性**：
+- 使用 `el-descriptions` 组件展示
+- 2 列布局，带边框
+- 显示字段：
+  - 员工姓名、岗位（彩色标签）
+  - 请假类型（彩色标签）、请假天数
+  - 开始时间、结束时间（跨 2 列）
+  - 请假状态（彩色标签）、申请时间
+  - 请假原因（跨 2 列）
+  - 审批人、审批时间（如有）
+  - 审批意见（跨 2 列，如有）
+- 底部按钮：
+  - 关闭按钮（始终显示）
+  - 批准按钮（仅待审批记录显示）
+  - 驳回按钮（仅待审批记录显示）
+
+**审批对话框特性**：
+- 操作提示：
+  - 批准操作：绿色成功提示，"确认批准此请假申请吗？"
+  - 驳回操作：红色错误提示，"确认驳回此请假申请吗？驳回后员工需重新提交申请。"
+- 申请摘要（只读）：
+  - 员工姓名
+  - 请假类型（彩色标签）
+  - 请假时间（开始时间 至 结束时间，X 天）
+  - 请假原因
+- 审批意见输入框：
+  - 多行文本框（3 行）
+  - 批准时：选填，占位符"请输入批准意见（选填）"
+  - 驳回时：必填，占位符"请输入驳回原因（必填）"
+  - 最多 200 字符，显示字符计数
+- 操作按钮：取消、批准/驳回（带 loading 状态，颜色对应操作类型）
+- 表单验证：
+  - 驳回时审批意见必填（最少 1 字符）
+  - 批准时无验证要求
+
+**交互体验**：
+- 组件挂载时自动加载请假列表和待审批数量
+- Loading 状态显示（表格级别）
+- Tab 切换时自动加载对应状态的数据
+- 操作成功/失败提示（Element Plus Message）
+- 搜索支持回车键触发
+- 刷新按钮重新加载数据
+- 待审批数量实时更新徽章
+- 从管理员首页快捷入口可直接导航到此页面
+- 从管理员首页待办事项可直接导航到此页面
+
+**响应式设计**：
+- 使用 CSS Grid 自适应布局
+- 平板竖屏（≤768px）：
+  - 顶部操作栏：垂直布局
+  - Tab 按钮：减小高度到 40px，减小字体
+  - 页面内边距减小到 16px
+- 手机（≤480px）：
+  - 页面内边距减小到 12px
+
+**技术实现**：
+- Vue 3 Composition API（`<script setup>`）
+- Element Plus 组件库：
+  - `el-radio-group` / `el-radio-button` - Tab 切换
+  - `el-badge` - 数量徽章
+  - `el-table` - 数据表格
+  - `el-dialog` - 对话框
+  - `el-alert` - 操作提示
+  - `el-form` - 表单
+  - `el-descriptions` - 描述列表
+  - `el-tag` - 标签
+  - `el-pagination` - 分页
+- 响应式数据管理：
+  - `ref()` - 单个值响应式（loading、activeTab、dialogVisible 等）
+  - `reactive()` - 对象响应式（pagination、approveForm、tabCounts）
+  - `computed()` - 计算属性（approveDialogTitle、approveRules）
+- 自定义方法：
+  - `fetchLeaveList()` - 加载请假列表
+  - `fetchPendingCount()` - 加载待审批数量
+  - `handleSearch()` - 搜索处理
+  - `handleRefresh()` - 刷新处理
+  - `handleTabChange()` - Tab 切换处理
+  - `handleView()` - 查看详情
+  - `handleApprove()` - 批准操作
+  - `handleReject()` - 驳回操作
+  - `handleConfirmApprove()` - 确认审批
+  - `getRowClassName()` - 获取表格行类名（用于待审批记录高亮）
+  - `formatDate()` - 格式化日期
+  - `formatDateTime()` - 格式化日期时间
+- 工具函数：
+  - `getStatusTagType()` - 状态标签颜色映射
+  - `getLeaveTypeTagType()` - 请假类型标签颜色映射
+  - `getPositionTagType()` - 岗位标签颜色映射
+
+**数据对接**：
+- 接口地址：
+  - 请假列表：`/api/leaves/`
+  - 待审批列表：`/api/leaves/pending/`
+  - 请假审批：`/api/leaves/{id}/approve/`
+- 请求参数：
+  - 请假列表：`{ page, page_size, search, status, ordering }`
+  - 请假审批：`{ approval_status, approval_remark }`
+    - approval_status: 'APPROVED'（批准）或 'REJECTED'（驳回）
+    - approval_remark: 审批意见（驳回到必填）
+- 响应格式：
+  ```json
+  // 请假列表响应
+  {
+    "code": 200,
+    "message": "成功",
+    "data": {
+      "count": 50,
+      "results": [...],
+      "next": null,
+      "previous": null
+    }
+  }
+
+  // 待审批数量响应
+  {
+    "code": 200,
+    "message": "成功",
+    "data": {
+      "count": 5
+    }
+  }
+  ```
+
+**颜色映射函数**：
+- `getStatusTagType(status)` - 状态标签颜色映射
+  - 待审批 (PENDING) → warning (橙色)
+  - 已通过 (APPROVED) → success (绿色)
+  - 已驳回 (REJECTED) → danger (红色)
+- `getLeaveTypeTagType(leaveType)` - 请假类型标签颜色映射
+  - 病假 (SICK) → danger (红色)
+  - 事假 (PERSONAL) → warning (橙色)
+  - 调休 (COMPENSATORY) → success (绿色)
+- `getPositionTagType(position)` - 岗位标签颜色映射
+  - 厨师 (CHEF) → warning (橙色)
+  - 面点 (PASTRY) → danger (红色)
+  - 切配 (PREP) → info (蓝色)
+  - 保洁 (CLEANER) → success (绿色)
+  - 服务员 (SERVER) → 默认灰色
+  - 经理 (MANAGER) → primary (深蓝色)
+
+**表格行类名逻辑**：
+```javascript
+const getRowClassName = ({ row }) => {
+  if (row.status === 'PENDING') {
+    return 'pending-row'
+  }
+  return ''
+}
+```
+- 使用 `:deep(.el-table .pending-row)` 添加黄色背景样式
+
+**动态表单验证规则**：
+```javascript
+const approveRules = computed(() => ({
+  approval_remark: approveType.value === 'reject'
+    ? [{ required: true, message: '请输入驳回原因', trigger: 'blur' }]
+    : []
+}))
+```
+
+**设计亮点**：
+1. **Tab 切换设计**：大号按钮（48px 高度）带图标和徽章，橙色渐变激活状态
+2. **待审批记录高亮**：使用黄色背景行突出显示待审批记录，便于快速定位
+3. **数量徽章**：全部 Tab 显示总数，待审批 Tab 显示待审批数量（黄色背景）
+4. **审批对话框优化**：显示申请摘要，确认信息醒目，审批意见验证规则动态切换
+5. **双操作按钮**：批准（绿色）和驳回（红色）按钮，操作类型一目了然
+6. **详情对话框复用**：详情对话框也包含批准/驳回按钮，减少操作步骤
+7. **请假时间显示**：两行显示（开始时间、结束时间），便于阅读
+8. **请假天数高亮**：橙色高亮显示请假天数，便于快速浏览
+9. **响应式设计**：适配不同屏幕尺寸，Tab 按钮自适应大小
+10. **Loading 状态**：提升用户体验，明确数据加载状态
+
+**路由配置**：
+- 路径：`/admin/leaves`
 - 需要认证：是
 - 需要角色：ADMIN
 - meta 信息：`{ requiresAuth: true, role: 'ADMIN' }`

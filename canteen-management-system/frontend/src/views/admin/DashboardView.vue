@@ -338,7 +338,7 @@ const formatDate = (dateString) => {
 
 // 快捷入口点击处理
 const handleQuickAccess = (route) => {
-  if (route === '/admin/employees' || route === '/admin/schedules' || route === '/admin/attendance') {
+  if (route === '/admin/employees' || route === '/admin/schedules' || route === '/admin/attendance' || route === '/admin/leaves') {
     router.push(route)
   } else {
     // 其他路由功能在阶段四其他步骤实现
@@ -348,8 +348,12 @@ const handleQuickAccess = (route) => {
 
 // 待办事项点击处理
 const handleTodoClick = (item) => {
-  // 路由功能在阶段四其他步骤实现
-  ElMessage.info(`${item.typeName} 详情页面即将在后续步骤中实现`)
+  if (item.type === 'leave') {
+    router.push('/admin/leaves')
+  } else {
+    // 其他路由功能在阶段四其他步骤实现
+    ElMessage.info(`${item.typeName} 详情页面即将在后续步骤中实现`)
+  }
 }
 
 // 退出登录

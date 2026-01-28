@@ -39,6 +39,12 @@ const routes = [
     component: () => import('../views/admin/AttendanceManageView.vue'),
     meta: { requiresAuth: true, role: 'ADMIN' }
   },
+  {
+    path: '/admin/leaves',
+    name: 'LeaveApprove',
+    component: () => import('../views/admin/LeaveApproveView.vue'),
+    meta: { requiresAuth: true, role: 'ADMIN' }
+  },
   // 员工端路由
   {
     path: '/employee',
