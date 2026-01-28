@@ -16,7 +16,7 @@ import request from './request'
  */
 export function getEmployeeList(params = {}) {
   return request({
-    url: '/api/employees/',
+    url: '/employees/',
     method: 'get',
     params
   })
@@ -29,7 +29,7 @@ export function getEmployeeList(params = {}) {
  */
 export function getEmployeeDetail(id) {
   return request({
-    url: `/api/employees/${id}/`,
+    url: `/employees/${id}/`,
     method: 'get'
   })
 }
@@ -41,7 +41,7 @@ export function getEmployeeDetail(id) {
  */
 export function createEmployee(data) {
   return request({
-    url: '/api/employees/',
+    url: '/employees/',
     method: 'post',
     data
   })
@@ -55,7 +55,7 @@ export function createEmployee(data) {
  */
 export function updateEmployee(id, data) {
   return request({
-    url: `/api/employees/${id}/`,
+    url: `/employees/${id}/`,
     method: 'put',
     data
   })
@@ -69,7 +69,7 @@ export function updateEmployee(id, data) {
  */
 export function patchEmployee(id, data) {
   return request({
-    url: `/api/employees/${id}/`,
+    url: `/employees/${id}/`,
     method: 'patch',
     data
   })
@@ -82,7 +82,7 @@ export function patchEmployee(id, data) {
  */
 export function deleteEmployee(id) {
   return request({
-    url: `/api/employees/${id}/`,
+    url: `/employees/${id}/`,
     method: 'delete'
   })
 }
