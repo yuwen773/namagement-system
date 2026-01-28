@@ -9,1046 +9,174 @@
 ```
 canteen-management-system/
 ├── backend/               # Django 后端项目
-│   ├── config/           # Django 项目配置（settings、urls、wsgi 等）
-│   ├── accounts/         # 用户账号与认证模块
-│   ├── employees/        # 员工档案管理模块
-│   ├── schedules/        # 排班管理模块
-│   ├── attendance/       # 考勤管理模块
-│   ├── leaves/           # 请假管理模块
-│   ├── salaries/         # 薪资管理模块
-│   ├── analytics/        # 统计分析模块
-│   ├── static/           # 静态文件目录
-│   ├── media/            # 用户上传的媒体文件
-│   ├── manage.py         # Django 命令行工具
-│   └── requirements.txt  # Python 依赖列表
+│   ├── config/           # Django 项目配置
+│   ├── accounts/         # 用户账号与认证
+│   ├── employees/        # 员工档案管理
+│   ├── schedules/        # 排班管理
+│   ├── attendance/       # 考勤管理
+│   ├── leaves/           # 请假管理
+│   ├── salaries/         # 薪资管理
+│   ├── analytics/        # 统计分析
+│   ├── static/           # 静态文件
+│   ├── media/            # 媒体文件
+│   └── manage.py         # 命令行工具
 ├── frontend/             # Vue 3 前端项目
-├── sql/                  # 数据库初始化 SQL 文件（参考用）
+├── sql/                  # 数据库参考脚本
 ├── memory-bank/          # 文档仓库
-│   ├── PRD.md            # 产品需求文档
-│   ├── tech-stack.md     # 技术栈说明
-│   ├── IMPLEMENTATION_PLAN.md  # 详细实施计划
-│   ├── progress.md       # 开发进度记录
-│   └── architecture.md   # 本文档 - 架构说明
 ├── .gitignore
-└── CLAUDE.md             # AI 开发者指南
+└── CLAUDE.md             # AI 开发指南
 ```
 
 ---
 
-## 后端 Django 项目架构
+## 后端架构
 
 ### 核心设计原则
 
-1. **模块化设计**：每个应用（app）对应一个业务领域
-2. **API 优先**：使用 Django REST Framework 构建 RESTful API
-3. **前后端分离**：前端独立部署，通过 CORS 与后端通信
-4. **业务层分离**：用户账号（User）与员工档案（EmployeeProfile）是两个独立概念
+1. **模块化设计**：每个应用对应一个业务领域
+2. **API 优先**：Django REST Framework 构建 RESTful API
+3. **前后端分离**：通过 CORS 通信
+4. **业务分离**：User（登录账号）与 EmployeeProfile（员工档案）独立
 
-### Django 应用职责划分
+### 应用职责划分
 
 | 应用 | 职责 | 主要模型 |
 |------|------|---------|
-| `config` | Django 项目配置、URL 路由、WSGI 配置 | - |
-| `accounts` | 用户登录、注册、认证 | User（登录账号） |
-| `employees` | 员工档案管理（业务信息，非登录账号） | EmployeeProfile |
-| `schedules` | 排班计划、班次定义、调班申请 | Shift, Schedule, ShiftSwapRequest |
-| `attendance` | 签到/签退、考勤记录、异常处理 | AttendanceRecord |
-| `leaves` | 请假申请、审批流程 | LeaveRequest |
-| `salaries` | 薪资计算、薪资记录、申诉处理 | SalaryRecord, Appeal |
-| `analytics` | 数据统计、报表生成 | -（使用其他应用的模型） |
+| `accounts` | 用户登录、注册、认证 | User |
+| `employees` | 员工档案管理 | EmployeeProfile |
+| `schedules` | 排班计划、调班申请 | Shift, Schedule, ShiftSwapRequest |
+| `attendance` | 签到/签退、考勤记录 | AttendanceRecord |
+| `leaves` | 请假申请、审批 | LeaveRequest |
+| `salaries` | 薪资计算、申诉 | SalaryRecord, Appeal |
+| `analytics` | 数据统计（无模型） | - |
 
 ---
 
-## 应用模块详解
+## 核心业务模型
 
-### `accounts` - 用户账号与认证
-
-用户账号与认证模块，负责系统登录、注册和用户管理。
-
-#### 核心模型：User
-
+### User（登录账号）
 ```python
-class User(models.Model):
-    username       # 登录账号（唯一）
-    password       # 登录密码（开发阶段明文）
-    employee_id    # 关联员工档案ID（可选外键）
-    role           # 角色类型：ADMIN/EMPLOYEE
-    status         # 账号状态：ENABLED/DISABLED
-    created_at     # 创建时间
-    updated_at     # 更新时间
+username       # 登录账号（唯一）
+password       # 密码（开发阶段明文）
+employee_id    # 关联员工档案（可选）
+role           # ADMIN/EMPLOYEE
+status         # ENABLED/DISABLED
 ```
 
-#### 架构设计要点
-
-- `employee_id` 是可选字段，允许用户账号独立于员工档案存在
-- 使用 Django 的 `TextChoices` 定义枚举类型，提供更好的类型安全
-- `verify_password()` 类方法封装认证逻辑，便于后续扩展（如添加密码哈希）
-
----
-
-### `employees` - 员工档案管理
-
-员工档案管理模块，负责员工业务信息的创建、维护和查询。
-
-#### 核心模型：EmployeeProfile
-
+### EmployeeProfile（员工档案）
 ```python
-class EmployeeProfile(models.Model):
-    # 基础信息
-    name                      # 姓名
-    gender                    # 性别：MALE/FEMALE
-    phone                     # 联系方式
-    id_card                   # 身份证号（唯一，可为空）
-    address                   # 家庭住址
-
-    # 岗位信息
-    position                  # 岗位：CHEF/PASTRY/PREP/CLEANER/SERVER/MANAGER
-    entry_date                # 入职时间
-    status                    # 在职状态：ACTIVE/INACTIVE/LEAVE_WITHOUT_PAY
-
-    # 资质证书
-    health_certificate_no         # 健康证号
-    health_certificate_expiry     # 健康证有效期
-    health_certificate_url        # 健康证图片地址
-    chef_certificate_level        # 厨师等级证
-
-    # 时间戳
-    created_at                # 创建时间
-    updated_at                # 更新时间
+# 基础信息
+name, gender, phone, id_card, address
+# 岗位信息
+position (CHEF/PASTRY/PREP/CLEANER/SERVER/MANAGER)
+entry_date, status (ACTIVE/INACTIVE/LEAVE_WITHOUT_PAY)
+# 资质证书
+health_certificate_no, health_certificate_expiry
+chef_certificate_level
 ```
 
-#### 架构设计要点
-
-- 使用 `TextChoices` 定义枚举类型，提供类型安全和中文标签
-- 岗位类型覆盖食堂行业所有典型岗位，从厨师到保洁员
-- 资质证书字段均为可选，根据岗位需求灵活配置
-
-#### 与 User 模型的关系
-
-| 方面 | EmployeeProfile | User |
-|------|-----------------|------|
-| **用途** | 业务层面的员工信息 | 系统登录账号 |
-| **存在形式** | 可独立存在 | 可独立存在 |
-| **关联方式** | 通过 `employee_id` 外键可选关联 | 通过 `employee_id` 外键可选关联 |
-| **典型场景** | 所有员工都需要档案 | 只有需要登录系统的员工需要账号 |
-| **包含信息** | 姓名、岗位、健康证等业务数据 | 用户名、密码、角色等认证数据 |
-
----
-
-### `schedules` - 排班管理
-
-排班管理模块，负责班次定义、排班计划和调班申请管理。
-
-#### 核心模型
-
-**Shift** - 班次定义
-```python
-class Shift(models.Model):
-    name                    # 班次名称（如：早班/中班/晚班）
-    start_time              # 上班开始时间
-    end_time                # 下班结束时间
-    created_at              # 创建时间
-```
-
-**Schedule** - 排班计划
-```python
-class Schedule(models.Model):
-    employee                # 员工（外键 -> EmployeeProfile）
-    shift                   # 班次（外键 -> Shift）
-    work_date               # 排班日期（唯一约束：员工 + 日期）
-    is_swapped              # 是否已调班
-    created_at              # 创建时间
-```
-
-**ShiftSwapRequest** - 调班申请
-```python
-class ShiftSwapRequest(models.Model):
-    requester               # 发起员工（外键 -> EmployeeProfile）
-    original_schedule       # 原定排班（外键 -> Schedule）
-    target_date             # 期望调整日期
-    target_shift            # 期望调整班次（外键 -> Shift）
-    reason                  # 申请原因
-    status                  # 审批状态：PENDING/APPROVED/REJECTED
-    approver                # 审批管理员（外键 -> EmployeeProfile，可选）
-    approval_remark         # 审批意见
-    created_at              # 创建时间
-```
-
-#### 架构设计要点
-
-- 使用 `unique_together = [['employee', 'work_date']]` 防止同一员工在同一日期重复排班
-- `is_swapped` 标记用于跟踪调班历史
-- 调班审核通过后，系统自动更新排班记录（删除原排班，创建新排班）
-
----
-
-### `attendance` - 考勤管理
-
-考勤管理模块，负责员工签到/签退、考勤记录和异常处理。
-
-#### 核心模型：AttendanceRecord
-
-```python
-class AttendanceRecord(models.Model):
-    # 关联信息
-    employee                # 员工（外键 -> EmployeeProfile）
-    schedule                # 排班（外键 -> Schedule，可选）
-
-    # 签到信息
-    clock_in_time           # 签到时间（可为空）
-    clock_in_location       # 签到地点
-
-    # 签退信息
-    clock_out_time          # 签退时间（可为空）
-    clock_out_location      # 签退地点
-
-    # 考勤状态
-    status                  # 考勤状态：NORMAL/LATE/EARLY_LEAVE/MISSING/ABNORMAL
-
-    # 异常处理
-    correction_remark       # 更正备注
-
-    # 时间戳
-    created_at              # 创建时间
-    updated_at              # 更新时间
-```
-
-#### 考勤状态判断规则
-
-- **无签到或无签退记录** → MISSING（缺卡）
-- **签到时间 > 班次开始时间 + 5分钟** → LATE（迟到）
-- **签退时间 < 班次结束时间 - 5分钟** → EARLY_LEAVE（早退）
-- **其他** → NORMAL（正常）
-
-**弹性时间**：5分钟内签到/签退不算迟到/早退
-
----
-
-### `leaves` - 请假管理
-
-请假管理模块，负责员工请假申请、审批流程管理。
-
-#### 核心模型：LeaveRequest
-
-```python
-class LeaveRequest(models.Model):
-    # 基本信息字段
-    employee                # 员工（外键 -> EmployeeProfile）
-    leave_type              # 请假类型：SICK/PERSONAL/COMPENSATORY
-    start_time              # 开始时间
-    end_time                # 结束时间
-    reason                  # 请假原因
-
-    # 审批信息字段
-    status                  # 审批状态：PENDING/APPROVED/REJECTED
-    approver                # 审批人（外键 -> EmployeeProfile，可选）
-    approval_remark         # 审批意见
-
-    # 时间戳
-    created_at              # 创建时间
-    updated_at              # 更新时间
-```
-
-#### 架构设计要点
-
-- 使用 `TextChoices` 定义枚举类型，提供类型安全和中文标签
-- `approver` 外键为可选，允许系统自动审批（如需要）
-- 审批状态默认为 PENDING（待审批）
-
----
-
-### `salaries` - 薪资管理
-
-薪资管理模块，负责薪资计算、薪资记录生成、异常申诉处理。
-
-#### 核心模型
-
-**SalaryRecord** - 薪资记录
-```python
-class SalaryRecord(models.Model):
-    # 基本信息字段
-    employee                # 员工（外键 -> EmployeeProfile）
-    year_month              # 年月（格式：YYYY-MM）
-
-    # 薪资组成字段
-    base_salary             # 基本工资
-    position_allowance      # 岗位津贴
-    overtime_pay            # 加班费
-    deductions              # 扣款
-    total_salary            # 实发工资（自动计算）
-
-    # 统计字段
-    work_days               # 出勤天数
-    late_count              # 迟到次数
-    missing_count           # 缺卡次数
-    overtime_hours          # 加班时长（小时）
-
-    # 状态和备注
-    status                  # 状态：DRAFT/PUBLISHED/APPEALED/ADJUSTED
-    remark                  # 备注
-
-    # 时间戳
-    created_at              # 创建时间
-    updated_at              # 更新时间
-```
-
-**Appeal** - 异常申诉
-```python
-class Appeal(models.Model):
-    # 基本信息字段
-    appeal_type             # 申诉类型：ATTENDANCE/SALARY
-    employee                # 申诉员工（外键 -> EmployeeProfile）
-    target_id               # 目标记录ID（考勤记录ID或薪资记录ID）
-
-    # 申诉信息
-    reason                  # 申诉原因
-
-    # 审批信息
-    status                  # 审批状态：PENDING/APPROVED/REJECTED
-    approver                # 审批人（外键 -> EmployeeProfile，可选）
-    approval_remark         # 审批意见
-
-    # 时间戳
-    created_at              # 创建时间
-    updated_at              # 更新时间
-```
-
-#### 薪资计算规则
-
-| 项目 | 计算公式 | 说明 |
-|------|---------|------|
-| 日工资 | 月薪 ÷ 21.75 | 固定工作日21.75天 |
-| 时薪 | 日工资 ÷ 8 | 每日工作8小时 |
-| 加班费 | 时薪 × 1.5 × 加班小时数 | 加班按1.5倍计算 |
-| 迟到扣款 | 20 元 × 迟到次数 | 每次迟到扣20元 |
-| 缺卡扣款 | 50 元 × 缺卡次数 | 每次缺卡扣50元 |
-| 岗位津贴 | 固定金额 | CHEF(800)、PASTRY(700)、PREP(500)、CLEANER(300)、SERVER(400)、MANAGER(1000) |
-| 实发工资 | 基本工资 + 岗位津贴 + 加班费 - 扣款 | 自动计算 |
-
----
-
-### `analytics` - 统计分析
-
-统计分析模块，负责跨模块的数据聚合和报表生成。
-
-#### 架构设计要点
-
-- **无模型设计**：`analytics` 应用没有自己的数据模型，直接使用其他应用的模型进行数据聚合
-- **视图函数而非 ViewSet**：使用 `@api_view` 装饰器定义视图函数，每个接口对应一个统计维度
-- **数据格式专为 ECharts 优化**：前端无需复杂的数据转换
-
-#### 统计维度
-
-**人员统计** (`employee_statistics`)
-- 总人数、岗位分布、持证率、入职状态分布
-
-**考勤统计** (`attendance_statistics`)
-- 出勤率、状态分布、日期趋势、岗位维度
-
-**薪资统计** (`salary_statistics`)
-- 月度趋势、岗位对比、薪资构成
-
-**总览统计** (`overview_statistics`)
-- 今日概览、待办事项、总览统计、本月考勤
-
----
-
-## 数据库设计原则
-
-### 核心业务概念
-
-1. **User vs EmployeeProfile**
-   - `User`：系统登录账号（存在于 `accounts` 应用）
-   - `EmployeeProfile`：员工业务档案（存在于 `employees` 应用）
-   - 两者通过 `employee_id` 外键关联（可选）
-   - 并非所有员工都需要登录账号
-
-2. **排班 → 考勤 → 薪资** 数据流
-   - 排班（`schedules`）定义员工的工作班次
-   - 考勤（`attendance`）记录员工的实际签到/签退
-   - 薪资（`salaries`）根据考勤数据计算工资
-
----
-
-## 前端 Vue 3 项目架构
-
-### 项目结构
-
-```
-frontend/
-├── src/
-│   ├── views/
-│   │   ├── admin/       # 管理员端页面
-│   │   ├── employee/    # 员工端页面
-│   │   └── auth/        # 登录/注册页面
-│   ├── components/      # 公共组件
-│   ├── api/             # API 请求封装
-│   ├── router/          # Vue Router 配置
-│   ├── stores/          # Pinia 状态管理
-│   ├── assets/          # 静态资源（图片、样式等）
-│   ├── App.vue          # 根组件
-│   └── main.js          # 应用入口
-├── public/              # 公共静态文件
-├── index.html           # HTML 模板
-├── package.json         # 项目依赖和脚本
-├── vite.config.js       # Vite 配置
-└── README.md            # 项目说明
-```
-
-### 核心技术栈
-
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| **Vue** | ^3.5.24 | 核心框架，使用 Composition API |
-| **Vite** | ^7.2.4 | 构建工具 |
-| **Element Plus** | ^2.13.1 | UI 组件库 |
-| **ECharts** | ^6.0.0 | 数据可视化 |
-| **Axios** | ^1.13.3 | HTTP 客户端 |
-| **Vue Router** | ^4.6.4 | 路由管理 |
-| **Pinia** | ^3.0.4 | 状态管理 |
-
-### 目录职责说明
-
-#### `src/views/` - 页面视图组件
-
-- **admin/** - 管理员端页面
-  - `DashboardView.vue` - 管理员首页/仪表板
-  - `EmployeeManageView.vue` - 人员档案管理
-  - `ScheduleManageView.vue` - 排班安排管理
-  - `AttendanceManageView.vue` - 考勤记录管理
-  - `LeaveApproveView.vue` - 请假审批管理
-  - `SalaryManageView.vue` - 薪资信息管理
-  - `StatisticsView.vue` - 综合统计分析
-  - `SystemManageView.vue` - 系统管理
-
-- **employee/** - 员工端页面
-  - `HomeView.vue` - 员工端首页
-  - `ProfileView.vue` - 个人信息中心
-  - `CheckInView.vue` - 签到服务页面
-  - `AttendanceView.vue` - 考勤信息查询
-  - `LeaveView.vue` - 请假申请服务
-  - `ShiftSwapView.vue` - 调班申请服务
-  - `SalaryView.vue` - 薪资信息查询
-
-- **auth/** - 认证相关页面
-  - `LoginView.vue` - 登录页面
-  - `RegisterView.vue` - 注册页面
-
-#### `src/components/` - 公共组件
-
-可复用的 Vue 组件，如数据表格、表单、图表、布局组件等。
-
-#### `src/api/` - API 请求封装
-
-每个文件封装一个业务模块的 API 请求方法，基于统一的 `request.js` Axios 实例。
-
-- `request.js` - Axios 实例配置，请求/响应拦截器，401 自动跳转登录
-- `auth.js` - 认证相关 API（登录、注册、用户列表）
-- `employee.js` - 员工档案 API（CRUD、筛选、搜索）
-- `schedule.js` - 排班管理 API（班次、排班、调班申请、日历视图、批量排班）
-- `attendance.js` - 考勤管理 API（签到、签退、统计、更正、我的考勤）
-- `leave.js` - 请假管理 API（请假申请、审批、我的请假、待审批列表）
-- `salary.js` - 薪资管理 API（薪资列表/详情/生成/调整/发布/删除、申诉列表/审批）
-- `analytics.js` - 统计分析 API（人员统计、考勤统计、薪资统计、总览统计）
-
-**`salary.js` 薪资 API 文件说明**：
-```
-getSalaryList(params)        # 获取薪资列表，支持月份、员工、状态筛选和分页
-getSalaryDetail(id)          # 获取薪资详情
-createSalary(data)           # 创建薪资记录
-updateSalary(id, data)       # 更新薪资记录
-generateSalary(data)         # 生成薪资（根据考勤自动计算）
-adjustSalary(id, data)       # 调整薪资（手动修改基本工资、加班费等）
-publishSalary(id)            # 发布薪资（状态从草稿改为已发布）
-deleteSalary(id)             # 删除薪资记录
-
-# 申诉相关
-getAppealList(params)        # 获取申诉列表
-getAppealDetail(id)          # 获取申诉详情
-createAppeal(data)           # 创建申诉
-approveAppeal(id, data)      # 审批申诉
-getPendingAppeals(params)    # 获取待审批申诉列表
-exportSalarySheet(params)    # 导出工资表
-```
-
-#### `src/router/` - 路由配置
-
-**路由导航守卫功能**：
-- 检查路由是否需要认证
-- 检查用户角色权限
-- 角色不匹配时，自动跳转到对应角色的首页
-
-#### `src/stores/` - Pinia 状态管理
-
-**`user.js`** - 用户状态管理
-- 状态字段：`token`、`userInfo`
-- 操作方法：`login()`、`logout()`、`updateUserInfo()`
-
-### UI 主题设计
-
-#### 配色方案
-
-| 用途 | 色值 | 说明 |
-|------|------|------|
-| **主色** | `#FF6B35` | 橙色，体现食堂温暖氛围 |
-| **辅助色1** | `#F7C52D` | 黄色，用于高亮和提示 |
-| **辅助色2** | `#4CAF50` | 绿色，用于成功状态 |
-| **背景色** | `#FFF8F0` | 浅米色，营造温馨感 |
-| **文字色** | `#333333` | 深灰，保证可读性 |
-
-#### 设计元素
-
-- **图标**：餐具（刀叉、勺子）、厨师帽、食材等食堂相关元素
-- **字体**：清晰易读，考虑部分员工年龄偏大，适度放大
-- **圆角**：8px 圆角，营造亲和感
-- **间距**：统一的 16px 间距规则
-
----
-
-## 重要文件说明
-
-### `backend/config/settings.py`
-
-Django 项目的核心配置文件，包含：
-
-- **INSTALLED_APPS**：注册所有应用和第三方库
-- **DATABASES**：数据库连接配置（MySQL）
-- **MIDDLEWARE**：中间件配置（包含 CORS）
-- **CORS_ALLOWED_ORIGINS**：允许跨域访问的前端地址
-- **STATIC_URL/MEDIA_URL**：静态文件和媒体文件路径配置
-
-### `backend/config/urls.py`
-
-URL 路由配置，将各应用的 URL 路由包含进来：
-- `/admin/` - Django 管理后台
-- `/api/accounts/` - 用户账号与认证 API
-- `/api/employees/` - 员工档案 API
-- `/api/schedules/` - 排班管理 API
-- `/api/attendance/` - 考勤管理 API
-- `/api/leaves/` - 请假管理 API
-- `/api/salaries/` - 薪资管理 API
-- `/api/analytics/` - 统计分析 API
-
-### `backend/requirements.txt`
-
-Python 依赖列表，包含：
-- `django>=5.2` - Django 框架
-- `djangorestframework` - REST API 框架
-- `mysqlclient` - MySQL 数据库驱动
-- `django-cors-headers` - 跨域请求处理
-- `django-filter` - 查询过滤功能
-
-### `backend/manage.py`
-
-Django 命令行工具，用于：
-- `python manage.py runserver` - 启动开发服务器
-- `python manage.py makemigrations` - 创建数据库迁移文件
-- `python manage.py migrate` - 应用数据库迁移
-- `python manage.py createsuperuser` - 创建超级管理员
-
-### `frontend/vite.config.js`
-
-Vite 构建工具的配置文件：
-- **proxy**：将前端 `/api` 请求代理到后端 `http://127.0.0.1:8000`
-- **plugins**：注册 Vue 3 插件
-
-### `frontend/package.json`
-
-项目依赖和脚本配置：
-- `npm run dev` - 启动开发服务器
-- `npm run build` - 构建生产版本
-- `npm run preview` - 预览生产构建
-
----
-
-## 开发工作流
-
-1. **修改模型**：在对应应用的 `models.py` 中定义或修改数据模型
-2. **创建迁移**：`python manage.py makemigrations`
-3. **应用迁移**：`python manage.py migrate`
-4. **创建序列化器**：在 `serializers.py` 中定义 API 序列化器
-5. **创建视图**：在 `views.py` 中实现 API 端点
-6. **配置路由**：在应用的 `urls.py` 中配置 URL 路由
-7. **测试验证**：使用 Postman 或 curl 测试 API
-
----
-
-## 注意事项
-
-1. **statistics 应用名称冲突**：Python 内置了 `statistics` 模块，因此该应用命名为 `analytics`
-2. **数据库迁移**：始终使用 Django migrations，不要直接执行 SQL
-3. **密码存储**：开发阶段采用明文存储，生产环境需改为加密存储
-4. **CORS 配置**：前端开发时需要配置 CORS 允许跨域请求
-5. **API 代理**：前端 `/api` 请求通过 Vite 代理转发到后端，生产环境需配置 Nginx 反向代理
-6. **前端路由**：使用 Vue Router 的 Hash 模式或 History 模式（需服务器配置支持）
-
----
-
-## 前端页面组件详解
-
-### `SalaryManageView.vue` - 薪资信息管理页面
-
-薪资管理是管理员端的核心功能之一，负责员工薪资的生成、查看、调整和发布。
-
-#### 页面结构
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ 页面标题: 💰 薪资管理                                     │
-├─────────────────────────────────────────────────────────┤
-│ 操作栏: [月份选择器] [生成薪资] [导出工资表]                 │
-├─────────────────────────────────────────────────────────┤
-│ 统计卡片: 💵本月薪资总额  📈平均薪资  📝待发布  ⚠️待处理申诉   │
-├─────────────────────────────────────────────────────────┤
-│ 薪资列表表格:                                             │
-│ | 员工 | 岗位 | 月份 | 基本 | 津贴 | 加班 | 扣款 | 实发 | 状态 | 操作 | │
-│ | 张三 | 厨师 | 2024-01 | ¥3000 | ¥800 | ¥500 | ¥20 | ¥4280 | 草稿 | 详情 调整 发布 删除 | │
-├─────────────────────────────────────────────────────────┤
-│ 分页: 总共 50 条, 每页 20 条 [1] 2 3                     │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### 核心功能模块
-
-**1. 月份筛选与薪资生成**
-- 默认显示当前月份的薪资数据
-- 选择月份后自动刷新列表
-- "生成薪资"按钮触发批量计算，基于考勤数据自动生成所有员工的薪资记录
-
-**2. 统计卡片区域**
-四个渐变卡片显示本月薪资概况：
-- **本月薪资总额**（橙黄渐变）- 所有员工实发工资总和
-- **平均薪资**（黄绿渐变）- 人均薪资水平
-- **待发布薪资**（绿色渐变）- 草稿状态的薪资记录数量
-- **待处理申诉**（红色渐变）- 待审批的申诉数量
-
-**3. 薪资列表表格**
-列设计强调数据可读性：
-- **员工姓名**：带头像圆形渐变背景
-- **岗位**：彩色标签（厨师-橙色、面点-红色等）
-- **薪资项**：右对齐，等宽字体，带货币符号
-  - 岗位津贴：绿色 `+¥800`
-  - 加班费：橙色高亮 `+¥500`（>0时）
-  - 扣款：红色 `-¥20`
-  - 实发工资：橙色大字 `¥4280.00`
-- **状态标签**：草稿(灰)、已发布(绿)、已调整(橙)、申诉中(红)
-- **操作按钮**：详情、调整、发布、删除（已发布不可调整）
-
-**4. 调整薪资对话框**
-管理员可手动修正薪资数据：
-- 顶部显示当前员工、月份、实发工资摘要
-- 可调整项：基本工资、加班费（数字输入框，步进100/50）
-- 调整原因：必填文本域（5-200字符）
-- 确认提示：调整后状态自动变更为"已调整"
-
-**5. 薪资详情对话框**
-展示完整薪资构成和考勤统计：
-- 头部：员工头像、姓名、月份、状态标签
-- 明细网格：基本工资、岗位津贴、加班费、迟到扣款、缺卡扣款、实发工资
-  - 实发工资行：橙色渐变背景，大号字体
-- 考勤统计标签：出勤天数、迟到次数、缺卡次数、加班时长
-
-**6. 申诉处理对话框**
-处理员工的考勤/薪资申诉：
-- 顶部警告框显示申诉原因
-- 单选按钮：批准申诉（绿色✅）/ 拒绝申诉（红色❌）
-- 审批意见：必填文本域，根据批准/拒绝显示不同提示
-
-#### 状态管理
-
-```javascript
-// 页面状态
-selectedMonth        // 当前选择的月份（YYYY-MM 格式）
-salaryList          // 薪资记录列表
-statsData           // 统计数据（总额、平均、待发布、待申诉）
-pagination          // 分页信息（page, pageSize, total）
-
-// 对话框状态
-adjustDialogVisible     // 调整薪资对话框
-detailDialogVisible     // 薪资详情对话框
-appealDialogVisible     // 申诉处理对话框
-
-// 当前操作对象
-currentSalary       // 当前查看/调整的薪资记录
-currentAppeal       // 当前处理的申诉
-
-// 表单数据
-adjustForm          // 调整表单 { base_salary, overtime_pay, reason }
-appealForm          // 申诉审批表单 { approve, approval_remark }
-```
-
-#### API 调用流程
-
-```
-页面加载
-  │
-  ├─> loadSalaryList() ──────────────────────────────────────┐
-  │     GET /api/salaries/salaries/?year_month=2024-01&page=1 │
-  │     │                                                    │
-  │     └─> salaryList = response.data.results              │
-  │     └─> updateStats() 计算统计数据                        │
-  │                                                          │
-  ├─> 生成薪资                                               │
-  │     generateSalary({ year_month })                      │
-  │     POST /api/salaries/salaries/generate/               │
-  │     └─> 重新加载列表                                     │
-  │                                                          │
-  ├─> 调整薪资                                               │
-  │     adjustSalary(id, { base_salary, overtime_pay, reason })│
-  │     POST /api/salaries/salaries/{id}/adjust/            │
-  │     └─> 重新加载列表                                     │
-  │                                                          │
-  ├─> 发布薪资                                               │
-  │     publishSalary(id)                                   │
-  │     POST /api/salaries/salaries/{id}/publish/           │
-  │     └─> 更新状态为"已发布"                               │
-  │                                                          │
-  └─> 审批申诉                                               │
-        approveAppeal(id, { approve, approval_remark })      │
-        POST /api/salaries/appeals/{id}/approve/            │
-        └─> 重新加载列表                                     │
-```
-
-#### UI 设计亮点
-
-**渐变配色系统**
-- 对话框标题使用不同渐变：
-  - 调整薪资：橙黄渐变 `#FF6B35 → #F7C52D`
-  - 薪资详情：绿色渐变 `#4CAF50 → #8BC34A`
-  - 申诉处理：红色渐变 `#F44336 → #FF9800`
-
-**交互动效**
-- 统计卡片悬停：向上平移4px + 阴影增强 + 边框高亮
-- 表格行悬停：浅米色背景 `#FFF8F0`
-- 快捷入口箭头：悬停时从左滑入
-
-**可访问性设计**
-- 金额使用等宽字体（SF Mono / Consolas）
-- 数字右对齐便于对比
-- 状态用颜色+文字双重标识
-- 表单验证实时反馈
-
-**响应式布局**
-- 桌面端：统计卡片4列，详情网格2列
-- 平板端：统计卡片2列，详情网格1列
-- 移动端：全部单列堆叠
-
-#### 与后端的契约
-
-**薪资状态流转**
-```
-DRAFT（草稿）
-  │
-  ├─> publishSalary() ──> PUBLISHED（已发布）
-  │
-  └─> adjustSalary() ──> ADJUSTED（已调整）
-                            │
-                            └─> publishSalary() ──> PUBLISHED
-
-APPEALED（申诉中）
-  │
-  └─> approveAppeal(approve=true) ──> ADJUSTED（批准后调整薪资）
-      │
-      └─> approveAppeal(approve=false) ──> 保持原状态
-```
-
-**薪资计算公式（后端执行）**
+### 考勤状态判断规则
+- **缺卡**：无签到或无签退记录
+- **迟到**：签到时间 > 班次开始 + 5分钟
+- **早退**：签退时间 < 班次结束 - 5分钟
+- **正常**：其他情况
+
+### 薪资计算公式
 ```
 日工资 = 月基本工资 ÷ 21.75
 时薪 = 日工资 ÷ 8
 加班费 = 时薪 × 1.5 × 加班小时数
-岗位津贴 = 根据岗位固定金额
+岗位津贴 = CHEF(800)/PASTRY(700)/PREP(500)/CLEANER(300)/SERVER(400)/MANAGER(1000)
 迟到扣款 = 20 × 迟到次数
 缺卡扣款 = 50 × 缺卡次数
 实发工资 = 基本工资 + 岗位津贴 + 加班费 - 迟到扣款 - 缺卡扣款
 ```
 
-前端只负责展示和手动调整，计算逻辑全部在后端完成，确保数据一致性。
+### 数据流
+```
+排班 → 考勤 → 薪资
+```
 
 ---
 
-### `StatisticsView.vue` - 综合统计分析页面
+## 前端架构
 
-综合统计分析页面是管理员端的数据可视化中心，通过 ECharts 图表展示人员、考勤、薪资等多维度统计数据。
-
-#### 页面结构
-
+### 项目结构
 ```
-┌─────────────────────────────────────────────────────────┐
-│ 页面标题: 📊 综合统计分析                                 │
-│ 数据驱动决策，洞察食堂运营全貌                             │
-├─────────────────────────────────────────────────────────┤
-│ 顶部统计卡片（4个）                                        │
-│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐         │
-│ │员工总数 │ │出勤率  │ │薪资支出 │ │待处理  │         │
-│ └─────────┘ └─────────┘ └─────────┘ └─────────┘         │
-├─────────────────────────────────────────────────────────┤
-│ 人员结构分析                                              │
-│ ┌─────────────────┐ ┌─────────────────────────┐         │
-│ │  岗位分布饼图    │ │  持证率统计卡片         │         │
-│ │  （环形图+图例） │ │  - 健康证持证率         │         │
-│ │                 │ │  - 厨师证持证率         │         │
-│ │                 │ │  - 在职状态分布         │         │
-│ └─────────────────┘ └─────────────────────────┘         │
-├─────────────────────────────────────────────────────────┤
-│ 考勤趋势分析                                              │
-│ ┌─────────────────┐ ┌─────────────────────────┐         │
-│ │ 出勤率折线图    │ │ 岗位考勤排行柱状图      │         │
-│ │ （最近7天）     │ │ （迟到/缺卡统计）       │         │
-│ └─────────────────┘ └─────────────────────────┘         │
-│ ┌─────────────────────────────────────────────┐         │
-│ │          考勤状态分布卡片                    │         │
-│ │    （正常✓、迟到⏰、早退⇠、缺卡?、异常!）     │         │
-│ └─────────────────────────────────────────────┘         │
-├─────────────────────────────────────────────────────────┤
-│ 薪资支出分析                                              │
-│ ┌─────────────────┐ ┌─────────────────────────┐         │
-│ │薪资支出趋势图   │ │  薪资构成饼图           │         │
-│ │（最近12个月）   │ │（基本/津贴/加班/扣款）   │         │
-│ └─────────────────┘ └─────────────────────────┘         │
-│ ┌─────────────────────────────────────────────┐         │
-│ │           岗位薪资对比柱状图                  │         │
-│ └─────────────────────────────────────────────┘         │
-└─────────────────────────────────────────────────────────┘
+frontend/src/
+├── views/
+│   ├── admin/       # 管理员端（Dashboard/员工/排班/考勤/请假/薪资/统计）
+│   ├── employee/    # 员工端（首页/个人/签到/考勤/请假/调班/薪资）
+│   └── auth/        # 登录/注册
+├── api/             # API 请求封装
+├── router/          # 路由配置
+├── stores/          # Pinia 状态管理
+└── components/      # 公共组件
 ```
 
-#### 核心功能模块
+### 核心技术栈
+- **Vue 3** + **Vite** + **Element Plus** + **ECharts**
+- **Axios** + **Vue Router** + **Pinia**
 
-**1. 顶部统计卡片**
-- **员工总数**：显示在职人员数量，背景橙黄渐变
-- **今日出勤率**：实时百分比，显示迟到人数或"全员准时"
-- **本月薪资支出**：格式化为千分位，含岗位津贴提示
-- **待处理事项**：待审批数量，"需要处理"或"全部完成"状态
+### UI 主题配色
+| 用途 | 色值 |
+|------|------|
+| 主色 | #FF6B35（橙色） |
+| 辅助色 | #F7C52D（黄）、#4CAF50（绿） |
+| 背景色 | #FFF8F0（浅米色） |
 
-**2. 人员结构分析**
-- **岗位分布饼图**：环形饼图展示6种岗位占比
-  - 自定义颜色数组：橙#FF6B35、黄#F7C52D、绿#4CAF50、蓝#2196F3、紫#9C27B0、棕#795548
-  - 底部自定义图例，显示岗位名和人数
-  - 悬停显示详情（名称、人数、百分比）
-- **持证率统计**：
-  - 健康证持证率：绿色进度条，显示已持证/总人数
-  - 厨师证持证率：蓝色进度条，仅对厨师岗位统计
-  - 在职状态分布：横向条形图（在职/离职/停薪留职）
+---
 
-**3. 考勤趋势分析**
-- **出勤率折线图**：最近7天双折线图
-  - 正常出勤（绿色）+ 迟到（橙色）
-  - 渐变面积填充，平滑曲线
-  - 自定义 Y 轴格式
-- **岗位考勤排行柱状图**：双柱状图
-  - 迟到（橙渐变）+ 缺卡（灰渐变）
-  - 圆角柱体，悬停显示数值
-- **考勤状态分布卡片**：
-  - 5种状态：正常✓、迟到⏰、早退⇠、缺卡?、异常!
-  - 彩色圆形图标 + 名称 + 次数
+## API 端点
 
-**4. 薪资支出分析**
-- **薪资支出趋势图**：最近12个月折线图
-  - 橙色渐变面积填充
-  - 悬停显示总支出和平均薪资
-  - Y轴单位：万元（自动格式化）
-- **薪资构成饼图**：环形饼图
-  - 4个部分：基本工资（橙）、岗位津贴（黄）、加班费（绿）、扣款（红）
-  - 右侧图例，底部显示百分比
-- **岗位薪资对比柱状图**：
-  - 橙色渐变柱状图
-  - 顶部标签格式化为 ¥X.Xk
-  - 悬停显示完整薪资
+| 模块 | 端点 | 说明 |
+|------|------|------|
+| accounts | `/api/accounts/login/` | 登录 |
+| employees | `/api/employees/` | 员工 CRUD |
+| schedules | `/api/schedules/schedules/batch_create/` | 批量排班 |
+| attendance | `/api/attendance/clock_in/` | 签到 |
+| leaves | `/api/leaves/{id}/approve/` | 审批请假 |
+| salaries | `/api/salaries/salaries/generate/` | 生成薪资 |
+| analytics | `/api/analytics/overview/` | 总览统计 |
 
-#### 状态管理
+---
 
-```javascript
-// 加载状态
-overviewLoading        // 总览数据加载
-employeeLoading        // 人员统计加载
-attendanceLoading      // 考勤统计加载
-salaryLoading          // 薪资统计加载
+## 重要文件
 
-// 数据响应式变量
-overviewData           // 总览数据 { total_count, attendance_rate, ... }
-employeeData           // 人员数据 { position_distribution, status_distribution, ... }
-attendanceData         // 考勤数据 { daily_trend, position_stats, ... }
-salaryData             // 薪资数据 { monthly_trend, composition, ... }
+### 后端
+- `settings.py` - 数据库、CORS、静态文件配置
+- `urls.py` - API 路由配置
+- `requirements.txt` - Python 依赖
+- `manage.py` - Django 命令行工具
 
-// 图表 DOM 引用
-positionChartRef           // 岗位分布图容器
-attendanceTrendChartRef    // 出勤趋势图容器
-positionRankingChartRef    // 岗位排行图容器
-salaryTrendChartRef        // 薪资趋势图容器
-salaryCompChartRef         // 薪资构成图容器
-positionSalaryChartRef     // 岗位薪资图容器
+### 前端
+- `vite.config.js` - API 代理配置
+- `package.json` - 项目依赖
+- `src/api/request.js` - Axios 实例配置
+- `src/router/index.js` - 路由与导航守卫
+- `src/stores/user.js` - 用户状态管理
 
-// 图表实例数组
-charts                   // 存储6个 ECharts 实例，用于 resize 和 dispose
+---
+
+## 开发工作流
+
+```bash
+# 后端
+python manage.py makemigrations    # 创建迁移
+python manage.py migrate           # 应用迁移
+python manage.py runserver         # 启动服务器
+
+# 前端
+npm run dev                        # 启动开发服务器
+npm run build                      # 构建生产版本
 ```
 
-#### API 调用流程
+---
 
-```
-页面挂载
-  │
-  ├─> 并行调用4个API（Promise.all）
-  │     ├─> loadOverviewData() ─── GET /api/analytics/overview/
-  │     ├─> loadEmployeeData() ─── GET /api/analytics/employees/
-  │     ├─> loadAttendanceData() ─ GET /api/analytics/attendance/?days=7
-  │     └─> loadSalaryData() ───── GET /api/analytics/salaries/?months=12
-  │
-  ├─> 数据返回后初始化6个图表
-  │     ├─> initPositionChart()          // 岗位分布饼图
-  │     ├─> initAttendanceTrendChart()   // 出勤率折线图
-  │     ├─> initPositionRankingChart()   // 岗位排行柱状图
-  │     ├─> initSalaryTrendChart()       // 薪资趋势图
-  │     ├─> initSalaryCompChart()        // 薪资构成饼图
-  │     └─> initPositionSalaryChart()    // 岗位薪资柱状图
-  │
-  ├─> 添加 resize 事件监听器（响应式图表）
-  │
-  └─> 组件卸载时：移除监听器 + 销毁所有图表实例
-```
+## 注意事项
 
-#### UI 设计亮点
-
-**渐变配色系统**
-- 页面标题背景：橙#FF6B35 → 橙#FF8C42 渐变
-- 背景渐变：浅米色#FFF8F0 → 浅橙色#FFE8D6（从上到下）
-- 卡片背景：白色，带橙色调阴影
-- 图表配色：暖色调渐变（橙→黄、绿渐变、灰渐变）
-
-**动画效果**
-- 标题图标浮动动画（上下浮动，3秒循环）
-- 卡片悬停：向上平移6px + 阴影增强
-- 进度条宽度过渡动画（0.6秒 ease）
-
-**数据可视化优化**
-- 所有图表悬停提示框：白色半透明背景 + 橙色边框
-- 饼图使用环形设计，更现代
-- 折线图使用渐变面积填充
-- 柱状图使用渐变色 + 圆角
-- 货币格式化：千分位分隔 + ¥ 前缀
-- 大数值简化：万元、X.Xk 格式
-
-**响应式设计**
-- Grid 布局自动调整（auto-fit + minmax）
-- 断点：1024px（双列→单列）、768px（四列→双列）
-- 图表容器使用 min-height 确保可读性
-- 监听 window resize 事件，动态调整图表尺寸
-
-#### 技术实现要点
-
-**图表配置模式**
-```javascript
-const option = {
-  tooltip: {
-    trigger: 'item' / 'axis',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderColor: '#FF6B35',
-    borderWidth: 1,
-    formatter: customFormatter  // 自定义格式化函数
-  },
-  grid: {
-    left: '3%', right: '4%', bottom: '3%', top: '10%',
-    containLabel: true  // 防止标签溢出
-  },
-  xAxis: {
-    axisLine: { lineStyle: { color: '#ddd' } },
-    axisLabel: { color: '#666' }
-  },
-  yAxis: {
-    axisLine: { show: false },
-    splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } }
-  },
-  series: [
-    {
-      itemStyle: {
-        color: new echarts.graphic.LinearGradient(...)  // 渐变色
-      },
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(...)  // 渐变填充
-      }
-    }
-  ]
-}
-```
-
-**变量作用域注意事项**
-- 避免局部变量与响应式变量重名
-- 示例错误：`const salaryData = ...` 与 `salaryData.value` 冲突
-- 正确做法：使用不同的变量名，如 `salaryAmounts`
-
-**图表生命周期管理**
-```javascript
-// 创建图表
-const chart = echarts.init(domRef)
-charts.push(chart)
-
-// 响应式调整
-window.addEventListener('resize', handleResize)
-const handleResize = () => charts.forEach(c => c.resize())
-
-// 销毁图表
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  charts.forEach(c => c.dispose())
-  charts = []
-})
-```
-
-#### 路由与菜单
-
-**路由配置**：
-```javascript
-{
-  path: 'statistics',
-  name: 'Statistics',
-  component: () => import('../views/admin/StatisticsView.vue'),
-  meta: { requiresAuth: true, role: 'ADMIN' }
-}
-```
-
-**菜单配置**：
-- 菜单项路径：`/admin/statistics`
-- 图标：TrendCharts（Element Plus 内置图标）
-- 标题：统计分析
-- 面包屑映射：`/admin/statistics` → '统计分析'
-
-#### 与后端的契约
-
-**API 端点**：
-```
-GET /api/analytics/overview/     # 总览统计（Dashboard 专用）
-GET /api/analytics/employees/    # 人员统计
-GET /api/analytics/attendance/?days=7   # 考勤统计
-GET /api/analytics/salaries/?months=12  # 薪资统计
-```
-
-**数据格式约定**：
-- 统一响应格式：`{ code: 200, message: '成功', data: {...} }`
-- 饼图数据：`{ labels: [], data: [] }`
-- 折线图数据：`[{ date: '2024-01-15', normal: 18, late: 1 }, ...]`
-- 柱状图数据：`[{ position: '厨师', late_count: 5, missing_count: 1 }, ...]`
-
-#### 性能优化
-
-**并行请求**：使用 `Promise.all()` 同时发起4个 API 请求，减少总加载时间
-
-**图表懒加载**：只有数据返回后才初始化图表，避免渲染空图表
-
-**防抖处理**：resize 事件使用 ECharts 内置的 `resize()` 方法，已做防抖处理
-
-**内存管理**：组件卸载时必须销毁图表实例，防止内存泄漏
-
-#### 调试经验
-
-**问题1：变量名冲突**
-- 症状：`Cannot access 'salaryData' before initialization`
-- 原因：局部变量 `const salaryData` 与响应式变量 `salaryData` 重名
-- 解决：重命名局部变量为 `salaryAmounts`
-
-**问题2：运行时编译警告**
-- 症状：`Component provided template option but runtime compilation is not supported`
-- 原因：使用 `template` 字符串定义组件（FoodIcon）
-- 解决：替换为 Element Plus 内置图标（Grid）
-
-**问题3：图表不显示**
-- 检查点：DOM 容器是否存在、高度是否足够、数据是否正确
-- 调试方法：`console.log(chart)` 检查实例、`chart.getOption()` 检查配置
+1. **analytics 应用**：避免与 Python 内置 `statistics` 模块冲突
+2. **数据库迁移**：始终使用 Django migrations，不直接执行 SQL
+3. **密码存储**：开发阶段明文，生产环境需加密
+4. **CORS 配置**：前端开发需配置跨域
+5. **User vs EmployeeProfile**：员工档案与登录账号是两个独立概念
