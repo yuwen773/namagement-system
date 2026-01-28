@@ -466,6 +466,195 @@ router.register(r'shift-requests', ShiftSwapRequestViewSet, basename='shift-requ
 
 ---
 
+### `attendance` 应用 - 考勤管理
+
+考勤管理模块，负责员工签到/签退、考勤记录和异常处理。
+
+#### 文件结构与职责
+
+```
+attendance/
+├── __init__.py
+├── admin.py              # Django Admin 配置
+├── apps.py               # 应用配置
+├── migrations/           # 数据库迁移文件
+│   └── 0001_initial.py  # 创建 AttendanceRecord 表
+├── models.py             # 数据模型定义
+├── serializers.py        # DRF 序列化器
+├── urls.py               # 应用 URL 路由
+└── views.py              # API 视图
+```
+
+#### 核心模型：AttendanceRecord
+
+```python
+class AttendanceRecord(models.Model):
+    # 关联信息
+    employee                # 员工（外键 -> EmployeeProfile）
+    schedule                # 排班（外键 -> Schedule，可选）
+
+    # 签到信息
+    clock_in_time           # 签到时间（可为空）
+    clock_in_location       # 签到地点
+
+    # 签退信息
+    clock_out_time          # 签退时间（可为空）
+    clock_out_location      # 签退地点
+
+    # 考勤状态
+    status                  # 考勤状态：NORMAL/LATE/EARLY_LEAVE/MISSING/ABNORMAL
+
+    # 异常处理
+    correction_remark       # 更正备注
+
+    # 时间戳
+    created_at              # 创建时间
+    updated_at              # 更新时间
+```
+
+**架构设计要点**：
+- 使用 `TextChoices` 定义状态枚举，提供类型安全和中文标签
+- `schedule` 外键为可选，允许在没有排班的情况下手动创建考勤记录
+- 保存时自动判断考勤状态（`_calculate_status` 方法）
+- 自动计算加班时长（`calculate_overtime_hours` 方法）
+- 使用 `UniqueConstraint` 确保同一员工在同一排班只有一条考勤记录
+
+#### 考勤状态判断规则
+
+```python
+def _calculate_status(self):
+    """
+    自动判断考勤状态
+
+    判断规则：
+    - 无签到或无签退记录 → MISSING（缺卡）
+    - 签到时间 > 班次开始时间 + 5分钟 → LATE（迟到）
+    - 签退时间 < 班次结束时间 - 5分钟 → EARLY_LEAVE（早退）
+    - 其他 → NORMAL（正常）
+    """
+```
+
+**弹性时间**：5分钟内签到/签退不算迟到/早退
+
+#### 序列化器设计
+
+| 序列化器 | 用途 | 特点 |
+|---------|------|------|
+| `AttendanceRecordSerializer` | 考勤记录详情 CRUD | 支持完整字段，包含员工名、班次信息、状态显示 |
+| `AttendanceRecordListSerializer` | 考勤记录列表展示 | 简化字段，提升列表查询性能 |
+| `ClockInSerializer` | 签到请求验证 | 验证排班ID和签到地点 |
+| `ClockOutSerializer` | 签退请求验证 | 验证签退地点 |
+| `AttendanceStatisticsSerializer` | 考勤统计请求 | 验证日期范围和员工ID |
+| `AttendanceStatisticsResponseSerializer` | 考勤统计响应 | 返回统计数据 |
+| `AttendanceCorrectionSerializer` | 异常处理 | 验证状态修改和备注（备注必填） |
+
+#### 视图设计：AttendanceRecordViewSet
+
+基于 DRF 的 `ModelViewSet`，提供标准的 CRUD 操作和特殊业务接口：
+
+| 操作 | HTTP 方法 | 端点 | 说明 |
+|------|----------|------|------|
+| 列表 | GET | `/api/attendance/` | 支持筛选、搜索、排序 |
+| 创建 | POST | `/api/attendance/` | 标准操作（管理员手动创建） |
+| 详情 | GET | `/api/attendance/{id}/` | 标准操作 |
+| 更新 | PUT/PATCH | `/api/attendance/{id}/` | 标准操作 |
+| 删除 | DELETE | `/api/attendance/{id}/` | 标准操作 |
+| 签到 | POST | `/api/attendance/clock_in/` | 员工签到接口 |
+| 签退 | POST | `/api/attendance/clock_out/` | 员工签退接口 |
+| 统计 | POST | `/api/attendance/statistics/` | 考勤统计接口 |
+| 异常处理 | POST | `/api/attendance/{id}/correct/` | 管理员修改考勤状态 |
+| 我的考勤 | GET | `/api/attendance/my_attendance/` | 员工查看自己的考勤记录 |
+
+**签到接口逻辑**：
+- 接收员工ID、排班ID（可选）、签到地点
+- 如果没有提供排班，自动查找今日排班
+- 检查是否已签到，避免重复签到
+- 创建或更新考勤记录
+- 自动判断考勤状态
+
+**签退接口逻辑**：
+- 接收员工ID、签退地点
+- 查找今日考勤记录
+- 检查是否已签到，未签到则提示错误
+- 检查是否已签退，避免重复签退
+- 更新签退信息
+- 自动重新判断考勤状态
+
+**考勤统计接口**：
+- 接收日期范围（开始日期、结束日期）
+- 可选员工ID（不提供则统计所有员工）
+- 返回统计数据：
+  - `total_days` - 总天数
+  - `present_days` - 出勤天数
+  - `late_count` - 迟到次数
+  - `early_leave_count` - 早退次数
+  - `missing_count` - 缺卡次数
+  - `overtime_hours` - 加班时长（小时）
+
+**异常处理接口**：
+- 管理员可修改考勤状态
+- 必须填写更正备注（`correction_remark`）
+- 修改后的状态会覆盖自动判断的状态
+- 保留修改历史（通过 `correction_remark` 字段）
+
+#### 路由配置
+
+```python
+router = DefaultRouter()
+router.register(r'', AttendanceRecordViewSet, basename='attendance')
+```
+
+**路由映射**：
+- 空字符串 `''` → 主路由为 `/api/attendance/`
+- `basename='attendance'` → 用于生成 URL 名称（如 `attendance-detail`）
+
+#### Django Admin 配置
+
+`AttendanceRecordAdmin` 类提供后台管理界面：
+- 列表展示：id, 员工名, 工作日期, 班次, 签到时间, 签退时间, 状态, 迟到, 早退, 缺卡, 加班时长, 创建时间
+- 过滤器：按状态、创建时间、工作日期筛选
+- 搜索：支持员工姓名、电话、地点搜索
+- 日期分层导航：按工作日期浏览
+- 字段分组：基本信息、签到信息、签退信息、考勤状态、异常处理、时间信息（可折叠）
+- 只读字段：创建时间、更新时间、状态、加班时长
+
+#### 业务流程
+
+**签到流程**：
+1. 员工在班次开始时间前后进行签到
+2. 系统记录签到时间和地点
+3. 系统自动判断考勤状态（正常/迟到）
+4. 返回签到结果给员工
+
+**签退流程**：
+1. 员工在班次结束时间前后进行签退
+2. 系统记录签退时间和地点
+3. 系统自动判断考勤状态（正常/早退/缺卡）
+4. 系统计算加班时长（如有）
+5. 返回签退结果给员工
+
+**异常处理流程**：
+1. 管理员发现异常考勤记录
+2. 管理员修改考勤状态（如将"缺卡"改为"正常"）
+3. 管理员填写更正备注（必填）
+4. 系统保存修改，记录修改历史
+
+**加班计算逻辑**：
+```
+加班时长 = 签退时间 - 班次结束时间
+（仅计算超出部分，以小时为单位，保留2位小数）
+```
+
+#### 与其他模块的关系
+
+| 模块 | 关系 | 说明 |
+|------|------|------|
+| `employees` | 依赖 | `AttendanceRecord.employee` 外键关联 `EmployeeProfile` |
+| `schedules` | 依赖 | `AttendanceRecord.schedule` 外键关联 `Schedule` |
+| `salaries` | 被依赖 | 薪资计算需要考勤数据（迟到次数、缺卡次数、加班时长） |
+
+---
+
 ## 重要文件说明
 
 ### `backend/config/settings.py`
@@ -774,14 +963,37 @@ DELETE /api/schedules/shift-requests/{id}/ # 删除调班申请
 - 排班搜索：`/api/schedules/schedules/?search=张三`
 - 排班排序：`/api/schedules/schedules/?ordering=-work_date`
 - 调班申请筛选：`/api/schedules/shift-requests/?requester=1&status=PENDING`
-- 搜索：`/api/employees/?search=张三`
-- 排序：`/api/employees/?ordering=-created_at`
+
+**考勤管理 API (`/api/attendance/`)**
+```
+# 考勤记录管理
+GET    /api/attendance/              # 考勤记录列表（支持筛选、搜索、排序）
+POST   /api/attendance/              # 创建考勤记录（管理员手动创建）
+GET    /api/attendance/{id}/         # 考勤记录详情
+PUT    /api/attendance/{id}/         # 更新考勤记录
+DELETE /api/attendance/{id}/         # 删除考勤记录
+
+# 签到签退
+POST   /api/attendance/clock_in/     # 员工签到
+POST   /api/attendance/clock_out/    # 员工签退
+
+# 统计与异常处理
+POST   /api/attendance/statistics/   # 考勤统计
+POST   /api/attendance/{id}/correct/ # 异常处理（修改考勤状态）
+
+# 员工查询
+GET    /api/attendance/my_attendance/ # 我的考勤记录（员工查询）
+```
+
+**筛选参数示例**：
+- 考勤记录筛选：`/api/attendance/?employee=1&status=LATE`
+- 考勤记录搜索：`/api/attendance/?search=张三`
+- 考勤记录排序：`/api/attendance/?ordering=-clock_in_time`
+- 我的考勤查询：`/api/attendance/my_attendance/?employee_id=1&start_date=2026-01-01&end_date=2026-01-31`
 
 #### 计划中
 
 ```
-/api/schedules/       # 排班管理
-/api/attendance/      # 考勤记录
 /api/leaves/          # 请假申请
 /api/salaries/        # 薪资记录
 /api/analytics/       # 统计数据

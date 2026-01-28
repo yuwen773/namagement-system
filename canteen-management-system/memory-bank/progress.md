@@ -357,9 +357,116 @@ DELETE /api/schedules/shift-requests/{id}/  # 删除调班申请
 
 ---
 
+### ✅ 步骤 2.4：创建考勤模型与 API
+
+**实施内容**：
+
+1. **创建 AttendanceRecord 模型** (`attendance/models.py`)
+   - 字段定义：
+     - 关联信息：`employee`（外键）、`schedule`（外键，可为空）
+     - 签到信息：`clock_in_time`、`clock_in_location`
+     - 签退信息：`clock_out_time`、`clock_out_location`
+     - 考勤状态：`status`（枚举：NORMAL, LATE, EARLY_LEAVE, MISSING, ABNORMAL）
+     - 异常处理：`correction_remark`
+     - 时间戳：`created_at`、`updated_at`
+   - 枚举类定义：`Status` 使用 Django 的 `TextChoices`
+   - 自动考勤状态判断逻辑（`_calculate_status` 方法）
+   - 加班时长计算（`calculate_overtime_hours` 方法）
+   - 约束：同一员工在同一排班只能有一条考勤记录
+
+2. **考勤状态判断规则**：
+   - 无签到或无签退记录 → `MISSING`（缺卡）
+   - 签到时间 > 班次开始时间 + 5分钟 → `LATE`（迟到）
+   - 签退时间 < 班次结束时间 - 5分钟 → `EARLY_LEAVE`（早退）
+   - 其他情况 → `NORMAL`（正常）
+   - 加班计算：签退时间 > 班次结束时间，计算超出的小时数
+
+3. **创建序列化器** (`attendance/serializers.py`)
+   - `AttendanceRecordSerializer` - 考勤记录详情序列化器（支持完整字段）
+   - `AttendanceRecordListSerializer` - 考勤记录列表序列化器（简化版）
+   - `ClockInSerializer` - 签到请求验证序列化器
+   - `ClockOutSerializer` - 签退请求验证序列化器
+   - `AttendanceStatisticsSerializer` - 考勤统计请求序列化器
+   - `AttendanceStatisticsResponseSerializer` - 考勤统计响应序列化器
+   - `AttendanceCorrectionSerializer` - 异常处理序列化器
+
+4. **创建视图集** (`attendance/views.py`)
+   - `AttendanceRecordViewSet` - 基于 DRF 的 `ModelViewSet`
+   - 支持筛选：按员工、状态筛选
+   - 支持搜索：按姓名、电话、地点搜索
+   - 支持排序：按创建时间、签到时间、签退时间排序
+   - 自定义 action：
+     - `clock_in/` - 签到接口（记录签到时间和地点，自动判断考勤状态）
+     - `clock_out/` - 签退接口（记录签退时间和地点，自动判断考勤状态）
+     - `statistics/` - 考勤统计接口（汇总迟到次数、缺卡次数、加班时长）
+     - `correct/` - 异常处理接口（管理员可修改考勤状态并填写备注）
+     - `my_attendance/` - 我的考勤记录接口（员工查看自己的考勤记录）
+   - 统一的响应格式：`{code, message, data}`
+
+5. **配置 URL 路由**
+   - 创建 `attendance/urls.py` - 使用 DRF 的 `DefaultRouter`
+   - 更新 `config/urls.py` - 包含 attendance 路由：`/api/attendance/`
+
+6. **注册 Django Admin** (`attendance/admin.py`)
+   - 配置 `AttendanceRecordAdmin` 类
+   - 列表显示字段：id, 员工姓名, 工作日期, 班次, 签到时间, 签退时间, 状态, 迟到, 早退, 缺卡, 加班时长, 创建时间
+   - 过滤器：状态、创建时间、工作日期
+   - 搜索字段：姓名、电话、地点
+   - 日期分层导航：按工作日期浏览
+   - 字段分组展示：基本信息、签到信息、签退信息、考勤状态、异常处理、时间信息
+   - 只读字段：创建时间、更新时间、状态、加班时长
+
+7. **数据库迁移**
+   - 创建迁移：`attendance/migrations/0001_initial.py`
+   - 迁移文件已创建，等待应用（需要 MySQL 服务器运行）
+
+**API 端点清单**：
+```
+# 考勤记录管理
+GET    /api/attendance/              # 考勤记录列表（支持筛选、搜索、排序）
+POST   /api/attendance/              # 创建考勤记录（管理员手动创建）
+GET    /api/attendance/{id}/         # 考勤记录详情
+PUT    /api/attendance/{id}/         # 更新考勤记录
+DELETE /api/attendance/{id}/         # 删除考勤记录
+
+# 签到签退
+POST   /api/attendance/clock_in/     # 员工签到
+POST   /api/attendance/clock_out/    # 员工签退
+
+# 统计与异常处理
+POST   /api/attendance/statistics/   # 考勤统计
+POST   /api/attendance/{id}/correct/ # 异常处理（修改考勤状态）
+
+# 员工查询
+GET    /api/attendance/my_attendance/ # 我的考勤记录（员工查询）
+```
+
+**筛选和搜索参数**：
+- 考勤记录筛选：`?employee=1&status=LATE`
+- 考勤记录搜索：`?search=张三`
+- 考勤记录排序：`?ordering=-clock_in_time`
+- 我的考勤查询：`?employee_id=1&start_date=2026-01-01&end_date=2026-01-31`
+
+**测试验证**：
+- ⏳ 等待 MySQL 服务器启动后应用数据库迁移
+- ⏳ 员工签到测试（在班次开始时间前 5 分钟内签到，确认状态为 NORMAL）
+- ⏳ 员工签到测试（在班次开始时间后 6 分钟签到，确认状态为 LATE）
+- ⏳ 员工签退测试（提前签退超过 5 分钟，确认状态为 EARLY_LEAVE）
+- ⏳ 员工签退测试（只有签到没有签退，确认状态为 MISSING）
+- ⏳ 员工签退测试（签退时间超过班次结束时间，确认计算了加班时长）
+- ⏳ 管理员修改异常考勤（确认状态更新且有备注）
+
+**注意事项**：
+- 考勤状态在保存时自动判断，管理员也可以手动修改（需要填写更正备注）
+- 加班时长仅计算超出班次结束时间的部分，以小时为单位（保留2位小数）
+- 签到和签退接口需要员工ID，后续需要实现登录认证后从token中获取
+- 缺卡状态会在只有签到或只有签退时自动触发
+- 权限验证待后续实现（目前所有用户都可访问管理接口）
+
+---
+
 ## 待完成
 
-- [ ] 步骤 2.4：创建考勤模型与 API
 - [ ] 步骤 2.5：创建请假模型与 API
 - [ ] 步骤 2.6：创建薪资模型与 API
 - [ ] 步骤 2.7：创建统计分析接口
