@@ -465,9 +465,99 @@ GET    /api/attendance/my_attendance/ # 我的考勤记录（员工查询）
 
 ---
 
+### ✅ 步骤 2.5：创建请假模型与 API
+
+**实施内容**：
+
+1. **创建 LeaveRequest 模型** (`leaves/models.py`)
+   - 字段定义：
+     - 基本信息字段：`employee`（外键）、`leave_type`（枚举：SICK/PERSONAL/COMPENSATORY）、`start_time`、`end_time`、`reason`
+     - 审批信息字段：`status`（枚举：PENDING/APPROVED/REJECTED）、`approver`（外键，可选）、`approval_remark`
+     - 时间戳：`created_at`、`updated_at`
+   - 枚举类定义：`LeaveType` 和 `Status` 使用 Django 的 `TextChoices`
+   - 自定义属性：`leave_duration_days` 计算请假天数
+   - 数据库索引：employee, status, created_at, start_time
+
+2. **创建序列化器** (`leaves/serializers.py`)
+   - `LeaveRequestSerializer` - 请假申请详情序列化器（支持完整字段）
+   - `LeaveRequestListSerializer` - 请假申请列表序列化器（简化版）
+   - `LeaveRequestCreateSerializer` - 请假申请创建序列化器（验证请假时间）
+   - `LeaveRequestApprovalSerializer` - 请假审批序列化器
+   - `LeaveRequestMySerializer` - 我的请假申请序列化器（员工查看自己的请假记录）
+
+3. **创建视图集** (`leaves/views.py`)
+   - `LeaveRequestViewSet` - 基于 DRF 的 `ModelViewSet`
+   - 支持筛选：按员工、请假类型、状态筛选
+   - 支持搜索：按姓名、电话、原因、审批意见搜索
+   - 支持排序：按创建时间、开始时间、结束时间排序
+   - 自定义 action：
+     - `my_requests/` - 我的请假申请接口（查询当前员工的请假记录）
+     - `pending/` - 待审批列表接口（管理员）
+     - `approve/` - 请假审批接口（批准/拒绝，填写意见）
+   - 统一的响应格式：`{code, message, data}`
+   - 请假时间验证：结束时间必须大于开始时间
+
+4. **配置 URL 路由**
+   - 创建 `leaves/urls.py` - 使用 DRF 的 `DefaultRouter`
+   - 更新 `config/urls.py` - 包含 leaves 路由：`/api/leaves/`
+
+5. **注册 Django Admin** (`leaves/admin.py`)
+   - 配置 `LeaveRequestAdmin` 类
+   - 列表显示字段：id, 员工姓名, 请假类型, 开始时间, 结束时间, 请假天数, 审批状态, 审批人, 创建时间
+   - 过滤器：请假类型、审批状态、创建时间、开始时间
+   - 搜索字段：员工姓名、员工电话、原因、审批意见
+   - 日期分层导航：按开始时间浏览
+   - 字段分组展示：基本信息、审批信息、时间信息
+   - 只读字段：创建时间、更新时间、请假天数
+
+6. **数据库迁移**
+   - 创建迁移：`leaves/migrations/0001_initial.py`
+   - 应用迁移到数据库
+
+**API 端点清单**：
+```
+# 请假申请管理
+GET    /api/leaves/                    # 请假申请列表（支持筛选、搜索、排序）
+POST   /api/leaves/                    # 创建请假申请
+GET    /api/leaves/{id}/               # 请假申请详情
+PUT    /api/leaves/{id}/               # 更新请假申请
+DELETE /api/leaves/{id}/               # 删除请假申请
+
+# 自定义接口
+GET    /api/leaves/my-requests/        # 我的请假申请（员工查询）
+GET    /api/leaves/pending/            # 待审批列表（管理员）
+POST   /api/leaves/{id}/approve/       # 请假审批（批准/拒绝）
+```
+
+**筛选和搜索参数**：
+- 请假申请筛选：`?employee=1&leave_type=SICK&status=PENDING`
+- 请假申请搜索：`?search=张三` 或 `?search=身体不适`
+- 请假申请排序：`?ordering=-created_at`
+- 我的请假查询：`/api/leaves/my-requests/?employee_id=1&status=APPROVED`
+
+**测试验证**：
+- ✅ 创建请假申请，返回 201，请假申请创建成功，默认状态为 PENDING
+- ✅ 获取请假列表，返回 200，显示所有请假申请
+- ✅ 获取待审批列表，返回 200，仅显示待审批的申请
+- ✅ 查询我的请假记录，返回 200，显示指定员工的请假记录
+- ✅ 批准请假申请，返回 200，状态变为 APPROVED，记录审批人和审批意见
+- ✅ 拒绝请假申请，返回 200，状态变为 REJECTED，记录审批人和审批意见
+- ✅ 按状态筛选请假申请（APPROVED/REJECTED/PENDING），返回正确结果
+- ✅ 按请假类型筛选（SICK/PERSONAL/COMPENSATORY），返回正确结果
+- ✅ 请假天数自动计算（包含开始和结束日期）
+- ✅ Django Admin 界面正常显示和管理请假申请
+
+**注意事项**：
+- 请假时间验证确保结束时间大于开始时间
+- 审批时检查申请状态，只有 PENDING 状态的申请可以被审批
+- 审批通过或拒绝后，记录审批人和审批意见，便于追溯
+- 请假天数计算包含开始和结束日期（最少 1 天）
+- 权限验证待后续实现（目前所有用户都可访问管理接口）
+
+---
+
 ## 待完成
 
-- [ ] 步骤 2.5：创建请假模型与 API
 - [ ] 步骤 2.6：创建薪资模型与 API
 - [ ] 步骤 2.7：创建统计分析接口
 - [ ] ...（详见 IMPLEMENTATION_PLAN.md）
