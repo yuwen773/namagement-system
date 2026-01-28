@@ -21,6 +21,12 @@ const routes = [
     component: () => import('../views/admin/DashboardView.vue'),
     meta: { requiresAuth: true, role: 'ADMIN' }
   },
+  {
+    path: '/admin/employees',
+    name: 'EmployeeManage',
+    component: () => import('../views/admin/EmployeeManageView.vue'),
+    meta: { requiresAuth: true, role: 'ADMIN' }
+  },
   // 员工端路由
   {
     path: '/employee',

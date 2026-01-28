@@ -338,8 +338,12 @@ const formatDate = (dateString) => {
 
 // 快捷入口点击处理
 const handleQuickAccess = (route) => {
-  // 路由功能在阶段四其他步骤实现
-  ElMessage.info(`${route} 页面即将在后续步骤中实现`)
+  if (route === '/admin/employees') {
+    router.push(route)
+  } else {
+    // 其他路由功能在阶段四其他步骤实现
+    ElMessage.info(`${route} 页面即将在后续步骤中实现`)
+  }
 }
 
 // 待办事项点击处理
