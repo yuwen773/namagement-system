@@ -108,17 +108,33 @@ class BatchScheduleSerializer(serializers.Serializer):
 class ShiftSwapRequestSerializer(serializers.ModelSerializer):
     """调班申请序列化器"""
     requester_name = serializers.CharField(source='requester.name', read_only=True)
-    original_date = serializers.DateField(source='original_schedule.work_date', read_only=True)
+    original_schedule_date = serializers.DateField(source='original_schedule.work_date', read_only=True)
     original_shift_name = serializers.CharField(source='original_schedule.shift.name', read_only=True)
+    original_shift_time = serializers.SerializerMethodField(read_only=True)
     original_schedule_info = serializers.SerializerMethodField(read_only=True)
     target_shift_name = serializers.CharField(source='target_shift.name', read_only=True)
+    target_shift_time = serializers.SerializerMethodField(read_only=True)
     target_schedule_info = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     approver_name = serializers.CharField(source='approver.name', read_only=True)
+    approval_time = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    def get_original_shift_time(self, obj):
+        """获取原班次时间"""
+        if obj.original_schedule and obj.original_schedule.shift:
+            shift = obj.original_schedule.shift
+            return f"{shift.start_time.strftime('%H:%M')} - {shift.end_time.strftime('%H:%M')}"
+        return ''
+
+    def get_target_shift_time(self, obj):
+        """获取目标班次时间"""
+        if obj.target_shift:
+            return f"{obj.target_shift.start_time.strftime('%H:%M')} - {obj.target_shift.end_time.strftime('%H:%M')}"
+        return ''
 
     def get_original_schedule_info(self, obj):
         """获取原班次信息"""
-        return f"{obj.original_date} {obj.original_shift_name}"
+        return f"{obj.original_schedule_date} {obj.original_shift_name}"
 
     def get_target_schedule_info(self, obj):
         """获取目标班次信息"""
@@ -128,10 +144,10 @@ class ShiftSwapRequestSerializer(serializers.ModelSerializer):
         model = ShiftSwapRequest
         fields = [
             'id', 'requester', 'requester_name', 'original_schedule',
-            'original_date', 'original_shift_name', 'target_date',
-            'target_shift', 'target_shift_name', 'reason', 'status',
-            'status_display', 'approver', 'approver_name', 'approval_remark',
-            'created_at'
+            'original_schedule_date', 'original_shift_name', 'original_shift_time',
+            'target_date', 'target_shift', 'target_shift_name', 'target_shift_time',
+            'reason', 'status', 'status_display', 'approver', 'approver_name',
+            'approval_remark', 'approval_time', 'created_at'
         ]
         read_only_fields = [
             'id', 'status', 'approver', 'approval_remark', 'created_at'
@@ -141,17 +157,35 @@ class ShiftSwapRequestSerializer(serializers.ModelSerializer):
 class ShiftSwapRequestListSerializer(serializers.ModelSerializer):
     """调班申请列表序列化器（简化版）"""
     requester_name = serializers.CharField(source='requester.name', read_only=True)
-    original_date = serializers.DateField(source='original_schedule.work_date', read_only=True)
+    original_schedule_date = serializers.DateField(source='original_schedule.work_date', read_only=True)
     original_shift_name = serializers.CharField(source='original_schedule.shift.name', read_only=True)
+    original_shift_time = serializers.SerializerMethodField(read_only=True)
     target_shift_name = serializers.CharField(source='target_shift.name', read_only=True)
+    target_shift_time = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    approver_name = serializers.CharField(source='approver.name', read_only=True)
+    approval_time = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    def get_original_shift_time(self, obj):
+        """获取原班次时间"""
+        if obj.original_schedule and obj.original_schedule.shift:
+            shift = obj.original_schedule.shift
+            return f"{shift.start_time.strftime('%H:%M')} - {shift.end_time.strftime('%H:%M')}"
+        return ''
+
+    def get_target_shift_time(self, obj):
+        """获取目标班次时间"""
+        if obj.target_shift:
+            return f"{obj.target_shift.start_time.strftime('%H:%M')} - {obj.target_shift.end_time.strftime('%H:%M')}"
+        return ''
 
     class Meta:
         model = ShiftSwapRequest
         fields = [
-            'id', 'requester_name', 'original_date', 'original_shift_name',
-            'target_date', 'target_shift_name', 'status', 'status_display',
-            'created_at'
+            'id', 'requester_name', 'original_schedule_date', 'original_shift_name',
+            'original_shift_time', 'target_date', 'target_shift_name', 'target_shift_time',
+            'status', 'status_display', 'reason', 'approver_name', 'approval_remark',
+            'approval_time', 'created_at'
         ]
 
 
