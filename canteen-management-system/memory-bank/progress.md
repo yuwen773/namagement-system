@@ -244,7 +244,163 @@
 - [x] 第五阶段步骤 5.5：请假申请服务页面
 - [x] 第五阶段步骤 5.6：调班申请服务页面
 - [x] 第五阶段步骤 5.7：薪资信息查询页面
-- [ ] 第六阶段：系统优化与部署（详见 IMPLEMENTATION_PLAN.md）
+- [ ] 第六步骤 6.3：添加加载状态与错误处理
+- [ ] 第六步骤 6.1：应用食堂主题全局样式（图标库）
+
+---
+
+## 2026-01-29
+
+### ✅ 第六阶段：UI/UX 优化 - 步骤 6.2 响应式设计优化
+
+**实施内容**：
+
+1. **创建主题文件** (`frontend/src/styles/theme.css`)
+   - 定义食堂主题 CSS 变量（主色、辅助色、背景色、文字色、边框、间距、阴影）
+   - 定义响应式断点：
+     - 小屏幕 < 1200px：字体 15px
+     - 中等屏幕 1200px-1439px：字体 14px
+     - 大屏幕 >= 1440px：字体 16px
+     - 超小屏幕 < 768px：字体 16px（放大字体方便老年员工）
+
+2. **创建响应式混入文件** (`frontend/src/styles/mixins.css`)
+   - 表单对话框响应式：小屏幕宽度 95%、表单项垂直布局、按钮全宽
+   - 表格响应式：小屏幕字体缩小、单元格内边距调整
+   - 卡片响应式：小屏幕边距调整
+   - 操作栏响应式：小屏幕垂直布局
+   - 分页响应式：小屏幕居中、按钮尺寸调整
+   - 统计卡片响应式：4列 → 2列 → 1列
+   - 输入框响应式：更大字体和点击区域（44px 高度）
+   - 菜单响应式：更大高度和字体
+
+3. **更新 main.js**
+   - 引入 `theme.css` 和 `mixins.css`
+   - 确保主题变量在所有页面生效
+
+4. **优化 AdminLayout 响应式设计**
+   - 小屏幕 < 1200px：调整间距、字体大小
+   - 中等屏幕 1200px-1439px：边距优化
+   - 超小屏幕 < 768px：侧边栏固定、隐藏用户名和日期、面包屑简化、按钮更大
+
+5. **优化 EmployeeLayout 响应式设计**
+   - 小屏幕 < 1200px：调整间距、字体大小、菜单项
+   - 中等屏幕 1200px-1439px：边距优化
+   - 超小屏幕 < 768px：隐藏 Logo 文字、日期、用户名；菜单项高度 56px；更大点击区域
+
+6. **全局响应式样式应用**
+   - mixins.css 中的样式自动应用于所有页面
+   - Element Plus 组件（对话框、表格、表单、按钮等）自动适配小屏幕
+
+**断点标准统一**：
+- 从原来的 768px/1024px 调整为 1199px/1439px（符合实施计划要求）
+- 小屏幕字体适度放大（考虑部分员工年龄偏大）
+- 按钮和表单在小屏幕下更大、更易点击
+
+**测试建议**：
+- 在不同分辨率下测试：1366×768、1920×1080、2560×1440
+- 测试不同浏览器：Chrome、Firefox、Edge
+- 测试缩放级别：100%、125%、150%
+
+---
+
+### ✅ 第六阶段：UI/UX 优化 - 步骤 6.3 加载状态与错误处理
+
+**实施内容**：
+
+1. **创建全局 Loading 服务** (`frontend/src/utils/loading.js`)
+   - 使用计数器管理多个并发请求，确保只有在所有请求完成后才关闭 Loading
+   - 提供 `showLoading(message)` 函数显示 Loading
+   - 提供 `hideLoading()` 函数隐藏 Loading
+   - 提供 `resetLoading()` 函数用于异常情况下的重置
+   - 使用 Element Plus 的 `ElLoading.service` 创建全屏 Loading
+   - 自定义样式类 `canteen-loading`，支持主题定制
+
+2. **增强 request.js 错误处理** (`frontend/src/api/request.js`)
+   - 导入 `ElMessage` 和 `ElMessageBox` 用于统一错误提示
+   - 集成全局 Loading 服务，自动在请求开始/结束时显示/隐藏 Loading
+   - 请求拦截器：
+     - 自动从 localStorage 获取 token 并添加到请求头
+     - 每个请求开始前显示 Loading
+     - 请求错误时隐藏 Loading
+   - 响应拦截器 - 成功处理：
+     - 自动隐藏 Loading
+     - 检查业务状态码（200/201），其他状态视为业务错误
+     - 业务错误使用 `ElMessage` 显示错误消息（5秒）
+   - 响应拦截器 - 错误处理：
+     - 自动隐藏 Loading
+     - 网络错误：显示"网络连接失败，请检查网络设置"
+     - HTTP 错误状态处理：
+       - 400：请求参数错误
+       - 401：使用 `ElMessageBox` 确认对话框提示重新登录（而非直接跳转）
+       - 403：没有权限访问
+       - 404：请求的资源不存在
+       - 500：服务器错误，请稍后重试
+       - 502/503/504：网关错误/服务不可用/网关超时
+       - 其他：显示具体状态码
+
+3. **创建空状态组件** (`frontend/src/components/EmptyState.vue`)
+   - 基于 Element Plus 的 `el-empty` 组件封装
+   - 支持多种图标类型：default（默认）、document（文档）、picture（图片）、user（用户）、calendar（日历）、box（盒子）、warning（警告）
+   - 支持自定义描述文字、图标颜色、操作按钮
+   - 支持按钮尺寸：large、default、small
+   - 内置响应式样式：小屏幕下减少内边距和最小高度
+   - 使用 `@emit('action')` 触发按钮点击事件
+   - 使用食堂主题 CSS 变量（`var(--canteen-spacing-xl)` 等）
+
+**使用方式**：
+
+```vue
+<!-- 在页面中使用空状态组件 -->
+<template>
+  <div class="employee-manage">
+    <!-- 数据列表 -->
+    <el-table v-if="tableData.length > 0" :data="tableData">
+      <!-- ... -->
+    </el-table>
+
+    <!-- 空状态 -->
+    <EmptyState
+      v-else
+      icon="user"
+      description="暂无员工数据"
+      :show-button="true"
+      buttonText="新增员工"
+      @action="handleAdd"
+    />
+  </div>
+</template>
+
+<script setup>
+import EmptyState from '@/components/EmptyState.vue'
+// ...
+</script>
+```
+
+**架构改进**：
+
+| 改进项 | 改进前 | 改进后 |
+|-------|--------|--------|
+| Loading 状态 | 每个页面单独定义 loading 变量 | 全局自动管理，无需手动处理 |
+| 错误提示 | 部分使用 `ElMessage`，部分使用 `ElMessageBox` | 统一使用 `ElMessage` + `ElMessageBox` |
+| 网络错误 | 仅在控制台打印 | 显示用户友好的错误提示 |
+| 401 处理 | 直接跳转登录页 | 弹出确认对话框，用户确认后才跳转 |
+| 空状态 | 显示空白或自行实现 | 统一的空状态组件，支持多种场景 |
+
+**新增文件**：
+- `frontend/src/utils/loading.js` - 全局 Loading 服务
+- `frontend/src/components/EmptyState.vue` - 空状态组件
+
+**修改文件**：
+- `frontend/src/api/request.js` - 集成 Loading 服务，增强错误处理
+
+**待测试项**（由用户验证）：
+- [ ] 所有 API 请求自动显示 Loading
+- [ ] 并发请求正确显示/隐藏 Loading（计数器逻辑）
+- [ ] 网络错误场景：断网、超时、DNS 失败等
+- [ ] 401 错误：弹出确认对话框，点击"重新登录"后清除 token 并跳转
+- [ ] 其他 HTTP 错误：400、403、404、500 等，显示友好提示
+- [ ] 业务错误：code !== 200，显示后端返回的 message
+- [ ] 空状态组件在各种场景下正常显示
 
 ---
 
