@@ -278,7 +278,7 @@ const handleMonthChange = (value) => {
 const loadData = async () => {
   loading.value = true
   try {
-    const employeeId = userStore.userInfo?.employee
+    const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
 
     if (!employeeId) {
       ElMessage.error('未关联员工档案，无法查询考勤记录')
@@ -305,7 +305,13 @@ const loadData = async () => {
     ])
 
     if (attendanceRes.code === 200) {
-      attendanceList.value = attendanceRes.data || []
+      if (Array.isArray(attendanceRes.data)) {
+        attendanceList.value = attendanceRes.data
+      } else if (attendanceRes.data && Array.isArray(attendanceRes.data.results)) {
+        attendanceList.value = attendanceRes.data.results
+      } else {
+        attendanceList.value = []
+      }
     } else {
       ElMessage.error(attendanceRes.message || '加载考勤记录失败')
     }

@@ -63,11 +63,14 @@ class UserSerializer(serializers.ModelSerializer):
         更新用户信息
         """
         password = validated_data.pop('password', None)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        if password is not None:
+        # 使用 super().update 处理其他字段（包括 status, role 等）
+        instance = super().update(instance, validated_data)
+        
+        # 单独处理密码
+        if password:
             instance.password = password
-        instance.save()
+            instance.save()
+            
         return instance
 
 
@@ -77,10 +80,26 @@ class UserListSerializer(serializers.ModelSerializer):
     """
     role_display = serializers.CharField(source='get_role_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    employee_id = serializers.IntegerField(read_only=True)
+    employee_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'role', 'role_display', 'status', 'status_display', 'created_at']
+        fields = ['id', 'username', 'role', 'role_display', 'status', 'status_display',
+                  'employee_id', 'employee_name', 'created_at']
+
+    def get_employee_name(self, obj):
+        """
+        获取关联员工的姓名
+        """
+        if obj.employee_id:
+            from employees.models import EmployeeProfile
+            try:
+                employee = EmployeeProfile.objects.get(id=obj.employee_id)
+                return employee.name
+            except EmployeeProfile.DoesNotExist:
+                return None
+        return None
 
 
 class SystemSettingsSerializer(serializers.ModelSerializer):

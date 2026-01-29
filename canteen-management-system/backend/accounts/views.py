@@ -19,6 +19,9 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filterset_fields = ['role', 'status']
+    search_fields = ['username']
+    ordering_fields = ['created_at', 'updated_at']
 
     def get_serializer_class(self):
         """
@@ -76,7 +79,14 @@ class UserViewSet(viewsets.ModelViewSet):
         GET /api/accounts/users/
         """
         # TODO: 添加权限验证，只允许管理员访问
-        serializer = UserListSerializer(self.queryset, many=True)
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return ApiResponse.success(data=self.get_paginated_response(serializer.data), message='获取成功')
+
+        serializer = self.get_serializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data, message='获取成功')
 
     def retrieve(self, request, *args, **kwargs):

@@ -170,7 +170,7 @@ const activeTab = ref('all')
 const pendingCount = ref(0)
 const loading = ref(false)
 const leaveList = ref([])
-const employeeId = computed(() => userStore.userInfo?.employee)
+const employeeId = computed(() => userStore.userInfo?.employee_id || userStore.userInfo?.employee)
 
 const createDialogVisible = ref(false)
 const createFormRef = ref(null)

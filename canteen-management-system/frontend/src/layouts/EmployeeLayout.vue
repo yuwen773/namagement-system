@@ -13,6 +13,7 @@
         <el-menu
           :default-active="activeMenu"
           mode="horizontal"
+          :ellipsis="false"
           router
           class="top-menu"
           background-color="transparent"
@@ -336,7 +337,7 @@ onUnmounted(() => {
   }
 
   .top-menu {
-    max-width: 550px;
+    /* max-width removed */
   }
 }
 

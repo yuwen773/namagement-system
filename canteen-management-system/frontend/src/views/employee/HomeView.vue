@@ -182,7 +182,7 @@ const positionText = ref('')
 const notifications = ref([])
 
 // 获取员工ID
-const employeeId = computed(() => userStore.userInfo?.employee)
+const employeeId = computed(() => userStore.userInfo?.employee_id || userStore.userInfo?.employee)
 
 // 当前日期
 const currentDate = computed(() => {
@@ -226,6 +226,8 @@ const getNotificationIcon = (type) => {
 
 // 加载排班数据
 const loadSchedules = async () => {
+  console.log(userStore.userInfo);
+  
   if (!employeeId.value) {
     // 如果没有关联员工档案，显示提示
     ElMessage.warning('未关联员工档案，请联系管理员')

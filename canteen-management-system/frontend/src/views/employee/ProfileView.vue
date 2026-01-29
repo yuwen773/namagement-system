@@ -223,7 +223,7 @@ const isHealthCertExpiringSoon = computed(() => {
 
 // 获取员工档案信息
 const fetchEmployeeProfile = async () => {
-  const employeeId = userStore.userInfo?.employee
+  const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.id
   if (!employeeId) {
     ElMessage.warning('未关联员工档案')
     return

@@ -335,7 +335,7 @@ const handleMonthChange = (value) => {
 const loadSalaryData = async () => {
   loading.value = true
   try {
-    const employeeId = userStore.userInfo?.employee
+    const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
 
     if (!employeeId) {
       ElMessage.error('未关联员工档案，无法查询薪资')

@@ -333,7 +333,7 @@ const createRules = {
 
 // 加载调班列表
 const loadSwapList = async () => {
-  const employeeId = userStore.userInfo?.employee
+  const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
   if (!employeeId) {
     ElMessage.warning('未关联员工档案，无法查看调班记录')
     return
@@ -343,7 +343,13 @@ const loadSwapList = async () => {
   try {
     const res = await getMyShiftRequests({ employee_id: employeeId })
     if (res.code === 200) {
-      swapList.value = res.data || []
+      if (Array.isArray(res.data)) {
+        swapList.value = res.data
+      } else if (res.data && Array.isArray(res.data.results)) {
+        swapList.value = res.data.results
+      } else {
+        swapList.value = []
+      }
     }
   } catch (error) {
     console.error('加载调班列表失败:', error)

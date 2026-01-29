@@ -24,7 +24,7 @@
         <!-- 签到签退按钮 -->
         <div class="action-card">
           <div class="action-header">
-            <h3>{{ canClockIn ? '签到' : '签退' }}</h3>
+            <h3>{{ isCompleted ? '今日考勤已完成' : (canClockIn ? '签到' : '签退') }}</h3>
             <el-tag :type="actionStatus.type" size="large">{{ actionStatus.text }}</el-tag>
           </div>
 
@@ -36,11 +36,13 @@
           <div class="action-button-wrapper">
             <button
               class="action-button"
-              :class="{ 'clock-out': !canClockIn }"
+              :class="{ 'clock-out': canClockOut, 'completed': isCompleted }"
               @click="handleClockAction"
-              :disabled="loading"
+              :disabled="loading || isCompleted"
             >
-              <span v-if="!loading">{{ canClockIn ? '立即签到' : '立即签退' }}</span>
+              <span v-if="!loading">
+                {{ isCompleted ? '今日已结束' : (canClockIn ? '立即签到' : '立即签退') }}
+              </span>
               <span v-else>
                 <el-icon class="is-loading"><Loading /></el-icon>
                 处理中...
@@ -188,12 +190,29 @@ const monthStats = ref({})
 let timeTimer = null
 
 // 获取员工ID
-const employeeId = computed(() => userStore.userInfo?.employee)
+const employeeId = computed(() => userStore.userInfo?.employee_id || userStore.userInfo?.employee)
 
 // 是否可以签到（今日未签到或已签退）
 const canClockIn = computed(() => {
   if (!todayRecord.value) return true
-  return !todayRecord.value.clock_in_time || todayRecord.value.clock_out_time
+  // 如果已签到且未签退，则不能再签到（显示签退）
+  if (todayRecord.value.clock_in_time && !todayRecord.value.clock_out_time) return false
+  // 如果已签到且已签退，则不能再签到（显示已完成）
+  if (todayRecord.value.clock_in_time && todayRecord.value.clock_out_time) return false
+  return true
+})
+
+// 是否可以签退
+const canClockOut = computed(() => {
+  if (!todayRecord.value) return false
+  // 只有已签到且未签退时，才可以签退
+  return !!todayRecord.value.clock_in_time && !todayRecord.value.clock_out_time
+})
+
+// 是否已完成今日考勤
+const isCompleted = computed(() => {
+  if (!todayRecord.value) return false
+  return !!todayRecord.value.clock_in_time && !!todayRecord.value.clock_out_time
 })
 
 // 操作状态
@@ -207,7 +226,7 @@ const actionStatus = computed(() => {
   if (todayRecord.value.clock_out_time) {
     return { type: 'success', text: '已完成' }
   }
-  return { type: 'info', text: '已签到' }
+  return { type: 'primary', text: '工作中' }
 })
 
 // 更新当前时间
@@ -563,6 +582,12 @@ onUnmounted(() => {
 
 .action-button.clock-out:hover:not(:disabled) {
   box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+}
+
+.action-button.completed {
+  background: #909399;
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 /* 今日记录 */

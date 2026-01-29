@@ -398,17 +398,26 @@ const userFormData = reactive({
   employee: null,
   status: 'ENABLED'
 })
-const userFormRules = {
+const userFormRules = computed(() => ({
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
   ],
   password: [
     { required: !isEditUser.value, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少 6 个字符', trigger: 'blur' }
+    {
+      validator: (rule, value, callback) => {
+        if (value && value.length < 6) {
+          callback(new Error('密码长度至少 6 个字符'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
   ],
   role: [{ required: true, message: '请选择角色', trigger: 'change' }]
-}
+}))
 const employeeOptions = ref([])
 
 // 加载用户列表
@@ -472,7 +481,7 @@ const handleEditUser = (row) => {
     username: row.username,
     password: '',
     role: row.role,
-    employee: row.employee,
+    employee: row.employee_id,
     status: row.status
   })
   userDialogVisible.value = true
@@ -513,12 +522,19 @@ const handleSubmitUser = () => {
 
     userSubmitting.value = true
     try {
-      const data = { ...userFormData }
-      delete data.id
-
+      const data = {
+        username: userFormData.username,
+        role: userFormData.role,
+        status: userFormData.status,
+        employee_id: userFormData.employee || null
+      }
       // 编辑模式下如果密码为空则不传递密码字段
-      if (isEditUser.value && !data.password) {
-        delete data.password
+      if (isEditUser.value) {
+        if (userFormData.password) {
+          data.password = userFormData.password
+        }
+      } else {
+        data.password = userFormData.password
       }
 
       let res
