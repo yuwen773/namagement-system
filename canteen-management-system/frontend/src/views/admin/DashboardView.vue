@@ -46,12 +46,12 @@
           </div>
           <div class="card-stats">
             <div class="stat-item">
-              <span class="stat-value">{{ overviewData.expected_attendance || 0 }}</span>
+              <span class="stat-value">{{ overviewData.should_attend || 0 }}</span>
               <span class="stat-label">应到</span>
             </div>
             <div class="stat-divider">/</div>
             <div class="stat-item">
-              <span class="stat-value stat-highlight">{{ overviewData.actual_attendance || 0 }}</span>
+              <span class="stat-value stat-highlight">{{ overviewData.present || 0 }}</span>
               <span class="stat-label">实到</span>
             </div>
           </div>
@@ -64,7 +64,7 @@
           </div>
           <div class="card-stats">
             <div class="stat-item-full">
-              <span class="stat-value-large">{{ overviewData.today_leaves || 0 }}</span>
+              <span class="stat-value-large">{{ overviewData.leaves || 0 }}</span>
               <span class="stat-label">人</span>
             </div>
           </div>
@@ -77,7 +77,7 @@
           </div>
           <div class="card-stats">
             <div class="stat-item-full">
-              <span class="stat-value-large stat-warning">{{ overviewData.today_abnormal || 0 }}</span>
+              <span class="stat-value-large stat-warning">{{ overviewData.abnormal || 0 }}</span>
               <span class="stat-label">条</span>
             </div>
           </div>
@@ -134,14 +134,14 @@
         <div class="monthly-card">
           <div class="monthly-icon">⏰</div>
           <div class="monthly-content">
-            <div class="monthly-value">{{ overviewData.monthly_late || 0 }}</div>
+            <div class="monthly-value">{{ overviewData.late_count || 0 }}</div>
             <div class="monthly-label">迟到次数</div>
           </div>
         </div>
         <div class="monthly-card">
           <div class="monthly-icon">💰</div>
           <div class="monthly-content">
-            <div class="monthly-value">{{ formatSalary(overviewData.monthly_salary) }}</div>
+            <div class="monthly-value">{{ formatSalary(overviewData.total_salary) }}</div>
             <div class="monthly-label">薪资支出</div>
           </div>
         </div>
@@ -231,58 +231,57 @@ const loadOverviewData = async () => {
   try {
     const response = await getOverviewStatistics()
     if (response.code === 200) {
-      overviewData.value = response.data
+      const data = response.data
+
+      // 映射今日数据
+      overviewData.value = {
+        should_attend: data.today?.should_attend || 0,
+        present: data.today?.present || 0,
+        leaves: data.today?.leaves || 0,
+        abnormal: data.today?.abnormal || 0,
+        total_employees: data.overview?.total_employees || 0,
+        late_count: data.month_attendance?.late_count || 0,
+        missing_count: data.month_attendance?.missing_count || 0,
+        total_salary: null // 薪资数据暂时为空
+      }
 
       // 构建待办事项列表
       const todos = []
+      const pending = data.pending || {}
+
       // 待审批请假
-      if (response.data.pending_leaves && response.data.pending_leaves.length > 0) {
-        response.data.pending_leaves.forEach(leave => {
-          todos.push({
-            id: `leave-${leave.id}`,
-            type: 'leave',
-            typeName: '请假审批',
-            title: `${leave.employee_name} 的请假申请`,
-            time: formatDate(leave.created_at),
-            data: leave
-          })
-        })
-      }
-      // 待审批调班
-      if (response.data.pending_shift_swaps && response.data.pending_shift_swaps.length > 0) {
-        response.data.pending_shift_swaps.forEach(swap => {
-          todos.push({
-            id: `swap-${swap.id}`,
-            type: 'shift_swap',
-            typeName: '调班审批',
-            title: `${swap.requester_name} 的调班申请`,
-            time: formatDate(swap.created_at),
-            data: swap
-          })
-        })
-      }
-      // 待审批申诉
-      if (response.data.pending_appeals && response.data.pending_appeals.length > 0) {
-        response.data.pending_appeals.forEach(appeal => {
-          todos.push({
-            id: `appeal-${appeal.id}`,
-            type: 'appeal',
-            typeName: '申诉处理',
-            title: `${appeal.employee_name} 的${appeal.type === 'SALARY' ? '薪资' : '考勤'}申诉`,
-            time: formatDate(appeal.created_at),
-            data: appeal
-          })
-        })
-      }
-      // 待发布薪资
-      if (response.data.draft_salaries > 0) {
+      if (pending.leaves > 0) {
         todos.push({
-          id: 'draft-salaries',
-          type: 'salary',
-          typeName: '薪资发布',
-          title: `有 ${response.data.draft_salaries} 份薪资待发布`,
+          id: 'pending-leaves',
+          type: 'leave',
+          typeName: '请假审批',
+          title: `${pending.leaves} 条待审批请假申请`,
           time: '立即处理',
-          data: { count: response.data.draft_salaries }
+          data: { count: pending.leaves }
+        })
+      }
+
+      // 待处理考勤修正
+      if (pending.attendance_corrections > 0) {
+        todos.push({
+          id: 'pending-attendance',
+          type: 'appeal',
+          typeName: '考勤申诉',
+          title: `${pending.attendance_corrections} 条待处理考勤申诉`,
+          time: '立即处理',
+          data: { count: pending.attendance_corrections }
+        })
+      }
+
+      // 待生成薪资
+      if (pending.salary_generation > 0) {
+        todos.push({
+          id: 'pending-salaries',
+          type: 'salary',
+          typeName: '薪资生成',
+          title: `${pending.salary_generation} 份薪资待生成`,
+          time: '立即处理',
+          data: { count: pending.salary_generation }
         })
       }
 
@@ -290,7 +289,7 @@ const loadOverviewData = async () => {
     }
   } catch (error) {
     console.error('加载总览数据失败:', error)
-    // 不显示错误消息，因为可能是后端接口未实现
+    ElMessage.error('加载总览数据失败')
   } finally {
     overviewLoading.value = false
   }
