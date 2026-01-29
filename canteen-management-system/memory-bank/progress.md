@@ -128,11 +128,23 @@
 - 布局导航：修复 EmployeeLayout 中"个人信息"菜单跳转逻辑
 - 后端 API：新增 `change_password` 接口（`POST /api/accounts/{id}/change_password/`）
 
+**步骤 5.3：签到服务页面** (`CheckInView.vue`)
+- 页面布局：左右分栏（左侧操作区 + 右侧日历区）
+- 时间卡片：实时显示当前时间（每秒更新）和日期，渐变橙色背景
+- 签到/签退按钮：根据今日记录状态自动切换（绿色签到 / 橙色签退），大尺寸便于点击
+- 位置获取：使用浏览器 Geolocation API 获取经纬度
+- 今日记录：签到时间、签退时间、考勤状态（彩色标签）、加班时长
+- 打卡日历：Element Plus 日历组件，用彩色圆点标记打卡状态（正常-绿、迟到-橙、早退-红、缺卡-灰、异常-红）
+- 月份切换：支持前后切换月份查看历史打卡记录
+- 本月统计：出勤天数、迟到次数、缺卡次数、加班时长
+- API 调用：`clockIn()`、`clockOut()`、`getMyAttendance()`、`getAttendanceStatistics()`
+- 路由配置：`/employee/checkin`，添加到 EmployeeLayout 顶部导航菜单
+
 ---
 
 ## 待完成
 
-- [ ] 第五阶段：员工端页面（步骤 5.3-5.7）
+- [ ] 第五阶段：员工端页面（步骤 5.4-5.7）
 - [ ] 第六阶段：系统优化与部署（详见 IMPLEMENTATION_PLAN.md）
 
 ---

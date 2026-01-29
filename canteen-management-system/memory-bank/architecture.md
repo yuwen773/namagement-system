@@ -435,3 +435,140 @@ def change_password(self, request, pk=None):
 - 使用 `detail=True` 确保 URL 包含用户 ID
 - 验证旧密码正确性
 - 明文存储密码（开发阶段）
+
+---
+
+## 签到服务页面架构见解
+
+### 设计理念
+
+签到服务页面（`CheckInView.vue`）采用**左右分栏布局**，左侧为核心操作区（签到/签退按钮），右侧为数据展示区（日历视图 + 统计数据），符合"操作优先，数据辅助"的设计原则。
+
+### 文件职责
+
+| 文件 | 作用 |
+|------|------|
+| `frontend/src/views/employee/CheckInView.vue` | 签签服务主页面，包含时间显示、签到签退按钮、今日记录、打卡日历、月度统计 |
+| `frontend/src/api/attendance.js` | 提供签到（`clockIn`）、签退（`clockOut`）、我的考勤（`getMyAttendance`）、考勤统计（`getAttendanceStatistics`）接口 |
+| `frontend/src/router/index.js` | 添加 `/employee/checkin` 路由配置 |
+| `frontend/src/layouts/EmployeeLayout.vue` | 在顶部导航菜单中添加"签到签退"菜单项 |
+| `frontend/src/views/employee/HomeView.vue` | 修复首页快捷入口跳转路径（从 `/employee/attendance` 改为 `/employee/checkin`） |
+
+### 页面模块划分
+
+```
+CheckInView.vue
+├── 左侧操作区（400px 固定宽度）
+│   ├── 时间卡片（渐变橙色背景）
+│   │   ├── 当前时间（48px 等宽字体）
+│   │   └── 当前日期
+│   ├── 签到/签退卡片
+│   │   ├── 位置信息（浏览器 Geolocation API）
+│   │   ├── 大号按钮（80px 高度，根据状态切换颜色）
+│   │   └── 今日记录（签到/签退时间、状态、加班时长）
+├── 右侧展示区（flex: 1）
+│   ├── 日历卡片
+│   │   ├── 月份切换按钮
+│   │   ├── Element Plus 日历组件（自定义单元格渲染）
+│   │   └── 图例说明（5 种状态颜色）
+│   └── 统计卡片
+│       └── 4 个统计项（出勤天数、迟到、缺卡、加班）
+```
+
+### 关键技术点
+
+1. **实时时间更新**：使用 `setInterval` 每秒更新当前时间，组件卸载时清除定时器
+2. **位置获取**：使用 `navigator.geolocation.getCurrentPosition()` 获取经纬度坐标
+3. **签到/签退状态判断**：
+   - `canClockIn` computed：今日未签到 或 已签退 = 可签到
+   - `actionStatus` computed：返回按钮状态标签（未签到/请签到/已签到/已完成）
+4. **日历自定义渲染**：
+   - 使用 `date-cell` 插槽自定义日历单元格
+   - 根据日期匹配 `attendanceMap` 显示对应状态圆点
+5. **月度数据加载**：
+   - 切换月份时重新调用 `loadMonthAttendance()`
+   - 同时加载统计数据 `loadMonthStatistics()`
+6. **状态颜色映射**：
+   - 正常（NORMAL）：绿色 `#67C23A`
+   - 迟到（LATE）：橙色 `#E6A23C`
+   - 早退（EARLY_LEAVE）：红色 `#F56C6C`
+   - 缺卡（MISSING）：灰色 `#909399`
+   - 异常（ABNORMAL）：红色 `#F56C6C`
+
+### 数据流
+
+```
+组件挂载 → 启动定时器（更新时间）
+        → 获取位置
+        → 加载今日记录（loadTodayRecord）
+        → 加载月度数据（loadMonthAttendance）
+        → 加载统计数据（loadMonthStatistics）
+
+用户点击签到/签退按钮
+        ↓
+    根据 canClockIn 判断
+        ↓
+    clockIn() 或 clockOut()
+        ↓
+    重新加载今日记录
+        ↓
+    更新按钮状态和今日记录显示
+
+用户切换月份
+        ↓
+    更新 currentYear/currentMonth
+        ↓
+    重新加载月度数据和统计
+        ↓
+    更新日历圆点显示
+```
+
+### UI/UX 设计
+
+1. **按钮设计**：
+   - 签到按钮：绿色渐变（`#4CAF50` → `#66BB6A`）
+   - 签退按钮：橙色渐变（`#FF6B35` → `#FF8C42`）
+   - 高度 80px，大字体 24px，方便点击
+   - 悬停效果：向上平移 2px + 阴影加深
+
+2. **时间卡片**：
+   - 橙色渐变背景（`#FF6B35` → `#FF8C42`）
+   - 等宽字体（Monospace）显示时间，避免数字跳动
+   - 阴影效果：`0 4px 20px rgba(255, 107, 53, 0.3)`
+
+3. **日历指示器**：
+   - 8px 圆点标记考勤状态
+   - 鼠标悬停显示完整状态文本（title 属性）
+
+4. **响应式设计**：
+   - 大屏（> 1200px）：左右分栏布局
+   - 小屏（≤ 1200px）：单列垂直布局
+   - 统计卡片：大屏 4 列，小屏 2 列
+
+### 浏览器兼容性
+
+1. **Geolocation API**：检查 `navigator.geolocation` 是否存在，不支持时显示"无法获取位置信息"
+2. **定时器清理**：组件卸载时使用 `onUnmounted` 清除 `setInterval`，避免内存泄漏
+3. **日期处理**：使用原生 `Date` 对象，兼容所有现代浏览器
+
+### 性能优化
+
+1. **数据缓存**：`attendanceMap` 缓存月度考勤数据，避免重复请求
+2. **按月加载**：每次只加载当前月份数据，切换月份时才重新请求
+3. **计算属性缓存**：`canClockIn`、`actionStatus` 使用 computed 缓存结果
+
+### 后端 API 依赖
+
+| 接口 | 用途 | 请求参数 |
+|------|------|---------|
+| `POST /api/attendance/clock_in/` | 签到 | `employee_id`, `clock_in_location` |
+| `POST /api/attendance/clock_out/` | 签退 | `employee_id`, `clock_out_location` |
+| `GET /api/attendance/my_attendance/` | 我的考勤 | `employee_id`, `start_date`, `end_date` |
+| `POST /api/attendance/statistics/` | 考勤统计 | `employee_id`, `start_date`, `end_date` |
+
+### 扩展性考虑
+
+1. **离线打卡**：当前需要网络连接，可后续添加离线缓存机制
+2. **WiFi 打卡**：可扩展为基于 WiFi SSID 的位置验证
+3. **人脸识别**：预留接口，可集成生物识别验证
+4. **批量导入**：管理员可批量导入历史打卡记录

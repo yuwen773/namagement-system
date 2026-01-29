@@ -20,6 +20,7 @@
           active-text-color="#FF6B35"
         >
           <el-menu-item index="/employee">首页</el-menu-item>
+          <el-menu-item index="/employee/checkin">签到签退</el-menu-item>
           <el-menu-item index="/employee/schedule">我的排班</el-menu-item>
           <el-menu-item index="/employee/attendance">考勤记录</el-menu-item>
           <el-menu-item index="/employee/leave">请假申请</el-menu-item>

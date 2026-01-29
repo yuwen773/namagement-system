@@ -325,7 +325,7 @@ const loadNotifications = () => {
 // 处理快捷入口点击
 const handleQuickAccess = (type) => {
   const routeMap = {
-    'checkin': '/employee/attendance',
+    'checkin': '/employee/checkin',
     'leave': '/employee/leave',
     'swap': '/employee/swap',
     'salary': '/employee/salary'

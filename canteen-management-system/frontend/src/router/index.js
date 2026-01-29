@@ -91,6 +91,12 @@ const routes = [
         meta: { requiresAuth: true, role: 'EMPLOYEE' }
       },
       {
+        path: 'checkin',
+        name: 'EmployeeCheckIn',
+        component: () => import('../views/employee/CheckInView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      },
+      {
         path: 'attendance',
         name: 'EmployeeAttendance',
         component: () => import('../views/employee/AttendanceView.vue'),
