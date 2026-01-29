@@ -1,6 +1,7 @@
 # 菜谱数据分析系统 - 架构设计
 
 > 更新日期: 2026-01-29
+> 当前阶段: 阶段二第2步完成
 
 ---
 
@@ -31,12 +32,42 @@ API 网关层 (Django) - 认证/权限/统一响应
 
 ---
 
+## 项目结构
+
+```
+recipe-data-analysis-system/
+├── frontend/              # Vue 3 前端项目
+├── backend/               # Django 后端项目
+├── backend_venv/          # Python 虚拟环境
+├── data-scripts/          # 数据脚本（爬虫、清洗、导入、模拟）
+├── memory-bank/           # 项目文档（架构、进度、规范等）
+├── sql/                   # 数据库初始化脚本
+├── .gitignore             # Git 忽略配置
+└── CLAUDE.md              # 项目指导文档
+```
+
+---
+
 ## 数据库设计
 
-### 核心表结构
+### 当前状态
 
-| 表名 | 说明 | 记录数 |
-|:-----|:-----|:-------:|
+| 表名 | 状态 | 说明 |
+|:-----|:----:|:-----|
+| users | ✅ 已创建 | 用户主表 |
+| user_profiles | ✅ 已创建 | 用户资料表 |
+| recipes | ✅ 已创建 | 菜谱主表 |
+| categories | ⏳ 待创建 | 分类表 |
+| ingredients | ⏳ 待创建 | 食材库 |
+| recipe_ingredients | ⏳ 待创建 | 菜谱-食材关联 |
+| recipe_steps | ⏳ 待创建 | 制作步骤表 |
+| user_favorites | ⏳ 待创建 | 用户收藏 |
+| user_behavior_logs | ⏳ 待创建 | 行为日志 |
+
+### 核心表结构（完整设计）
+
+| 表名 | 说明 | 目标记录数 |
+|:-----|:-----|:----------:|
 | users / user_profiles | 用户账户与资料 | 100+ |
 | categories | 分类（菜系/场景/难度/口味） | 50+ |
 | ingredients | 食材库 | 500+ |
@@ -46,7 +77,152 @@ API 网关层 (Django) - 认证/权限/统一响应
 | user_favorites | 用户收藏 | 5,000+ |
 | user_behavior_logs | 行为日志 | 10,000+ |
 
-### 核心关系
+### 已创建表详细设计
+
+#### users 表（用户主表）✅
+
+| 字段 | 类型 | 约束 | 说明 |
+|:-----|:-----|:-----|:-----|
+| id | bigint | PK, AUTO | 主键 |
+| username | varchar(50) | UNIQUE, NOT NULL, INDEX | 用户名（登录用） |
+| email | varchar(100) | UNIQUE, NULL, INDEX | 邮箱 |
+| password | varchar(128) | NOT NULL | 加密密码 |
+| role | varchar(10) | NOT NULL, INDEX | user/admin |
+| is_active | tinyint(1) | NOT NULL, INDEX | 是否激活 |
+| is_staff | tinyint(1) | NOT NULL | 是否管理员 |
+| is_superuser | tinyint(1) | NOT NULL | 是否超级用户 |
+| last_login | datetime(6) | NULL | 最后登录时间 |
+| created_at | datetime(6) | NOT NULL | 创建时间 |
+| updated_at | datetime(6) | NOT NULL | 更新时间 |
+
+**索引**：
+- PRIMARY: `id`
+- UNIQUE: `username`, `email`
+- INDEX: `role`, `is_active`
+
+**Django 模型**：`accounts.models.User`
+- 继承: `AbstractBaseUser`, `PermissionsMixin`
+- 认证字段: `USERNAME_FIELD = 'username'`
+- 管理器: `UserManager`（提供 `create_user`, `create_superuser`）
+
+#### user_profiles 表（用户资料）✅
+
+| 字段 | 类型 | 约束 | 说明 |
+|:-----|:-----|:-----|:-----|
+| id | bigint | PK, AUTO | 主键 |
+| user_id | bigint | UNIQUE, NOT NULL, FK | 关联 users.id |
+| nickname | varchar(50) | NOT NULL | 昵称 |
+| phone | varchar(20) | UNIQUE, NULL | 手机号 |
+| bio | longtext | NOT NULL | 个人简介 |
+| avatar_url | varchar(500) | NOT NULL | 头像 URL |
+| created_at | datetime(6) | NOT NULL | 创建时间 |
+| updated_at | datetime(6) | NOT NULL | 更新时间 |
+
+**关系**：
+- `user_id` → `users.id`（ON DELETE CASCADE）
+- 1:1 关系，通过 `user.profile` 访问
+
+**Django 模型**：`accounts.models.UserProfile`
+
+**使用示例**：
+```python
+# 创建用户
+from accounts.models import User
+
+user = User.objects.create_user(
+    username='testuser',
+    email='test@example.com',
+    password='password123'
+)
+
+# 访问用户资料
+profile = user.profile
+profile.nickname = '测试用户'
+profile.bio = '这是我的简介'
+profile.save()
+
+# 检查用户角色
+if user.role == 'admin':
+    # 管理员逻辑
+    pass
+```
+
+#### recipes 表（菜谱主表）✅
+
+| 字段 | 类型 | 约束 | 说明 |
+|:-----|:-----|:-----|:-----|
+| id | bigint | PK, AUTO | 主键 |
+| name | varchar(200) | NOT NULL, INDEX | 菜谱名称 |
+| cuisine_type | varchar(50) | NULL, INDEX | 菜系分类（川菜、粤菜等） |
+| scene_type | varchar(50) | NULL, INDEX | 场景分类（早餐、午餐、晚餐等） |
+| target_audience | varchar(100) | NULL | 适用人群（儿童、老人、孕妇等） |
+| difficulty | varchar(10) | NOT NULL, INDEX, DEFAULT 'medium' | 难度等级（easy/medium/hard） |
+| cooking_time | int | NULL | 烹饪时长（分钟） |
+| image_url | varchar(500) | NULL | 成品图片 URL |
+| steps | longtext | NULL | 制作步骤（文本或JSON格式） |
+| flavor_tags | varchar(200) | NULL | 口味标签（逗号分隔，如"辣,甜,酸"） |
+| view_count | int | NOT NULL, INDEX, DEFAULT 0 | 点击量 |
+| favorite_count | int | NOT NULL, INDEX, DEFAULT 0 | 收藏量 |
+| created_at | datetime(6) | NOT NULL, INDEX | 创建时间 |
+| updated_at | datetime(6) | NOT NULL | 更新时间 |
+
+**索引**：
+- PRIMARY: `id`
+- INDEX: `name` - 用于搜索
+- INDEX: `cuisine_type` - 用于按菜系筛选
+- INDEX: `difficulty` - 用于按难度筛选
+- INDEX: `scene_type` - 用于按场景筛选
+- INDEX: `view_count` - 用于按热度排序
+- INDEX: `favorite_count` - 用于按收藏排序
+- INDEX: `created_at` (DESC) - 用于按时间排序
+
+**Django 模型**：`recipes.models.Recipe`
+- 难度选择：`DIFFICULTY_CHOICES = [('easy', '简单'), ('medium', '中等'), ('hard', '困难')]`
+- 默认排序：`ordering = ['-created_at']`
+- 方法：
+  - `get_flavor_list()` - 将逗号分隔的口味标签转换为列表
+  - `set_flavor_list(flavor_list)` - 将列表转换为逗号分隔的口味标签
+
+**使用示例**：
+```python
+# 创建菜谱
+from recipes.models import Recipe
+
+recipe = Recipe.objects.create(
+    name='宫保鸡丁',
+    cuisine_type='川菜',
+    scene_type='晚餐',
+    difficulty='medium',
+    cooking_time=30,
+    image_url='https://example.com/kungpao.jpg',
+    steps='1. 鸡胸肉切丁\n2. 花生米炸香\n3. 爆炒鸡肉\n4. 调味收汁',
+    flavor_tags='辣,甜,酸'
+)
+
+# 获取口味标签列表
+flavors = recipe.get_flavor_list()  # ['辣', '甜', '酸']
+
+# 按菜系筛选
+sichuan_recipes = Recipe.objects.filter(cuisine_type='川菜')
+
+# 按难度筛选
+easy_recipes = Recipe.objects.filter(difficulty='easy')
+
+# 按热度排序
+hot_recipes = Recipe.objects.order_by('-view_count')
+```
+
+**设计说明**：
+
+| 设计决策 | 理由 |
+|:---------|:-----|
+| 分类字段使用 CharField | 为后续关联分类表预留灵活性，当前直接存储简化实现 |
+| 口味标签用逗号分隔 | 简化多对多关系，后续可扩展为独立标签表 |
+| 难度等级使用 choices | 确保数据一致性，便于前端下拉选择 |
+| 冗余统计字段 | 避免频繁 JOIN 统计，通过应用层或触发器维护 |
+| 多维度索引 | 覆盖常用查询（筛选、搜索、排序）场景，优化性能 |
+
+### 核心关系（完整设计）
 
 ```
 users (1:1) user_profiles
@@ -67,78 +243,172 @@ users (1:1) user_profiles
 
 ## 后端架构
 
+### 项目结构
+
 ```
 backend/
-├── config/          # Django 主配置
-│   └── settings.py  # 项目设置（从 .env 读取环境变量）
-├── utils/           # 统一响应/异常/分页
-├── accounts/        # 认证模块
-├── recipes/         # 菜谱模块
-├── categories/      # 分类模块
-├── ingredients/     # 食材模块
-├── favorites/       # 收藏模块
-├── analytics/       # 数据分析（用户）
-├── admin_panel/     # 管理员模块
-├── behavior_logs/   # 行为日志
-├── .env             # 环境变量（本地，不提交）
-├── .env.example     # 环境变量模板（提交）
-└── requirements.txt # Python 依赖列表
+├── config/                 # Django 主配置
+│   ├── __init__.py
+│   ├── settings.py        # 项目设置（从 .env 读取环境变量）
+│   ├── urls.py            # 主路由配置
+│   ├── asgi.py            # ASGI 配置
+│   └── wsgi.py            # WSGI 配置
+├── utils/                  # 公共工具模块 ✅
+│   ├── __init__.py
+│   ├── response.py        # 统一响应封装
+│   ├── exceptions.py      # 自定义异常
+│   ├── pagination.py      # 分页配置
+│   └── constants.py       # 常量定义
+├── accounts/               # 认证模块 ✅
+│   ├── migrations/
+│   │   └── 0001_initial.py
+│   ├── models.py          # User, UserProfile, UserManager
+│   └── ...
+├── recipes/                # 菜谱模块 ✅
+│   ├── migrations/
+│   │   └── 0001_initial.py
+│   ├── models.py          # Recipe 模型
+│   └── ...
+├── categories/             # 分类模块 ⏳
+├── ingredients/            # 食材模块 ⏳
+├── favorites/              # 收藏模块 ⏳
+├── analytics/              # 数据分析（用户）⏳
+├── admin_panel/            # 管理员模块 ⏳
+├── behavior_logs/          # 行为日志 ⏳
+├── static/                 # 静态文件目录 ✅
+├── mediafiles/             # 媒体文件目录 ✅
+├── manage.py               # Django 管理脚本
+├── .env                    # 环境变量（本地，不提交）✅
+├── .env.example            # 环境变量模板（提交）✅
+├── requirements.txt        # Python 依赖列表 ✅
+├── README.md               # 后端说明文档 ✅
+├── verify_user_model.py    # 用户模型验证脚本 ✅
+└── verify_recipe_model.py  # 菜谱模型验证脚本 ✅
 ```
 
-**环境配置说明**：
+### 环境配置说明
+
 - `.env`：包含敏感配置（SECRET_KEY、数据库密码），通过 python-dotenv 加载
 - `.env.example`：不含敏感值的模板，供其他开发者参考
 - `settings.py`：使用 `os.getenv()` 读取环境变量，设置合理的默认值
 
-### 数据脚本架构
+### 工具模块详细说明 ✅
 
-```
-data-scripts/
-├── spiders/         # 爬虫脚本
-│   └── recipe_spider.py      # 从下厨房、美食杰爬取菜谱数据
-├── cleaning/        # 数据清洗
-│   └── clean_recipes.py       # 去重、补全缺失、统一格式
-├── importing/       # 数据导入
-│   └── import_recipes.py      # 批量导入数据库
-└── simulation/      # 行为模拟
-    ├── simulate_users.py      # 生成模拟用户
-    ├── simulate_behaviors.py  # 生成行为数据
-    └── simulate_page_visits.py # 生成访问路径
+#### `utils/response.py` - 统一响应封装
+
+```python
+class ApiResponse:
+    @staticmethod
+    def success(data=None, message="操作成功", code=200) -> Response
+    @staticmethod
+    def error(message, code=400, errors=None, data=None) -> Response
+    @staticmethod
+    def paginate(data, message="获取成功") -> Response
 ```
 
-**执行流程**：爬取数据 → 清洗数据 → 导入数据库 → 模拟行为
+**作用**：
+- 统一 API 响应格式：`{ code, message, data }`
+- 处理成功和错误响应
+- 支持分页响应
 
-**文件作用**：
-- `spiders/`：目标网站（下厨房、美食杰），爬取菜谱名称、食材、步骤、图片
-- `cleaning/`：去除重复、补全缺失字段、统一难度/时长/单位格式
-- `importing/`：批量插入（bulk_create）、处理外键关联、生成点击/收藏量
-- `simulation/`：生成100+用户、20-100条行为/用户、时间分布过去30天
+#### `utils/exceptions.py` - 自定义异常
+
+```python
+class BusinessError(APIException)        # 业务异常基类
+class ValidationError(BusinessError)     # 参数验证异常
+class NotFoundError(BusinessError)       # 资源不存在异常
+class PermissionDeniedError(BusinessError)  # 权限不足异常
+class StateNotAllowedError(BusinessError)   # 状态不允许异常
+```
+
+**作用**：
+- 定义业务相关的异常类型
+- 统一异常处理和错误信息
+
+#### `utils/pagination.py` - 分页配置
+
+```python
+class StandardPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+```
+
+**作用**：
+- 配置标准分页行为
+- 默认每页 20 条，最大 100 条
+
+#### `utils/constants.py` - 常量定义
+
+```python
+# 用户角色
+ROLE_USER = 'user'
+ROLE_ADMIN = 'admin'
+
+# 分类类型
+CATEGORY_CUISINE = 'cuisine'
+CATEGORY_SCENE = 'scene'
+CATEGORY_AUDIENCE = 'audience'
+CATEGORY_FLAVOR = 'flavor'
+
+# 食材分类
+INGREDIENT_CAT_VEGETABLE = 'vegetable'
+INGREDIENT_CAT_MEAT = 'meat'
+INGREDIENT_CAT_SEAFOOD = 'seafood'
+INGREDIENT_CAT_SPICE = 'spice'
+# ...
+
+# 行为类型
+BEHAVIOR_LOGIN = 'login'
+BEHAVIOR_SEARCH = 'search'
+BEHAVIOR_VIEW = 'view'
+BEHAVIOR_FAVORITE = 'favorite'
+```
+
+**作用**：
+- 定义系统常量
+- 避免硬编码
+- 提供类型安全
 
 ### API 规范
 
-- 前缀: `/api/`
-- 响应: `{ code, message, data }`
-- 分页: `page`, `page_size` (max 100)
-- 认证: JWT (24h)
+- **前缀**: `/api/`
+- **响应格式**: `{ code, message, data }`
+- **分页参数**: `page`, `page_size` (max 100)
+- **认证方式**: JWT (24h)
+- **路由命名**: `/api/{module}/{resource}/`，自定义动作用 kebab-case
 
 ---
 
 ## 前端架构
 
+### 项目结构
+
 ```
 frontend/
-├── src/
-│   ├── components/    # 公共组件
-│   ├── views/         # 页面组件
-│   ├── api/           # API 服务层
-│   ├── stores/        # Pinia 状态管理
-│   └── router/        # 路由配置
-├── .env.local         # 环境变量（本地，不提交）
-├── .env.example       # 环境变量模板（提交）
-└── package.json       # 依赖配置
+├── public/                 # 静态资源
+├── src/                    # 源代码
+│   ├── router/             # 路由配置 ✅
+│   │   └── index.js
+│   ├── stores/             # Pinia 状态管理 ✅
+│   │   └── user.js
+│   ├── views/              # 页面组件 ✅
+│   │   └── Home.vue
+│   ├── App.vue             # 根组件 ✅
+│   ├── main.js             # 主入口 ✅
+│   └── style.css           # 全局样式 ✅
+├── .env.local              # 环境变量（本地，不提交）✅
+├── .env.example            # 环境变量模板（提交）✅
+├── index.html              # HTML 入口 ✅
+├── vite.config.js          # Vite 配置 ✅
+├── tailwind.config.js      # Tailwind 配置 ✅
+├── postcss.config.js       # PostCSS 配置 ✅
+├── package.json            # 依赖配置 ✅
+└── README.md               # 前端说明文档 ✅
 ```
 
-**环境配置说明**：
+### 环境配置说明
+
 - `.env.local`：Vite 开发服务器自动加载，变量必须以 `VITE_` 前缀开头
 - `.env.example`：不含敏感值的模板
 - 环境变量访问：`import.meta.env.VITE_API_BASE_URL`
@@ -154,13 +424,60 @@ frontend/
 /admin/*                    # 管理后台
 ```
 
+### 核心依赖
+
+| 包名 | 版本 | 用途 |
+|:-----|:----:|:-----|
+| vue | ^3.5.13 | 前端框架 |
+| element-plus | ^2.9.3 | UI 组件库 |
+| pinia | ^2.3.0 | 状态管理 |
+| vue-router | ^4.5.0 | 路由管理 |
+| axios | ^1.7.9 | HTTP 客户端 |
+| echarts | ^5.6.0 | 数据可视化 |
+| tailwindcss | ^3.4.0 | 原子化 CSS |
+
+---
+
+## 数据脚本架构
+
+```
+data-scripts/
+├── README.md               # 总体说明文档 ✅
+├── test_structure.py       # 目录结构测试脚本 ✅
+├── spiders/                # 爬虫脚本
+│   └── README.md
+├── cleaning/               # 数据清洗脚本
+│   └── README.md
+├── importing/              # 数据导入脚本
+│   └── README.md
+└── simulation/             # 用户行为模拟脚本
+    └── README.md
+```
+
+### 执行流程
+
+爬取数据 → 清洗数据 → 导入数据库 → 模拟行为
+
+### 文件作用
+
+- **spiders/**：目标网站（下厨房、美食杰），爬取菜谱名称、食材、步骤、图片
+- **cleaning/**：去除重复、补全缺失字段、统一难度/时长/单位格式
+- **importing/**：批量插入（bulk_create）、处理外键关联、生成点击/收藏量
+- **simulation/**：生成100+用户、20-100条行为/用户、时间分布过去30天
+
 ---
 
 ## 部署架构
 
-**开发环境**: Vite (5173) → Django (8000) → MySQL (3306)
+### 开发环境
 
-**生产环境**: Nginx → Gunicorn/Django → MySQL
+- **前端**: Vite (5173) → Django (8000) → MySQL (3307)
+- **服务器**: `npm run dev` (5175) + `python manage.py runserver` (8000)
+
+### 生产环境
+
+- **前端**: Nginx → 静态资源
+- **后端**: Gunicorn → Django → MySQL
 
 ### 环境变量配置
 
@@ -179,9 +496,9 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 DB_NAME=recipe_analysis_db
 DB_USER=root
-DB_PASSWORD=your-password
+DB_PASSWORD=yuwen123
 DB_HOST=localhost
-DB_PORT=3306
+DB_PORT=3307
 LANGUAGE_CODE=zh-hans
 TIME_ZONE=Asia/Shanghai
 ```
@@ -204,6 +521,62 @@ TIME_ZONE=Asia/Shanghai
 
 ## 数据可视化
 
-**用户端**: 菜系分布、难度统计、口味偏好、食材频率
+### 用户端
+- 菜系分布（饼图）
+- 难度统计（柱状图）
+- 口味偏好（雷达图）
+- 食材频率（词云）
 
-**管理端**: 概览指标、趋势图表、用户行为分析（DAU/WAU/MAU、转化漏斗）
+### 管理端
+- 概览指标
+- 趋势图表
+- 用户行为分析（DAU/WAU/MAU、转化漏斗）
+
+---
+
+## 性能要求
+
+| 指标 | 目标值 |
+|:-----|:------:|
+| 搜索响应时间 | < 500ms |
+| 详情页加载时间 | < 1s |
+| 大盘数据加载时间 | < 2s |
+| 并发用户支持 | 100+ |
+
+---
+
+## 开发进度
+
+### 已完成
+
+| 阶段 | 步骤 | 状态 | 完成日期 |
+|:----:|:-----|:----:|:--------:|
+| 一 | 创建前端项目结构 | ✅ | 2026-01-29 |
+| 一 | 创建后端项目结构 | ✅ | 2026-01-29 |
+| 一 | 创建数据脚本目录 | ✅ | 2026-01-29 |
+| 一 | 配置开发环境 | ✅ | 2026-01-29 |
+| 二 | 设计用户表结构 | ✅ | 2026-01-29 |
+| 二 | 设计菜谱表结构 | ✅ | 2026-01-29 |
+
+### 进行中
+
+| 阶段 | 步骤 | 状态 |
+|:----:|:-----|:----:|
+| 二 | 设计食材表与关联表 | ⏳ |
+
+### 待完成
+
+详见 `memory-bank/implementation-plan.md` 和 `memory-bank/progress.md`
+
+---
+
+## 重要文档
+
+| 文档 | 路径 | 用途 |
+|:-----|:-----|:-----|
+| 架构设计 | `memory-bank/architecture.md` | 本文档 |
+| 产品需求 | `memory-bank/PRD.md` | PRD 文档 |
+| 实施计划 | `memory-bank/implementation-plan.md` | 22阶段实施计划 |
+| 开发进度 | `memory-bank/progress.md` | 详细进度记录 |
+| 后端规范 | `memory-bank/dev-standards/backend-api-standards.md` | 后端开发标准 |
+| 项目指导 | `CLAUDE.md` | AI 开发指导 |

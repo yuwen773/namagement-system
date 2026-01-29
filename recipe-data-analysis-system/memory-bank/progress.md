@@ -242,6 +242,110 @@
 
 ---
 
+### 阶段二 第1步：设计用户表结构
+
+**完成内容**：
+
+1. **创建用户模型** (`backend/accounts/models.py`)
+   - `User` 模型 - 继承 AbstractBaseUser, PermissionsMixin
+   - `UserProfile` 模型 - 1:1 关联的用户资料表
+   - `UserManager` - 自定义用户管理器
+
+2. **User 模型字段**
+   - `id` - 主键
+   - `username` - 用户名（唯一，已索引）
+   - `email` - 邮箱（唯一，已索引）
+   - `password` - 加密密码
+   - `role` - 用户角色（user/admin，已索引）
+   - `is_active` - 是否激活（已索引）
+   - `is_staff` - 是否管理员
+   - `last_login` - 最后登录时间
+   - `created_at` - 创建时间
+   - `updated_at` - 更新时间
+
+3. **UserProfile 模型字段**
+   - `id` - 主键
+   - `user` - 关联用户（一对一）
+   - `nickname` - 昵称
+   - `phone` - 手机号（唯一，已索引）
+   - `bio` - 个人简介
+   - `avatar_url` - 头像 URL
+   - `created_at` - 创建时间
+   - `updated_at` - 更新时间
+
+4. **更新 Django settings.py**
+   - 添加 `AUTH_USER_MODEL = 'accounts.User'`
+
+5. **创建数据库迁移文件**
+   - `accounts/migrations/0001_initial.py`
+
+6. **配置环境变量** (`.env`)
+   - 更新 DB_PORT 为 3307
+   - 更新 DB_PASSWORD 为 yuwen123
+
+7. **创建数据库**
+   - 数据库名: `recipe_analysis_db`
+   - 字符集: `utf8mb4`
+
+8. **执行迁移**
+   - 成功创建 users 和 user_profiles 表
+   - 所有索引正确创建
+
+9. **测试验证**
+   - ✅ 模型结构验证通过
+   - ✅ 数据库表创建成功
+   - ✅ 用户创建测试通过
+   - ✅ 1:1 关联测试通过
+
+10. **创建的验证脚本**
+    - `backend/verify_user_model.py` - 模型验证脚本
+    - `backend/test_db_connection.py` - 数据库连接测试脚本
+
+**文件结构**：
+```
+backend/
+├── accounts/
+│   ├── models.py           # ✅ User, UserProfile, UserManager
+│   └── migrations/
+│       └── 0001_initial.py # ✅ 用户表迁移文件
+├── config/
+│   └── settings.py         # ✅ AUTH_USER_MODEL 已配置
+├── .env                    # ✅ 数据库配置已更新
+├── verify_user_model.py    # ✅ 模型验证脚本
+└── test_db_connection.py   # ✅ 数据库连接测试脚本
+```
+
+**数据库结构**：
+```
+recipe_analysis_db (MySQL 3307)
+├── users              # 用户主表
+│   ├── id (PK)
+│   ├── username (UNIQUE, INDEX)
+│   ├── email (UNIQUE, INDEX)
+│   ├── password
+│   ├── role (INDEX) - user/admin
+│   ├── is_active (INDEX)
+│   ├── is_staff
+│   ├── last_login
+│   ├── created_at
+│   └── updated_at
+└── user_profiles      # 用户资料表
+    ├── id (PK)
+    ├── user_id (UNIQUE) → users.id
+    ├── nickname
+    ├── phone (UNIQUE, INDEX)
+    ├── bio
+    ├── avatar_url
+    ├── created_at
+    └── updated_at
+```
+
+**最终状态**：✅ 用户表结构完全创建并测试通过
+
+**下一步**：等待用户指示后，执行阶段二第2步（设计菜谱表结构）
+
+---
+
 ### 阶段一 第4步：配置开发环境
 
 **完成内容**：
@@ -334,7 +438,110 @@
 
 **最终状态**：✅ 开发环境配置完全完成并验证通过
 
-**下一步**：等待用户验证测试结果后，执行阶段二第1步（设计用户表结构）
+**下一步**：等待用户验证测试结果后，执行阶段二第2步（设计菜谱表结构）
+
+---
+
+### 阶段二 第2步：设计菜谱表结构
+
+**完成内容**：
+
+1. **创建 Recipe 模型** (`backend/recipes/models.py`)
+   - `Recipe` 模型 - 菜谱主表，存储菜谱的基本信息
+
+2. **Recipe 模型字段**
+   - `id` - 主键（BigAutoField）
+   - `name` - 菜谱名称（最大200字符，已索引）
+   - `cuisine_type` - 菜系分类（如"川菜"、"粤菜"，已索引）
+   - `scene_type` - 场景分类（如"早餐"、"午餐"、"晚餐"，已索引）
+   - `target_audience` - 适用人群（如"儿童"、"老人"、"孕妇"）
+   - `difficulty` - 难度等级（easy/medium/hard，默认medium，已索引）
+   - `cooking_time` - 烹饪时长（分钟，可为空）
+   - `image_url` - 成品图片URL（最大500字符）
+   - `steps` - 制作步骤（文本或JSON格式）
+   - `flavor_tags` - 口味标签（逗号分隔，如"辣,甜,酸"）
+   - `view_count` - 点击量（默认0，已索引）
+   - `favorite_count` - 收藏量（默认0，已索引）
+   - `created_at` - 创建时间（自动添加，已索引）
+   - `updated_at` - 更新时间（自动更新）
+
+3. **模型方法**
+   - `get_flavor_list()` - 将逗号分隔的口味标签转换为列表
+   - `set_flavor_list()` - 将列表转换为逗号分隔的口味标签
+   - `__str__()` - 返回菜谱名称
+
+4. **数据库索引**
+   - `recipes_name_66b98f_idx` - 菜谱名称索引（用于搜索）
+   - `recipes_cuisine_3862f6_idx` - 菜系分类索引（用于筛选）
+   - `recipes_difficu_9b84bb_idx` - 难度等级索引（用于筛选）
+   - `recipes_scene_t_695d9f_idx` - 场景分类索引（用于筛选）
+   - `recipes_view_co_7980ec_idx` - 点击量索引（用于排序）
+   - `recipes_favorit_456657_idx` - 收藏量索引（用于排序）
+   - `recipes_created_00c815_idx` - 创建时间索引（用于排序）
+
+5. **创建数据库迁移文件**
+   - `recipes/migrations/0001_initial.py`
+
+6. **执行迁移**
+   - 成功创建 recipes 表
+   - 所有索引正确创建
+
+7. **创建验证脚本**
+   - `backend/verify_recipe_model.py` - 模型验证脚本
+
+8. **测试验证**
+   - ✅ 模型结构验证通过
+   - ✅ 数据库表创建成功
+   - ✅ 菜谱创建测试通过
+   - ✅ 菜谱读取测试通过
+   - ✅ 菜谱更新测试通过
+   - ✅ 口味标签方法测试通过
+   - ✅ 筛选功能测试通过（按菜系、难度）
+   - ✅ 排序功能测试通过（按点击量）
+   - ✅ 数据库索引验证通过（8个索引）
+
+**文件结构**：
+```
+backend/
+├── recipes/
+│   ├── models.py           # ✅ Recipe 模型
+│   └── migrations/
+│       └── 0001_initial.py # ✅ 菜谱表迁移文件
+└── verify_recipe_model.py  # ✅ 模型验证脚本
+```
+
+**数据库结构**：
+```
+recipe_analysis_db (MySQL 3307)
+├── users              # 用户主表
+├── user_profiles      # 用户资料表
+└── recipes            # ✅ 菜谱主表
+    ├── id (PK)
+    ├── name (INDEX)
+    ├── cuisine_type (INDEX)
+    ├── scene_type (INDEX)
+    ├── target_audience
+    ├── difficulty (INDEX) - easy/medium/hard
+    ├── cooking_time
+    ├── image_url
+    ├── steps
+    ├── flavor_tags
+    ├── view_count (INDEX)
+    ├── favorite_count (INDEX)
+    ├── created_at (INDEX)
+    └── updated_at
+```
+
+**设计说明**：
+- 使用 `CharField` 存储分类字段（cuisine_type, scene_type），为后续关联分类表预留灵活性
+- 口味标签使用逗号分隔的字符串存储，简化实现，后续可扩展为独立表
+- 难度等级使用 `choices` 参数，确保数据一致性
+- 统计字段（view_count, favorite_count）为冗余设计，通过触发器或应用层维护
+- 索引覆盖所有常用查询和排序场景，优化查询性能
+
+**最终状态**：✅ 菜谱表结构完全创建并测试通过
+
+**下一步**：等待用户验证测试结果后，执行阶段二第3步（设计食材表与关联表）
 
 ---
 
@@ -344,3 +551,5 @@
 - [x] 阶段一 第2步：创建后端项目结构（Django）
 - [x] 阶段一 第3步：创建数据脚本目录
 - [x] 阶段一 第4步：配置开发环境
+- [x] 阶段二 第1步：设计用户表结构
+- [x] 阶段二 第2步：设计菜谱表结构
