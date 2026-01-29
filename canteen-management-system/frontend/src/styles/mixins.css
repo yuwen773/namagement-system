@@ -1,0 +1,191 @@
+/* ==================== 响应式混入 ==================== */
+/* 用于在组件中导入的通用响应式样式 */
+
+/* 表单对话框响应式 */
+@media (max-width: 767px) {
+  .el-dialog {
+    width: 95% !important;
+    margin: 0 auto;
+  }
+
+  .el-dialog__header {
+    padding: var(--canteen-spacing-md) !important;
+  }
+
+  .el-dialog__body {
+    padding: var(--canteen-spacing-md) !important;
+  }
+
+  .el-dialog__footer {
+    padding: var(--canteen-spacing-md) !important;
+  }
+
+  /* 表单项垂直布局 */
+  .el-form-item {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .el-form-item__label {
+    text-align: left !important;
+    margin-bottom: var(--canteen-spacing-xs) !important;
+  }
+
+  .el-form-item__content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 按钮全宽 */
+  .el-button {
+    width: 100%;
+    margin-bottom: var(--canteen-spacing-xs);
+    min-height: 44px; /* 更大的点击区域 */
+    font-size: 16px;
+  }
+
+  .el-button-group .el-button {
+    margin-bottom: 0;
+  }
+}
+
+/* 表格响应式 */
+@media (max-width: 1199px) {
+  .el-table {
+    font-size: 13px;
+  }
+
+  .el-table .cell {
+    padding: 8px 4px;
+  }
+
+  /* 表格容器横向滚动 */
+  .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+}
+
+/* 卡片响应式 */
+@media (max-width: 767px) {
+  .el-card {
+    margin: var(--canteen-spacing-sm);
+  }
+
+  .el-card__header {
+    padding: var(--canteen-spacing-md) !important;
+  }
+
+  .el-card__body {
+    padding: var(--canteen-spacing-md) !important;
+  }
+}
+
+/* 操作栏响应式（搜索栏、筛选栏等） */
+@media (max-width: 1199px) {
+  .operation-bar {
+    flex-direction: column;
+    gap: var(--canteen-spacing-sm);
+  }
+
+  .operation-bar > * {
+    width: 100%;
+  }
+}
+
+/* 分页响应式 */
+@media (max-width: 767px) {
+  .el-pagination {
+    justify-content: center !important;
+  }
+
+  .el-pagination .el-pager li {
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .el-pagination button {
+    min-width: 32px;
+    height: 32px;
+  }
+}
+
+/* 统计卡片响应式（4列 -> 2列 -> 1列） */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 通知/消息响应式 */
+@media (max-width: 767px) {
+  .el-notification {
+    width: 90% !important;
+    max-width: 90% !important;
+  }
+
+  .el-message {
+    min-width: 300px !important;
+  }
+}
+
+/* 标签页响应式 */
+@media (max-width: 767px) {
+  .el-tabs__item {
+    padding: 0 12px !important;
+    font-size: 14px;
+  }
+
+  .el-tabs__nav-wrap {
+    overflow-x: auto;
+  }
+}
+
+/* 日历组件响应式 */
+@media (max-width: 767px) {
+  .el-calendar {
+    font-size: 14px;
+  }
+
+  .el-calendar-table .el-calendar-day {
+    height: 60px;
+    padding: 4px;
+  }
+}
+
+/* 输入框响应式（更大字体和点击区域） */
+@media (max-width: 767px) {
+  .el-input__inner,
+  .el-textarea__inner {
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+    min-height: 44px;
+  }
+
+  .el-select .el-input__inner {
+    height: 44px;
+  }
+
+  .el-date-editor .el-input__inner {
+    height: 44px;
+  }
+}
+
+/* 菜单响应式 */
+@media (max-width: 767px) {
+  .el-menu-item {
+    height: 48px;
+    line-height: 48px;
+    font-size: 15px;
+  }
+
+  .el-sub-menu__title {
+    height: 48px;
+    line-height: 48px;
+    font-size: 15px;
+  }
+}

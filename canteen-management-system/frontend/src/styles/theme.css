@@ -1,0 +1,73 @@
+/* ==================== 食堂主题 CSS 变量 ==================== */
+:root {
+  /* 主色调 */
+  --canteen-primary: #FF6B35;
+  --canteen-primary-light: #FF8C42;
+  --canteen-primary-dark: #E55A2B;
+
+  /* 辅助色 */
+  --canteen-yellow: #F7C52D;
+  --canteen-green: #4CAF50;
+  --canteen-red: #F56C6C;
+  --canteen-blue: #409EFF;
+
+  /* 背景色 */
+  --canteen-bg-primary: #FFF8F0;
+  --canteen-bg-secondary: #FFFFFF;
+  --canteen-bg-hover: #FFF0E6;
+
+  /* 文字色 */
+  --canteen-text-primary: #333333;
+  --canteen-text-secondary: #666666;
+  --canteen-text-disabled: #999999;
+
+  /* 边框与分割线 */
+  --canteen-border-color: #E4E7ED;
+  --canteen-border-radius: 8px;
+  --canteen-border-radius-sm: 4px;
+  --canteen-border-radius-lg: 12px;
+
+  /* 间距 */
+  --canteen-spacing-xs: 8px;
+  --canteen-spacing-sm: 12px;
+  --canteen-spacing-md: 16px;
+  --canteen-spacing-lg: 24px;
+  --canteen-spacing-xl: 32px;
+
+  /* 阴影 */
+  --canteen-shadow-sm: 0 2px 8px rgba(255, 107, 53, 0.1);
+  --canteen-shadow-md: 0 4px 12px rgba(255, 107, 53, 0.15);
+  --canteen-shadow-lg: 0 8px 24px rgba(255, 107, 53, 0.2);
+
+  /* 字体大小基准 */
+  --canteen-font-size-base: 14px;
+}
+
+/* ==================== 响应式断点 ==================== */
+/* 小屏幕（笔记本） < 1200px */
+@media (max-width: 1199px) {
+  :root {
+    --canteen-font-size-base: 15px;
+  }
+}
+
+/* 中等屏幕 1200px - 1439px */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  :root {
+    --canteen-font-size-base: 14px;
+  }
+}
+
+/* 大屏幕（台式机） >= 1440px */
+@media (min-width: 1440px) {
+  :root {
+    --canteen-font-size-base: 16px;
+  }
+}
+
+/* 超小屏幕（特殊优化） < 768px */
+@media (max-width: 767px) {
+  :root {
+    --canteen-font-size-base: 16px; /* 放大字体方便老年员工 */
+  }
+}
