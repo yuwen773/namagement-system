@@ -220,3 +220,34 @@ class UserViewSet(viewsets.ModelViewSet):
             }
         ]
         return ApiResponse.success(data=roles, message='获取成功')
+
+    @action(detail=True, methods=['post'], url_path='change_password')
+    def change_password(self, request, pk=None):
+        """
+        修改密码接口
+
+        POST /api/accounts/{id}/change_password/
+        请求体：{"old_password": "old123", "new_password": "new123"}
+
+        允许用户修改自己的密码（需要验证旧密码）
+
+        Returns:
+            成功时返回 200 状态码
+            失败时返回错误信息
+        """
+        user = self.get_object()
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not old_password or not new_password:
+            return ApiResponse.error(message='请提供旧密码和新密码')
+
+        # 验证旧密码是否正确
+        if user.password != old_password:
+            return ApiResponse.unauthorized(message='旧密码错误')
+
+        # 更新密码
+        user.password = new_password
+        user.save()
+
+        return ApiResponse.success(message='密码修改成功')

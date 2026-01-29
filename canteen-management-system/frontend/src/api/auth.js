@@ -35,3 +35,18 @@ export function getUserInfo(id) {
     method: 'get'
   })
 }
+
+/**
+ * 修改密码
+ * @param {number} id - 用户ID
+ * @param {Object} data - 密码数据
+ * @param {string} data.old_password - 旧密码
+ * @param {string} data.new_password - 新密码
+ */
+export function changePassword(id, data) {
+  return request({
+    url: `/accounts/${id}/change_password/`,
+    method: 'post',
+    data
+  })
+}
