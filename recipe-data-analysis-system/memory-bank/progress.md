@@ -242,9 +242,105 @@
 
 ---
 
+### 阶段一 第4步：配置开发环境
+
+**完成内容**：
+
+1. **创建前端环境变量文件**
+   - `frontend/.env.local`：本地开发环境变量（不提交到版本控制）
+   - `frontend/.env.example`：环境变量模板（提交到版本控制）
+   - 配置项：
+     - `VITE_API_BASE_URL`: 后端 API 地址
+     - `VITE_API_TIMEOUT`: 请求超时时间
+     - `VITE_APP_TITLE`: 应用标题
+     - `VITE_PAGE_SIZE`: 分页大小
+
+2. **创建后端环境变量文件**
+   - `backend/.env`：本地开发环境变量（不提交到版本控制）
+   - `backend/.env.example`：环境变量模板（提交到版本控制）
+   - 配置项：
+     - `SECRET_KEY`: Django 密钥
+     - `DEBUG`: 调试模式
+     - `ALLOWED_HOSTS`: 允许的主机
+     - `DB_NAME`: 数据库名称
+     - `DB_USER`: 数据库用户
+     - `DB_PASSWORD`: 数据库密码
+     - `DB_HOST`: 数据库主机
+     - `DB_PORT`: 数据库端口
+     - `LANGUAGE_CODE`: 语言代码
+     - `TIME_ZONE`: 时区
+
+3. **更新 Django settings.py**
+   - 添加 `python-dotenv` 导入
+   - 使用 `os.getenv()` 从环境变量读取配置
+   - 设置默认值以防环境变量未定义
+   - 更新 SECRET_KEY、DEBUG、ALLOWED_HOSTS 配置
+   - 更新数据库配置
+   - 更新国际化和时区配置
+
+4. **创建后端 requirements.txt**
+   - Django 5.2.10
+   - djangorestframework 3.15.2
+   - django-cors-headers 4.6.0
+   - djangorestframework-simplejwt 5.5.0
+   - PyMySQL 1.1.1
+   - pandas 2.2.3
+   - numpy 2.2.2
+   - openpyxl 3.1.5
+   - python-dotenv 1.1.0
+
+5. **创建开发环境验证脚本**
+   - `test_dev_env.py`：完整的开发环境验证工具
+   - 测试项：
+     - .gitignore 配置正确性
+     - 环境变量文件存在性
+     - 环境变量内容完整性
+     - Django settings.py 配置正确性
+     - 前端环境变量配置
+
+6. **更新 .gitignore**
+   - 添加 `*.pyc` 条目（已有 `*.py[cod]` 覆盖）
+
+7. **项目结构**
+   ```
+   .
+   ├── .gitignore              # ✅ 更新，包含所有排除项
+   ├── frontend/
+   │   ├── .env.local          # ✅ 前端环境变量（本地）
+   │   └── .env.example        # ✅ 前端环境变量模板
+   ├── backend/
+   │   ├── .env                # ✅ 后端环境变量（本地）
+   │   ├── .env.example        # ✅ 后端环境变量模板
+   │   ├── requirements.txt    # ✅ 依赖列表
+   │   ├── config/
+   │   │   └── settings.py     # ✅ 更新，从环境变量读取
+   │   └── test_env.py         # ✅ 环境变量测试脚本
+   └── test_dev_env.py         # ✅ 开发环境验证脚本
+   ```
+
+8. **测试验证**
+   - ✅ 环境变量文件创建成功（4个文件）
+   - ✅ 环境变量可正确读取（8个后端变量 + 2个前端变量）
+   - ✅ Django settings.py 配置正确
+   - ✅ .gitignore 配置完整
+   - ✅ 所有 5/5 验证测试通过
+
+9. **文件作用说明**
+   - `.env.local` (前端)：Vite 在开发时自动加载，包含 API 配置
+   - `.env` (后端)：通过 python-dotenv 手动加载，包含 Django 配置
+   - `.env.example`：模板文件，供其他开发者参考复制
+   - `requirements.txt`：后端 Python 依赖列表，用于虚拟环境安装
+   - `test_dev_env.py`：验证开发环境配置完整性的工具
+
+**最终状态**：✅ 开发环境配置完全完成并验证通过
+
+**下一步**：等待用户验证测试结果后，执行阶段二第1步（设计用户表结构）
+
+---
+
 ## 待完成任务
 
 - [x] 阶段一 第1步：创建前端项目结构
 - [x] 阶段一 第2步：创建后端项目结构（Django）
 - [x] 阶段一 第3步：创建数据脚本目录
-- [ ] 阶段一 第4步：配置开发环境
+- [x] 阶段一 第4步：配置开发环境

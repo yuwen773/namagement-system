@@ -70,6 +70,7 @@ users (1:1) user_profiles
 ```
 backend/
 ├── config/          # Django 主配置
+│   └── settings.py  # 项目设置（从 .env 读取环境变量）
 ├── utils/           # 统一响应/异常/分页
 ├── accounts/        # 认证模块
 ├── recipes/         # 菜谱模块
@@ -78,8 +79,16 @@ backend/
 ├── favorites/       # 收藏模块
 ├── analytics/       # 数据分析（用户）
 ├── admin_panel/     # 管理员模块
-└── behavior_logs/   # 行为日志
+├── behavior_logs/   # 行为日志
+├── .env             # 环境变量（本地，不提交）
+├── .env.example     # 环境变量模板（提交）
+└── requirements.txt # Python 依赖列表
 ```
+
+**环境配置说明**：
+- `.env`：包含敏感配置（SECRET_KEY、数据库密码），通过 python-dotenv 加载
+- `.env.example`：不含敏感值的模板，供其他开发者参考
+- `settings.py`：使用 `os.getenv()` 读取环境变量，设置合理的默认值
 
 ### 数据脚本架构
 
@@ -124,7 +133,15 @@ frontend/
 │   ├── api/           # API 服务层
 │   ├── stores/        # Pinia 状态管理
 │   └── router/        # 路由配置
+├── .env.local         # 环境变量（本地，不提交）
+├── .env.example       # 环境变量模板（提交）
+└── package.json       # 依赖配置
 ```
+
+**环境配置说明**：
+- `.env.local`：Vite 开发服务器自动加载，变量必须以 `VITE_` 前缀开头
+- `.env.example`：不含敏感值的模板
+- 环境变量访问：`import.meta.env.VITE_API_BASE_URL`
 
 ### 路由设计
 
@@ -144,6 +161,35 @@ frontend/
 **开发环境**: Vite (5173) → Django (8000) → MySQL (3306)
 
 **生产环境**: Nginx → Gunicorn/Django → MySQL
+
+### 环境变量配置
+
+**前端环境变量** (`frontend/.env.local`):
+```bash
+VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_TIMEOUT=30000
+VITE_APP_TITLE=菜谱数据分析系统
+VITE_PAGE_SIZE=20
+```
+
+**后端环境变量** (`backend/.env`):
+```bash
+SECRET_KEY=django-insecure-...
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+DB_NAME=recipe_analysis_db
+DB_USER=root
+DB_PASSWORD=your-password
+DB_HOST=localhost
+DB_PORT=3306
+LANGUAGE_CODE=zh-hans
+TIME_ZONE=Asia/Shanghai
+```
+
+**重要说明**：
+- `.env` 文件包含敏感信息，已被 `.gitignore` 排除
+- 新环境部署时，复制 `.env.example` 并填入实际值
+- 生产环境必须修改 `SECRET_KEY` 和 `DEBUG=False`
 
 ---
 

@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # PyMySQL settings (must be before other imports)
 import pymysql
@@ -24,12 +29,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-7ne%*fgwmi-hry^*+(tph3ssgc0ic!2_a1j7^3(6t6%@ewyd^8'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-7ne%*fgwmi-hry^*+(tph3ssgc0ic!2_a1j7^3(6t6%@ewyd^8')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -120,9 +125,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'zh-hans'
+LANGUAGE_CODE = os.getenv('LANGUAGE_CODE', 'zh-hans')
 
-TIME_ZONE = 'Asia/Shanghai'
+TIME_ZONE = os.getenv('TIME_ZONE', 'Asia/Shanghai')
 
 USE_I18N = True
 
@@ -205,11 +210,11 @@ CORS_ALLOW_ALL_ORIGINS = True  # 仅用于开发环境
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'recipe_analysis_db',
-        'USER': 'root',
-        'PASSWORD': 'yuwen123.',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DB_NAME', 'recipe_analysis_db'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
         },
