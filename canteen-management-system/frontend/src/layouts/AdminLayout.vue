@@ -435,7 +435,48 @@ onUnmounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
+/* 小屏幕（笔记本） < 1200px */
+@media (max-width: 1199px) {
+  .top-header {
+    padding: 0 16px;
+  }
+
+  .header-left {
+    gap: 12px;
+  }
+
+  .header-right {
+    gap: 16px;
+  }
+
+  .user-name {
+    max-width: 80px;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+
+  .logo-text {
+    font-size: 16px;
+  }
+
+  .sidebar-menu :deep(.el-menu-item) {
+    height: 52px;
+    line-height: 52px;
+    margin: 4px 6px;
+  }
+}
+
+/* 中等屏幕 1200px - 1439px */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .main-content {
+    padding: 18px;
+  }
+}
+
+/* 超小屏幕（特殊优化） < 768px */
+@media (max-width: 767px) {
   .sidebar {
     position: fixed;
     left: 0;
@@ -454,6 +495,25 @@ onUnmounted(() => {
 
   .date-info {
     display: none;
+  }
+
+  .logo-text {
+    font-size: 14px;
+  }
+
+  .main-content {
+    padding: 12px;
+  }
+
+  /* 更大的按钮方便点击 */
+  .collapse-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* 面包屑简化 */
+  .header-left :deep(.el-breadcrumb) {
+    font-size: 13px;
   }
 }
 </style>

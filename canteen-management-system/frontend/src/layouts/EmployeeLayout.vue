@@ -297,25 +297,54 @@ onUnmounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 1024px) {
-  .header-center {
-    flex: 1;
-    margin: 0 24px;
+/* 小屏幕（笔记本） < 1200px */
+@media (max-width: 1199px) {
+  .top-header {
+    padding: 0 20px;
   }
 
-  .top-menu {
-    max-width: none;
+  .header-right {
+    gap: 16px;
+  }
+
+  .user-name {
+    max-width: 80px;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+
+  .logo-text {
+    font-size: 18px;
   }
 
   .top-menu :deep(.el-menu-item) {
     font-size: 15px;
-    padding: 0 12px;
+    padding: 0 14px;
+  }
+
+  .top-menu {
+    max-width: 500px;
   }
 }
 
-@media (max-width: 768px) {
+/* 中等屏幕 1200px - 1439px */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .main-content {
+    padding: 18px;
+  }
+
+  .top-menu {
+    max-width: 550px;
+  }
+}
+
+/* 超小屏幕（特殊优化） < 768px */
+@media (max-width: 767px) {
   .top-header {
-    padding: 0 16px;
+    padding: 0 12px;
+    height: 56px;
   }
 
   .logo-text {
@@ -330,9 +359,25 @@ onUnmounted(() => {
     display: none;
   }
 
+  .main-content {
+    padding: 12px;
+  }
+
   .top-menu :deep(.el-menu-item) {
     font-size: 14px;
     padding: 0 8px;
+    height: 56px;
+    line-height: 56px;
+  }
+
+  .user-dropdown {
+    padding: 6px 8px;
+  }
+
+  /* 更大的点击区域 */
+  .user-dropdown,
+  .top-menu :deep(.el-menu-item) {
+    min-height: 44px;
   }
 }
 </style>
