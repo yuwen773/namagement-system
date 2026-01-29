@@ -24,6 +24,7 @@
           <el-menu-item index="/employee/schedule">我的排班</el-menu-item>
           <el-menu-item index="/employee/attendance">考勤记录</el-menu-item>
           <el-menu-item index="/employee/leave">请假申请</el-menu-item>
+          <el-menu-item index="/employee/swap">调班申请</el-menu-item>
           <el-menu-item index="/employee/salary">薪资查询</el-menu-item>
         </el-menu>
       </div>
