@@ -83,6 +83,42 @@ const routes = [
         name: 'EmployeeHome',
         component: () => import('../views/employee/HomeView.vue'),
         meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      },
+      {
+        path: 'schedule',
+        name: 'EmployeeSchedule',
+        component: () => import('../views/employee/ScheduleView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      },
+      {
+        path: 'attendance',
+        name: 'EmployeeAttendance',
+        component: () => import('../views/employee/AttendanceView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      },
+      {
+        path: 'leave',
+        name: 'EmployeeLeave',
+        component: () => import('../views/employee/LeaveView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      },
+      {
+        path: 'swap',
+        name: 'EmployeeSwap',
+        component: () => import('../views/employee/SwapView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      },
+      {
+        path: 'salary',
+        name: 'EmployeeSalary',
+        component: () => import('../views/employee/SalaryView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
+      },
+      {
+        path: 'profile',
+        name: 'EmployeeProfile',
+        component: () => import('../views/employee/ProfileView.vue'),
+        meta: { requiresAuth: true, role: 'EMPLOYEE' }
       }
     ]
   },

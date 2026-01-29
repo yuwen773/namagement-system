@@ -237,3 +237,82 @@ SystemManageView.vue
 2. **顶部下拉菜单**：用户头像下拉中的"系统设置"选项跳转到系统管理页面
 
 这样设计既保证了功能的可发现性，又符合用户的使用习惯。
+
+---
+
+## 员工端首页架构见解
+
+### 设计理念
+
+员工端首页（`HomeView.vue`）采用**卡片式布局**，以信息展示和快捷操作为核心，为员工提供一站式的个人信息和快速访问入口。
+
+### 文件职责
+
+| 文件 | 作用 |
+|------|------|
+| `frontend/src/api/schedule.js` | 新增 `getEmployeeSchedules()` 函数，支持按员工ID和日期范围查询排班数据 |
+| `frontend/src/views/employee/HomeView.vue` | 员工端首页组件，包含欢迎区、排班卡片、快捷入口、通知列表 |
+| `frontend/src/router/index.js` | 添加员工端路由配置（schedule/attendance/leave/swap/salary/profile） |
+| `frontend/src/views/employee/[ScheduleView, AttendanceView, LeaveView, SwapView, SalaryView, ProfileView].vue` | 员工端各功能模块的占位页面，待后续步骤实现 |
+
+### 页面模块划分
+
+```
+HomeView.vue
+├── 欢迎区域
+│   ├── 动态问候语（早/上/中/下午/晚上好）
+│   ├── 员工姓名
+│   ├── 当前日期
+│   └── 岗位标签
+├── 排班卡片区域
+│   ├── 今日排班（班次名、时间 或 "今日休息"）
+│   └── 明日排班（班次名、时间 或 "明日休息"）
+├── 快捷入口区域
+│   ├── 签到签退（绿色渐变）
+│   ├── 请假申请（橙色渐变）
+│   ├── 调班申请（黄色渐变）
+│   └── 工资条（蓝色渐变）
+└── 通知公告区域
+    ├── 通知标题
+    ├── 通知描述
+    ├── 通知时间
+    └── 未读标记
+```
+
+### 关键技术点
+
+1. **动态问候语**：根据当前时间段（6-9/9-12/12-14/14-18/18-22/22-6）显示不同的问候语
+2. **排班查询**：通过 `getEmployeeSchedules(employeeId, startDate, endDate)` 一次性获取今日和明日的排班数据
+3. **岗位映射**：将后端返回的岗位枚举（CHEF/PASTRY/PREP/CLEANER/SERVER/MANAGER）映射为中文显示
+4. **通知图标**：根据通知类型（leave_approved/leave_rejected/swap_approved等）动态显示对应图标
+5. **响应式设计**：使用 CSS Grid 和媒体查询，适配不同屏幕尺寸
+
+### UI/UX 设计
+
+1. **配色方案**：
+   - 欢迎卡片：橙色渐变（#FF6B35 → #FF8C42）
+   - 快捷按钮：绿色、橙色、黄色、蓝色渐变
+   - 休息日：灰色调（#f5f7fa）
+2. **交互动效**：
+   - 卡片悬停：向上平移 4px + 阴影加深
+   - 按钮悬停：向上平移 4px + 橙色阴影
+   - 通知点击：标记为已读 + 跳转对应页面
+3. **图标使用**：Element Plus icons-vue（Calendar、Clock、Sunny、Moon、Grid、CircleCheck、DocumentAdd、Switch、Wallet、Bell等）
+
+### 数据流
+
+```
+用户登录 → userStore.userInfo → employeeId
+                ↓
+        getEmployeeSchedules()
+                ↓
+        解析今日/明日排班 → 渲染排班卡片
+                ↓
+        快捷入口点击 → router.push() → 跳转对应页面
+```
+
+### 扩展性考虑
+
+1. **通知数据**：当前使用模拟数据，后续可替换为真实 API 调用
+2. **员工信息**：当前从 `userInfo` 中获取，如需更详细信息可调用员工档案 API
+3. **占位页面**：已创建 6 个占位页面，便于后续步骤逐步实现各功能模块

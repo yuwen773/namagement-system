@@ -317,3 +317,23 @@ export function getPendingShiftRequests() {
     method: 'get'
   })
 }
+
+/**
+ * 获取员工指定日期范围的排班
+ * @param {number} employeeId - 员工ID
+ * @param {string} startDate - 开始日期 YYYY-MM-DD
+ * @param {string} endDate - 结束日期 YYYY-MM-DD
+ * @returns {Promise}
+ */
+export function getEmployeeSchedules(employeeId, startDate, endDate) {
+  return request({
+    url: '/schedules/schedules/',
+    method: 'get',
+    params: {
+      employee: employeeId,
+      work_date__gte: startDate,
+      work_date__lte: endDate,
+      ordering: 'work_date'
+    }
+  })
+}
