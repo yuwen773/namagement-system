@@ -328,6 +328,9 @@ const formRules = {
     { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
+  id_card: [
+    { pattern: /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/, message: '请输入正确的身份证号', trigger: 'blur' }
+  ],
   position: [{ required: true, message: '请选择岗位', trigger: 'change' }],
   entry_date: [{ required: true, message: '请选择入职日期', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
@@ -404,25 +407,36 @@ const handleAdd = () => {
 }
 
 // 编辑
-const handleEdit = (row) => {
-  isEdit.value = true
-  Object.assign(formData, {
-    id: row.id,
-    name: row.name,
-    gender: row.gender,
-    phone: row.phone,
-    id_card: row.id_card || '',
-    address: row.address || '',
-    position: row.position,
-    entry_date: row.entry_date,
-    status: row.status,
-    health_certificate_no: row.health_certificate_no || '',
-    health_certificate_expiry: row.health_certificate_expiry || '',
-    health_certificate_url: row.health_certificate_url || '',
-    chef_certificate_level: row.chef_certificate_level || ''
-  })
-  activeTab.value = 'basic'
-  dialogVisible.value = true
+const handleEdit = async (row) => {
+  try {
+    const res = await getEmployeeDetail(row.id)
+    if (res.code === 200) {
+      isEdit.value = true
+      const data = res.data
+      Object.assign(formData, {
+        id: data.id,
+        name: data.name,
+        gender: data.gender,
+        phone: data.phone,
+        id_card: data.id_card || '',
+        address: data.address || '',
+        position: data.position,
+        entry_date: data.entry_date,
+        status: data.status,
+        health_certificate_no: data.health_certificate_no || '',
+        health_certificate_expiry: data.health_certificate_expiry || '',
+        health_certificate_url: data.health_certificate_url || '',
+        chef_certificate_level: data.chef_certificate_level || ''
+      })
+      activeTab.value = 'basic'
+      dialogVisible.value = true
+    } else {
+      ElMessage.error(res.message || '获取员工详情失败')
+    }
+  } catch (error) {
+    console.error('获取员工详情失败:', error)
+    ElMessage.error('获取员工详情失败')
+  }
 }
 
 // 查看
@@ -468,7 +482,10 @@ const handleDelete = (row) => {
 // 提交表单
 const handleSubmit = () => {
   formRef.value.validate(async (valid) => {
-    if (!valid) return
+    if (!valid) {
+      ElMessage.warning('请检查表单填写是否正确')
+      return
+    }
 
     submitting.value = true
     try {
@@ -491,7 +508,26 @@ const handleSubmit = () => {
       }
     } catch (error) {
       console.error('操作失败:', error)
-      ElMessage.error('操作失败')
+      // 处理后端返回的验证错误
+      if (error.response?.data) {
+        const errorData = error.response.data
+        // 如果是字段验证错误，提取错误信息
+        if (typeof errorData === 'object') {
+          const errorMessages = []
+          for (const [field, messages] of Object.entries(errorData)) {
+            if (Array.isArray(messages)) {
+              errorMessages.push(`${field}: ${messages.join(', ')}`)
+            } else {
+              errorMessages.push(`${field}: ${messages}`)
+            }
+          }
+          ElMessage.error(errorMessages.join('\n') || '操作失败')
+        } else {
+          ElMessage.error(errorData.detail || errorData.message || '操作失败')
+        }
+      } else {
+        ElMessage.error('操作失败')
+      }
     } finally {
       submitting.value = false
     }
