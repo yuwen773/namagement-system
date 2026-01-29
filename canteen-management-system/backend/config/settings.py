@@ -90,9 +90,9 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "canteen_management",
         "USER": "root",
-        "PASSWORD": "yuwen123.",
+        "PASSWORD": "yuwen123",
         "HOST": "127.0.0.1",
-        "PORT": "3306",
+        "PORT": "3307",
     }
 }
 

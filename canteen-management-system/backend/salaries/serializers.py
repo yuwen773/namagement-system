@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from decimal import Decimal
 from .models import SalaryRecord, Appeal
 from employees.models import EmployeeProfile
 
@@ -24,16 +25,32 @@ class SalaryRecordSerializer(serializers.ModelSerializer):
 class SalaryRecordListSerializer(serializers.ModelSerializer):
     """薪资记录列表序列化器"""
     employee_name = serializers.CharField(source='employee.name', read_only=True)
-    employee_position = serializers.CharField(source='employee.get_position_display', read_only=True)
+    position = serializers.CharField(source='employee.position', read_only=True)
+    position_display = serializers.CharField(source='employee.get_position_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    # 计算字段：迟到扣款和缺卡扣款
+    late_deduction = serializers.SerializerMethodField()
+    missing_deduction = serializers.SerializerMethodField()
 
     class Meta:
         model = SalaryRecord
         fields = [
-            'id', 'employee', 'employee_name', 'employee_position',
-            'year_month', 'total_salary', 'status', 'status_display',
-            'work_days', 'late_count', 'created_at'
+            'id', 'employee', 'employee_name', 'position', 'position_display',
+            'year_month', 'base_salary', 'position_allowance', 'overtime_pay', 'deductions',
+            'total_salary', 'status', 'status_display', 'work_days', 'late_count',
+            'missing_count', 'overtime_hours', 'late_deduction', 'missing_deduction', 'created_at'
         ]
+
+    def get_late_deduction(self, obj):
+        """计算迟到扣款"""
+        from utils.constants import LATE_DEDUCTION
+        return obj.late_count * LATE_DEDUCTION
+
+    def get_missing_deduction(self, obj):
+        """计算缺卡扣款"""
+        from utils.constants import MISSING_DEDUCTION
+        return obj.missing_count * MISSING_DEDUCTION
 
 
 class SalaryRecordCreateSerializer(serializers.ModelSerializer):

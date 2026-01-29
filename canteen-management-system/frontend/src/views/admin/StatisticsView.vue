@@ -336,16 +336,29 @@ const formatSalary = (salary) => {
 const loadOverviewData = async () => {
   overviewLoading.value = true
   try {
-    const response = await getOverviewStatistics()
-    if (response.code === 200) {
-      const data = response.data
+    const [overviewResp, salaryResp] = await Promise.all([
+      getOverviewStatistics(),
+      getSalaryStatistics({ months: 1 })
+    ])
+
+    if (overviewResp.code === 200) {
+      const data = overviewResp.data
+
+      // 计算本月薪资总额（从最近一个月的薪资数据中获取）
+      let monthlySalary = 0
+      if (salaryResp.code === 200 && salaryResp.data?.monthly_trend?.length > 0) {
+        // 获取最近一个月的薪资总额
+        const latestMonth = salaryResp.data.monthly_trend[salaryResp.data.monthly_trend.length - 1]
+        monthlySalary = latestMonth.total_salary || 0
+      }
+
       overviewData.value = {
         total_count: data.overview?.total_employees || 0,
         active_count: data.overview?.total_employees || 0,
         attendance_rate: data.today?.attendance_rate || 0,
         late_count: data.today?.late || 0,
-        monthly_salary: data.month_attendance ? data.month_attendance.late_count * 20 : 0,
-        pending_count: (data.pending?.leaves || 0) + (data.pending?.leaves || 0)
+        monthly_salary: monthlySalary,
+        pending_count: (data.pending?.leaves || 0) + (data.pending?.attendance_corrections || 0) + (data.pending?.salary_generation || 0)
       }
     }
   } catch (error) {

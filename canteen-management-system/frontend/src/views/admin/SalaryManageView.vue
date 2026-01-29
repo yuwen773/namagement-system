@@ -586,14 +586,29 @@ const updateStats = (data) => {
     return
   }
 
-  const total = data.reduce((sum, item) => sum + (item.total_salary || 0), 0)
+  const total = data.reduce((sum, item) => sum + Number(item.total_salary || 0), 0)
   const draftCount = data.filter(item => item.status === 'DRAFT').length
 
   statsData.value = {
     total_salary: total,
     average_salary: data.length ? total / data.length : 0,
     draft_count: draftCount,
-    pending_appeals: 0 // 需要从单独接口获取
+    pending_appeals: statsData.value.pending_appeals || 0 // 保持之前的值
+  }
+
+  // 获取待处理申诉数量
+  fetchPendingAppealsCount()
+}
+
+// 获取待处理申诉数量
+const fetchPendingAppealsCount = async () => {
+  try {
+    const response = await getPendingAppeals()
+    // 从返回的数据中获取 count
+    const count = response.data?.count || (Array.isArray(response.data) ? response.data.length : 0)
+    statsData.value.pending_appeals = count
+  } catch (error) {
+    console.error('获取待处理申诉数量失败:', error)
   }
 }
 

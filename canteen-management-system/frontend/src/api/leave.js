@@ -115,7 +115,7 @@ export function getPendingLeaves() {
  * 审批请假申请
  * @param {number} id - 请假申请ID
  * @param {Object} data - 审批数据
- * @param {string} data.approval_status - 审批状态 (APPROVED/REJECTED)
+ * @param {boolean} data.approve - 是否批准 (true=批准, false=驳回)
  * @param {string} data.approval_remark - 审批意见
  * @returns {Promise}
  */

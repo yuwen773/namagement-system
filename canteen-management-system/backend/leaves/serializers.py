@@ -56,6 +56,7 @@ class LeaveRequestListSerializer(serializers.ModelSerializer):
     """
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     employee_position = serializers.CharField(source='employee.position', read_only=True)
+    employee_position_display = serializers.CharField(source='employee.get_position_display', read_only=True)
     leave_type_display = serializers.CharField(source='get_leave_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     leave_duration_days = serializers.ReadOnlyField()
@@ -66,10 +67,12 @@ class LeaveRequestListSerializer(serializers.ModelSerializer):
             'id',
             'employee_name',
             'employee_position',
+            'employee_position_display',
             'leave_type',
             'leave_type_display',
             'start_time',
             'end_time',
+            'reason',
             'status',
             'status_display',
             'leave_duration_days',

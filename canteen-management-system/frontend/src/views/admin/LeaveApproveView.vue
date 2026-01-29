@@ -447,7 +447,7 @@ const handleConfirmApprove = async () => {
   approveLoading.value = true
   try {
     const data = {
-      approval_status: approveType.value === 'approve' ? 'APPROVED' : 'REJECTED',
+      approve: approveType.value === 'approve',
       approval_remark: approveForm.approval_remark
     }
 
