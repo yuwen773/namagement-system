@@ -106,10 +106,17 @@ class AttendanceRecord(models.Model):
                 raise ValidationError({'clock_out_time': '签退时间不能早于签到时间'})
 
     def save(self, *args, **kwargs):
-        """保存时自动判断考勤状态"""
+        """保存时自动判断考勤状态
+
+        如果传递了 skip_status_calculation=True 参数，则跳过自动状态计算
+        （用于管理员手动修正考勤状态时）
+        """
         self.clean()
-        # 自动判断考勤状态
-        self.status = self._calculate_status()
+        # 检查是否跳过状态自动计算
+        skip_calculation = kwargs.pop('skip_status_calculation', False)
+        if not skip_calculation:
+            # 自动判断考勤状态
+            self.status = self._calculate_status()
         super().save(*args, **kwargs)
 
     def _calculate_status(self):

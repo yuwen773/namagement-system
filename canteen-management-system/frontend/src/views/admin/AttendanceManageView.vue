@@ -515,12 +515,32 @@ const handleCorrect = (row) => {
 
 // 确认异常处理
 const handleConfirmCorrect = async () => {
+  // 验证表单
   try {
-    // 验证表单
-    await correctFormRef.value.validate()
+    const valid = await correctFormRef.value.validate()
+    if (!valid) {
+      return
+    }
+  } catch (validationError) {
+    // 表单验证失败，显示具体错误
+    const errors = []
+    if (validationError && typeof validationError === 'object') {
+      for (const [field, error] of Object.entries(validationError)) {
+        if (Array.isArray(error)) {
+          errors.push(error[0]?.message || `${field} 验证失败`)
+        }
+      }
+    }
+    if (errors.length > 0) {
+      ElMessage.error(errors[0])
+    } else {
+      ElMessage.warning('请检查表单填写是否正确')
+    }
+    return
+  }
 
-    correctLoading.value = true
-
+  correctLoading.value = true
+  try {
     const response = await correctAttendance(currentRecord.value.id, {
       status: correctForm.status,
       correction_remark: correctForm.correction_remark
@@ -535,9 +555,38 @@ const handleConfirmCorrect = async () => {
       ElMessage.error(response.message || '修改失败')
     }
   } catch (error) {
-    if (error !== false) { // 排除表单验证取消的情况
-      console.error('修改失败:', error)
-      ElMessage.error('修改失败，请检查网络连接')
+    console.error('修改失败:', error)
+
+    // 处理后端返回的验证错误
+    if (error.response?.data) {
+      const errorData = error.response.data
+      let errorMessage = ''
+
+      // 处理字段验证错误格式 { correction_remark: [{ message: '...', ... }] }
+      if (typeof errorData === 'object' && !errorData.message) {
+        const errorMessages = []
+        for (const [field, messages] of Object.entries(errorData)) {
+          if (Array.isArray(messages) && messages[0]?.message) {
+            errorMessages.push(messages[0].message)
+          } else if (Array.isArray(messages)) {
+            errorMessages.push(`${field}: ${messages.join(', ')}`)
+          } else if (typeof messages === 'object' && messages.message) {
+            errorMessages.push(messages.message)
+          } else {
+            errorMessages.push(`${field}: ${messages}`)
+          }
+        }
+        errorMessage = errorMessages.join('；')
+      } else {
+        errorMessage = errorData.detail || errorData.message || '修改失败'
+      }
+
+      ElMessage.error(errorMessage)
+    } else if (error.message) {
+      // 网络错误或超时
+      ElMessage.error(`修改失败：${error.message}`)
+    } else {
+      ElMessage.error('修改失败，请稍后重试')
     }
   } finally {
     correctLoading.value = false

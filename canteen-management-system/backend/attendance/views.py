@@ -294,10 +294,11 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # 更新考勤状态
+        # 更新考勤状态和备注
         attendance.status = data['status']
         attendance.correction_remark = data['correction_remark']
-        attendance.save()
+        # 跳过自动状态计算，保留管理员手动设置的状态
+        attendance.save(skip_status_calculation=True)
 
         # 返回更新结果
         result_serializer = AttendanceRecordSerializer(attendance)
