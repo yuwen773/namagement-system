@@ -25,15 +25,15 @@ class ScheduleSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     employee_position = serializers.CharField(source='employee.position', read_only=True)
     shift_name = serializers.CharField(source='shift.name', read_only=True)
-    shift_start_time = serializers.TimeField(source='shift.start_time', read_only=True)
-    shift_end_time = serializers.TimeField(source='shift.end_time', read_only=True)
+    start_time = serializers.TimeField(source='shift.start_time', read_only=True)
+    end_time = serializers.TimeField(source='shift.end_time', read_only=True)
     position_display = serializers.CharField(source='employee.get_position_display', read_only=True)
 
     class Meta:
         model = Schedule
         fields = [
             'id', 'employee', 'employee_name', 'employee_position', 'position_display',
-            'shift', 'shift_name', 'shift_start_time', 'shift_end_time',
+            'shift', 'shift_name', 'start_time', 'end_time',
             'work_date', 'is_swapped'
         ]
         read_only_fields = ['id', 'is_swapped']
@@ -44,12 +44,14 @@ class ScheduleListSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     shift_name = serializers.CharField(source='shift.name', read_only=True)
     position_display = serializers.CharField(source='employee.get_position_display', read_only=True)
+    start_time = serializers.TimeField(source='shift.start_time', read_only=True)
+    end_time = serializers.TimeField(source='shift.end_time', read_only=True)
 
     class Meta:
         model = Schedule
         fields = [
             'id', 'employee_name', 'shift_name', 'position_display',
-            'work_date', 'is_swapped'
+            'start_time', 'end_time', 'work_date', 'is_swapped'
         ]
 
 
@@ -60,14 +62,14 @@ class ScheduleDetailSerializer(serializers.ModelSerializer):
     position_display = serializers.CharField(source='employee.get_position_display', read_only=True)
     employee_phone = serializers.CharField(source='employee.phone', read_only=True)
     shift_name = serializers.CharField(source='shift.name', read_only=True)
-    shift_start_time = serializers.TimeField(source='shift.start_time', read_only=True)
-    shift_end_time = serializers.TimeField(source='shift.end_time', read_only=True)
+    start_time = serializers.TimeField(source='shift.start_time', read_only=True)
+    end_time = serializers.TimeField(source='shift.end_time', read_only=True)
 
     class Meta:
         model = Schedule
         fields = [
             'id', 'employee', 'employee_name', 'employee_position', 'position_display',
-            'employee_phone', 'shift', 'shift_name', 'shift_start_time', 'shift_end_time',
+            'employee_phone', 'shift', 'shift_name', 'start_time', 'end_time',
             'work_date', 'is_swapped'
         ]
         read_only_fields = ['id', 'is_swapped']
@@ -83,6 +85,11 @@ class BatchScheduleSerializer(serializers.Serializer):
     shift_id = serializers.IntegerField(help_text='班次ID')
     start_date = serializers.DateField(help_text='开始日期')
     end_date = serializers.DateField(help_text='结束日期')
+    force_update = serializers.BooleanField(
+        required=False,
+        default=True,
+        help_text='是否强制更新已存在的排班（默认true）'
+    )
 
     def validate_employee_ids(self, value):
         """验证员工ID是否存在"""

@@ -142,6 +142,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         """
         批量排班接口
         一次为多个员工在日期范围内创建排班
+        如果排班已存在，根据 force_update 参数决定是否更新
         """
         serializer = BatchScheduleSerializer(data=request.data)
         if not serializer.is_valid():
@@ -152,6 +153,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         shift_id = data['shift_id']
         start_date = data['start_date']
         end_date = data['end_date']
+        force_update = data.get('force_update', True)
 
         # 计算日期范围内的所有日期
         date_range = []
@@ -162,6 +164,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
         # 批量创建排班记录
         created_count = 0
+        updated_count = 0
         skipped_count = 0
         errors = []
 
@@ -170,21 +173,38 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         for employee_id in employee_ids:
             for work_date in date_range:
                 try:
-                    # 使用 get_or_create 避免重复创建
-                    schedule, created = Schedule.objects.get_or_create(
+                    # 尝试获取已存在的排班
+                    existing_schedule = Schedule.objects.filter(
                         employee_id=employee_id,
-                        work_date=work_date,
-                        defaults={'shift_id': shift_id}
-                    )
-                    if created:
-                        created_count += 1
+                        work_date=work_date
+                    ).first()
+
+                    if existing_schedule:
+                        # 排班已存在
+                        if force_update:
+                            # 检查班次是否相同
+                            if existing_schedule.shift_id != shift_id:
+                                existing_schedule.shift_id = shift_id
+                                existing_schedule.save()
+                                updated_count += 1
+                            else:
+                                skipped_count += 1
+                        else:
+                            skipped_count += 1
                     else:
-                        skipped_count += 1
+                        # 创建新排班
+                        Schedule.objects.create(
+                            employee_id=employee_id,
+                            shift_id=shift_id,
+                            work_date=work_date
+                        )
+                        created_count += 1
                 except Exception as e:
                     errors.append(f'员工 {employee_id} 在 {work_date} 排班失败: {str(e)}')
 
         result = {
             'created_count': created_count,
+            'updated_count': updated_count,
             'skipped_count': skipped_count,
             'total_dates': len(date_range),
             'total_employees': len(employee_ids)
@@ -192,7 +212,20 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         if errors:
             result['errors'] = errors[:5]  # 只返回前5个错误
 
-        return ApiResponse.success(data=result, message=f'批量排班完成，创建 {created_count} 条记录')
+        # 构建更详细的消息
+        message_parts = []
+        if created_count > 0:
+            message_parts.append(f'创建 {created_count} 条')
+        if updated_count > 0:
+            message_parts.append(f'更新 {updated_count} 条')
+        if skipped_count > 0:
+            message_parts.append(f'跳过 {skipped_count} 条')
+
+        message = '批量排班完成' + ('，' + '、'.join(message_parts) if message_parts else '')
+        if not message_parts:
+            message = '批量排班完成，但没有处理任何记录'
+
+        return ApiResponse.success(data=result, message=message)
 
     @action(detail=False, methods=['post'])
     def calendar_view(self, request):
@@ -229,10 +262,12 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                 'employee_id': schedule.employee_id,
                 'employee_name': schedule.employee.name,
                 'employee_position': schedule.employee.get_position_display(),
+                'position_display': schedule.employee.get_position_display(),
                 'shift_id': schedule.shift_id,
                 'shift_name': schedule.shift.name,
-                'shift_start_time': schedule.shift.start_time.strftime('%H:%M'),
-                'shift_end_time': schedule.shift.end_time.strftime('%H:%M'),
+                'start_time': schedule.shift.start_time.strftime('%H:%M'),
+                'end_time': schedule.shift.end_time.strftime('%H:%M'),
+                'work_date': date_str,
                 'is_swapped': schedule.is_swapped
             })
 

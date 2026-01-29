@@ -568,14 +568,32 @@ async function handleConfirmBatch() {
 
   batchLoading.value = true
   try {
-    const { data } = await batchCreateSchedule({
+    const result = await batchCreateSchedule({
       employee_ids: batchForm.employee_ids,
       shift_id: batchForm.shift_id,
       start_date: batchForm.dateRange[0],
-      end_date: batchForm.dateRange[1]
+      end_date: batchForm.dateRange[1],
+      force_update: true  // 强制更新已存在的排班
     })
 
-    ElMessage.success(`成功创建 ${data.data.created_count} 条排班记录`)
+    // result 格式: { code: 200, message: "...", data: { created_count, updated_count, skipped_count, ... } }
+    const resultData = result.data
+    const { created_count = 0, updated_count = 0, skipped_count = 0 } = resultData
+
+    // 根据操作结果显示不同的提示
+    if (created_count > 0 || updated_count > 0) {
+      const parts = []
+      if (created_count > 0) parts.push(`创建 ${created_count} 条`)
+      if (updated_count > 0) parts.push(`更新 ${updated_count} 条`)
+      if (skipped_count > 0) parts.push(`跳过 ${skipped_count} 条`)
+
+      const message = '批量排班完成：' + parts.join('，')
+      ElMessage.success(message)
+    } else if (skipped_count > 0) {
+      ElMessage.info(`批量排班完成，${skipped_count} 条记录已是该班次（无需变更）`)
+    } else {
+      ElMessage.success('批量排班完成')
+    }
 
     // 关闭对话框并重置表单
     batchDialogVisible.value = false
@@ -584,7 +602,8 @@ async function handleConfirmBatch() {
     // 刷新数据
     loadSchedules()
   } catch (error) {
-    ElMessage.error('批量排班失败')
+    console.error('批量排班失败:', error)
+    ElMessage.error(error.response?.data?.message || error.message || '批量排班失败')
   } finally {
     batchLoading.value = false
   }
