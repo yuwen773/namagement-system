@@ -65,68 +65,109 @@
 
 ## 阶段一：项目初始化与基础架构
 
-### 步骤 1.1：创建项目目录结构
+> **已确认的决策**：
+> - 前端使用 **Vite 脚手架** (`npm create vite@latest`)
+> - 后端使用 **Django 模板** (`django-admin startproject`)
+> - 数据通过 **爬取** 获取（下厨房、美食杰等）
+> - 后端 apps: accounts, recipes, categories, ingredients, favorites, analytics, admin_panel, behavior_logs
+
+### 步骤 1.1：使用脚手架创建前端项目
 
 **操作指示**：
-- 创建前端项目目录（建议命名：`frontend`）
-- 创建后端项目目录（建议命名：`backend`）
-- 创建数据脚本目录（建议命名：`data-scripts`）
-- 在前端目录下建立标准目录结构：`src/components`、`src/views`、`src/api`、`src/stores`
-- 在后端目录下建立标准目录结构：按功能模块划分
-
-**测试验证**：
-- 确认所有目录均已创建
-- 确认目录命名清晰且符合项目规范
-- 检查是否有遗漏的核心目录
-
----
-
-### 步骤 1.2：初始化前端项目
-
-**操作指示**：
-- 选择框架（Vue 3 或 React）
-- 使用官方脚手架创建项目
+- 使用 Vite 脚手架创建 Vue 3 项目：
+  ```bash
+  npm create vite@latest frontend -- --template vue
+  cd frontend
+  npm install
+  ```
+- 安装核心依赖：
+  ```bash
+  npm install element-plus pinia vue-router axios echarts
+  npm install -D tailwindcss postcss autoprefixer
+  npx tailwindcss init -p
+  ```
 - 配置 Tailwind CSS
-- 安装路由管理库（Vue Router 或 React Router）
-- 安装状态管理库（Pinia 或 Redux）
-- 安装 HTTP 请求库（Axios）
-- 安装图表库（ECharts 或 AntV）
+- 配置 Vue Router 和 Pinia
 
 **测试验证**：
-- 运行 `npm run dev` 或 `yarn dev`
-- 确认开发服务器启动成功
-- 访问默认端口，确认欢迎页面正常显示
+- 运行 `npm run dev`
+- 确认开发服务器启动成功（默认 localhost:5173）
+- 访问欢迎页面，确认正常显示
 - 确认所有依赖包已正确安装（检查 package.json）
 
 ---
 
-### 步骤 1.3：初始化后端项目
+### 步骤 1.2：使用 Django 模板创建后端项目
 
 **操作指示**：
-- 创建 Django 5.2 项目并配置虚拟环境
+- 创建虚拟环境：
+  ```bash
+  python -m venv venv
+  source venv/bin/activate  # Windows: venv\Scripts\activate
+  ```
+- 使用 Django 模板创建项目：
+  ```bash
+  pip install django djangorestframework django-cors-headers
+  django-admin startproject backend config
+  cd backend
+  ```
+- 创建 Django 应用：
+  ```bash
+  python manage.py startapp accounts
+  python manage.py startapp recipes
+  python manage.py startapp categories
+  python manage.py startapp ingredients
+  python manage.py startapp favorites
+  python manage.py startapp analytics
+  python manage.py startapp admin_panel
+  python manage.py startapp behavior_logs
+  ```
+- 安装其他依赖（JWT、Pandas 等）
 - 配置数据库连接（MySQL）
-- 安装必要的依赖包（DRF、JWT、CORS 等）
-- 配置基础中间件（CORS、日志、异常处理）
-- 创建基础 API 路由结构
-- ⚠️ **注意**：当前阶段不配置 Redis，所有查询直接访问数据库
+- 创建 utils 模块（response、exceptions、pagination）
 
 **测试验证**：
-- 启动后端服务器
-- 访问健康检查接口（如 `/api/health`）
-- 确认返回正常响应（如 200 OK）
-- 确认数据库连接成功
+- 启动后端服务器 `python manage.py runserver`
+- 确认服务器启动成功（默认 localhost:8000）
+- 访问 Django admin 确认正常
+- 配置数据库并测试连接
+
+---
+
+### 步骤 1.3：创建数据脚本目录
+
+**操作指示**：
+- 创建 `data-scripts/` 目录
+- 创建以下子目录和文件：
+  ```
+  data-scripts/
+  ├── spiders/           # 爬虫脚本
+  ├── cleaning/          # 数据清洗脚本
+  ├── importing/         # 数据导入脚本
+  └── simulation/        # 用户行为模拟脚本
+  ```
+
+**测试验证**：
+- 确认目录结构已创建
+- 创建测试脚本确认可正常运行
 
 ---
 
 ### 步骤 1.4：配置开发环境
 
 **操作指示**：
-- 创建环境变量配置文件（`.env` 或 `.env.local`）
-- 配置前端 API 基础路径
-- 配置后端服务端口和密钥
-- 配置数据库连接信息（MySQL）
-- 创建 `.gitignore` 文件，排除敏感配置
-- ⚠️ **注意**：当前阶段不需要配置 Redis
+- 创建前端 `.env.local` 文件，配置 API 基础路径
+- 创建后端 `.env` 文件，配置：
+  - 数据库连接信息
+  - SECRET_KEY
+  - DEBUG 模式
+  - 允许的主机
+- 更新 `.gitignore` 文件，排除：
+  - node_modules/
+  - venv/
+  - .env
+  - __pycache__/
+  - *.pyc
 
 **测试验证**：
 - 确认环境变量可被正确读取
@@ -279,43 +320,60 @@
 
 ## 阶段三：数据准备与导入
 
-### 步骤 3.1：获取菜谱数据源
+> **已确认**：通过爬取获取数据（下厨房、美食杰等）
+
+### 步骤 3.1：分析目标网站
 
 **操作指示**：
-- 评估数据获取方式（爬取或使用公开数据集）
-- 若选择爬取：
-  - 选择目标网站（下厨房、美食杰等）
-  - 分析网站结构和反爬策略
-  - 准备爬虫环境（IP 代理、User-Agent 轮换等）
-- 若选择数据集：
-  - 搜索公开的菜谱数据集
-  - 下载数据集文件
-- 确保目标数据量达到 10,000-20,000 条
+- 选择目标网站：下厨房（xiachufang.com）、美食杰（meishij.net）
+- 分析网站结构：
+  - 菜谱列表页 URL 规律
+  - 菜谱详情页 HTML 结构
+  - 分页机制
+- 分析反爬策略：
+  - User-Agent 检测
+  - IP 限制
+  - 登录要求
+- 准备爬虫环境：
+  - 安装依赖：requests, beautifulsoup4, lxml
+  - 配置 User-Agent 轮换
+  - 准备代理 IP（如需要）
 
 **测试验证**：
-- 确认数据源可用
-- 确认数据包含必要字段（菜谱名称、食材、步骤、图片等）
-- 确认图片可正常访问或下载
+- 手动访问目标网站，确认可访问
+- 使用浏览器开发者工具分析页面结构
+- 测试简单的请求，确认不会被立即拦截
 
 ---
 
-### 步骤 3.2：编写数据爬取脚本（如适用）
+### 步骤 3.2：编写菜谱爬取脚本
 
 **操作指示**：
-- 编写爬虫脚本，包含以下功能：
-  - 请求目标网页
-  - 解析菜谱数据（名称、食材、步骤、图片等）
+- 创建 `data-scripts/spiders/recipe_spider.py`
+- 实现以下功能：
+  - 请求菜谱列表页
+  - 解析菜谱详情页链接
+  - 请求并解析菜谱详情页：
+    - 菜谱名称
+    - 菜系分类
+    - 难度等级
+    - 烹饪时长
+    - 食材列表（含用量）
+    - 制作步骤
+    - 成品图片 URL
+  - 下载图片到本地
   - 处理分页
   - 异常处理和重试机制
-  - 数据存储（保存为 JSON 或 CSV）
-- 配置爬取间隔，避免过载
-- 添加日志记录
+- 配置爬取间隔（2-5 秒），避免过载
+- 添加进度显示和日志记录
+- 数据保存为 JSON 格式
 
 **测试验证**：
 - 运行脚本，爬取少量数据（如 10 条）
 - 检查数据格式是否正确
 - 检查图片是否成功下载
 - 确认无异常错误
+- 验证数据完整性
 
 ---
 
@@ -768,6 +826,7 @@
 ---
 
 ## 阶段八：前端 - 用户认证页面
+>  前端均使用 frontend-design skill来设计实现
 
 ### 步骤 8.1：创建登录页面
 
