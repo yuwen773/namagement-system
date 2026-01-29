@@ -763,3 +763,246 @@ handleMonthChange()
 2. **日历视图**：可添加日历视图，用颜色标记每日考勤状态
 3. **趋势分析**：可添加考勤趋势图表，显示月度出勤率变化
 4. **多维度筛选**：可添加状态筛选（仅查看异常记录）、日期范围筛选
+
+---
+
+## 请假申请服务页面架构见解
+
+### 设计理念
+
+请假申请服务页面（`LeaveView.vue`）采用**Tab 分类 + 列表展示**的布局模式，将请假申请按状态分类展示，符合"申请→审批→查看结果"的业务流程。页面顶部提供快捷操作入口，列表以卡片形式展示每条请假记录的详细信息，关键信息一目了然。
+
+### 文件职责
+
+| 文件 | 作用 |
+|------|------|
+| `frontend/src/api/leave.js` | 提供 `getMyLeaves()`（我的请假列表）、`createLeave()`（创建请假）、`deleteLeave()`（撤销请假）接口 |
+| `frontend/src/views/employee/LeaveView.vue` | 请假申请服务主页面，包含页面标题、操作卡片、Tab 导航、请假记录列表、新增对话框、详情对话框 |
+| `frontend/src/router/index.js` | 员工端路由配置，`EmployeeLeave` 路由指向 `LeaveView.vue` |
+| `frontend/src/layouts/EmployeeLayout.vue` | 顶部导航菜单中已有"请假申请"菜单项，路由 `/employee/leave` |
+
+### 页面模块划分
+
+```
+LeaveView.vue
+├── 页面标题
+│   ├── 标题：请假申请
+│   └── 副标题：提交请假申请并查看审批进度
+├── 操作卡片（橙色图标 + 按钮）
+│   ├── 图标 + 文字说明
+│   └── 新增请假按钮
+├── Tab 导航卡片
+│   ├── 申请记录（List 图标）
+│   ├── 审批中（Clock 图标 + 徽章计数）
+│   ├── 已通过（CircleCheck 图标）
+│   └── 已驳回（CircleClose 图标）
+├── 请假记录列表
+│   ├── 请假类型标签（大号）
+│   ├── 审批状态标签（朴素风格）
+│   ├── 时间范围（时钟图标）
+│   ├── 请假天数（Timer 图标）
+│   ├── 请假原因（Document 图标）
+│   ├── 审批意见（仅已驳回，WarningFilled 图标）
+│   ├── 审批信息（仅已审批，User 图标）
+│   └── 操作按钮
+│       ├── 撤销申请（仅待审批，Delete 图标）
+│       └── 查看详情（View 图标）
+├── 新增请假对话框
+│   ├── 请假类型选择（下拉框）
+│   ├── 开始时间选择（日期时间选择器）
+│   ├── 结束时间选择（日期时间选择器）
+│   ├── 请假原因输入（文本域，5-200字）
+│   └── 预计天数显示（计算结果）
+└── 请假详情对话框
+    ├── 请假类型标签
+    ├── 开始时间
+    ├── 结束时间
+    ├── 请假天数（大号显示）
+    ├── 请假原因
+    ├── 申请状态标签
+    ├── 审批意见（如有）
+    ├── 审批人
+    ├── 审批时间
+    └── 申请时间
+```
+
+### 关键技术点
+
+1. **Tab 切换数据过滤**：
+   - `activeTab` 控制当前显示的状态（all/PENDING/APPROVED/REJECTED）
+   - 切换 Tab 时调用 `handleTabChange()` 重新加载数据
+   - `all` 状态不过滤，显示所有请假记录
+
+2. **审批中数量统计**：
+   - 页面加载时同时请求审批中数量：`getMyLeaves({ status: 'PENDING' })`
+   - 更新 `pendingCount` 响应式变量
+   - Tab 标签显示徽章计数
+
+3. **请假类型映射**：
+   - `getLeaveTypeLabel()`: 枚举→中文（ANNUAL→年假, SICK→病假, PERSONAL→事假, MATERNITY→产假, PATERNITY→陪产假, OTHER→其他）
+   - `getLeaveTypeTagType()`: 枚举→标签类型（ANNUAL→success, SICK→danger, PERSONAL→warning, 其他→info）
+
+4. **状态映射**：
+   - `getStatusLabel()`: 枚举→中文（PENDING→审批中, APPROVED→已通过, REJECTED→已驳回, CANCELLED→已取消）
+   - `getStatusTagType()`: 枚举→标签类型（PENDING→warning, APPROVED→success, REJECTED→danger, CANCELLED→info）
+
+5. **时间格式化**：
+   - `formatLeaveTime()`: 智能显示开始和结束时间
+     - 同一天：显示为 "01-15 09:00 ~ 18:00"
+     - 不同天：显示为 "01-15 09:00 ~ 01-16 18:00"
+   - `formatDateTime()`: 标准日期时间格式 "YYYY-MM-DD HH:mm"
+   - `formatApprovalTime()`: 相对时间显示（今天/昨天/N天前/完整日期）
+
+6. **表单验证**：
+   - 请假类型：必选
+   - 开始/结束时间：必选，结束时间必须晚于开始时间
+   - 请假原因：必填，5-200字符，带字数统计
+
+7. **日期选择器限制**：
+   - `disableStartDate()`: 禁用今天之前的日期
+   - `disableEndDate()`: 禁用早于开始时间的日期
+   - 使用 `Date.now() - 8.64e7` 计算昨天的毫秒数
+
+8. **预计天数自动计算**：
+   - 使用 `computed` 属性监听 `createForm.start_time` 和 `createForm.end_time`
+   - 计算公式：`Math.ceil((end - start) / (1000 * 60 * 60 * 24))`
+   - 结果为 0 或负数时显示 0
+
+### 数据流
+
+```
+组件挂载 → loadLeaveList()
+                ↓
+    并行请求
+    ├─────────────────────────────────┐
+    ↓                                 ↓
+getMyLeaves(params)              getMyLeaves({ status: 'PENDING' })
+    ↓                                 ↓
+leaveList（根据 Tab 过滤）        pendingCount（更新徽章）
+    ↓                                 ↓
+    └─────────────────────────────────┘
+                    ↓
+            渲染请假记录列表和 Tab 徽章
+
+用户切换 Tab
+        ↓
+activeTab 更新
+        ↓
+handleTabChange()
+        ↓
+    loadLeaveList() 重新加载数据
+        ↓
+    更新 leaveList（根据新状态过滤）
+
+用户点击"新增请假"
+        ↓
+    openCreateDialog()
+        ↓
+    重置表单 → 打开对话框
+        ↓
+    用户填写表单
+        ↓
+    handleSubmit()
+        ↓
+    表单验证 → 结束时间校验
+        ↓
+    createLeave(data)
+        ↓
+    提交成功 → 关闭对话框 → loadLeaveList()
+
+用户点击"撤销申请"
+        ↓
+    ElMessageBox.confirm()
+        ↓
+    用户确认
+        ↓
+    deleteLeave(leave.id)
+        ↓
+    删除成功 → loadLeaveList()
+
+用户点击"查看详情"
+        ↓
+    handleViewDetail(leave)
+        ↓
+    设置 currentLeave → 打开详情对话框
+```
+
+### UI/UX 设计
+
+1. **操作卡片设计**：
+   - 左侧：橙色 DocumentAdd 图标 + 文字说明
+   - 右侧：橙色主按钮 "新增请假"
+   - 悬停效果：卡片向上平移 4px + 阴影加深
+
+2. **请假记录卡片**：
+   - 左边框：4px 橙色边框 `#FF6B35`，突出显示
+   - 背景：浅灰色 `#fafafa`，悬停时变为 `#f5f5f5`
+   - 悬停动画：向右平移 4px + 阴影效果
+   - 内边距：20px，外边距：16px
+
+3. **审批意见框**：
+   - 背景：浅橙色 `#fef5e7`
+   - 左边框：3px 橙色 `#E6A23C`
+   - 文字颜色：橙色 `#E6A23C`
+   - 图标：WarningFilled 图标
+
+4. **预计天数显示**：
+   - 背景：橙色渐变 `linear-gradient(135deg, #FFF8F0 0%, #fef3e2 100%)`
+   - 天数字号：24px，粗体，橙色 `#FF6B35`
+   - 图标：18px Timer 图标
+
+5. **请假类型标签颜色**：
+   - 年假：绿色 `success`
+   - 病假：红色 `danger`
+   - 事假：橙色 `warning`
+   - 产假/陪产假/其他：灰色 `info`
+
+6. **状态标签颜色**：
+   - 审批中：橙色 `warning`
+   - 已通过：绿色 `success`
+   - 已驳回：红色 `danger`
+
+7. **响应式设计**：
+   - 大屏（> 768px）：操作按钮水平排列
+   - 小屏（≤ 768px）：
+     - 操作栏垂直布局
+     - 操作按钮全宽显示
+     - 页面内边距减小
+
+### 后端 API 依赖
+
+| 接口 | 用途 | 请求参数 | 响应数据 |
+|------|------|---------|---------|
+| `GET /api/leaves/my-requests/` | 我的请假列表 | `employee_id`, `status`（可选） | 请假记录数组（id, leave_type, start_time, end_time, days, reason, status, approval_remark, approver, approver_name, approval_time, created_at） |
+| `POST /api/leaves/` | 创建请假申请 | `employee`, `leave_type`, `start_time`, `end_time`, `reason` | 创建成功的请假记录 |
+| `DELETE /api/leaves/{id}/` | 撤销请假申请 | - | 删除成功 |
+
+### 业务逻辑要点
+
+1. **撤销权限**：
+   - 仅待审批（PENDING）状态的请假可以撤销
+   - 已通过或已驳回的请假不允许撤销
+   - 撤销操作需二次确认（ElMessageBox.confirm）
+
+2. **请假天数计算**：
+   - 后端根据开始时间和结束时间自动计算
+   - 前端实时显示预计天数，提升用户体验
+   - 计算规则：按自然日计算，跨天也算一天
+
+3. **审批流程**：
+   - 提交后状态为 PENDING（审批中）
+   - 管理员审批后状态变为 APPROVED（已通过）或 REJECTED（已驳回）
+   - 已驳回的申请必须包含审批意见（approval_remark）
+
+4. **数据权限**：
+   - 员工只能查看自己的请假记录
+   - 通过 `employee_id` 参数过滤数据
+   - 未关联员工档案的用户无法查看请假记录
+
+### 扩展性考虑
+
+1. **请假余额**：可扩展显示各类型假期的剩余天数（如年假余额）
+2. **附件上传**：可支持上传病假证明、事假申请等附件文件
+3. **抄送功能**：可支持请假申请抄送给其他管理人员
+4. **请假统计**：可添加年度请假统计图表，展示各类型假期使用情况
+5. **批量操作**：可支持批量撤销待审批的请假申请
