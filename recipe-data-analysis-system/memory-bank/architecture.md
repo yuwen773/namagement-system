@@ -691,6 +691,90 @@ frontend/
 
 ---
 
+### 后端初始化状态（2026-01-29）
+
+**阶段一第2步已完成**：后端项目基础结构已创建
+
+#### 已创建的文件及其作用：
+
+| 文件 | 作用 | 说明 |
+|------|------|------|
+| `backend_venv/` | Python 虚拟环境 | Python 3.12 虚拟环境目录 |
+| `config/backend/settings.py` | Django 配置 | 项目主配置文件（已配置数据库、DRF、JWT、CORS） |
+| `config/backend/urls.py` | 主路由 | Django 主路由配置 |
+| `config/utils/__init__.py` | 工具模块 | 公共工具模块 |
+| `config/utils/response.py` | 统一响应封装 | ApiResponse 类，提供 success/error/paginate 方法 |
+| `config/utils/exceptions.py` | 自定义异常 | BusinessError、ValidationError、NotFoundError 等 |
+| `config/utils/pagination.py` | 分页配置 | StandardPagination 类，默认每页 20 条 |
+| `config/utils/constants.py` | 常量定义 | 用户角色、分类类型、食材分类、行为类型等常量 |
+| `config/accounts/` | 用户认证模块 | Django 应用，处理用户注册、登录、认证 |
+| `config/recipes/` | 菜谱模块 | Django 应用，处理菜谱数据 |
+| `config/categories/` | 分类模块 | Django 应用，处理菜系、场景、人群等分类 |
+| `config/ingredients/` | 食材模块 | Django 应用，处理食材数据 |
+| `config/favorites/` | 收藏模块 | Django 应用，处理用户收藏功能 |
+| `config/analytics/` | 数据分析模块 | Django 应用，处理数据统计分析 |
+| `config/admin_panel/` | 管理员模块 | Django 应用，处理管理员功能 |
+| `config/behavior_logs/` | 行为日志模块 | Django 应用，处理用户行为记录 |
+| `config/README.md` | 后端说明文档 | 后端项目配置和使用说明 |
+
+#### 已安装的核心依赖：
+
+| 依赖包 | 版本 | 作用 |
+|--------|------|------|
+| `Django` | 5.2.10 | Python Web 框架（降级自 6.0.1） |
+| `djangorestframework` | latest | RESTful API 框架 |
+| `django-cors-headers` | latest | 跨域支持 |
+| `PyMySQL` | 1.1.2 | MySQL 数据库驱动 |
+| `djangorestframework-simplejwt` | latest | JWT 认证 |
+| `pandas` | latest | 数据分析 |
+| `numpy` | latest | 科学计算 |
+| `openpyxl` | latest | Excel 文件处理 |
+
+#### 已配置的功能：
+
+| 配置项 | 说明 |
+|--------|------|
+| 数据库 | MySQL 8.0+，字符集 utf8mb4 |
+| 认证 | JWT Token，24 小时有效期 |
+| CORS | 允许 localhost:5173-5175 访问 |
+| 分页 | 默认每页 20 条，最大 100 条 |
+| 时区 | Asia/Shanghai |
+| 语言 | zh-hans（简体中文） |
+
+#### 开发服务器：
+
+- 命令：`cd config && ../backend_venv/Scripts/python manage.py runserver`
+- 默认端口：8000
+- 访问地址：`http://localhost:8000/`
+- Django Admin: `http://localhost:8000/admin/`
+- API 前缀：`/api/`
+
+#### 注意事项：
+
+1. ✅ 数据库已配置完成（用户名: root, 密码: yuwen123., 端口: 3306）
+2. ✅ 数据库 `recipe_analysis_db` 已创建并完成迁移
+3. ✅ 超级用户已创建，可以登录 Django Admin
+4. 项目结构已调整为标准 Django 格式
+
+#### 开发服务器启动命令：
+
+```bash
+cd backend
+../backend_venv/Scripts/python manage.py runserver
+```
+
+#### 数据库信息：
+
+- 数据库名：`recipe_analysis_db`
+- 字符集：`utf8mb4`
+- 排序规则：`utf8mb4_unicode_ci`
+- 用户：`root`
+- 密码：`yuwen123.`
+- 主机：`localhost`
+- 端口：`3306`
+
+---
+
 ## 部署架构
 
 ### 开发环境

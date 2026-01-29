@@ -15,11 +15,14 @@
 |--------|---------|---------|------|
 | **前端脚手架** | **Vite** - 使用 `npm create vite@latest` | 2026-01-29 | Vue 3 官方推荐脚手架 |
 | **后端模板** | **Django 模板** - 使用 `django-admin startproject` | 2026-01-29 | Django 官方模板 |
+| **后端项目结构** | **标准 Django 结构** - backend/config/ | 2026-01-29 | 项目目录已调整 |
+| **数据库配置** | **MySQL 8.0+** - 已配置 | 2026-01-29 | 用户: root, 密码: yuwen123., 端口: 3306 |
 | **数据来源** | **爬取** - 从下厨房、美食杰等网站爬取 | 2026-01-29 | 需要编写爬虫脚本 |
-| **后端应用** | **8 个 apps** 已确认 | 2026-01-29 | accounts, recipes, categories, ingredients, favorites, analytics, admin_panel, behavior_logs |
+| **后端应用** | **8 个 apps** 已创建 | 2026-01-29 | accounts, recipes, categories, ingredients, favorites, analytics, admin_panel, behavior_logs |
 | **架构文档** | **已完成** - architecture.md 包含完整架构 | 2026-01-29 | 数据库设计、ER 图、API 路由 |
 | **开发方式** | 严格按 implementation-plan.md 22阶段顺序执行 | 2026-01-29 | 不跳阶段，确保完整性 |
 | **缓存方案** | **不使用 Redis** - 当前阶段不使用缓存 | 2026-01-29 | 项目初期不引入 Redis |
+| **数据库初始化** | **已完成** - 数据库已创建并迁移 | 2026-01-29 | recipe_analysis_db 已创建 |
 
 ## 实施计划进度跟踪
 
@@ -63,10 +66,10 @@
 | 图表库 | ECharts | ✅ 已安装 |
 | 状态管理 | Pinia | ✅ 已安装 |
 | 路由 | Vue Router | ✅ 已安装 |
-| 后端框架 | Django 5.2 + DRF | 待安装 |
-| 数据库 | MySQL 8.0+ | 待创建 |
-| 数据处理 | Pandas + NumPy | 待安装 |
-| 认证方式 | JWT | 待实现 |
+| 后端框架 | Django 5.2 + DRF | ✅ 已安装 |
+| 数据库 | MySQL 8.0+ | ✅ 已创建并配置 |
+| 数据处理 | Pandas + NumPy | ✅ 已安装 |
+| 认证方式 | JWT | ✅ 已配置 |
 | **缓存** | **不使用 Redis** | **已确认** |
 
 ## 数据目标
@@ -93,11 +96,12 @@
 ### 阶段一：项目初始化与基础架构
 
 - [x] 创建前端项目结构 (Vue 3 + Vite) - **已完成**
-- [ ] 创建后端项目结构 (Django) - **下一步**
-- [ ] 创建数据脚本目录
+- [x] 创建后端项目结构 (Django) - **已完成**
+- [x] 配置数据库连接 - **已完成**
+- [x] 创建数据库并运行迁移 - **已完成**
+- [ ] 创建数据脚本目录 - **下一步**
 - [ ] 配置开发环境 (.env 文件)
 - [ ] 初始化 Git 仓库
-- [ ] 执行数据库初始化脚本 (init.sql)
 
 ## 注意事项
 
