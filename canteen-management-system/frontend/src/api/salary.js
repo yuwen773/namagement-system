@@ -169,3 +169,18 @@ export function exportSalarySheet(params) {
     responseType: 'blob'
   })
 }
+
+/**
+ * 我的薪资记录（员工查询）
+ * @param {Object} params - 查询参数
+ * @param {number} params.employee_id - 员工ID
+ * @param {string} params.year_month - 年月（可选）YYYY-MM
+ * @returns {Promise}
+ */
+export function getMySalaries(params) {
+  return request({
+    url: '/salaries/salaries/my-salaries/',
+    method: 'get',
+    params
+  })
+}

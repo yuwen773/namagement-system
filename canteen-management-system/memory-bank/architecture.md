@@ -4,27 +4,28 @@
 
 ---
 
-## 项目总体结构
+## 项目结构
 
 ```
 canteen-management-system/
-├── backend/               # Django 后端项目
-│   ├── config/           # Django 项目配置
-│   ├── accounts/         # 用户账号与认证
-│   ├── employees/        # 员工档案管理
+├── backend/               # Django 后端
+│   ├── config/           # 项目配置
+│   ├── accounts/         # 用户认证
+│   ├── employees/        # 员工档案
 │   ├── schedules/        # 排班管理
 │   ├── attendance/       # 考勤管理
 │   ├── leaves/           # 请假管理
 │   ├── salaries/         # 薪资管理
-│   ├── analytics/        # 统计分析
-│   ├── static/           # 静态文件
-│   ├── media/            # 媒体文件
-│   └── manage.py         # 命令行工具
-├── frontend/             # Vue 3 前端项目
-├── sql/                  # 数据库参考脚本
+│   └── analytics/        # 统计分析
+├── frontend/             # Vue 3 前端
+│   └── src/
+│       ├── views/        # 页面组件
+│       ├── api/          # API 封装
+│       ├── router/       # 路由配置
+│       ├── stores/       # 状态管理
+│       └── layouts/      # 布局组件
 ├── memory-bank/          # 文档仓库
-├── .gitignore
-└── CLAUDE.md             # AI 开发指南
+└── sql/                  # 数据库脚本
 ```
 
 ---
@@ -32,13 +33,12 @@ canteen-management-system/
 ## 后端架构
 
 ### 核心设计原则
+- **模块化设计**：每个应用对应一个业务领域
+- **API 优先**：Django REST Framework 构建 RESTful API
+- **前后端分离**：通过 CORS 通信
+- **业务分离**：User（登录账号）与 EmployeeProfile（员工档案）独立
 
-1. **模块化设计**：每个应用对应一个业务领域
-2. **API 优先**：Django REST Framework 构建 RESTful API
-3. **前后端分离**：通过 CORS 通信
-4. **业务分离**：User（登录账号）与 EmployeeProfile（员工档案）独立
-
-### 应用职责划分
+### 应用职责
 
 | 应用 | 职责 | 主要模型 |
 |------|------|---------|
@@ -48,82 +48,58 @@ canteen-management-system/
 | `attendance` | 签到/签退、考勤记录 | AttendanceRecord |
 | `leaves` | 请假申请、审批 | LeaveRequest |
 | `salaries` | 薪资计算、申诉 | SalaryRecord, Appeal |
-| `analytics` | 数据统计（无模型） | - |
+| `analytics` | 数据统计 | - |
 
----
+### 核心业务模型
 
-## 核心业务模型
-
-### User（登录账号）
+**User（登录账号）**
 ```python
-username       # 登录账号（唯一）
-password       # 密码（开发阶段明文）
-employee_id    # 关联员工档案（可选）
-role           # ADMIN/EMPLOYEE
-status         # ENABLED/DISABLED
+username, password, employee_id, role, status
 ```
 
-### EmployeeProfile（员工档案）
+**EmployeeProfile（员工档案）**
 ```python
-# 基础信息
 name, gender, phone, id_card, address
-# 岗位信息
 position (CHEF/PASTRY/PREP/CLEANER/SERVER/MANAGER)
-entry_date, status (ACTIVE/INACTIVE/LEAVE_WITHOUT_PAY)
-# 资质证书
+entry_date, status
 health_certificate_no, health_certificate_expiry
 chef_certificate_level
 ```
 
-### 考勤状态判断规则
-- **缺卡**：无签到或无签退记录
-- **迟到**：签到时间 > 班次开始 + 5分钟
-- **早退**：签退时间 < 班次结束 - 5分钟
-- **正常**：其他情况
+**考勤状态规则**
+- 缺卡：无签到或无签退
+- 迟到：签到时间 > 班次开始 + 5分钟
+- 早退：签退时间 < 班次结束 - 5分钟
 
-### 薪资计算公式
+**薪资计算公式**
 ```
 日工资 = 月基本工资 ÷ 21.75
 时薪 = 日工资 ÷ 8
 加班费 = 时薪 × 1.5 × 加班小时数
 岗位津贴 = CHEF(800)/PASTRY(700)/PREP(500)/CLEANER(300)/SERVER(400)/MANAGER(1000)
-迟到扣款 = 20 × 迟到次数
-缺卡扣款 = 50 × 缺卡次数
 实发工资 = 基本工资 + 岗位津贴 + 加班费 - 迟到扣款 - 缺卡扣款
-```
-
-### 数据流
-```
-排班 → 考勤 → 薪资
 ```
 
 ---
 
 ## 前端架构
 
-### 项目结构
-```
-frontend/src/
-├── views/
-│   ├── admin/       # 管理员端（Dashboard/员工/排班/考勤/请假/薪资/统计）
-│   ├── employee/    # 员工端（首页/个人/签到/考勤/请假/调班/薪资）
-│   └── auth/        # 登录/注册
-├── api/             # API 请求封装
-├── router/          # 路由配置
-├── stores/          # Pinia 状态管理
-└── components/      # 公共组件
-```
-
-### 核心技术栈
+### 技术栈
 - **Vue 3** + **Vite** + **Element Plus** + **ECharts**
 - **Axios** + **Vue Router** + **Pinia**
 
 ### UI 主题配色
-| 用途 | 色值 |
-|------|------|
-| 主色 | #FF6B35（橙色） |
-| 辅助色 | #F7C52D（黄）、#4CAF50（绿） |
-| 背景色 | #FFF8F0（浅米色） |
+- 主色：`#FF6B35`（橙色）
+- 辅助色：`#F7C52D`（黄）、`#4CAF50`（绿）
+- 背景色：`#FFF8F0`（浅米色）
+
+### 页面结构
+```
+views/
+├── admin/          # 管理员端（Dashboard/员工/排班/考勤/请假/薪资/统计/系统）
+├── employee/       # 员工端（首页/个人/签到/考勤/请假/调班/薪资）
+└── auth/           # 登录/注册
+```
 
 ---
 
@@ -138,26 +114,6 @@ frontend/src/
 | leaves | `/api/leaves/{id}/approve/` | 审批请假 |
 | salaries | `/api/salaries/salaries/generate/` | 生成薪资 |
 | analytics | `/api/analytics/overview/` | 总览统计 |
-
----
-
-## 重要文件
-
-### 后端
-- `settings.py` - 数据库、CORS、静态文件配置
-- `urls.py` - API 路由配置
-- `requirements.txt` - Python 依赖
-- `manage.py` - Django 命令行工具
-
-### 前端
-- `vite.config.js` - API 代理配置
-- `package.json` - 项目依赖
-- `src/api/request.js` - Axios 实例配置
-- `src/api/accounts.js` - 用户账号管理 API
-- `src/router/index.js` - 路由与导航守卫
-- `src/stores/user.js` - 用户状态管理
-- `src/views/admin/SystemManageView.vue` - 系统管理页面
-- `src/layouts/AdminLayout.vue` - 管理员端布局（含菜单配置）
 
 ---
 
@@ -179,1089 +135,200 @@ npm run build                      # 构建生产版本
 ## 注意事项
 
 1. **analytics 应用**：避免与 Python 内置 `statistics` 模块冲突
-2. **数据库迁移**：始终使用 Django migrations，不直接执行 SQL
+2. **数据库迁移**：始终使用 Django migrations
 3. **密码存储**：开发阶段明文，生产环境需加密
 4. **CORS 配置**：前端开发需配置跨域
 5. **User vs EmployeeProfile**：员工档案与登录账号是两个独立概念
 
 ---
 
-## 系统管理页面架构见解
+## 页面架构总览
 
-### 设计理念
+### 管理员端页面
 
-系统管理页面（`SystemManageView.vue`）采用**左侧导航 + 右侧内容**的布局模式，将三类管理功能整合在同一页面中，通过 Tab 切换实现无刷新视图切换。
-
-### 文件职责
-
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/api/accounts.js` | 封装用户账号相关的 API 请求（CRUD、角色列表、系统设置） |
-| `frontend/src/views/admin/SystemManageView.vue` | 系统管理主页面，包含用户管理、角色展示、系统设置三个功能模块 |
-| `frontend/src/router/index.js` | 添加 `/admin/system` 路由配置 |
-| `frontend/src/layouts/AdminLayout.vue` | 添加"系统管理"菜单项，更新菜单标题映射，处理顶部"系统设置"下拉操作跳转 |
-
-### 页面模块划分
-
-```
-SystemManageView.vue
-├── 左侧导航
-│   ├── 用户账号
-│   ├── 角色权限
-│   └── 系统设置
-├── 用户账号管理
-│   ├── 操作栏（新增、筛选、搜索）
-│   ├── 用户列表表格
-│   ├── 分页组件
-│   └── 新增/编辑对话框
-├── 角色权限展示
-│   └── 角色卡片（管理员/员工）
-└── 系统设置
-    ├── 考勤规则设置
-    ├── 薪资计算设置
-    └── 保存/重置按钮
-```
-
-### 关键技术点
-
-1. **Tab 切换实现**：使用 `v-show` 控制内容区显示/隐藏，保持各模块状态
-2. **表单复用**：用户表单通过 `isEditUser` 标志区分新增/编辑模式
-3. **密码处理**：编辑模式下密码为空则不修改，保持原密码
-4. **员工关联**：通过下拉选择器关联员工档案，支持搜索过滤
-5. **系统设置持久化**：设置项保存到数据库，页面加载时读取
-
-### 菜单集成
-
-系统管理页面通过两种方式访问：
-1. **侧边栏菜单**：AdminLayout 添加固定的"系统管理"菜单项
-2. **顶部下拉菜单**：用户头像下拉中的"系统设置"选项跳转到系统管理页面
-
-这样设计既保证了功能的可发现性，又符合用户的使用习惯。
-
----
-
-## 员工端首页架构见解
-
-### 设计理念
-
-员工端首页（`HomeView.vue`）采用**卡片式布局**，以信息展示和快捷操作为核心，为员工提供一站式的个人信息和快速访问入口。
-
-### 文件职责
-
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/api/schedule.js` | 新增 `getEmployeeSchedules()` 函数，支持按员工ID和日期范围查询排班数据 |
-| `frontend/src/views/employee/HomeView.vue` | 员工端首页组件，包含欢迎区、排班卡片、快捷入口、通知列表 |
-| `frontend/src/router/index.js` | 添加员工端路由配置（schedule/attendance/leave/swap/salary/profile） |
-| `frontend/src/views/employee/[ScheduleView, AttendanceView, LeaveView, SwapView, SalaryView, ProfileView].vue` | 员工端各功能模块的占位页面，待后续步骤实现 |
-
-### 页面模块划分
-
-```
-HomeView.vue
-├── 欢迎区域
-│   ├── 动态问候语（早/上/中/下午/晚上好）
-│   ├── 员工姓名
-│   ├── 当前日期
-│   └── 岗位标签
-├── 排班卡片区域
-│   ├── 今日排班（班次名、时间 或 "今日休息"）
-│   └── 明日排班（班次名、时间 或 "明日休息"）
-├── 快捷入口区域
-│   ├── 签到签退（绿色渐变）
-│   ├── 请假申请（橙色渐变）
-│   ├── 调班申请（黄色渐变）
-│   └── 工资条（蓝色渐变）
-└── 通知公告区域
-    ├── 通知标题
-    ├── 通知描述
-    ├── 通知时间
-    └── 未读标记
-```
-
-### 关键技术点
-
-1. **动态问候语**：根据当前时间段（6-9/9-12/12-14/14-18/18-22/22-6）显示不同的问候语
-2. **排班查询**：通过 `getEmployeeSchedules(employeeId, startDate, endDate)` 一次性获取今日和明日的排班数据
-3. **岗位映射**：将后端返回的岗位枚举（CHEF/PASTRY/PREP/CLEANER/SERVER/MANAGER）映射为中文显示
-4. **通知图标**：根据通知类型（leave_approved/leave_rejected/swap_approved等）动态显示对应图标
-5. **响应式设计**：使用 CSS Grid 和媒体查询，适配不同屏幕尺寸
-
-### UI/UX 设计
-
-1. **配色方案**：
-   - 欢迎卡片：橙色渐变（#FF6B35 → #FF8C42）
-   - 快捷按钮：绿色、橙色、黄色、蓝色渐变
-   - 休息日：灰色调（#f5f7fa）
-2. **交互动效**：
-   - 卡片悬停：向上平移 4px + 阴影加深
-   - 按钮悬停：向上平移 4px + 橙色阴影
-   - 通知点击：标记为已读 + 跳转对应页面
-3. **图标使用**：Element Plus icons-vue（Calendar、Clock、Sunny、Moon、Grid、CircleCheck、DocumentAdd、Switch、Wallet、Bell等）
-
-### 数据流
-
-```
-用户登录 → userStore.userInfo → employeeId
-                ↓
-        getEmployeeSchedules()
-                ↓
-        解析今日/明日排班 → 渲染排班卡片
-                ↓
-        快捷入口点击 → router.push() → 跳转对应页面
-```
-
-### 扩展性考虑
-
-1. **通知数据**：当前使用模拟数据，后续可替换为真实 API 调用
-2. **员工信息**：当前从 `userInfo` 中获取，如需更详细信息可调用员工档案 API
-3. **占位页面**：已创建 6 个占位页面，便于后续步骤逐步实现各功能模块
-
----
-
-## 员工端个人信息中心架构见解
-
-### 设计理念
-
-个人信息中心（`ProfileView.vue`）采用**多卡片垂直布局**，将个人信息、资质证书、密码管理和账号信息分为四个独立的功能模块，每个模块使用独立的卡片容器，便于信息组织和维护。
-
-### 文件职责
-
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/api/auth.js` | 新增 `changePassword(id, data)` 函数，封装密码修改 API 请求 |
-| `frontend/src/api/employee.js` | 提供 `getEmployeeDetail(id)` 函数，获取员工档案详细信息 |
-| `frontend/src/views/employee/ProfileView.vue` | 个人信息中心主组件，包含四个信息卡片和密码修改功能 |
-| `frontend/src/layouts/EmployeeLayout.vue` | 修复用户下拉菜单中"个人信息"的跳转逻辑（从显示提示改为路由跳转） |
-| `backend/accounts/views.py` | 新增 `change_password()` action，提供密码修改后端接口 |
-
-### 页面模块划分
-
-```
-ProfileView.vue
-├── 页面标题
-│   ├── 标题：个人信息中心
-│   └── 副标题：查看您的个人档案、岗位信息及资质证书
-├── 基本信息卡片（橙色图标）
-│   ├── 姓名、性别
-│   ├── 岗位（彩色标签）、在职状态
-│   ├── 手机号码、身份证号（脱敏）
-│   ├── 家庭住址、入职日期
-├── 资质证书卡片（黄色图标）
-│   ├── 健康证（证书号、有效期、到期警告）
-│   └── 厨师等级证（如有）
-├── 修改密码卡片（绿色图标）
-│   ├── 旧密码输入
-│   ├── 新密码输入（强度指示器）
-│   ├── 确认密码输入
-│   └── 修改/重置按钮
-└── 账号信息卡片（绿色图标）
-    ├── 登录账号、角色标签
-    └── 账号状态、创建时间
-```
-
-### 关键技术点
-
-1. **证书到期预警**：使用 `computed` 属性计算健康证有效期，距离到期30天内显示橙色警告样式和"即将到期"标签
-2. **密码强度指示器**：根据密码长度动态计算强度（弱/中等/较强/强），使用不同颜色的类名展示
-3. **表单验证**：
-   - 旧密码必填
-   - 新密码最少4位
-   - 确认密码与新密码一致性验证（使用自定义 validator）
-4. **身份证脱敏**：使用正则表达式 `replace(/(\d{6})\d{8}(\d{4})/, '$1********$2')` 隐藏中间8位
-5. **岗位标签颜色**：通过 `getPositionTagType()` 函数为不同岗位返回对应的 Element Plus 标签类型
-6. **自动退出登录**：密码修改成功后延迟1.5秒自动退出并跳转到登录页，让用户看到成功提示
-
-### 数据流
-
-```
-组件挂载 → fetchEmployeeProfile()
-                ↓
-        getEmployeeDetail(employeeId)
-                ↓
-        解析员工数据 → 渲染四个信息卡片
-                ↓
-        用户点击修改密码 → 表单验证
-                ↓
-        changePassword(userId, passwordData)
-                ↓
-        后端验证旧密码 → 更新密码
-                ↓
-        前端显示成功 → 延迟退出登录
-```
-
-### UI/UX 设计
-
-1. **卡片图标配色**：
-   - 基本信息卡片：橙色图标 `#FF6B35`
-   - 资质证书卡片：黄色图标 `#F7C52D`
-   - 修改密码卡片：绿色图标 `#4CAF50`
-   - 账号信息卡片：绿色图标 `#67C23A`
-
-2. **证书卡片交互**：
-   - 正常状态：绿色边框 + 灰色背景
-   - 即将到期：橙色边框 + 浅橙色背景 + 警告图标
-   - 悬停效果：背景变色 + 向右平移 4px
-
-3. **密码强度颜色**：
-   - 弱：红色 `#F56C6C`
-   - 中等：橙色 `#E6A23C`
-   - 较强：绿色 `#4CAF50`
-   - 强：深绿色 `#67C23A`
-
-4. **响应式设计**：
-   - 小屏幕（≤768px）：证书卡片改为垂直布局，居中对齐
-   - 页面内边距和字体大小自适应调整
-
-### 安全性考虑
-
-1. **密码修改验证**：后端验证旧密码正确性后才能修改
-2. **敏感信息脱敏**：身份证号中间8位显示为星号
-3. **自动退出登录**：密码修改成功后强制重新登录，防止旧会话被滥用
-4. **表单确认机制**：新密码需要输入两次确认，防止误操作
-
-### 后端 API 设计
-
-```python
-@action(detail=True, methods=['post'], url_path='change_password')
-def change_password(self, request, pk=None):
-    """
-    修改密码接口
-    POST /api/accounts/{id}/change_password/
-    请求体：{"old_password": "old123", "new_password": "new123"}
-    """
-```
-
-- 使用 `detail=True` 确保 URL 包含用户 ID
-- 验证旧密码正确性
-- 明文存储密码（开发阶段）
-
----
-
-## 签到服务页面架构见解
-
-### 设计理念
-
-签到服务页面（`CheckInView.vue`）采用**左右分栏布局**，左侧为核心操作区（签到/签退按钮），右侧为数据展示区（日历视图 + 统计数据），符合"操作优先，数据辅助"的设计原则。
-
-### 文件职责
-
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/views/employee/CheckInView.vue` | 签签服务主页面，包含时间显示、签到签退按钮、今日记录、打卡日历、月度统计 |
-| `frontend/src/api/attendance.js` | 提供签到（`clockIn`）、签退（`clockOut`）、我的考勤（`getMyAttendance`）、考勤统计（`getAttendanceStatistics`）接口 |
-| `frontend/src/router/index.js` | 添加 `/employee/checkin` 路由配置 |
-| `frontend/src/layouts/EmployeeLayout.vue` | 在顶部导航菜单中添加"签到签退"菜单项 |
-| `frontend/src/views/employee/HomeView.vue` | 修复首页快捷入口跳转路径（从 `/employee/attendance` 改为 `/employee/checkin`） |
-
-### 页面模块划分
-
-```
-CheckInView.vue
-├── 左侧操作区（400px 固定宽度）
-│   ├── 时间卡片（渐变橙色背景）
-│   │   ├── 当前时间（48px 等宽字体）
-│   │   └── 当前日期
-│   ├── 签到/签退卡片
-│   │   ├── 位置信息（浏览器 Geolocation API）
-│   │   ├── 大号按钮（80px 高度，根据状态切换颜色）
-│   │   └── 今日记录（签到/签退时间、状态、加班时长）
-├── 右侧展示区（flex: 1）
-│   ├── 日历卡片
-│   │   ├── 月份切换按钮
-│   │   ├── Element Plus 日历组件（自定义单元格渲染）
-│   │   └── 图例说明（5 种状态颜色）
-│   └── 统计卡片
-│       └── 4 个统计项（出勤天数、迟到、缺卡、加班）
-```
-
-### 关键技术点
-
-1. **实时时间更新**：使用 `setInterval` 每秒更新当前时间，组件卸载时清除定时器
-2. **位置获取**：使用 `navigator.geolocation.getCurrentPosition()` 获取经纬度坐标
-3. **签到/签退状态判断**：
-   - `canClockIn` computed：今日未签到 或 已签退 = 可签到
-   - `actionStatus` computed：返回按钮状态标签（未签到/请签到/已签到/已完成）
-4. **日历自定义渲染**：
-   - 使用 `date-cell` 插槽自定义日历单元格
-   - 根据日期匹配 `attendanceMap` 显示对应状态圆点
-5. **月度数据加载**：
-   - 切换月份时重新调用 `loadMonthAttendance()`
-   - 同时加载统计数据 `loadMonthStatistics()`
-6. **状态颜色映射**：
-   - 正常（NORMAL）：绿色 `#67C23A`
-   - 迟到（LATE）：橙色 `#E6A23C`
-   - 早退（EARLY_LEAVE）：红色 `#F56C6C`
-   - 缺卡（MISSING）：灰色 `#909399`
-   - 异常（ABNORMAL）：红色 `#F56C6C`
-
-### 数据流
-
-```
-组件挂载 → 启动定时器（更新时间）
-        → 获取位置
-        → 加载今日记录（loadTodayRecord）
-        → 加载月度数据（loadMonthAttendance）
-        → 加载统计数据（loadMonthStatistics）
-
-用户点击签到/签退按钮
-        ↓
-    根据 canClockIn 判断
-        ↓
-    clockIn() 或 clockOut()
-        ↓
-    重新加载今日记录
-        ↓
-    更新按钮状态和今日记录显示
-
-用户切换月份
-        ↓
-    更新 currentYear/currentMonth
-        ↓
-    重新加载月度数据和统计
-        ↓
-    更新日历圆点显示
-```
-
-### UI/UX 设计
-
-1. **按钮设计**：
-   - 签到按钮：绿色渐变（`#4CAF50` → `#66BB6A`）
-   - 签退按钮：橙色渐变（`#FF6B35` → `#FF8C42`）
-   - 高度 80px，大字体 24px，方便点击
-   - 悬停效果：向上平移 2px + 阴影加深
-
-2. **时间卡片**：
-   - 橙色渐变背景（`#FF6B35` → `#FF8C42`）
-   - 等宽字体（Monospace）显示时间，避免数字跳动
-   - 阴影效果：`0 4px 20px rgba(255, 107, 53, 0.3)`
-
-3. **日历指示器**：
-   - 8px 圆点标记考勤状态
-   - 鼠标悬停显示完整状态文本（title 属性）
-
-4. **响应式设计**：
-   - 大屏（> 1200px）：左右分栏布局
-   - 小屏（≤ 1200px）：单列垂直布局
-   - 统计卡片：大屏 4 列，小屏 2 列
-
-### 浏览器兼容性
-
-1. **Geolocation API**：检查 `navigator.geolocation` 是否存在，不支持时显示"无法获取位置信息"
-2. **定时器清理**：组件卸载时使用 `onUnmounted` 清除 `setInterval`，避免内存泄漏
-3. **日期处理**：使用原生 `Date` 对象，兼容所有现代浏览器
-
-### 性能优化
-
-1. **数据缓存**：`attendanceMap` 缓存月度考勤数据，避免重复请求
-2. **按月加载**：每次只加载当前月份数据，切换月份时才重新请求
-3. **计算属性缓存**：`canClockIn`、`actionStatus` 使用 computed 缓存结果
-
-### 后端 API 依赖
-
-| 接口 | 用途 | 请求参数 |
+| 页面 | 文件 | 核心功能 |
 |------|------|---------|
-| `POST /api/attendance/clock_in/` | 签到 | `employee_id`, `clock_in_location` |
-| `POST /api/attendance/clock_out/` | 签退 | `employee_id`, `clock_out_location` |
-| `GET /api/attendance/my_attendance/` | 我的考勤 | `employee_id`, `start_date`, `end_date` |
-| `POST /api/attendance/statistics/` | 考勤统计 | `employee_id`, `start_date`, `end_date` |
+| Dashboard | `DashboardView.vue` | 快捷入口、今日概览、待办事项、本月统计 |
+| 人员管理 | `EmployeeManageView.vue` | 员工列表、新增/编辑对话框 |
+| 排班管理 | `ScheduleManageView.vue` | 日历/列表视图、批量排班、调班审批 |
+| 考勤管理 | `AttendanceManageView.vue` | 统计卡片、记录表格、异常处理 |
+| 请假审批 | `LeaveApproveView.vue` | 状态 Tab、请假列表、审批对话框 |
+| 薪资管理 | `SalaryManageView.vue` | 薪资列表、调整对话框、申诉处理 |
+| 统计分析 | `StatisticsView.vue` | 6 个 ECharts 图表 |
+| 系统管理 | `SystemManageView.vue` | 用户账号、角色权限、系统设置 |
 
-### 扩展性考虑
+### 员工端页面
 
-1. **离线打卡**：当前需要网络连接，可后续添加离线缓存机制
-2. **WiFi 打卡**：可扩展为基于 WiFi SSID 的位置验证
-3. **人脸识别**：预留接口，可集成生物识别验证
-4. **批量导入**：管理员可批量导入历史打卡记录
+| 页面 | 文件 | 核心功能 |
+|------|------|---------|
+| 首页 | `HomeView.vue` | 欢迎区、排班卡片、快捷入口、通知列表 |
+| 个人信息 | `ProfileView.vue` | 基本信息、资质证书、密码修改、账号信息 |
+| 签到签退 | `CheckInView.vue` | 时间显示、签到/签退按钮、打卡日历、月度统计 |
+| 考勤记录 | `AttendanceView.vue` | 月份选择、统计卡片、记录表格、异常上报 |
+| 请假申请 | `LeaveView.vue` | Tab 分类、请假列表、新增对话框、详情对话框 |
+| 调班申请 | `SwapView.vue` | 调班记录列表、原班次/目标班次对比、新增对话框 |
+| 薪资查询 | `SalaryView.vue` | 月份选择、薪资脱敏、工资明细、历史记录、申诉功能 |
+
+### 员工端页面详细说明
+
+#### 薪资查询页面 (`SalaryView.vue`)
+
+**文件作用**：员工查看个人工资条和薪资明细的专用页面，支持薪资申诉功能。
+
+**核心功能**：
+1. **月份选择器**：使用 Element Plus 月份选择器，支持查看历史薪资
+2. **薪资脱敏显示**：默认隐藏所有金额（显示 `****`），点击"查看详情"按钮后显示具体金额
+3. **工资总览卡片**：橙色渐变背景，大字显示实发工资，状态标签（草稿/已发布/已调整/申诉中）
+4. **工资明细卡片**（4个）：
+   - 基本工资（蓝色图标）
+   - 岗位津贴（绿色图标）
+   - 加班费（橙色图标）+ 加班时长提示
+   - 扣款（红色图标）+ 迟到/缺卡次数提示
+5. **工资明细说明**：使用 `el-descriptions` 展示完整计算过程，包含公式提示
+6. **历史薪资记录**：可点击切换月份，显示月份、金额、状态
+7. **薪资申诉对话框**：提交申诉原因（5-200字），带提示信息
+
+**API 调用**：
+- `getMySalaries({ employee_id, year_month })` - 获取薪资记录
+- `createAppeal({ appeal_type, employee, target_id, reason })` - 提交申诉
+
+**安全设计**：
+- 默认脱敏状态 `isShowDetail = false`
+- 切换月份后自动重置为脱敏状态
+- 所有金额字段使用 `v-if="isShowDetail"` 条件渲染
+
+**数据流向**：
+```
+用户选择月份 → 调用 getMySalaries() → 返回薪资列表
+                ↓
+        找到当前月份薪资 → 设置 currentSalary
+                ↓
+        其他月份记录 → 设置 salaryHistory
+                ↓
+        用户点击"查看详情" → isShowDetail = true → 显示具体金额
+```
+
+**相关文件**：
+- `frontend/src/api/salary.js` - 新增 `getMySalaries()` 方法
+- `frontend/src/views/employee/SalaryView.vue` - 页面组件
 
 ---
 
-## 考勤信息查询页面架构见解
+## 通用设计模式
 
-### 设计理念
-
-考勤信息查询页面（`AttendanceView.vue`）采用**垂直分层布局**，顶部为月份选择器，中间为统计卡片组，底部为详细记录表格，符合"筛选→概览→详情"的信息展示层次。
-
-### 文件职责
-
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/views/employee/AttendanceView.vue` | 考勤信息查询主页面，包含月份选择、统计卡片、记录表格、异常上报对话框 |
-| `frontend/src/api/attendance.js` | 提供 `getMyAttendance()`（我的考勤记录）、`getAttendanceStatistics()`（考勤统计）接口 |
-| `frontend/src/layouts/EmployeeLayout.vue` | 顶部导航菜单中已有"考勤记录"菜单项，路由 `/employee/attendance` |
-| `frontend/src/router/index.js` | 员工端路由配置，`EmployeeAttendance` 路由指向 `AttendanceView.vue` |
-
-### 页面模块划分
-
+### 员工端页面通用结构
 ```
-AttendanceView.vue
-├── 页面标题
-│   ├── 标题：考勤记录查询
-│   └── 副标题：查看您的考勤记录和统计数据
-├── 月份选择器卡片
-│   ├── 日历图标
-│   ├── 标签文字
-│   └── Element Plus 月份选择器（不可清空）
-├── 统计卡片区域（4列网格布局）
-│   ├── 出勤天数（绿色渐变图标）
-│   ├── 迟到次数（橙色渐变图标）
-│   ├── 缺卡次数（灰色渐变图标）
-│   └── 加班时长（橙红渐变图标）
-├── 考勤记录卡片
-│   ├── 顶部标题栏（标题 + 记录数量标签）
-│   └── 考勤记录表格
-│       ├── 日期列（大号日 + 小号月）
-│       ├── 签到时间列（时钟图标 + 时间）
-│       ├── 签退时间列（时钟图标 + 时间）
-│       ├── 状态列（彩色标签）
-│       ├── 地点列（定位图标 + 地址）
-│       ├── 加班时长列（橙色文字）
-│       └── 操作列（异常上报按钮）
-└── 异常上报对话框
-    ├── 异常日期（只读）
-    ├── 当前状态（彩色标签）
-    ├── 签到时间（如有，只读）
-    ├── 签退时间（如有，只读）
-    └── 异常说明输入框（5-200字符，带字数统计）
+页面标题 + 副标题
+├── 操作卡片（图标 + 说明 + 按钮）
+├── 数据列表/卡片展示
+└── 对话框（新增/详情）
 ```
 
-### 关键技术点
+### 常用组件模式
+- **Tab 导航**：按状态分类数据（全部/待审批/已通过/已驳回）
+- **操作卡片**：橙色/黄色图标 + 说明文字 + 主按钮
+- **记录卡片**：左边框强调色 + 悬停平移效果
+- **表单验证**：必填字段 + 字数限制 + 实时提示
 
-1. **月份日期计算**：
-   - 根据 `selectedMonth`（YYYY-MM）计算月份的第一天和最后一天
-   - 使用 `new Date(year, month, 0)` 获取月份最后一天
-   - 将 ISO 日期字符串转换为 `YYYY-MM-DD` 格式
-
-2. **并行数据加载**：
-   - 使用 `Promise.all()` 同时请求考勤记录和统计数据
-   - 减少等待时间，提升用户体验
-
-3. **表格行样式**：
-   - 使用 `row-class-name` 属性动态设置行类名
-   - 异常记录（迟到/早退/缺卡/异常）添加 `abnormal-row` 类
-   - 通过 CSS 深度选择器 `:deep()` 设置异常行背景色
-
-4. **日期单元格渲染**：
-   - 分离日和月，大号显示日期（24px），小号显示月份（12px）
-   - 日期使用橙色高亮，增强视觉层次
-
-5. **状态映射**：
-   - 状态枚举（NORMAL/LATE/EARLY_LEAVE/MISSING/ABNORMAL）映射到中文文本
-   - 状态映射到 Element Plus 标签类型（success/warning/danger/info）
-
-6. **表单验证**：
-   - 异常说明必填，最少5个字符
-   - 使用 `appealFormRef.value.validate()` 触发验证
-   - 验证失败时阻止提交
-
-### 数据流
-
-```
-组件挂载 → selectedMonth = 当前月份
-        ↓
-    loadData() 并行请求
-        ↓
-    ┌─────────────────────────────────┐
-    ↓                                 ↓
-getMyAttendance()            getAttendanceStatistics()
-    ↓                                 ↓
-考勤记录列表                    统计数据（present_days/late_count/
-attendanceList                  missing_count/overtime_hours）
-    ↓                                 ↓
-    └─────────────────────────────────┘
-                    ↓
-            渲染统计卡片和表格
-
-用户切换月份
-        ↓
-selectedMonth 更新
-        ↓
-handleMonthChange()
-        ↓
-    loadData() 重新加载数据
-
-用户点击"异常上报"
-        ↓
-    handleAppeal(record)
-        ↓
-    打开对话框 → 填写说明
-        ↓
-    submitAppeal()
-        ↓
-    表单验证 → 提交（TODO: 调用后端API）
-        ↓
-    显示成功提示 → 关闭对话框
-```
-
-### UI/UX 设计
-
-1. **统计卡片配色**：
-   - 出勤天数：绿色渐变 `#4CAF50 → #66BB6A`
-   - 迟到次数：橙色渐变 `#FF9800 → #FFB74D`
-   - 缺卡次数：灰色渐变 `#9E9E9E → #BDBDBD`
-   - 加班时长：橙红渐变 `#FF6B35 → #FF8C42`
-
-2. **卡片交互**：
-   - 悬停效果：向上平移 4px + 阴影加深
-   - 图标：60×60px 圆角容器，渐变背景
-
-3. **异常行样式**：
-   - 背景色：浅橙色 `#fef5e7`
-   - 悬停背景色：深橙色 `#fdefd2`
-
-4. **日期单元格**：
-   - 日号：24px，粗体，橙色 `#FF6B35`
-   - 月份：12px，灰色 `#909399`
-
-5. **响应式设计**：
-   - 大屏（>768px）：统计卡片 4 列
-   - 中屏（≤768px）：统计卡片 2 列
-   - 小屏（≤480px）：统计卡片 1 列
-   - 月份选择器：小屏幕垂直布局，宽度 100%
-
-### 后端 API 依赖
-
-| 接口 | 用途 | 请求参数 | 响应数据 |
-|------|------|---------|---------|
-| `GET /api/attendance/my_attendance/` | 我的考勤记录 | `employee_id`, `start_date`, `end_date` | 考勤记录数组（日期、签到/签退时间、状态、地点、加班时长） |
-| `POST /api/attendance/statistics/` | 考勤统计 | `employee_id`, `start_date`, `end_date` | 统计对象（present_days, late_count, missing_count, overtime_hours） |
-
-### 异常上报功能
-
-**当前状态**：
-- 对话框 UI 已完整实现
-- 表单验证已配置
-- 提交逻辑为模拟（TODO 注释）
-
-**后续扩展**：
-- 集成后端申诉 API：`POST /api/salaries/appeals/`
-- 申诉类型：`appeal_type: "ATTENDANCE"`
-- 目标 ID：`target_id: attendance_record.id`
-- 提交成功后刷新考勤列表
-
-### 性能优化
-
-1. **并行请求**：考勤记录和统计数据同时加载，减少等待时间
-2. **月份缓存**：切换回已加载月份时无需重新请求（可扩展）
-3. **虚拟滚动**：如记录数量超过 100 条，可使用虚拟滚动优化性能
-
-### 安全性考虑
-
-1. **员工权限隔离**：只能查看自己的考勤记录，通过 `employee_id` 过滤
-2. **异常上报审核**：提交的异常说明需管理员审核才能生效
-3. **日期范围限制**：前端限制月份选择器最小值，避免查询无效数据
-
-### 可访问性
-
-1. **空状态提示**：无记录时显示空状态插画和提示文字
-2. **加载状态**：数据加载时显示 Loading 遮罩
-3. **错误提示**：网络错误或未关联员工档案时显示友好提示
-4. **状态标签**：使用不同颜色和文字区分考勤状态
-
-### 扩展性考虑
-
-1. **导出功能**：可添加导出 Excel/PDF 功能，生成月度考勤报表
-2. **日历视图**：可添加日历视图，用颜色标记每日考勤状态
-3. **趋势分析**：可添加考勤趋势图表，显示月度出勤率变化
-4. **多维度筛选**：可添加状态筛选（仅查看异常记录）、日期范围筛选
+### 状态标签颜色映射
+- 审批中：`warning`（橙色）
+- 已通过：`success`（绿色）
+- 已驳回：`danger`（红色）
+- 正常：`success`（绿色）
+- 异常：`warning`/`danger`（橙色/红色）
 
 ---
 
-## 请假申请服务页面架构见解
+## 关键技术点
 
-### 设计理念
+### 数据加载策略
+- **并行请求**：使用 `Promise.all()` 同时加载相关数据
+- **按需加载**：打开对话框时才加载选择列表数据
+- **数据缓存**：使用 computed 属性缓存计算结果
 
-请假申请服务页面（`LeaveView.vue`）采用**Tab 分类 + 列表展示**的布局模式，将请假申请按状态分类展示，符合"申请→审批→查看结果"的业务流程。页面顶部提供快捷操作入口，列表以卡片形式展示每条请假记录的详细信息，关键信息一目了然。
+### 表单处理
+- **表单复用**：通过 `isEdit` 标志区分新增/编辑模式
+- **密码处理**：编辑模式下密码为空则不修改
+- **日期限制**：禁用过去日期，结束时间不早于开始时间
 
-### 文件职责
+### 响应式设计
+- 大屏（> 768px）：水平布局，多列显示
+- 小屏（≤ 768px）：垂直布局，单列显示，全宽按钮
 
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/api/leave.js` | 提供 `getMyLeaves()`（我的请假列表）、`createLeave()`（创建请假）、`deleteLeave()`（撤销请假）接口 |
-| `frontend/src/views/employee/LeaveView.vue` | 请假申请服务主页面，包含页面标题、操作卡片、Tab 导航、请假记录列表、新增对话框、详情对话框 |
-| `frontend/src/router/index.js` | 员工端路由配置，`EmployeeLeave` 路由指向 `LeaveView.vue` |
-| `frontend/src/layouts/EmployeeLayout.vue` | 顶部导航菜单中已有"请假申请"菜单项，路由 `/employee/leave` |
-
-### 页面模块划分
-
-```
-LeaveView.vue
-├── 页面标题
-│   ├── 标题：请假申请
-│   └── 副标题：提交请假申请并查看审批进度
-├── 操作卡片（橙色图标 + 按钮）
-│   ├── 图标 + 文字说明
-│   └── 新增请假按钮
-├── Tab 导航卡片
-│   ├── 申请记录（List 图标）
-│   ├── 审批中（Clock 图标 + 徽章计数）
-│   ├── 已通过（CircleCheck 图标）
-│   └── 已驳回（CircleClose 图标）
-├── 请假记录列表
-│   ├── 请假类型标签（大号）
-│   ├── 审批状态标签（朴素风格）
-│   ├── 时间范围（时钟图标）
-│   ├── 请假天数（Timer 图标）
-│   ├── 请假原因（Document 图标）
-│   ├── 审批意见（仅已驳回，WarningFilled 图标）
-│   ├── 审批信息（仅已审批，User 图标）
-│   └── 操作按钮
-│       ├── 撤销申请（仅待审批，Delete 图标）
-│       └── 查看详情（View 图标）
-├── 新增请假对话框
-│   ├── 请假类型选择（下拉框）
-│   ├── 开始时间选择（日期时间选择器）
-│   ├── 结束时间选择（日期时间选择器）
-│   ├── 请假原因输入（文本域，5-200字）
-│   └── 预计天数显示（计算结果）
-└── 请假详情对话框
-    ├── 请假类型标签
-    ├── 开始时间
-    ├── 结束时间
-    ├── 请假天数（大号显示）
-    ├── 请假原因
-    ├── 申请状态标签
-    ├── 审批意见（如有）
-    ├── 审批人
-    ├── 审批时间
-    └── 申请时间
-```
-
-### 关键技术点
-
-1. **Tab 切换数据过滤**：
-   - `activeTab` 控制当前显示的状态（all/PENDING/APPROVED/REJECTED）
-   - 切换 Tab 时调用 `handleTabChange()` 重新加载数据
-   - `all` 状态不过滤，显示所有请假记录
-
-2. **审批中数量统计**：
-   - 页面加载时同时请求审批中数量：`getMyLeaves({ status: 'PENDING' })`
-   - 更新 `pendingCount` 响应式变量
-   - Tab 标签显示徽章计数
-
-3. **请假类型映射**：
-   - `getLeaveTypeLabel()`: 枚举→中文（ANNUAL→年假, SICK→病假, PERSONAL→事假, MATERNITY→产假, PATERNITY→陪产假, OTHER→其他）
-   - `getLeaveTypeTagType()`: 枚举→标签类型（ANNUAL→success, SICK→danger, PERSONAL→warning, 其他→info）
-
-4. **状态映射**：
-   - `getStatusLabel()`: 枚举→中文（PENDING→审批中, APPROVED→已通过, REJECTED→已驳回, CANCELLED→已取消）
-   - `getStatusTagType()`: 枚举→标签类型（PENDING→warning, APPROVED→success, REJECTED→danger, CANCELLED→info）
-
-5. **时间格式化**：
-   - `formatLeaveTime()`: 智能显示开始和结束时间
-     - 同一天：显示为 "01-15 09:00 ~ 18:00"
-     - 不同天：显示为 "01-15 09:00 ~ 01-16 18:00"
-   - `formatDateTime()`: 标准日期时间格式 "YYYY-MM-DD HH:mm"
-   - `formatApprovalTime()`: 相对时间显示（今天/昨天/N天前/完整日期）
-
-6. **表单验证**：
-   - 请假类型：必选
-   - 开始/结束时间：必选，结束时间必须晚于开始时间
-   - 请假原因：必填，5-200字符，带字数统计
-
-7. **日期选择器限制**：
-   - `disableStartDate()`: 禁用今天之前的日期
-   - `disableEndDate()`: 禁用早于开始时间的日期
-   - 使用 `Date.now() - 8.64e7` 计算昨天的毫秒数
-
-8. **预计天数自动计算**：
-   - 使用 `computed` 属性监听 `createForm.start_time` 和 `createForm.end_time`
-   - 计算公式：`Math.ceil((end - start) / (1000 * 60 * 60 * 24))`
-   - 结果为 0 或负数时显示 0
-
-### 数据流
-
-```
-组件挂载 → loadLeaveList()
-                ↓
-    并行请求
-    ├─────────────────────────────────┐
-    ↓                                 ↓
-getMyLeaves(params)              getMyLeaves({ status: 'PENDING' })
-    ↓                                 ↓
-leaveList（根据 Tab 过滤）        pendingCount（更新徽章）
-    ↓                                 ↓
-    └─────────────────────────────────┘
-                    ↓
-            渲染请假记录列表和 Tab 徽章
-
-用户切换 Tab
-        ↓
-activeTab 更新
-        ↓
-handleTabChange()
-        ↓
-    loadLeaveList() 重新加载数据
-        ↓
-    更新 leaveList（根据新状态过滤）
-
-用户点击"新增请假"
-        ↓
-    openCreateDialog()
-        ↓
-    重置表单 → 打开对话框
-        ↓
-    用户填写表单
-        ↓
-    handleSubmit()
-        ↓
-    表单验证 → 结束时间校验
-        ↓
-    createLeave(data)
-        ↓
-    提交成功 → 关闭对话框 → loadLeaveList()
-
-用户点击"撤销申请"
-        ↓
-    ElMessageBox.confirm()
-        ↓
-    用户确认
-        ↓
-    deleteLeave(leave.id)
-        ↓
-    删除成功 → loadLeaveList()
-
-用户点击"查看详情"
-        ↓
-    handleViewDetail(leave)
-        ↓
-    设置 currentLeave → 打开详情对话框
-```
-
-### UI/UX 设计
-
-1. **操作卡片设计**：
-   - 左侧：橙色 DocumentAdd 图标 + 文字说明
-   - 右侧：橙色主按钮 "新增请假"
-   - 悬停效果：卡片向上平移 4px + 阴影加深
-
-2. **请假记录卡片**：
-   - 左边框：4px 橙色边框 `#FF6B35`，突出显示
-   - 背景：浅灰色 `#fafafa`，悬停时变为 `#f5f5f5`
-   - 悬停动画：向右平移 4px + 阴影效果
-   - 内边距：20px，外边距：16px
-
-3. **审批意见框**：
-   - 背景：浅橙色 `#fef5e7`
-   - 左边框：3px 橙色 `#E6A23C`
-   - 文字颜色：橙色 `#E6A23C`
-   - 图标：WarningFilled 图标
-
-4. **预计天数显示**：
-   - 背景：橙色渐变 `linear-gradient(135deg, #FFF8F0 0%, #fef3e2 100%)`
-   - 天数字号：24px，粗体，橙色 `#FF6B35`
-   - 图标：18px Timer 图标
-
-5. **请假类型标签颜色**：
-   - 年假：绿色 `success`
-   - 病假：红色 `danger`
-   - 事假：橙色 `warning`
-   - 产假/陪产假/其他：灰色 `info`
-
-6. **状态标签颜色**：
-   - 审批中：橙色 `warning`
-   - 已通过：绿色 `success`
-   - 已驳回：红色 `danger`
-
-7. **响应式设计**：
-   - 大屏（> 768px）：操作按钮水平排列
-   - 小屏（≤ 768px）：
-     - 操作栏垂直布局
-     - 操作按钮全宽显示
-     - 页面内边距减小
-
-### 后端 API 依赖
-
-| 接口 | 用途 | 请求参数 | 响应数据 |
-|------|------|---------|---------|
-| `GET /api/leaves/my-requests/` | 我的请假列表 | `employee_id`, `status`（可选） | 请假记录数组（id, leave_type, start_time, end_time, days, reason, status, approval_remark, approver, approver_name, approval_time, created_at） |
-| `POST /api/leaves/` | 创建请假申请 | `employee`, `leave_type`, `start_time`, `end_time`, `reason` | 创建成功的请假记录 |
-| `DELETE /api/leaves/{id}/` | 撤销请假申请 | - | 删除成功 |
-
-### 业务逻辑要点
-
-1. **撤销权限**：
-   - 仅待审批（PENDING）状态的请假可以撤销
-   - 已通过或已驳回的请假不允许撤销
-   - 撤销操作需二次确认（ElMessageBox.confirm）
-
-2. **请假天数计算**：
-   - 后端根据开始时间和结束时间自动计算
-   - 前端实时显示预计天数，提升用户体验
-   - 计算规则：按自然日计算，跨天也算一天
-
-3. **审批流程**：
-   - 提交后状态为 PENDING（审批中）
-   - 管理员审批后状态变为 APPROVED（已通过）或 REJECTED（已驳回）
-   - 已驳回的申请必须包含审批意见（approval_remark）
-
-4. **数据权限**：
-   - 员工只能查看自己的请假记录
-   - 通过 `employee_id` 参数过滤数据
-   - 未关联员工档案的用户无法查看请假记录
-
-### 扩展性考虑
-
-1. **请假余额**：可扩展显示各类型假期的剩余天数（如年假余额）
-2. **附件上传**：可支持上传病假证明、事假申请等附件文件
-3. **抄送功能**：可支持请假申请抄送给其他管理人员
-4. **请假统计**：可添加年度请假统计图表，展示各类型假期使用情况
-5. **批量操作**：可支持批量撤销待审批的请假申请
+### 安全性
+- **权限隔离**：员工只能查看自己的数据
+- **二次确认**：删除操作需确认对话框
+- **表单验证**：前端验证 + 后端验证
+- **薪资脱敏**：
+  - 默认隐藏所有金额显示 `****`
+  - 用户主动点击"查看详情"后才显示具体金额
+  - 切换月份后自动重置为脱敏状态
+  - 防止他人窥屏看到敏感薪资信息
 
 ---
 
-## 调班申请服务页面架构见解
+## 常用 API 模式
 
-### 设计理念
+### 员工端数据获取
+```javascript
+// 通过 userStore 获取员工 ID
+const employeeId = userStore.userInfo?.employee
 
-调班申请服务页面（`SwapView.vue`）采用**水平对比布局**，将原班次和目标班次并排展示，通过箭头连接强调"调换"的视觉隐喻。页面采用卡片式列表展示调班记录，配合状态标签和操作按钮，实现清晰的申请管理流程。
-
-### 文件职责
-
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/views/employee/SwapView.vue` | 调班申请服务主页面，包含页面标题、操作卡片、调班记录列表、新增对话框、详情对话框 |
-| `frontend/src/api/schedule.js` | 提供 `getMyShiftRequests()`（我的调班申请）、`createShiftRequest()`（创建调班）、`deleteShiftRequest()`（撤销调班）、`getShiftList()`（班次列表）、`getEmployeeSchedules()`（员工排班）接口 |
-| `frontend/src/router/index.js` | 员工端路由配置，`EmployeeSwap` 路由指向 `SwapView.vue` |
-| `frontend/src/layouts/EmployeeLayout.vue` | 在顶部导航菜单中添加"调班申请"菜单项，路由 `/employee/swap` |
-| `backend/schedules/serializers.py` | 更新 `ShiftSwapRequestSerializer` 和 `ShiftSwapRequestListSerializer`，添加 `original_schedule_date`、`original_shift_time`、`target_shift_time`、`approval_time` 字段 |
-
-### 页面模块划分
-
-```
-SwapView.vue
-├── 页面标题
-│   ├── 标题：调班申请
-│   └── 副标题：提交调班申请并查看审批进度
-├── 操作卡片（黄色图标 + 按钮）
-│   ├── 图标 + 文字说明
-│   └── 新增调班申请按钮
-├── 调班记录列表
-│   ├── 状态标签（warning/success/danger）
-│   ├── 申请时间（时钟图标）
-│   ├── 原班次区域（橙色标签）
-│   │   ├── 日期标签
-│   │   ├── 班次名称
-│   │   └── 时间
-│   ├── 调整箭头（橙色）
-│   ├── 目标班次区域（绿色标签）
-│   │   ├── 日期标签
-│   │   ├── 班次名称
-│   │   └── 时间
-│   ├── 申请原因（灰色背景）
-│   ├── 驳回原因（仅已驳回，橙色背景）
-│   ├── 审批信息（仅已通过，绿色文字）
-│   └── 操作按钮
-│       ├── 撤销申请（仅待审批，Delete 图标）
-│       └── 查看详情（View 图标）
-├── 新增调班对话框
-│   ├── 原班次选择（下拉框，带日期和班次标签）
-│   ├── 目标日期选择（日期选择器）
-│   ├── 目标班次选择（下拉框）
-│   └── 申请原因输入（文本域，5-200字）
-└── 调班详情对话框
-    ├── 申请状态标签
-    ├── 原班次信息（日期、班次、时间）
-    ├── 目标班次信息（日期、班次、时间）
-    ├── 申请原因
-    ├── 审批意见（如有）
-    ├── 申请人、审批人
-    └── 申请时间、审批时间
+// 调用 API 获取数据
+const res = await getXXX({ employee_id: employeeId })
 ```
 
-### 关键技术点
-
-1. **排班数据加载**：
-   - 打开对话框时调用 `loadMySchedules()` 获取未来30天的排班
-   - 使用 `Promise.all()` 并行获取每个排班的班次详情
-   - 格式化排班数据：`{ id, work_date, shift_name, shift_time }`
-
-2. **班次列表加载**：
-   - 打开对话框时调用 `loadShiftList()` 获取所有可用班次
-   - 下拉选项显示：班次名称 + 时间范围
-
-3. **原班次选择提示**：
-   - 使用 `computed` 属性 `selectedOriginalSchedule` 监听选择
-   - 选中后显示绿色提示信息，包含完整排班详情
-
-4. **日期限制**：
-   - `disableTargetDate()`: 禁用今天之前的日期
-   - 使用 `Date.now() - 8.64e7` 计算昨天的毫秒数
-
-5. **状态映射**：
-   - `getStatusLabel()`: 枚举→中文（PENDING→审批中, APPROVED→已通过, REJECTED→已驳回）
-   - `getStatusTagType()`: 枚举→标签类型（PENDING→warning, APPROVED→success, REJECTED→danger）
-   - `getShiftTagType()`: 班次名称→标签类型（早班→success, 中班→warning, 晚班→danger, 全天→primary）
-
-6. **日期格式化**：
-   - `formatDate()`: 将日期字符串转换为 "MM-DD 周X" 格式
-   - `formatDateTime()`: 将日期时间转换为 "YYYY-MM-DD HH:mm" 格式
-
-7. **表单验证**：
-   - 原班次：必选
-   - 目标日期：必选
-   - 目标班次：必选
-   - 申请原因：必填，5-200字符
-
-### 数据流
-
-```
-组件挂载 → loadSwapList()
-                ↓
-        getMyShiftRequests({ employee_id })
-                ↓
-        swapList（调班申请列表）
-                ↓
-        渲染调班记录卡片
-
-用户点击"新增调班申请"
-        ↓
-    openCreateDialog()
-        ↓
-    并行加载
-    ├─────────────────────────────────┐
-    ↓                                 ↓
-loadMySchedules()              loadShiftList()
-（未来30天排班）              （所有班次列表）
-    ↓                                 ↓
-    └─────────────────────────────────┘
-                ↓
-        重置表单 → 打开对话框
-
-用户填写表单并提交
-        ↓
-    handleSubmit()
-        ↓
-    表单验证
-        ↓
-    createShiftRequest({
-        original_schedule: ...,
-        target_date: ...,
-        target_shift: ...,
-        reason: ...,
-        requester_id: ...
-    })
-        ↓
-    提交成功 → 关闭对话框 → loadSwapList()
-
-用户点击"撤销申请"
-        ↓
-    ElMessageBox.confirm()
-        ↓
-    用户确认
-        ↓
-    deleteShiftRequest(item.id)
-        ↓
-    删除成功 → loadSwapList()
-
-用户点击"查看详情"
-        ↓
-    handleViewDetail(item)
-        ↓
-    设置 currentSwap → 打开详情对话框
+### 列表数据结构
+```javascript
+{
+  code: 200,
+  data: {
+    results: [],      // 分页数据
+    count: 100        // 总数
+  }
+}
 ```
 
-### UI/UX 设计
+### 统一响应格式
+```javascript
+{
+  code: 200,          // 200成功/400错误
+  message: "操作成功",
+  data: {}
+}
+```
 
-1. **操作卡片设计**：
-   - 左侧：黄色 Switch 图标 + 文字说明
-   - 右侧：橙色主按钮 "新增调班申请"
-   - 悬停效果：卡片向上平移 4px + 阴影加深
+---
 
-2. **调班记录卡片**：
-   - 左边框：4px 橙色边框 `#FF6B35`，突出显示
-   - 背景：浅灰色 `#fafafa`，悬停时变为 `#f5f5f5`
-   - 悬停动画：向右平移 4px + 阴影效果
-   - 内边距：20px，外边距：16px
+## 扩展方向
 
-3. **班次对比设计**：
-   - 原班次区域：橙色标签 `#E6A23C` + 橙色标签文字
-   - 调整箭头：橙色箭头图标 `#FF6B35`，20px
-   - 目标班次区域：绿色标签 `#4CAF50` + 绿色标签文字
+### 功能扩展
+- 请假余额显示
+- 附件上传（证明文件）
+- 调班协商功能
+- 考勤异常申诉
+- 薪资报表导出
 
-4. **驳回原因框**：
-   - 背景：浅橙色 `#fef5e7`
-   - 左边框：3px 橙色 `#E6A23C`
-   - 文字颜色：橙色 `#E6A23C`
-   - 图标：WarningFilled 图标
+### 技术优化
+- 虚拟滚动（大列表）
+- 离线打卡支持
+- WiFi 定位验证
+- 人脸识别集成
+- 消息推送通知
 
-5. **原班次选择器**：
-   - 选项显示格式：日期 + 班次标签 + 时间
-   - 选中后显示绿色提示：已选择的完整排班信息
+---
 
-6. **状态标签颜色**：
-   - 审批中：橙色 `warning`
-   - 已通过：绿色 `success`
-   - 已驳回：红色 `danger`
+## 重要文件索引
 
-7. **响应式设计**：
-   - 大屏（> 768px）：调班内容水平排列
-   - 小屏（≤ 768px）：
-     - 调班内容垂直排列
-     - 箭头旋转 90 度
-     - 操作按钮全宽显示
-     - 页面内边距减小
+### 后端核心文件
+- `backend/config/settings.py` - 项目配置
+- `backend/config/urls.py` - 路由配置
+- `backend/accounts/views.py` - 认证视图
+- `backend/schedules/serializers.py` - 排班序列化器
 
-### 后端 API 依赖
-
-| 接口 | 用途 | 请求参数 | 响应数据 |
-|------|------|---------|---------|
-| `GET /api/schedules/shift-requests/my_requests/` | 我的调班申请 | `employee_id` | 调班申请数组（id, original_schedule_date, original_shift_name, original_shift_time, target_date, target_shift_name, target_shift_time, status, reason, approver_name, approval_remark, approval_time, created_at） |
-| `POST /api/schedules/shift-requests/` | 创建调班申请 | `original_schedule`, `target_date`, `target_shift`, `reason`, `requester_id` | 创建成功的调班申请记录 |
-| `DELETE /api/schedules/shift-requests/{id}/` | 撤销调班申请 | - | 删除成功 |
-| `GET /api/schedules/shifts/` | 获取班次列表 | - | 班次数组（id, name, start_time, end_time） |
-| `GET /api/schedules/schedules/` | 获取排班列表 | `employee`, `work_date__gte`, `work_date__lte`, `ordering` | 排班数组（id, employee, shift, work_date） |
-
-### 后端序列化器更新
-
-**更新内容**：
-1. `ShiftSwapRequestSerializer` 和 `ShiftSwapRequestListSerializer` 添加新字段：
-   - `original_schedule_date`: 原班次日期（替代 `original_date`）
-   - `original_shift_time`: 原班次时间范围（"HH:MM - HH:MM"）
-   - `target_shift_time`: 目标班次时间范围（"HH:MM - HH:MM"）
-   - `approval_time`: 审批时间（使用 `updated_at` 字段）
-
-2. 时间格式化逻辑：
-   ```python
-   def get_original_shift_time(self, obj):
-       if obj.original_schedule and obj.original_schedule.shift:
-           shift = obj.original_schedule.shift
-           return f"{shift.start_time.strftime('%H:%M')} - {shift.end_time.strftime('%H:%M')}"
-       return ''
-   ```
-
-### 业务逻辑要点
-
-1. **撤销权限**：
-   - 仅待审批（PENDING）状态的调班申请可以撤销
-   - 已通过或已驳回的调班申请不允许撤销
-   - 撤销操作需二次确认（ElMessageBox.confirm）
-
-2. **调班审批流程**：
-   - 提交后状态为 PENDING（审批中）
-   - 管理员审批后状态变为 APPROVED（已通过）或 REJECTED（已驳回）
-   - 已驳回的申请建议包含审批意见（approval_remark）
-
-3. **排班数据限制**：
-   - 只显示未来30天的排班供选择
-   - 目标日期不能选择今天之前的日期
-
-4. **数据权限**：
-   - 员工只能查看自己的调班申请记录
-   - 通过 `employee_id` 参数过滤数据
-   - 未关联员工档案的用户无法提交调班申请
-
-### 扩展性考虑
-
-1. **调班历史**：可扩展显示调班历史记录，包括已完成的调班
-2. **调班统计**：可添加调班统计图表，展示月度调班次数和通过率
-3. **批量调班**：可支持批量调班功能，一次性调整多天排班
-4. **调班协商**：可扩展为"调班协商"功能，让其他员工可以接收调班请求
-5. **调班模板**：可提供常用调班模板，快速填写调班申请
-
-### 可访问性
-
-1. **空状态提示**：无调班记录时显示空状态插画和"提交第一份申请"按钮
-2. **加载状态**：数据加载时显示 Loading 遮罩
-3. **错误提示**：网络错误或未关联员工档案时显示友好提示
-4. **状态标签**：使用不同颜色和文字区分调班状态
-5. **表单提示**：选择原班次后显示绿色提示信息，确认选择正确
+### 前端核心文件
+- `frontend/src/api/request.js` - Axios 配置
+- `frontend/src/router/index.js` - 路由配置
+- `frontend/src/stores/user.js` - 用户状态
+- `frontend/src/layouts/AdminLayout.vue` - 管理员布局
+- `frontend/src/layouts/EmployeeLayout.vue` - 员工布局
