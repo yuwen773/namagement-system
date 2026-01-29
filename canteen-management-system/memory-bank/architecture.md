@@ -1006,3 +1006,262 @@ handleTabChange()
 3. **抄送功能**：可支持请假申请抄送给其他管理人员
 4. **请假统计**：可添加年度请假统计图表，展示各类型假期使用情况
 5. **批量操作**：可支持批量撤销待审批的请假申请
+
+---
+
+## 调班申请服务页面架构见解
+
+### 设计理念
+
+调班申请服务页面（`SwapView.vue`）采用**水平对比布局**，将原班次和目标班次并排展示，通过箭头连接强调"调换"的视觉隐喻。页面采用卡片式列表展示调班记录，配合状态标签和操作按钮，实现清晰的申请管理流程。
+
+### 文件职责
+
+| 文件 | 作用 |
+|------|------|
+| `frontend/src/views/employee/SwapView.vue` | 调班申请服务主页面，包含页面标题、操作卡片、调班记录列表、新增对话框、详情对话框 |
+| `frontend/src/api/schedule.js` | 提供 `getMyShiftRequests()`（我的调班申请）、`createShiftRequest()`（创建调班）、`deleteShiftRequest()`（撤销调班）、`getShiftList()`（班次列表）、`getEmployeeSchedules()`（员工排班）接口 |
+| `frontend/src/router/index.js` | 员工端路由配置，`EmployeeSwap` 路由指向 `SwapView.vue` |
+| `frontend/src/layouts/EmployeeLayout.vue` | 在顶部导航菜单中添加"调班申请"菜单项，路由 `/employee/swap` |
+| `backend/schedules/serializers.py` | 更新 `ShiftSwapRequestSerializer` 和 `ShiftSwapRequestListSerializer`，添加 `original_schedule_date`、`original_shift_time`、`target_shift_time`、`approval_time` 字段 |
+
+### 页面模块划分
+
+```
+SwapView.vue
+├── 页面标题
+│   ├── 标题：调班申请
+│   └── 副标题：提交调班申请并查看审批进度
+├── 操作卡片（黄色图标 + 按钮）
+│   ├── 图标 + 文字说明
+│   └── 新增调班申请按钮
+├── 调班记录列表
+│   ├── 状态标签（warning/success/danger）
+│   ├── 申请时间（时钟图标）
+│   ├── 原班次区域（橙色标签）
+│   │   ├── 日期标签
+│   │   ├── 班次名称
+│   │   └── 时间
+│   ├── 调整箭头（橙色）
+│   ├── 目标班次区域（绿色标签）
+│   │   ├── 日期标签
+│   │   ├── 班次名称
+│   │   └── 时间
+│   ├── 申请原因（灰色背景）
+│   ├── 驳回原因（仅已驳回，橙色背景）
+│   ├── 审批信息（仅已通过，绿色文字）
+│   └── 操作按钮
+│       ├── 撤销申请（仅待审批，Delete 图标）
+│       └── 查看详情（View 图标）
+├── 新增调班对话框
+│   ├── 原班次选择（下拉框，带日期和班次标签）
+│   ├── 目标日期选择（日期选择器）
+│   ├── 目标班次选择（下拉框）
+│   └── 申请原因输入（文本域，5-200字）
+└── 调班详情对话框
+    ├── 申请状态标签
+    ├── 原班次信息（日期、班次、时间）
+    ├── 目标班次信息（日期、班次、时间）
+    ├── 申请原因
+    ├── 审批意见（如有）
+    ├── 申请人、审批人
+    └── 申请时间、审批时间
+```
+
+### 关键技术点
+
+1. **排班数据加载**：
+   - 打开对话框时调用 `loadMySchedules()` 获取未来30天的排班
+   - 使用 `Promise.all()` 并行获取每个排班的班次详情
+   - 格式化排班数据：`{ id, work_date, shift_name, shift_time }`
+
+2. **班次列表加载**：
+   - 打开对话框时调用 `loadShiftList()` 获取所有可用班次
+   - 下拉选项显示：班次名称 + 时间范围
+
+3. **原班次选择提示**：
+   - 使用 `computed` 属性 `selectedOriginalSchedule` 监听选择
+   - 选中后显示绿色提示信息，包含完整排班详情
+
+4. **日期限制**：
+   - `disableTargetDate()`: 禁用今天之前的日期
+   - 使用 `Date.now() - 8.64e7` 计算昨天的毫秒数
+
+5. **状态映射**：
+   - `getStatusLabel()`: 枚举→中文（PENDING→审批中, APPROVED→已通过, REJECTED→已驳回）
+   - `getStatusTagType()`: 枚举→标签类型（PENDING→warning, APPROVED→success, REJECTED→danger）
+   - `getShiftTagType()`: 班次名称→标签类型（早班→success, 中班→warning, 晚班→danger, 全天→primary）
+
+6. **日期格式化**：
+   - `formatDate()`: 将日期字符串转换为 "MM-DD 周X" 格式
+   - `formatDateTime()`: 将日期时间转换为 "YYYY-MM-DD HH:mm" 格式
+
+7. **表单验证**：
+   - 原班次：必选
+   - 目标日期：必选
+   - 目标班次：必选
+   - 申请原因：必填，5-200字符
+
+### 数据流
+
+```
+组件挂载 → loadSwapList()
+                ↓
+        getMyShiftRequests({ employee_id })
+                ↓
+        swapList（调班申请列表）
+                ↓
+        渲染调班记录卡片
+
+用户点击"新增调班申请"
+        ↓
+    openCreateDialog()
+        ↓
+    并行加载
+    ├─────────────────────────────────┐
+    ↓                                 ↓
+loadMySchedules()              loadShiftList()
+（未来30天排班）              （所有班次列表）
+    ↓                                 ↓
+    └─────────────────────────────────┘
+                ↓
+        重置表单 → 打开对话框
+
+用户填写表单并提交
+        ↓
+    handleSubmit()
+        ↓
+    表单验证
+        ↓
+    createShiftRequest({
+        original_schedule: ...,
+        target_date: ...,
+        target_shift: ...,
+        reason: ...,
+        requester_id: ...
+    })
+        ↓
+    提交成功 → 关闭对话框 → loadSwapList()
+
+用户点击"撤销申请"
+        ↓
+    ElMessageBox.confirm()
+        ↓
+    用户确认
+        ↓
+    deleteShiftRequest(item.id)
+        ↓
+    删除成功 → loadSwapList()
+
+用户点击"查看详情"
+        ↓
+    handleViewDetail(item)
+        ↓
+    设置 currentSwap → 打开详情对话框
+```
+
+### UI/UX 设计
+
+1. **操作卡片设计**：
+   - 左侧：黄色 Switch 图标 + 文字说明
+   - 右侧：橙色主按钮 "新增调班申请"
+   - 悬停效果：卡片向上平移 4px + 阴影加深
+
+2. **调班记录卡片**：
+   - 左边框：4px 橙色边框 `#FF6B35`，突出显示
+   - 背景：浅灰色 `#fafafa`，悬停时变为 `#f5f5f5`
+   - 悬停动画：向右平移 4px + 阴影效果
+   - 内边距：20px，外边距：16px
+
+3. **班次对比设计**：
+   - 原班次区域：橙色标签 `#E6A23C` + 橙色标签文字
+   - 调整箭头：橙色箭头图标 `#FF6B35`，20px
+   - 目标班次区域：绿色标签 `#4CAF50` + 绿色标签文字
+
+4. **驳回原因框**：
+   - 背景：浅橙色 `#fef5e7`
+   - 左边框：3px 橙色 `#E6A23C`
+   - 文字颜色：橙色 `#E6A23C`
+   - 图标：WarningFilled 图标
+
+5. **原班次选择器**：
+   - 选项显示格式：日期 + 班次标签 + 时间
+   - 选中后显示绿色提示：已选择的完整排班信息
+
+6. **状态标签颜色**：
+   - 审批中：橙色 `warning`
+   - 已通过：绿色 `success`
+   - 已驳回：红色 `danger`
+
+7. **响应式设计**：
+   - 大屏（> 768px）：调班内容水平排列
+   - 小屏（≤ 768px）：
+     - 调班内容垂直排列
+     - 箭头旋转 90 度
+     - 操作按钮全宽显示
+     - 页面内边距减小
+
+### 后端 API 依赖
+
+| 接口 | 用途 | 请求参数 | 响应数据 |
+|------|------|---------|---------|
+| `GET /api/schedules/shift-requests/my_requests/` | 我的调班申请 | `employee_id` | 调班申请数组（id, original_schedule_date, original_shift_name, original_shift_time, target_date, target_shift_name, target_shift_time, status, reason, approver_name, approval_remark, approval_time, created_at） |
+| `POST /api/schedules/shift-requests/` | 创建调班申请 | `original_schedule`, `target_date`, `target_shift`, `reason`, `requester_id` | 创建成功的调班申请记录 |
+| `DELETE /api/schedules/shift-requests/{id}/` | 撤销调班申请 | - | 删除成功 |
+| `GET /api/schedules/shifts/` | 获取班次列表 | - | 班次数组（id, name, start_time, end_time） |
+| `GET /api/schedules/schedules/` | 获取排班列表 | `employee`, `work_date__gte`, `work_date__lte`, `ordering` | 排班数组（id, employee, shift, work_date） |
+
+### 后端序列化器更新
+
+**更新内容**：
+1. `ShiftSwapRequestSerializer` 和 `ShiftSwapRequestListSerializer` 添加新字段：
+   - `original_schedule_date`: 原班次日期（替代 `original_date`）
+   - `original_shift_time`: 原班次时间范围（"HH:MM - HH:MM"）
+   - `target_shift_time`: 目标班次时间范围（"HH:MM - HH:MM"）
+   - `approval_time`: 审批时间（使用 `updated_at` 字段）
+
+2. 时间格式化逻辑：
+   ```python
+   def get_original_shift_time(self, obj):
+       if obj.original_schedule and obj.original_schedule.shift:
+           shift = obj.original_schedule.shift
+           return f"{shift.start_time.strftime('%H:%M')} - {shift.end_time.strftime('%H:%M')}"
+       return ''
+   ```
+
+### 业务逻辑要点
+
+1. **撤销权限**：
+   - 仅待审批（PENDING）状态的调班申请可以撤销
+   - 已通过或已驳回的调班申请不允许撤销
+   - 撤销操作需二次确认（ElMessageBox.confirm）
+
+2. **调班审批流程**：
+   - 提交后状态为 PENDING（审批中）
+   - 管理员审批后状态变为 APPROVED（已通过）或 REJECTED（已驳回）
+   - 已驳回的申请建议包含审批意见（approval_remark）
+
+3. **排班数据限制**：
+   - 只显示未来30天的排班供选择
+   - 目标日期不能选择今天之前的日期
+
+4. **数据权限**：
+   - 员工只能查看自己的调班申请记录
+   - 通过 `employee_id` 参数过滤数据
+   - 未关联员工档案的用户无法提交调班申请
+
+### 扩展性考虑
+
+1. **调班历史**：可扩展显示调班历史记录，包括已完成的调班
+2. **调班统计**：可添加调班统计图表，展示月度调班次数和通过率
+3. **批量调班**：可支持批量调班功能，一次性调整多天排班
+4. **调班协商**：可扩展为"调班协商"功能，让其他员工可以接收调班请求
+5. **调班模板**：可提供常用调班模板，快速填写调班申请
+
+### 可访问性
+
+1. **空状态提示**：无调班记录时显示空状态插画和"提交第一份申请"按钮
+2. **加载状态**：数据加载时显示 Loading 遮罩
+3. **错误提示**：网络错误或未关联员工档案时显示友好提示
+4. **状态标签**：使用不同颜色和文字区分调班状态
+5. **表单提示**：选择原班次后显示绿色提示信息，确认选择正确
