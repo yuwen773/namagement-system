@@ -545,6 +545,237 @@ recipe_analysis_db (MySQL 3307)
 
 ---
 
+### 阶段二 第3步：设计食材表与关联表
+
+**完成内容**：
+
+1. **创建 Ingredient 模型** (`backend/ingredients/models.py`)
+   - `Ingredient` 模型 - 食材库，存储各种食材的基本信息
+
+2. **Ingredient 模型字段**
+   - `id` - 主键
+   - `name` - 食材名称（最大100字符，唯一，已索引）
+   - `category` - 食材分类（choices: vegetable/meat/seafood/seasoning/fruit/grain/dairy/other，已索引）
+   - `created_at` - 创建时间
+   - `updated_at` - 更新时间
+
+3. **创建 RecipeIngredient 模型** (`backend/recipes/models.py`)
+   - `RecipeIngredient` 模型 - 菜谱-食材关联表，实现多对多关系
+
+4. **RecipeIngredient 模型字段**
+   - `id` - 主键
+   - `recipe` - 关联菜谱（外键 → Recipe，级联删除，已索引）
+   - `ingredient` - 关联食材（外键 → Ingredient，级联删除，已索引）
+   - `amount` - 用量描述（最大100字符，如"200g"、"2个"、"适量"）
+   - `sort_order` - 排序序号（默认0）
+   - `created_at` - 创建时间
+
+5. **联合唯一约束**
+   - `unique_recipe_ingredient` - 同一菜谱不能重复添加同一食材
+
+6. **数据库索引**
+   - ingredients 表：
+     - `ingredients_name_9f76a2_idx` - 食材名称索引（用于搜索）
+     - `ingredients_categor_ed8c56_idx` - 食材分类索引（用于筛选）
+   - recipe_ingredients 表：
+     - `recipe_ingr_recipe__c09862_idx` - 菜谱ID索引（用于查询菜谱的食材）
+     - `recipe_ingr_ingredi_1f18f7_idx` - 食材ID索引（用于查询使用该食材的菜谱）
+
+7. **创建数据库迁移文件**
+   - `ingredients/migrations/0001_initial.py`
+   - `recipes/migrations/0002_recipeingredient.py`
+
+8. **执行迁移**
+   - 成功创建 ingredients 表
+   - 成功创建 recipe_ingredients 表
+   - 所有索引和约束正确创建
+
+9. **创建验证脚本**
+   - `backend/verify_ingredient_models.py` - 模型验证脚本
+
+10. **测试验证**
+    - ✅ 食材创建和查询测试通过
+    - ✅ 菜谱-食材关联创建测试通过
+    - ✅ 反向查询测试通过（菜谱→食材、食材→菜谱）
+    - ✅ 联合唯一约束测试通过（IntegrityError 正确抛出）
+    - ✅ 食材反向查询测试通过
+    - ✅ 数据库索引验证通过（6个索引）
+    - ✅ 外键约束验证通过（2个外键）
+
+**文件结构**：
+```
+backend/
+├── ingredients/
+│   ├── models.py              # ✅ Ingredient 模型
+│   └── migrations/
+│       └── 0001_initial.py    # ✅ 食材表迁移文件
+├── recipes/
+│   ├── models.py              # ✅ Recipe + RecipeIngredient 模型
+│   └── migrations/
+│       └── 0002_recipeingredient.py  # ✅ 关联表迁移文件
+└── verify_ingredient_models.py # ✅ 模型验证脚本
+```
+
+**数据库结构**：
+```
+recipe_analysis_db (MySQL 3307)
+├── users              # 用户主表
+├── user_profiles      # 用户资料表
+├── recipes            # 菜谱主表
+├── ingredients        # ✅ 食材库
+│   ├── id (PK)
+│   ├── name (UNIQUE, INDEX)
+│   ├── category (INDEX) - meat/vegetable/seafood/seasoning等
+│   ├── created_at
+│   └── updated_at
+└── recipe_ingredients # ✅ 菜谱-食材关联表
+    ├── id (PK)
+    ├── recipe_id (INDEX, FK) → recipes.id (CASCADE)
+    ├── ingredient_id (INDEX, FK) → ingredients.id (CASCADE)
+    ├── amount
+    ├── sort_order
+    ├── created_at
+    └── UNIQUE(recipe_id, ingredient_id)
+```
+
+**使用示例**：
+```python
+# 创建食材
+from ingredients.models import Ingredient
+
+chicken = Ingredient.objects.create(name='鸡肉', category='meat')
+potato = Ingredient.objects.create(name='土豆', category='vegetable')
+
+# 为菜谱添加食材
+from recipes.models import Recipe, RecipeIngredient
+
+recipe = Recipe.objects.get(name='宫保鸡丁')
+RecipeIngredient.objects.create(
+    recipe=recipe,
+    ingredient=chicken,
+    amount='300g',
+    sort_order=1
+)
+
+# 查询菜谱的所有食材
+for ri in recipe.recipe_ingredients.all():
+    print(f"{ri.ingredient.name}: {ri.amount}")
+
+# 查询使用某食材的所有菜谱
+for ri in chicken.recipe_ingredients.all():
+    print(ri.recipe.name)
+```
+
+**设计说明**：
+- 食材名称使用唯一约束，避免重复创建
+- 食材分类使用 choices 参数，确保数据一致性
+- 关联表包含用量字段，支持灵活的用量描述
+- 排序序号支持食材按特定顺序显示
+- 联合唯一约束防止同一菜谱重复添加同一食材
+- 双向外键级联删除，确保数据一致性
+
+**最终状态**：✅ 食材表与关联表完全创建并测试通过
+
+**下一步**：等待用户指示后，执行阶段二第4步（设计收藏表结构）
+
+---
+
+### 阶段二 第4步：设计收藏表结构
+
+**完成内容**：
+
+1. **创建 UserFavorite 模型** (`backend/favorites/models.py`)
+   - `UserFavorite` 模型 - 用户收藏表，存储用户对菜谱的收藏关系
+
+2. **UserFavorite 模型字段**
+   - `id` - 主键
+   - `user` - 关联用户（外键 → User，级联删除，已索引）
+   - `recipe` - 关联菜谱（外键 → Recipe，级联删除，已索引）
+   - `created_at` - 收藏时间（自动添加，已索引）
+
+3. **联合唯一约束**
+   - `unique_user_recipe_favorite` - 同一用户不能重复收藏同一菜谱
+
+4. **数据库索引**
+   - `user_favori_user_id_216ac3_idx` - 用户ID索引（用于查询用户的收藏）
+   - `user_favori_recipe__6f6610_idx` - 菜谱ID索引（用于查询收藏该菜谱的用户）
+   - `user_favori_created_d0b934_idx` - 收藏时间索引（用于按时间排序）
+
+5. **创建数据库迁移文件**
+   - `favorites/migrations/0001_initial.py`
+
+6. **执行迁移**
+   - 成功创建 user_favorites 表
+   - 所有索引和约束正确创建
+
+7. **创建验证脚本**
+   - `backend/verify_favorite_model.py` - 模型验证脚本
+
+8. **测试验证**
+   - ✅ 模型结构验证通过
+   - ✅ 收藏创建测试通过
+   - ✅ 联合唯一约束测试通过（重复收藏被正确拒绝）
+   - ✅ 反向查询测试通过（user.favorites、recipe.favorited_by）
+   - ✅ 数据库索引验证通过（4个索引）
+
+**文件结构**：
+```
+backend/
+├── favorites/
+│   ├── models.py              # ✅ UserFavorite 模型
+│   ├── admin.py               # ✅ Django Admin 配置
+│   └── migrations/
+│       └── 0001_initial.py    # ✅ 收藏表迁移文件
+└── verify_favorite_model.py   # ✅ 模型验证脚本
+```
+
+**数据库结构**：
+```
+recipe_analysis_db (MySQL 3307)
+├── users              # 用户主表
+├── user_profiles      # 用户资料表
+├── recipes            # 菜谱主表
+├── ingredients        # 食材库
+├── recipe_ingredients # 菜谱-食材关联表
+└── user_favorites     # ✅ 用户收藏表
+    ├── id (PK)
+    ├── user_id (INDEX, FK) → users.id (CASCADE)
+    ├── recipe_id (INDEX, FK) → recipes.id (CASCADE)
+    ├── created_at (INDEX)
+    └── UNIQUE(user_id, recipe_id)
+```
+
+**使用示例**：
+```python
+# 创建收藏
+from accounts.models import User
+from recipes.models import Recipe
+from favorites.models import UserFavorite
+
+user = User.objects.get(username='testuser')
+recipe = Recipe.objects.get(name='宫保鸡丁')
+
+favorite = UserFavorite.objects.create(user=user, recipe=recipe)
+
+# 查询用户的收藏
+user_favorites = user.favorites.all()
+
+# 查询菜谱的收藏者
+recipe_favorited = recipe.favorited_by.all()
+```
+
+**设计说明**：
+- 联合唯一约束防止同一用户重复收藏同一菜谱
+- 双向外键级联删除，确保数据一致性
+- 反向关系命名：`favorites`（用户的收藏）、`favorited_by`（菜谱的收藏者）
+- 收藏时间索引支持按时间排序查询
+
+**最终状态**：✅ 收藏表结构完全创建并测试通过
+
+**下一步**：等待用户验证测试结果后，执行阶段二第5步（设计用户行为表）
+
+---
+
 ## 待完成任务
 
 - [x] 阶段一 第1步：创建前端项目结构
@@ -553,3 +784,5 @@ recipe_analysis_db (MySQL 3307)
 - [x] 阶段一 第4步：配置开发环境
 - [x] 阶段二 第1步：设计用户表结构
 - [x] 阶段二 第2步：设计菜谱表结构
+- [x] 阶段二 第3步：设计食材表与关联表
+- [x] 阶段二 第4步：设计收藏表结构

@@ -1,7 +1,7 @@
 # 菜谱数据分析系统 - 架构设计
 
 > 更新日期: 2026-01-29
-> 当前阶段: 阶段二第2步完成
+> 当前阶段: 阶段二第4步完成
 
 ---
 
@@ -58,10 +58,10 @@ recipe-data-analysis-system/
 | user_profiles | ✅ 已创建 | 用户资料表 |
 | recipes | ✅ 已创建 | 菜谱主表 |
 | categories | ⏳ 待创建 | 分类表 |
-| ingredients | ⏳ 待创建 | 食材库 |
-| recipe_ingredients | ⏳ 待创建 | 菜谱-食材关联 |
+| ingredients | ✅ 已创建 | 食材库 |
+| recipe_ingredients | ✅ 已创建 | 菜谱-食材关联 |
 | recipe_steps | ⏳ 待创建 | 制作步骤表 |
-| user_favorites | ⏳ 待创建 | 用户收藏 |
+| user_favorites | ✅ 已创建 | 用户收藏 |
 | user_behavior_logs | ⏳ 待创建 | 行为日志 |
 
 ### 核心表结构（完整设计）
@@ -222,6 +222,123 @@ hot_recipes = Recipe.objects.order_by('-view_count')
 | 冗余统计字段 | 避免频繁 JOIN 统计，通过应用层或触发器维护 |
 | 多维度索引 | 覆盖常用查询（筛选、搜索、排序）场景，优化性能 |
 
+#### ingredients 表（食材库）✅
+
+| 字段 | 类型 | 约束 | 说明 |
+|:-----|:-----|:-----|:-----|
+| id | bigint | PK, AUTO | 主键 |
+| name | varchar(100) | UNIQUE, NOT NULL, INDEX | 食材名称 |
+| category | varchar(20) | NOT NULL, INDEX | 食材分类 |
+| created_at | datetime(6) | NOT NULL | 创建时间 |
+| updated_at | datetime(6) | NOT NULL | 更新时间 |
+
+**索引**：
+- PRIMARY: `id`
+- UNIQUE: `name`
+- INDEX: `category`
+
+**Django 模型**：`ingredients.models.Ingredient`
+- 分类选择：`IngredientCategory.CHOICES` (vegetable/meat/seafood/seasoning/fruit/grain/dairy/other)
+- 默认排序：`ordering = ['category', 'name']`
+
+#### recipe_ingredients 表（菜谱-食材关联）✅
+
+| 字段 | 类型 | 约束 | 说明 |
+|:-----|:-----|:-----|:-----|
+| id | bigint | PK, AUTO | 主键 |
+| recipe_id | bigint | NOT NULL, FK, INDEX | 关联 recipes.id |
+| ingredient_id | bigint | NOT NULL, FK, INDEX | 关联 ingredients.id |
+| amount | varchar(100) | NULL | 用量描述 |
+| sort_order | int | NOT NULL, DEFAULT 0 | 排序序号 |
+| created_at | datetime(6) | NOT NULL | 创建时间 |
+
+**关系**：
+- `recipe_id` → `recipes.id`（ON DELETE CASCADE）
+- `ingredient_id` → `ingredients.id`（ON DELETE CASCADE）
+- 联合唯一约束：`UNIQUE(recipe_id, ingredient_id)`
+
+**Django 模型**：`recipes.models.RecipeIngredient`
+
+**使用示例**：
+```python
+# 创建食材
+from ingredients.models import Ingredient
+
+chicken = Ingredient.objects.create(name='鸡肉', category='meat')
+potato = Ingredient.objects.create(name='土豆', category='vegetable')
+
+# 为菜谱添加食材
+from recipes.models import Recipe, RecipeIngredient
+
+recipe = Recipe.objects.get(name='宫保鸡丁')
+RecipeIngredient.objects.create(
+    recipe=recipe,
+    ingredient=chicken,
+    amount='300g',
+    sort_order=1
+)
+
+# 查询菜谱的所有食材
+for ri in recipe.recipe_ingredients.all():
+    print(f"{ri.ingredient.name}: {ri.amount}")
+
+# 查询使用某食材的所有菜谱
+for ri in chicken.recipe_ingredients.all():
+    print(ri.recipe.name)
+```
+
+#### user_favorites 表（用户收藏）✅
+
+| 字段 | 类型 | 约束 | 说明 |
+|:-----|:-----|:-----|:-----|
+| id | bigint | PK, AUTO | 主键 |
+| user_id | bigint | NOT NULL, FK, INDEX | 关联 users.id |
+| recipe_id | bigint | NOT NULL, FK, INDEX | 关联 recipes.id |
+| created_at | datetime(6) | NOT NULL, INDEX | 收藏时间 |
+
+**关系**：
+- `user_id` → `users.id`（ON DELETE CASCADE）
+- `recipe_id` → `recipes.id`（ON DELETE CASCADE）
+- 联合唯一约束：`UNIQUE(user_id, recipe_id)`
+
+**索引**：
+- PRIMARY: `id`
+- INDEX: `user_id` - 用于查询用户的收藏
+- INDEX: `recipe_id` - 用于查询收藏该菜谱的用户
+- INDEX: `created_at` - 用于按时间排序
+
+**Django 模型**：`favorites.models.UserFavorite`
+- 反向关系：`user.favorites`（用户的收藏）、`recipe.favorited_by`（菜谱的收藏者）
+- 默认排序：`ordering = ['-created_at']`
+
+**使用示例**：
+```python
+# 创建收藏
+from accounts.models import User
+from recipes.models import Recipe
+from favorites.models import UserFavorite
+
+user = User.objects.get(username='testuser')
+recipe = Recipe.objects.get(name='宫保鸡丁')
+
+favorite = UserFavorite.objects.create(user=user, recipe=recipe)
+
+# 查询用户的收藏
+user_favorites = user.favorites.all()
+
+# 查询菜谱的收藏者
+recipe_favorited = recipe.favorited_by.all()
+
+# 检查用户是否已收藏某菜谱
+is_favorited = UserFavorite.objects.filter(user=user, recipe=recipe).exists()
+```
+
+**设计说明**：
+- 联合唯一约束防止同一用户重复收藏同一菜谱
+- 双向外键级联删除，确保数据一致性
+- 反向关系命名清晰：`favorites`（用户的收藏）、`favorited_by`（菜谱的收藏者）
+- 收藏时间索引支持按时间排序查询
+
 ### 核心关系（完整设计）
 
 ```
@@ -266,12 +383,20 @@ backend/
 │   └── ...
 ├── recipes/                # 菜谱模块 ✅
 │   ├── migrations/
-│   │   └── 0001_initial.py
-│   ├── models.py          # Recipe 模型
+│   │   ├── 0001_initial.py
+│   │   └── 0002_recipeingredient.py
+│   ├── models.py          # Recipe, RecipeIngredient 模型
 │   └── ...
 ├── categories/             # 分类模块 ⏳
-├── ingredients/            # 食材模块 ⏳
-├── favorites/              # 收藏模块 ⏳
+├── ingredients/            # 食材模块 ✅
+│   ├── migrations/
+│   │   └── 0001_initial.py
+│   └── models.py          # Ingredient 模型
+├── favorites/              # 收藏模块 ✅
+│   ├── migrations/
+│   │   └── 0001_initial.py
+│   ├── models.py          # UserFavorite 模型
+│   └── admin.py           # Django Admin 配置
 ├── analytics/              # 数据分析（用户）⏳
 ├── admin_panel/            # 管理员模块 ⏳
 ├── behavior_logs/          # 行为日志 ⏳
@@ -283,7 +408,9 @@ backend/
 ├── requirements.txt        # Python 依赖列表 ✅
 ├── README.md               # 后端说明文档 ✅
 ├── verify_user_model.py    # 用户模型验证脚本 ✅
-└── verify_recipe_model.py  # 菜谱模型验证脚本 ✅
+├── verify_recipe_model.py  # 菜谱模型验证脚本 ✅
+├── verify_ingredient_models.py  # 食材模型验证脚本 ✅
+└── verify_favorite_model.py  # 收藏模型验证脚本 ✅
 ```
 
 ### 环境配置说明
@@ -557,12 +684,14 @@ TIME_ZONE=Asia/Shanghai
 | 一 | 配置开发环境 | ✅ | 2026-01-29 |
 | 二 | 设计用户表结构 | ✅ | 2026-01-29 |
 | 二 | 设计菜谱表结构 | ✅ | 2026-01-29 |
+| 二 | 设计食材表与关联表 | ✅ | 2026-01-29 |
+| 二 | 设计收藏表结构 | ✅ | 2026-01-29 |
 
 ### 进行中
 
 | 阶段 | 步骤 | 状态 |
 |:----:|:-----|:----:|
-| 二 | 设计食材表与关联表 | ⏳ |
+| 二 | 设计用户行为表 | ⏳ |
 
 ### 待完成
 
