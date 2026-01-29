@@ -15,7 +15,7 @@ from decimal import Decimal
 
 from employees.models import EmployeeProfile
 from attendance.models import AttendanceRecord
-from salaries.models import SalaryRecord
+from salaries.models import SalaryRecord, Appeal
 from schedules.models import Schedule
 from leaves.models import LeaveRequest
 
@@ -462,33 +462,36 @@ def overview_statistics(request):
         today_schedules = Schedule.objects.filter(work_date=today)
         today_should_attend = today_schedules.count()
 
-        # 今日考勤统计
+        # 今日考勤统计（基于工作日期，而非创建日期）
         today_attendance = AttendanceRecord.objects.filter(
-            created_at__date=today
+            schedule__work_date=today
         )
+        # 实出勤人数：基于员工去重（一个员工可能有多条考勤记录）
         today_present = today_attendance.filter(
             status__in=["NORMAL", "LATE", "EARLY_LEAVE"]
-        ).count()
+        ).values("employee").distinct().count()
         today_late = today_attendance.filter(status="LATE").count()
         today_missing = today_attendance.filter(status="MISSING").count()
 
         # 今日请假
         today_leaves = LeaveRequest.objects.filter(
-            start_time__lte=today,
-            end_time__gte=today,
+            start_time__date__lte=today,
+            end_time__date__gte=today,
             status="APPROVED"
         ).count()
 
-        # 今日异常考勤
+        # 今日异常考勤（不包括迟到，因为已单独统计）
         today_abnormal = today_attendance.filter(
-            status__in=["LATE", "EARLY_LEAVE", "MISSING", "ABNORMAL"]
+            status__in=["EARLY_LEAVE", "MISSING", "ABNORMAL"]
         ).count()
 
         # 待办事项统计
         pending_leaves = LeaveRequest.objects.filter(status="PENDING").count()
-        pending_attendance_appeals = AttendanceRecord.objects.filter(
-            correction_remark__isnull=False
-        ).count()  # 有更正备注的考勤记录
+        # 待处理的考勤申诉（Appeal中状态为PENDING的考勤申诉）
+        pending_attendance_appeals = Appeal.objects.filter(
+            appeal_type="ATTENDANCE",
+            status="PENDING"
+        ).count()
         pending_salaries = SalaryRecord.objects.filter(status="DRAFT").count()
 
         # 总览统计
@@ -497,12 +500,11 @@ def overview_statistics(request):
             status="ACTIVE"
         ).values("position").distinct().count()
 
-        # 本月考勤统计
-        from datetime import timedelta
+        # 本月考勤统计（基于工作日期）
         month_start = today.replace(day=1)
         month_attendance = AttendanceRecord.objects.filter(
-            created_at__date__gte=month_start,
-            created_at__date__lte=today
+            schedule__work_date__gte=month_start,
+            schedule__work_date__lte=today
         )
         month_late = month_attendance.filter(status="LATE").count()
         month_missing = month_attendance.filter(status="MISSING").count()
