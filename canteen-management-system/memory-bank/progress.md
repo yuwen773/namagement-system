@@ -140,11 +140,22 @@
 - API 调用：`clockIn()`、`clockOut()`、`getMyAttendance()`、`getAttendanceStatistics()`
 - 路由配置：`/employee/checkin`，添加到 EmployeeLayout 顶部导航菜单
 
+**步骤 5.4：考勤信息查询页面** (`AttendanceView.vue`)
+- 页面布局：顶部月份选择器 + 4个统计卡片 + 考勤记录表格
+- 月份选择器：Element Plus 月份选择器，支持按月筛选考勤数据
+- 统计卡片：出勤天数（绿色）、迟到次数（橙色）、缺卡次数（灰色）、加班时长（橙红渐变）
+- 考勤记录表格：日期（大号日+小号月）、签到/签退时间（带图标）、状态标签、地点、加班时长
+- 异常行高亮：迟到/早退/缺卡/异常记录行使用浅橙色背景
+- 异常上报对话框：显示异常详情、状态标签、签到签退时间、异常说明输入框（5-200字符）
+- API 调用：`getMyAttendance()`（按员工ID和日期范围）、`getAttendanceStatistics()`（获取统计数据）
+- 路由配置：`/employee/attendance`，已在 EmployeeLayout 顶部导航菜单中配置
+- 响应式设计：大屏4列统计卡片、中屏2列、小屏1列；表格横向滚动
+
 ---
 
 ## 待完成
 
-- [ ] 第五阶段：员工端页面（步骤 5.4-5.7）
+- [ ] 第五阶段：员工端页面（步骤 5.5-5.7）
 - [ ] 第六阶段：系统优化与部署（详见 IMPLEMENTATION_PLAN.md）
 
 ---
