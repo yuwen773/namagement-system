@@ -1,7 +1,7 @@
 # 菜谱数据分析系统 - 架构设计
 
-> 更新日期: 2026-01-29
-> 当前阶段: 阶段二第4步完成
+> 更新日期: 2026-01-30
+> 当前阶段: 阶段二完成
 
 ---
 
@@ -57,12 +57,12 @@ recipe-data-analysis-system/
 | users | ✅ 已创建 | 用户主表 |
 | user_profiles | ✅ 已创建 | 用户资料表 |
 | recipes | ✅ 已创建 | 菜谱主表 |
-| categories | ⏳ 待创建 | 分类表 |
+| categories | ✅ 已创建 | 分类表 |
 | ingredients | ✅ 已创建 | 食材库 |
 | recipe_ingredients | ✅ 已创建 | 菜谱-食材关联 |
 | recipe_steps | ⏳ 待创建 | 制作步骤表 |
 | user_favorites | ✅ 已创建 | 用户收藏 |
-| user_behavior_logs | ⏳ 待创建 | 行为日志 |
+| user_behavior_logs | ✅ 已创建 | 行为日志 |
 
 ### 核心表结构（完整设计）
 
@@ -339,6 +339,65 @@ is_favorited = UserFavorite.objects.filter(user=user, recipe=recipe).exists()
 - 反向关系命名清晰：`favorites`（用户的收藏）、`favorited_by`（菜谱的收藏者）
 - 收藏时间索引支持按时间排序查询
 
+#### categories 表（分类标签）✅
+
+| 字段 | 类型 | 约束 | 说明 |
+|:-----|:-----|:-----|:-----|
+| id | bigint | PK, AUTO | 主键 |
+| name | varchar(50) | NOT NULL | 分类名称 |
+| type | varchar(20) | NOT NULL, INDEX | 分类类型（cuisine/scene/crowd/taste） |
+| sort_order | int | NOT NULL, DEFAULT 0 | 排序序号 |
+| created_at | datetime(6) | NOT NULL | 创建时间 |
+| updated_at | datetime(6) | NOT NULL | 更新时间 |
+
+**索引**：
+- PRIMARY: `id`
+- INDEX: `type`, `sort_order`
+- 联合唯一约束：`UNIQUE(type, name)`
+
+**Django 模型**：`categories.models.Category`
+- 分类选择：`CategoryType.CHOICES` (cuisine/scene/crowd/taste)
+- 默认排序：`ordering = ['type', 'sort_order', 'id']`
+- 类方法：
+  - `get_by_type(category_type)` - 获取指定类型的所有分类
+  - `get_cuisines()` - 获取所有菜系
+  - `get_scenes()` - 获取所有场景
+  - `get_crowds()` - 获取所有人群
+  - `get_tastes()` - 获取所有口味
+
+**初始数据**：
+- 八大菜系：川菜、粤菜、鲁菜、苏菜、浙菜、湘菜、徽菜、闽菜
+- 场景：早餐、午餐、晚餐、下午茶、夜宵、快手菜、宴客菜
+- 人群：儿童、老人、孕妇、健身人群、素食者
+- 口味：辣、甜、酸、咸、鲜、清淡、麻
+
+**使用示例**：
+```python
+from categories.models import Category
+from utils.constants import CategoryType
+
+# 获取所有菜系
+cuisines = Category.get_cuisines()
+for cuisine in cuisines:
+    print(f"{cuisine.name}")
+
+# 获取指定类型的分类
+scenes = Category.get_by_type(CategoryType.SCENE)
+
+# 创建新分类
+new_category = Category.objects.create(
+    name='春季时令',
+    type=CategoryType.SCENE,
+    sort_order=99
+)
+```
+
+**设计说明**：
+- 联合唯一约束确保同一类型下分类名称不重复
+- 支持多种分类类型，灵活扩展
+- 排序字段支持自定义显示顺序
+- 提供便捷的类方法快速获取各类型分类
+
 ### 核心关系（完整设计）
 
 ```
@@ -387,7 +446,11 @@ backend/
 │   │   └── 0002_recipeingredient.py
 │   ├── models.py          # Recipe, RecipeIngredient 模型
 │   └── ...
-├── categories/             # 分类模块 ⏳
+├── categories/             # 分类模块 ✅
+│   ├── migrations/
+│   │   ├── 0001_initial.py
+│   │   └── 0002_seed_initial_categories.py
+│   └── models.py          # Category 模型
 ├── ingredients/            # 食材模块 ✅
 │   ├── migrations/
 │   │   └── 0001_initial.py
@@ -686,12 +749,8 @@ TIME_ZONE=Asia/Shanghai
 | 二 | 设计菜谱表结构 | ✅ | 2026-01-29 |
 | 二 | 设计食材表与关联表 | ✅ | 2026-01-29 |
 | 二 | 设计收藏表结构 | ✅ | 2026-01-29 |
-
-### 进行中
-
-| 阶段 | 步骤 | 状态 |
-|:----:|:-----|:----:|
-| 二 | 设计用户行为表 | ⏳ |
+| 二 | 设计用户行为表 | ✅ | 2026-01-29 |
+| 二 | 创建分类/标签表 | ✅ | 2026-01-30 |
 
 ### 待完成
 
