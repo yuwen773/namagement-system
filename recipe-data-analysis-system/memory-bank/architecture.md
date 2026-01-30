@@ -1,7 +1,7 @@
 # 菜谱数据分析系统 - 架构设计
 
 > 更新日期: 2026-01-30
-> 当前阶段: 阶段三进行中（1/6 步骤完成）
+> 当前阶段: 阶段三进行中（3/6 步骤完成）
 
 ---
 
@@ -637,15 +637,22 @@ data-scripts/
 ├── spiders/                # 爬虫脚本
 │   ├── README.md           # 爬虫模块说明 ✅
 │   ├── website_analysis.md # 目标网站分析报告 ✅
-│   ├── request_utils.py    # HTTP请求封装（UA轮换、重试）⏳
-│   ├── parser_utils.py     # HTML解析工具 ⏳
-│   └── xiachufang_spider.py # 下厨房爬虫主脚本 ⏳
+│   ├── request_utils.py    # HTTP请求封装（UA轮换、重试）✅
+│   ├── parser_utils.py     # HTML解析工具 ✅
+│   ├── xiachufang_spider.py # 下厨房爬虫主脚本 ✅
+│   └── test_spider.py      # 测试脚本 ✅
 ├── cleaning/               # 数据清洗脚本
-│   └── README.md
+│   ├── README.md           # 清洗模块说明 ✅
+│   ├── clean_recipes.py    # 数据清洗主脚本 ✅
+│   └── test_clean.py       # 测试脚本 ✅
 ├── importing/              # 数据导入脚本
 │   └── README.md
-└── simulation/             # 用户行为模拟脚本
-    └── README.md
+├── simulation/             # 用户行为模拟脚本
+│   └── README.md
+└── output/                 # 数据输出目录 ✅
+    ├── test_recipes_simulated.json
+    ├── test_cleaned_output.json
+    └── cleaning_report.json
 ```
 
 ### 执行流程
@@ -825,7 +832,65 @@ python simulation/recipe_data_simulator.py
 
 #### cleaning/ - 数据清洗脚本
 
-去除重复、补全缺失字段、统一难度/时长/单位格式
+**目的**: 清洗和标准化爬取或模拟的菜谱数据
+
+| 文件 | 作用 | 状态 |
+|:-----|:-----|:----:|
+| `clean_recipes.py` | 数据清洗主脚本 | ✅ |
+| `test_clean.py` | 测试脚本 | ✅ |
+| `README.md` | 模块说明 | ✅ |
+
+**clean_recipes.py 功能**:
+
+```python
+class RecipeCleaner:
+    # 清洗功能：
+    - clean_recipe() - 清洗单条记录
+    - clean_recipes() - 批量清洗
+    - _normalize_difficulty() - 难度标准化
+    - _normalize_cooking_time() - 时间标准化
+    - _normalize_flavor_tags() - 口味标签标准化
+    - _normalize_ingredients() - 食材标准化
+    - _normalize_steps() - 步骤标准化
+    - _is_duplicate() - 重复检测
+    - _validate_recipe() - 数据验证
+    - _fill_missing_fields() - 缺失字段补全
+```
+
+**清洗规则**:
+
+| 数据项 | 清洗规则 |
+|:------|:---------|
+| 去重 | 基于 `recipe_id` 和菜谱名称 MD5 哈希 |
+| 难度 | 中文 → `easy/medium/hard`，默认 `medium` |
+| 烹饪时间 | 提取数字 → 分钟整数，默认 30 |
+| 菜系 | 不在标准列表 → 默认"家常菜" |
+| 场景 | 缺失 → 默认"晚餐" |
+| 口味标签 | 逗号分隔字符串 → 列表，过滤无效值 |
+| 食材 | 字符串/列表 → 统一字典格式 `[{'name': '...', 'amount': '...'}]` |
+| 步骤 | 字符串/列表 → 统一列表格式，自动编号 |
+| 图片URL | 验证 HTTP/HTTPS 格式 |
+
+**必填字段验证**:
+- 菜谱名称 (name)
+- 食材列表 (ingredients) - 至少 1 条
+- 制作步骤 (steps) - 至少 1 步
+
+**使用方式**:
+```bash
+cd data-scripts/cleaning
+
+# 清洗数据（默认使用模拟数据）
+python clean_recipes.py
+
+# 指定输入输出文件
+python clean_recipes.py input.json output.json
+
+# 运行测试
+python test_clean.py
+```
+
+**验证状态**: ✅ 已测试通过（2026-01-30）
 
 #### importing/ - 数据导入脚本
 
@@ -932,6 +997,7 @@ TIME_ZONE=Asia/Shanghai
 | 二 | 设计用户行为表 | ✅ | 2026-01-29 |
 | 二 | 创建分类/标签表 | ✅ | 2026-01-30 |
 | 三 | 分析目标网站 | ✅ | 2026-01-30 |
+| 三 | 编写数据清洗脚本 | ✅ | 2026-01-30 |
 
 ### 阶段三步骤1成果
 
