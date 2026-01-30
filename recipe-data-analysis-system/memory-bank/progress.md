@@ -471,7 +471,7 @@ python import_recipes.py ../output/test_cleaned_output.json
 |:----:|:------|:----:|:----:|
 | 4.1 | 实现用户注册接口 | ✅ 已验证 | 2026-01-30 |
 | 4.2 | 实现用户登录接口 | ✅ 已验证 | 2026-01-30 |
-| 4.3 | 实现 Token 验证中间件 | ✅ 待测试 | 2026-01-30 |
+| 4.3 | 实现 Token 验证中间件 | ✅ 已验证 | 2026-01-30 |
 | 4.4 | 实现获取当前用户信息接口 | ⏳ | - |
 | 4.5 | 实现更新用户信息接口 | ⏳ | - |
 | 4.6 | 实现修改密码接口 | ⏳ | - |
@@ -854,13 +854,27 @@ python verify_script/test_auth_middleware.py
 
 #### 验证结果（2026-01-30）
 
-**状态**：⏳ **待用户测试验证**
+**用户验证**：✅ **测试通过**
 
-**测试前准备**：
-1. 确保开发服务器正在运行（`python manage.py runserver 8000`）
-2. 运行测试脚本：`python verify_script/test_auth_middleware.py`
+**测试结果**：
+```
+总计: 5 通过, 0 失败
 
-**预期测试结果**：
+测试通过项：
+  [OK] PASS  有效 Token
+  [OK] PASS  无 Token
+  [OK] PASS  无效 Token
+  [OK] PASS  错误 Token 格式
+  [OK] PASS  已禁用用户
+```
+
+**修复说明**：
+1. 修复了无效 Token 导致的 500 错误 - 添加了 `UnicodeDecodeError` 和 `ValueError` 到异常捕获
+2. 修复了测试脚本在 Windows 下的编码问题 - 使用 ASCII 兼容字符替代 Unicode 符号
+
+**提交记录**：
+- `feat(auth): 添加 JWT Token 验证中间件` (79c5ba6)
+- `fix(auth): 修复无效 Token 异常处理和 Windows 编码问题` (fd29cc2)
 ```
 ============================================================
 JWT 认证中间件测试
