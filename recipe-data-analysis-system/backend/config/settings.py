@@ -19,6 +19,9 @@ load_dotenv()
 
 # PyMySQL settings (must be before other imports)
 import pymysql
+
+# 修复 Django 6.0 与 PyMySQL 版本兼容性问题
+pymysql.version_info = (2, 2, 1, 'final', 0)
 pymysql.install_as_MySQLdb()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
