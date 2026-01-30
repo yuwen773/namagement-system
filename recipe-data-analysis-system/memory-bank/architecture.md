@@ -1,7 +1,7 @@
 # 菜谱数据分析系统 - 架构设计
 
 > 更新日期: 2026-01-30
-> 当前阶段: 阶段二完成
+> 当前阶段: 阶段三进行中（1/6 步骤完成）
 
 ---
 
@@ -635,7 +635,11 @@ data-scripts/
 ├── README.md               # 总体说明文档 ✅
 ├── test_structure.py       # 目录结构测试脚本 ✅
 ├── spiders/                # 爬虫脚本
-│   └── README.md
+│   ├── README.md           # 爬虫模块说明 ✅
+│   ├── website_analysis.md # 目标网站分析报告 ✅
+│   ├── request_utils.py    # HTTP请求封装（UA轮换、重试）⏳
+│   ├── parser_utils.py     # HTML解析工具 ⏳
+│   └── xiachufang_spider.py # 下厨房爬虫主脚本 ⏳
 ├── cleaning/               # 数据清洗脚本
 │   └── README.md
 ├── importing/              # 数据导入脚本
@@ -648,12 +652,69 @@ data-scripts/
 
 爬取数据 → 清洗数据 → 导入数据库 → 模拟行为
 
-### 文件作用
+### 模块详细说明
 
-- **spiders/**：目标网站（下厨房、美食杰），爬取菜谱名称、食材、步骤、图片
-- **cleaning/**：去除重复、补全缺失字段、统一难度/时长/单位格式
-- **importing/**：批量插入（bulk_create）、处理外键关联、生成点击/收藏量
-- **simulation/**：生成100+用户、20-100条行为/用户、时间分布过去30天
+#### spiders/ - 爬虫模块
+
+**目标网站**：
+- **下厨房** (https://www.xiachufang.com) - 主要目标
+- 备选：豆果美食、香哈菜谱、心食谱
+
+**已完成的文件**：
+
+| 文件 | 作用 | 状态 |
+|:-----|:-----|:----:|
+| `website_analysis.md` | 目标网站结构分析报告 | ✅ |
+
+**website_analysis.md 内容概要**：
+- 目标网站选择与可用性测试
+- URL 结构分析（菜谱详情页格式）
+- HTML 结构与 CSS 选择器映射
+- 反爬策略分析（User-Agent、IP限制、登录要求）
+- 可爬取数据字段与数据库映射
+- 爬虫环境准备（依赖安装）
+- 风险评估与应对措施
+
+**待实现的文件**：
+
+| 文件 | 作用 | 功能 |
+|:-----|:-----|:-----|
+| `request_utils.py` | HTTP请求封装 | UA轮换、自动重试、异常处理 |
+| `parser_utils.py` | HTML解析工具 | 提取菜谱名称、食材、步骤、图片 |
+| `xiachufang_spider.py` | 主爬虫脚本 | 获取分类列表、爬取菜谱详情、保存JSON |
+
+**数据字段映射**：
+
+| 数据字段 | CSS选择器 | 目标数据库表 |
+|:---------|:----------|:-------------|
+| 菜谱名称 | `h1.page-title` | `recipes.name` |
+| 成品图片 | `.recipe-cover img` | `recipes.image_url` |
+| 用料列表 | `.recipe-ingredients` | `recipe_ingredients` |
+| 制作步骤 | `.recipe-steps` | `recipes.steps` |
+| 小贴士 | `.recipe-tip` | 扩展字段 |
+
+**反爬策略配置**：
+- 请求间隔：2-5秒
+- User-Agent：真实浏览器UA轮换
+- 并发数：1个（单线程）
+- 每日请求上限：1000-2000次
+
+**输出格式**：
+- 原始数据：JSON文件（按日期/批次命名）
+- 图片：下载至 `data-scripts/spiders/images/`
+- 元数据：爬取时间、来源网站、成功/失败数量
+
+#### cleaning/ - 数据清洗脚本
+
+去除重复、补全缺失字段、统一难度/时长/单位格式
+
+#### importing/ - 数据导入脚本
+
+批量插入（bulk_create）、处理外键关联、生成点击/收藏量
+
+#### simulation/ - 用户行为模拟脚本
+
+生成100+用户、20-100条行为/用户、时间分布过去30天
 
 ---
 
@@ -751,6 +812,23 @@ TIME_ZONE=Asia/Shanghai
 | 二 | 设计收藏表结构 | ✅ | 2026-01-29 |
 | 二 | 设计用户行为表 | ✅ | 2026-01-29 |
 | 二 | 创建分类/标签表 | ✅ | 2026-01-30 |
+| 三 | 分析目标网站 | ✅ | 2026-01-30 |
+
+### 阶段三步骤1成果
+
+**网站分析**：
+- 下厨房 (xiachufang.com) - 可访问，确定为主要目标
+- 美食杰 (meishij.net) - 404不可用
+
+**爬虫环境准备**：
+- 依赖已安装：requests, beautifulsoup4, lxml, pandas
+- 分析文档已创建：`data-scripts/spiders/website_analysis.md`
+
+**数据字段映射已明确**：
+- 菜谱名称 → `recipes.name`
+- 成品图片 → `recipes.image_url`
+- 用料列表 → `recipe_ingredients`
+- 制作步骤 → `recipes.steps`
 
 ### 待完成
 
