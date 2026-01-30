@@ -265,12 +265,16 @@ class XiachufangSpider:
 
         save_path = self.output_dir / filename
 
-        # 准备保存数据
+        # 准备保存数据（处理 datetime 对象）
+        stats_copy = self.stats.copy()
+        stats_copy['start_time'] = stats_copy['start_time'].isoformat() if stats_copy.get('start_time') else None
+        stats_copy['end_time'] = stats_copy['end_time'].isoformat() if stats_copy.get('end_time') else None
+
         output_data = {
             'metadata': {
                 'total': len(self.recipes),
                 'crawled_at': datetime.now().isoformat(),
-                'stats': self.stats,
+                'stats': stats_copy,
             },
             'recipes': self.recipes
         }
