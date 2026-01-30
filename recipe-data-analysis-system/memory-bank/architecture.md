@@ -455,6 +455,9 @@ backend/
 │   ├── migrations/
 │   │   └── 0001_initial.py
 │   └── models.py          # Ingredient 模型
+├── mysql_backend/          # PyMySQL 兼容层 ✅
+│   ├── __init__.py         # 包初始化
+│   └── base.py             # Django 6.0 兼容修复
 ├── favorites/              # 收藏模块 ✅
 │   ├── migrations/
 │   │   └── 0001_initial.py
@@ -481,6 +484,20 @@ backend/
 - `.env`：包含敏感配置（SECRET_KEY、数据库密码），通过 python-dotenv 加载
 - `.env.example`：不含敏感值的模板，供其他开发者参考
 - `settings.py`：使用 `os.getenv()` 读取环境变量，设置合理的默认值
+
+**Django 6.0 + PyMySQL 兼容性处理**：
+
+```python
+# settings.py 中的 PyMySQL 配置
+import pymysql
+
+# 修复 Django 6.0 版本检查问题
+pymysql.version_info = (2, 2, 1, 'final', 0)
+pymysql.install_as_MySQLdb()
+```
+
+**问题**：Django 6.0 要求 MySQLdb 2.2.1+，但 PyMySQL 1.1.2 声称是 1.4.6
+**解决方案**：修改 `pymysql.version_info` 绕过版本检查
 
 ### 工具模块详细说明 ✅
 
@@ -894,7 +911,119 @@ python test_clean.py
 
 #### importing/ - 数据导入脚本
 
-批量插入（bulk_create）、处理外键关联、生成点击/收藏量
+**目的**: 将清洗后的菜谱数据导入到数据库中
+
+| 文件 | 作用 | 状态 |
+|:-----|:-----|:----:|
+| `import_recipes.py` | 数据导入主脚本 | ✅ |
+| `test_import.py` | MySQL 版本测试脚本 | ✅ |
+| `test_import_sqlite.py` | SQLite 版本测试脚本（快速测试）| ✅ |
+| `README.md` | 模块说明文档 | ✅ |
+
+**import_recipes.py 功能**:
+
+```python
+class RecipeImporter:
+    # 数据导入流程：
+    - load_data() - 加载 JSON 数据
+    - import_recipes() - 批量导入菜谱
+    - get_or_create_ingredient() - 获取或创建食材
+    - generate_random_stats() - 生成统计数据
+    - print_summary() - 打印导入摘要
+    - verify_import() - 验证导入结果
+```
+
+**主要功能**:
+
+| 功能 | 说明 |
+|:-----|:-----|
+| 批量插入 | 使用 Django `bulk_create()` 批量插入数据 |
+| 食材自动分类 | 内置 100+ 种食材的分类规则 |
+| 统计数据生成 | 点击量 100-50000，收藏量 5%-20% |
+| 数据验证 | 检查必填字段，跳过无效记录 |
+| 进度显示 | 使用 tqdm 显示实时进度 |
+| 错误处理 | 完整的错误统计报告 |
+
+**食材分类规则**:
+
+```python
+INGREDIENT_CATEGORY_MAP = {
+    # 蔬菜类
+    '白菜': 'vegetable', '菠菜': 'vegetable', '土豆': 'vegetable',
+    '番茄': 'vegetable', '黄瓜': 'vegetable', '茄子': 'vegetable',
+    # 肉类
+    '猪肉': 'meat', '牛肉': 'meat', '羊肉': 'meat',
+    '鸡肉': 'meat', '鸭肉': 'meat',
+    # 海鲜类
+    '鱼': 'seafood', '虾': 'seafood', '蟹': 'seafood',
+    # 调料类
+    '盐': 'seasoning', '糖': 'seasoning', '酱油': 'seasoning',
+    '姜': 'seasoning', '蒜': 'seasoning', '葱': 'seasoning',
+    # ... 共 100+ 种食材
+}
+```
+
+**使用方式**:
+```bash
+cd data-scripts/importing
+
+# 快速测试（推荐）
+python test_import_sqlite.py
+
+# 导入清洗后的数据
+python import_recipes.py ../output/cleaned_recipes.json
+
+# 导入测试数据
+python import_recipes.py ../output/test_cleaned_output.json
+```
+
+**验证状态**: ✅ 已测试通过（2026-01-30）
+
+**测试结果**:
+```
+成功导入 4 条菜谱
+创建 8 种食材
+建立 8 条食材关联
+统计数据生成正确
+外键约束正确
+```
+
+**架构见解 - Django 6.0 bulk_create 兼容性处理**:
+
+在 Django 6.0 中，`bulk_create()` 方法的行为有所变化。批量插入后返回的对象默认不包含数据库生成的主键 ID，这导致无法直接使用这些对象创建外键关联。
+
+**解决方案**：
+```python
+# 1. 批量插入菜谱
+created_recipes = Recipe.objects.bulk_create(recipes_to_create, batch_size=100)
+
+# 2. 从数据库重新获取带主键的对象
+recipe_names = [r.name for r in created_recipes]
+recipes_from_db = Recipe.objects.filter(name__in=recipe_names)
+
+# 3. 使用从数据库获取的对象创建外键关联
+for recipe in recipes_from_db:
+    # recipe.id 现在有值，可以创建外键关联
+    RecipeIngredient.objects.create(recipe=recipe, ...)
+```
+
+**设计说明**：
+
+| 设计决策 | 理由 |
+|:---------|:-----|
+| 分批查询重新获取 | 避免 `name__in` 查询过大，保持性能 |
+| 使用名称映射 | 菜谱名称唯一，可以作为临时关联键 |
+| 食材缓存 | 避免重复查询食材表，提升性能 |
+| 统计数据可选保留 | 如果数据中已有统计数据，使用原值 |
+
+**各文件作用**：
+
+| 文件 | 作用 | 关键类/函数 |
+|:-----|:-----|:-----------|
+| `import_recipes.py` | 主导入脚本 | `RecipeImporter.run()`, `RecipeImporter.import_recipes()` |
+| `test_import.py` | MySQL 测试脚本 | `clear_test_data()`, `verify_import_results()` |
+| `test_import_sqlite.py` | SQLite 快速测试 | 使用内存数据库快速验证逻辑 |
+| `README.md` | 模块文档 | 使用说明、测试结果、注意事项 |
 
 #### simulation/ - 用户行为模拟脚本
 
