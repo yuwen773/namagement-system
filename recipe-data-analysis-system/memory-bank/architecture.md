@@ -1,6 +1,6 @@
 # 菜谱数据分析系统 - 架构设计
 
-> 更新日期: 2026-01-30（阶段六完成，收藏功能测试通过 12/12）
+> 更新日期: 2026-01-30（阶段七第4步完成，食材使用频率统计接口测试通过 6/6）
 
 ---
 
@@ -260,6 +260,52 @@ recipe-data-analysis-system/
 
 ---
 
+### analytics - 数据分析模块
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `views.py` | 菜系分布分析视图（CuisineDistributionView）、难度等级统计视图（DifficultyStatsView）、口味偏好分析视图（FlavorPreferenceView）、食材使用频率统计视图（IngredientFrequencyView） |
+| `urls.py` | `/api/analytics/cuisines/`、`/api/analytics/difficulty/`、`/api/analytics/flavors/`、`/api/analytics/ingredients/` |
+
+**已实现接口**（4/4）：
+- `GET /api/analytics/cuisines/` - 菜系分布分析
+- `GET /api/analytics/difficulty/` - 难度等级统计
+- `GET /api/analytics/flavors/` - 口味偏好分析
+- `GET /api/analytics/ingredients/` - 食材使用频率统计
+
+**菜系分布接口功能**：
+- 统计各菜系的菜谱数量
+- 计算占比百分比（保留两位小数）
+- 按数量降序排列
+- 排除空菜系
+- 返回格式：`[{name, count, percentage}, ...]`
+
+**难度等级接口功能**：
+- 统计各难度等级（简单/中等/困难）的菜谱数量和占比
+- 计算各难度等级的平均烹饪时长
+- 按数量降序排列
+- 返回格式：`[{name, value, count, percentage, avg_cooking_time}, ...]`
+
+**口味偏好分析接口功能**：
+- 统计各口味标签的菜谱数量
+- 计算占比百分比
+- 按数量降序排列
+- 返回格式：`[{name, count, percentage}, ...]`
+
+**食材使用频率统计接口功能**：
+- 统计各食材被使用的菜谱数量
+- 返回 Top 20 或指定数量食材
+- 支持自定义返回数量（limit 参数，1-100，默认20）
+- 按使用次数降序排列
+- 返回格式：`[{id, name, count, category}, ...]`
+
+**接口参数** (`/api/analytics/ingredients/`)：
+- `limit` - 返回数量（可选，1-100，默认20）
+
+**测试结果**：菜系分布 6/6 通过，难度统计 6/6 通过，口味偏好 6/6 通过，食材频率 6/6 通过
+
+---
+
 ### utils - 公共工具模块
 
 | 文件 | 作用 |
@@ -294,12 +340,21 @@ recipe-data-analysis-system/
 | `test_category_list.py` | 分类列表接口测试 |
 | `test_ingredient_list.py` | 食材列表接口测试（全量获取、分类筛选、关键词搜索、分页、无效参数、空结果、组合筛选） |
 | `test_favorite.py` | 收藏功能接口测试（收藏/取消收藏/收藏列表/检查状态/重复收藏/未认证访问，12项测试全部通过） |
+| `test_cuisine_distribution.py` | 菜系分布分析接口测试（数据获取、结构验证、数量总和、占比计算、排序验证、空值处理，6项测试全部通过） |
+| `test_difficulty_stats.py` | 难度等级统计接口测试（数据获取、结构验证、数量总和、占比计算、排序验证、空值处理，6项测试全部通过） |
+| `test_flavor_preference.py` | 口味偏好分析接口测试（数据获取、结构验证、数量验证、占比计算、排序验证、数据类型，6项测试全部通过） |
+| `test_ingredient_frequency.py` | 食材使用频率分析接口测试（数据获取、结构验证、数量验证、排序验证、数据类型、limit参数，6项测试全部通过） |
 
 **测试脚本运行方式**：
 ```bash
 cd backend
 python verify_script/test_hot_recipes.py
 ```
+
+**辅助测试脚本**：
+| 文件 | 作用 |
+|:-----|:-----|
+| `add_flavor_test_data.py` | 为菜谱添加口味标签测试数据 |
 
 ---
 

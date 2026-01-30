@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/categories/', include('categories.urls')),
     path('api/ingredients/', include('ingredients.urls')),
     path('api/favorites/', include('favorites.urls')),
+    path('api/analytics/', include('analytics.urls')),
 ]
 
 # 开发环境下提供媒体文件服务
