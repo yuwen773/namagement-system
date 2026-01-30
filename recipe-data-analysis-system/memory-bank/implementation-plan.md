@@ -379,42 +379,194 @@
 
 ### 步骤 3.3：编写数据清洗脚本
 
-**操作指示**：
-- 编写数据清洗脚本，处理以下问题：
-  - 去除重复数据
-  - 补全缺失字段
-  - 统一数据格式（如难度等级、烹饪时长）
-  - 提取食材列表
-  - 标准化图片 URL
-  - 验证数据完整性
+**背景说明**：
+- 数据集 `recipe_corpus_full.json` 约 1.8GB，包含 152 万+ 条菜谱记录
+- 需要提取并清洗 20,000 条完整数据入库
+- 使用流式处理避免内存溢出
+
+**已完成的脚本**：
+
+| 脚本文件 | 用途 | 状态 |
+|:---------|:-----|:----:|
+| `cleaning/clean_recipes.py` | 小数据集清洗（一次性加载）| ✅ |
+| `cleaning/clean_large_dataset.py` | 大数据集流式清洗 | ✅ |
+
+**clean_large_dataset.py 核心功能**：
+- **流式读取**：使用 `ijson` 库逐条解析大 JSON 文件
+- **智能去重**：基于 `recipe_id` 和菜谱名称 MD5 哈希
+- **数据验证**：确保必需字段完整
+- **自动补全**：缺失字段使用合理默认值
+- **进度显示**：实时显示清洗进度和有效率
+- **可配置**：支持自定义目标数量和批次大小
+
+**数据库必需字段验证**：
+
+| 字段 | 要求 | 默认值 |
+|:-----|:-----|:-------|
+| name | 必填 | 无（缺失则跳过） |
+| ingredients | 至少 1 条 | 无（缺失则跳过） |
+| steps | 至少 1 步 | 无（缺失则跳过） |
+| cuisine_type | 可选 | "家常菜" |
+| scene_type | 可选 | "晚餐" |
+| difficulty | 可选 | "medium" |
+| cooking_time | 可选 | 30 |
+| image_url | 可选 | "" |
+
+**使用方式**：
+
+```bash
+cd data-scripts/cleaning
+
+# 安装依赖（推荐）
+pip install ijson
+
+# 清洗 20,000 条数据（默认）
+python clean_large_dataset.py ../dataset/recipe_corpus_full.json ../output/cleaned_20k_recipes.json
+
+# 自定义目标数量
+python clean_large_dataset.py ../dataset/recipe_corpus_full.json ../output/cleaned_10k_recipes.json --target 10000
+
+# 查看帮助
+python clean_large_dataset.py --help
+```
+
+**输出文件**：
+- `cleaned_20k_recipes.json` - 清洗后的数据（含 metadata）
+- `cleaning_report.json` - 详细清洗报告
 
 **测试验证**：
 - 运行清洗脚本
 - 检查清洗后的数据质量
-- 确认无重复数据
+- 确认输出数量达到目标（20,000 条）
 - 确认必填字段无缺失
-- 统计数据总量，确认达到目标
+- 查看清洗报告，确认有效率合理
 
 ---
 
 ### 步骤 3.4：编写数据导入脚本
 
+**输入文件**：
+- `data-scripts/output/cleaned_20k_recipes.json` - 清洗后的 20,000 条菜谱数据
+
+**输出目标**：
+- MySQL 数据库表：`recipes`, `ingredients`, `recipe_ingredients`, `recipe_steps`
+
 **操作指示**：
-- 编写数据库导入脚本
-- 使用批量插入优化性能
-- 处理食材关联（先插入食材，再建立关联）
-- 生成随机但合理的数据：
-  - 点击量（100-50000 之间的随机数）
-  - 收藏量（点击量的 5%-20%）
-  - 难度等级分布（简单 40%、中等 40%、困难 20%）
-- 添加进度显示
+
+创建 `data-scripts/importing/import_recipes.py` 脚本，实现以下功能：
+
+1. **数据读取与解析**
+   - 读取清洗后的 JSON 文件
+   - 解析 metadata（记录总数、清洗时间等）
+   - 验证数据格式完整性
+
+2. **食材预处理**
+   - 提取所有唯一食材
+   - 创建食材到分类的映射（蔬菜/肉类/调料等）
+   - 先批量插入食材到 `ingredients` 表
+
+3. **菜谱批量导入**
+   - 使用批量插入优化性能（`bulk_create`）
+   - 字段映射：
+     | 源字段 | 目标字段 | 处理方式 |
+     |:-------|:---------|:---------|
+     | `name` | `name` | 直接映射 |
+     | `cuisine_type` | `cuisine_type` | 映射到分类表 ID |
+     | `difficulty` | `difficulty` | easy/medium/hard |
+     | `cooking_time` | `cooking_time` | 分钟数 |
+     | `ingredients` | - | 拆分到关联表 |
+     | `steps` | - | 拆分到步骤表 |
+     | `image_url` | `image_url` | 保留原 URL |
+
+4. **关联数据处理**
+   - 批量插入 `recipe_ingredients` 关联表
+   - 批量插入 `recipe_steps` 步骤表
+   - 处理食材用量描述
+
+5. **生成模拟数据**
+   - 点击量：随机生成 100-50000 之间的数
+   - 收藏量：点击量的 5%-20%
+   - 创建时间：过去 365 天内随机分布
+
+6. **进度显示与错误处理**
+   - 实时显示导入进度（已导入/总数）
+   - 显示导入速度（条/秒）
+   - 记录失败记录到错误日志
+   - 支持断点续传（跳过已导入）
+
+**使用方式**：
+
+```bash
+cd data-scripts/importing
+
+# 安装依赖
+pip install pymysql django
+
+# 先导入少量数据测试（100 条）
+python import_recipes.py --limit 100
+
+# 完整导入 20,000 条数据
+python import_recipes.py
+
+# 指定输入文件路径
+python import_recipes.py --input ../output/cleaned_20k_recipes.json
+
+# 查看帮助
+python import_recipes.py --help
+```
+
+**输出文件**：
+- `import_report.json` - 导入报告（成功数、失败数、耗时）
+- `import_errors.log` - 错误日志
 
 **测试验证**：
-- 先导入少量数据（如 100 条）
-- 检查数据库中的数据
-- 确认所有字段正确导入
-- 确认食材关联正确建立
-- 确认无外键约束错误
+
+1. **小批量测试**（100 条）
+   ```bash
+   python import_recipes.py --limit 100
+   ```
+   - 检查数据库表记录数
+   - 随机抽取 5 条数据验证字段完整性
+   - 确认食材关联正确
+   - 确认步骤数据完整
+
+2. **全量导入**
+   ```bash
+   python import_recipes.py
+   ```
+   - 验证 recipes 表记录数 = 20,000
+   - 验证 ingredients 表有 500+ 食材
+   - 验证 recipe_ingredients 关联完整
+   - 验证 recipe_steps 步骤完整
+
+3. **数据质量检查**
+   ```sql
+   -- 检查必填字段无 NULL
+   SELECT COUNT(*) FROM recipes WHERE name IS NULL;
+   SELECT COUNT(*) FROM recipes WHERE cuisine_type IS NULL;
+
+   -- 检查关联数据完整
+   SELECT COUNT(*) FROM recipe_ingredients;
+   SELECT COUNT(*) FROM recipe_steps;
+
+   -- 检查点击量/收藏量分布
+   SELECT
+     CASE
+       WHEN view_count < 1000 THEN '0-1k'
+       WHEN view_count < 10000 THEN '1k-10k'
+       ELSE '10k+'
+     END AS range,
+     COUNT(*) AS count
+   FROM recipes
+   GROUP BY range;
+   ```
+
+**成功标准**：
+- 成功导入 20,000 条菜谱记录
+- 所有食材已建立正确关联
+- 无外键约束错误
+- 导入耗时 < 5 分钟
+- 导入报告显示成功率 > 95%
 
 ---
 
@@ -464,7 +616,7 @@
   - 验证用户名唯一性
   - 验证邮箱/手机号格式
   - 验证密码强度（至少 8 位）
-  - 密码加密存储（使用 bcrypt 或类似算法）
+  - 密码明文存储
   - 返回注册结果和用户基本信息
 - 添加请求参数验证
 

@@ -334,6 +334,38 @@ class RecipeImporter:
         print(f"[OK] 加载成功，共 {len(recipes)} 条菜谱数据")
         return recipes
 
+    def normalize_ingredient_name(self, name):
+        """
+        标准化食材名称
+
+        - 截断超过100字符的名称
+        - 移除括号内的详细用量说明（保留主要名称）
+
+        Args:
+            name: 原始食材名称
+
+        Returns:
+            str: 标准化后的食材名称
+        """
+        if not name:
+            return name
+
+        # 如果超过100字符，需要截断
+        if len(name) > 100:
+            # 尝试提取括号前的主名称
+            import re
+            # 匹配第一个左括号之前的内容
+            match = re.match(r'^([^\\(（]+)', name)
+            if match:
+                main_name = match.group(1).strip()
+                # 如果主名称在合理长度内，使用它
+                if 0 < len(main_name) <= 100:
+                    return main_name
+            # 直接截断到100字符
+            return name[:100].strip()
+
+        return name
+
     def get_or_create_ingredient(self, name):
         """
         获取或创建食材
@@ -344,24 +376,27 @@ class RecipeImporter:
         Returns:
             Ingredient: 食材对象
         """
-        # 检查缓存
-        if name in self.ingredient_cache:
-            return self.ingredient_cache[name]
+        # 标准化食材名称
+        normalized_name = self.normalize_ingredient_name(name)
+
+        # 检查缓存（使用标准化后的名称）
+        if normalized_name in self.ingredient_cache:
+            return self.ingredient_cache[normalized_name]
 
         # 尝试获取
         try:
-            ingredient = Ingredient.objects.get(name=name)
-            self.ingredient_cache[name] = ingredient
+            ingredient = Ingredient.objects.get(name=normalized_name)
+            self.ingredient_cache[normalized_name] = ingredient
             return ingredient
         except Ingredient.DoesNotExist:
             # 创建新食材
-            category = guess_ingredient_category(name)
+            category = guess_ingredient_category(normalized_name)
             ingredient = Ingredient.objects.create(
-                name=name,
+                name=normalized_name,
                 category=category
             )
             self.stats['ingredients_imported'] += 1
-            self.ingredient_cache[name] = ingredient
+            self.ingredient_cache[normalized_name] = ingredient
             return ingredient
 
     def import_recipes(self, recipes):
@@ -467,10 +502,21 @@ class RecipeImporter:
                 # 获取该菜谱的食材数据
                 ingredients_data = recipe_ingredients_map.get(recipe.name, [])
 
-                for idx, ing_data in enumerate(ingredients_data):
+                # 去重：同一菜谱中相同食材只保留第一个
+                seen_ingredients = set()
+                unique_ingredients = []
+                for ing_data in ingredients_data:
                     ingredient_name = ing_data.get('name')
                     if not ingredient_name:
                         continue
+                    # 标准化食材名称（用于去重比较）
+                    normalized_name = self.normalize_ingredient_name(ingredient_name)
+                    if normalized_name not in seen_ingredients:
+                        seen_ingredients.add(normalized_name)
+                        unique_ingredients.append((ing_data, len(seen_ingredients) - 1))
+
+                for idx, (ing_data, sort_order) in enumerate(unique_ingredients):
+                    ingredient_name = ing_data.get('name')
 
                     try:
                         ingredient = self.get_or_create_ingredient(ingredient_name)
@@ -479,7 +525,7 @@ class RecipeImporter:
                             recipe=recipe,  # 使用从数据库获取的 recipe 对象（有主键）
                             ingredient=ingredient,
                             amount=ing_data.get('amount', ''),
-                            sort_order=idx
+                            sort_order=sort_order
                         )
                         ingredients_relations_to_create.append(relation)
                     except Exception as e:
