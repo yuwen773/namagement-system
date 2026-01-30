@@ -665,23 +665,142 @@ data-scripts/
 | 文件 | 作用 | 状态 |
 |:-----|:-----|:----:|
 | `website_analysis.md` | 目标网站结构分析报告 | ✅ |
+| `request_utils.py` | HTTP请求工具 | ✅ |
+| `parser_utils.py` | HTML解析工具 | ✅ |
+| `xiachufang_spider.py` | 主爬虫脚本 | ✅ |
+| `test_spider.py` | 测试脚本 | ✅ |
 
-**website_analysis.md 内容概要**：
-- 目标网站选择与可用性测试
-- URL 结构分析（菜谱详情页格式）
-- HTML 结构与 CSS 选择器映射
-- 反爬策略分析（User-Agent、IP限制、登录要求）
-- 可爬取数据字段与数据库映射
-- 爬虫环境准备（依赖安装）
-- 风险评估与应对措施
+**模块架构**：
 
-**待实现的文件**：
+```
+request_utils.py (HTTP请求层)
+    ├─ User-Agent 轮换（10个真实浏览器UA）
+    ├─ 自动重试机制（排除429错误）
+    ├─ 请求间隔控制（5-10秒）
+    └─ 图片下载功能
 
-| 文件 | 作用 | 功能 |
-|:-----|:-----|:-----|
-| `request_utils.py` | HTTP请求封装 | UA轮换、自动重试、异常处理 |
-| `parser_utils.py` | HTML解析工具 | 提取菜谱名称、食材、步骤、图片 |
-| `xiachufang_spider.py` | 主爬虫脚本 | 获取分类列表、爬取菜谱详情、保存JSON |
+parser_utils.py (解析层)
+    ├─ RecipeParser 类
+    ├─ 多CSS选择器备选
+    ├─ 智能分析（难度、菜系、口味）
+    └─ 数据格式化
+
+xiachufang_spider.py (业务层)
+    ├─ XiachufangSpider 类
+    ├─ 批量爬取逻辑
+    ├─ 进度跟踪
+    └─ 数据持久化
+```
+
+**request_utils.py - HTTP请求工具**：
+
+```python
+class RequestUtils:
+    # 10个真实浏览器 User-Agent
+    USER_AGENTS = [...]
+
+    # 功能：
+    - get() - GET请求（UA轮换、重试、延迟）
+    - download_image() - 图片下载
+    - _respect_delay() - 请求间隔控制
+```
+
+**parser_utils.py - HTML解析工具**：
+
+```python
+class RecipeParser:
+    # 解析功能：
+    - parse_recipe_detail() - 解析菜谱详情
+    - parse_recipe_list() - 解析菜谱列表
+
+    # 数据提取：
+    - _parse_name() - 菜谱名称
+    - _parse_image_url() - 成品图片
+    - _parse_ingredients() - 食材列表
+    - _parse_steps() - 制作步骤
+    - _parse_tips() - 小贴士
+
+    # 智能分析：
+    - _analyze_difficulty() - 难度分析
+    - _analyze_cuisine() - 菜系识别
+    - _analyze_flavors() - 口味提取
+    - _estimate_cooking_time() - 时间估算
+```
+
+**xiachufang_spider.py - 主爬虫**：
+
+```python
+class XiachufangSpider:
+    # 主要方法：
+    - crawl_by_ids() - 按ID列表爬取
+    - crawl_by_range() - 按ID范围爬取
+    - crawl_test() - 测试爬取
+    - save_data() - 保存JSON
+    - download_image() - 图片下载
+```
+
+**反爬策略**：
+
+| 策略 | 状态 | 应对措施 |
+|:-----|:----:|:---------|
+| User-Agent 检测 | ✅ 需要 | UA 轮换（10个真实浏览器UA）|
+| IP 限制 | ✅ 严格 | 5-10秒请求间隔，禁用429重试 |
+| 登录要求 | ❌ 不需要 | 基础数据可公开访问 |
+| 请求频率限制 | ✅ 严格 | 单线程，5-10秒间隔 |
+
+**使用示例**：
+
+```bash
+# 测试爬取（10条）
+cd data-scripts/spiders
+python xiachufang_spider.py
+
+# 或使用测试脚本
+python test_spider.py
+```
+
+**注意事项**：
+- 下厨房网站有严格的反爬限制（429 Too Many Requests）
+- 如遇429错误，建议等待30分钟以上或使用代理IP
+- 备选方案：使用 `simulation/recipe_data_simulator.py` 生成模拟数据
+
+#### simulation/ - 数据模拟模块
+
+**目的**: 作为爬虫的备选方案，快速生成测试数据
+
+| 文件 | 作用 | 状态 |
+|:-----|:-----|:----:|
+| `recipe_data_simulator.py` | 菜谱数据模拟器 | ✅ |
+
+**recipe_data_simulator.py 功能**:
+
+```python
+class RecipeDataSimulator:
+    # 数据配置：
+    CUISINE_TYPES = ['川菜', '粤菜', '鲁菜', ...]
+    SCENE_TYPES = ['早餐', '午餐', '晚餐', ...]
+    DIFFICULTIES = ['easy', 'medium', 'hard']
+    FLAVORS = ['辣', '甜', '酸', ...]
+
+    # 主要方法：
+    - generate_recipe() - 生成单条菜谱
+    - generate_recipes(count) - 批量生成
+    - save_data() - 保存JSON
+```
+
+**生成逻辑**:
+- 随机选择菜系、难度、场景、口味组合
+- 3-6种主料 + 2-4种调料
+- 根据难度生成3-8步制作步骤
+- 模拟点击量（100-50000）和收藏量
+
+**使用方式**:
+```bash
+cd data-scripts
+python simulation/recipe_data_simulator.py
+```
+
+**验证状态**: ✅ 已测试通过（2026-01-30）
 
 **数据字段映射**：
 
