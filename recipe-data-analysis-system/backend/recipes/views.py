@@ -13,9 +13,30 @@ from django.utils import timezone
 from django.conf import settings
 from utils.response import ApiResponse
 from utils.exceptions import ValidationError as BusinessValidationError, NotFoundError
-from .models import Recipe
+from utils.constants import BehaviorType
+from .models import Recipe, RecipeIngredient
 from .serializers import RecipeListSerializer, RecipeDetailSerializer, RecipeImageUploadSerializer
+from ingredients.models import Ingredient
 import os
+from django.db.models import Q
+
+
+def _get_client_ip(request):
+    """
+    获取客户端 IP 地址
+
+    Args:
+        request: HTTP 请求对象
+
+    Returns:
+        str: 客户端 IP 地址
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 
 def _generate_image_filename(recipe_id, original_filename):
@@ -85,9 +106,13 @@ def recipe_list(request):
     请求参数：
         - page: 页码（可选，默认1）
         - page_size: 每页数量（可选，默认20，最大100）
+        - ordering: 排序字段（可选，默认-created_at）
+          可选值: view_count, -view_count, favorite_count, -favorite_count,
+                  created_at, -created_at
         - cuisine_type: 菜系分类（可选）
         - difficulty: 难度等级（可选）
         - scene_type: 场景分类（可选）
+        - target_audience: 适用人群（可选）
 
     成功响应（200）：
         {
@@ -117,8 +142,20 @@ def recipe_list(request):
     if scene_type:
         queryset = queryset.filter(scene_type=scene_type)
 
-    # 排序
-    queryset = queryset.order_by('-created_at')
+    target_audience = request.query_params.get('target_audience')
+    if target_audience:
+        queryset = queryset.filter(target_audience=target_audience)
+
+    # 排序参数
+    ordering = request.query_params.get('ordering', '-created_at')
+    # 验证排序字段是否合法
+    valid_ordering_fields = ['view_count', '-view_count',
+                             'favorite_count', '-favorite_count',
+                             'created_at', '-created_at',
+                             'cooking_time', '-cooking_time']
+    if ordering not in valid_ordering_fields:
+        ordering = '-created_at'
+    queryset = queryset.order_by(ordering)
 
     # 分页
     from utils.pagination import StandardPagination
@@ -126,7 +163,11 @@ def recipe_list(request):
     page = paginator.paginate_queryset(queryset, request)
     serializer = RecipeListSerializer(page, many=True)
 
-    return paginator.get_paginated_response(serializer.data)
+    # 使用 ApiResponse 返回统一格式的分页响应
+    return ApiResponse.paginate(
+        data=paginator.get_paginated_response(serializer.data),
+        message='获取成功'
+    )
 
 
 @api_view(['GET'])
@@ -138,6 +179,11 @@ def recipe_detail(request, recipe_id):
     请求方法：GET
     路由：/api/recipes/{recipe_id}/
 
+    功能说明：
+    - 返回菜谱完整信息（基本信息、食材列表、详细步骤等）
+    - 增加菜谱点击量计数
+    - 记录用户浏览行为到行为日志表
+
     成功响应（200）：
         {
             "code": 200,
@@ -145,8 +191,24 @@ def recipe_detail(request, recipe_id):
             "data": {
                 "id": 1,
                 "name": "宫保鸡丁",
-                ...
+                "cuisine_type": "川菜",
+                "difficulty": "medium",
+                "cooking_time": 30,
+                "image_url": "...",
+                "steps": "...",
+                "flavor_tags": "辣,甜",
+                "view_count": 100,
+                "favorite_count": 20,
+                "ingredients": [...],
+                "flavor_list": ["辣", "甜"]
             }
+        }
+
+    错误响应（404）：
+        {
+            "code": 404,
+            "message": "菜谱不存在",
+            "data": null
         }
     """
     try:
@@ -159,6 +221,31 @@ def recipe_detail(request, recipe_id):
     # 更新浏览量
     recipe.view_count += 1
     recipe.save(update_fields=['view_count'])
+
+    # 记录浏览行为到行为日志表
+    from behavior_logs.models import UserBehaviorLog
+
+    # 获取当前用户（可能为 None，表示未登录用户）
+    user = request.user if request.user.is_authenticated else None
+
+    # 获取客户端信息
+    ip_address = _get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+    # 记录浏览行为
+    UserBehaviorLog.log_behavior(
+        user=user,
+        behavior_type=BehaviorType.VIEW,
+        target=f'recipe:{recipe_id}',
+        extra_data={
+            'recipe_name': recipe.name,
+            'recipe_id': recipe_id,
+            'cuisine_type': recipe.cuisine_type,
+            'difficulty': recipe.difficulty,
+        },
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
 
     return ApiResponse.success(
         data=serializer.data,
@@ -299,4 +386,137 @@ def upload_recipe_image(request, recipe_id):
     return ApiResponse.success(
         data=response_data,
         message='上传成功'
+    )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def recipe_search(request):
+    """
+    菜谱搜索接口
+
+    请求方法：GET
+    路由：/api/recipes/search/
+
+    请求参数：
+        - keyword: 搜索关键词（必填）
+        - search_type: 搜索类型（可选，默认"name"）
+          可选值: "name"-按菜谱名称搜索, "ingredient"-按食材搜索
+        - page: 页码（可选，默认1）
+        - page_size: 每页数量（可选，默认20，最大100）
+
+    成功响应（200）：
+        {
+            "code": 200,
+            "message": "搜索成功",
+            "data": {
+                "count": 10,
+                "keyword": "鸡肉",
+                "search_type": "name",
+                "results": [...]
+            }
+        }
+    """
+    # 获取搜索关键词
+    keyword = request.query_params.get('keyword', '').strip()
+    if not keyword:
+        raise BusinessValidationError(detail='请输入搜索关键词')
+
+    # 获取搜索类型
+    search_type = request.query_params.get('search_type', 'name')
+    if search_type not in ['name', 'ingredient']:
+        search_type = 'name'
+
+    # 构建查询
+    if search_type == 'name':
+        # 按菜谱名称搜索（模糊匹配）
+        queryset = Recipe.objects.filter(name__icontains=keyword)
+    else:  # ingredient
+        # 按食材搜索：先找到包含该食材的菜谱ID
+        ingredient_recipes = RecipeIngredient.objects.filter(
+            ingredient__name__icontains=keyword
+        ).values_list('recipe_id', flat=True)
+        queryset = Recipe.objects.filter(id__in=ingredient_recipes)
+
+    # 按点击量降序排序
+    queryset = queryset.order_by('-view_count')
+
+    # 分页
+    from utils.pagination import StandardPagination
+    paginator = StandardPagination()
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = RecipeListSerializer(page, many=True)
+
+    # 构建响应数据
+    response_data = {
+        'count': queryset.count(),
+        'keyword': keyword,
+        'search_type': search_type,
+        'results': serializer.data
+    }
+
+    return ApiResponse.success(
+        data=response_data,
+        message='搜索成功'
+    )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def hot_recipes(request):
+    """
+    热门菜谱接口
+
+    请求方法：GET
+    路由：/api/recipes/hot/
+
+    请求参数：
+        - sort_by: 排序方式（可选，默认"view_count"）
+          可选值: "view_count"-按点击量排序, "favorite_count"-按收藏量排序
+        - limit: 返回数量（可选，默认20，最大50）
+
+    成功响应（200）：
+        {
+            "code": 200,
+            "message": "获取成功",
+            "data": {
+                "sort_by": "view_count",
+                "limit": 20,
+                "results": [...]
+            }
+        }
+    """
+    # 获取排序方式
+    sort_by = request.query_params.get('sort_by', 'view_count')
+    if sort_by not in ['view_count', 'favorite_count']:
+        sort_by = 'view_count'
+
+    # 获取返回数量限制
+    try:
+        limit = int(request.query_params.get('limit', 20))
+        if limit < 1:
+            limit = 20
+        elif limit > 50:
+            limit = 50
+    except (ValueError, TypeError):
+        limit = 20
+
+    # 按指定字段降序排序
+    ordering = f'-{sort_by}'
+    queryset = Recipe.objects.all().order_by(ordering)[:limit]
+
+    # 序列化数据
+    serializer = RecipeListSerializer(queryset, many=True)
+
+    # 构建响应数据
+    response_data = {
+        'sort_by': sort_by,
+        'limit': limit,
+        'count': len(serializer.data),
+        'results': serializer.data
+    }
+
+    return ApiResponse.success(
+        data=response_data,
+        message='获取成功'
     )
