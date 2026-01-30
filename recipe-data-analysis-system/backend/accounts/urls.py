@@ -12,6 +12,9 @@ urlpatterns = [
     # 用户注册
     path('register/', views.register, name='register'),
 
+    # 用户登录
+    path('login/', views.login, name='login'),
+
     # 健康检查
     path('health/', views.health_check, name='health_check'),
 ]

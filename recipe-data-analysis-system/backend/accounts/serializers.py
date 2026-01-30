@@ -208,3 +208,69 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['id', 'user_id', 'username', 'nickname', 'phone', 'bio', 'avatar_url', 'created_at']
         read_only_fields = ['user_id', 'username', 'created_at']
+
+
+class LoginSerializer(serializers.Serializer):
+    """
+    用户登录序列化器
+
+    处理用户登录请求的数据验证。
+    验证规则：
+    - 用户名必填
+    - 密码必填
+    - 验证用户名和密码是否匹配
+    - 验证账户是否激活
+    """
+
+    username = serializers.CharField(
+        max_length=50,
+        required=True,
+        error_messages={
+            'required': '用户名不能为空',
+            'blank': '用户名不能为空'
+        },
+        help_text='用户登录名'
+    )
+
+    password = serializers.CharField(
+        max_length=128,
+        required=True,
+        write_only=True,
+        error_messages={
+            'required': '密码不能为空',
+            'blank': '密码不能为空'
+        },
+        help_text='用户密码',
+        style={'input_type': 'password'}
+    )
+
+    def validate(self, attrs):
+        """
+        验证用户名和密码是否正确
+
+        Args:
+            attrs: 包含 username 和 password 的字典
+
+        Returns:
+            dict: 验证通过的数据，包含 user 实例
+
+        Raises:
+            serializers.ValidationError: 用户名或密码错误、账户未激活
+        """
+        from django.contrib.auth import authenticate
+
+        username = attrs.get('username')
+        password = attrs.get('password')
+
+        # 使用 Django 的 authenticate 函数验证用户名和密码
+        user = authenticate(username=username, password=password)
+
+        if user is None:
+            raise serializers.ValidationError('用户名或密码错误')
+
+        if not user.is_active:
+            raise serializers.ValidationError('该账户已被禁用，请联系管理员')
+
+        # 将验证通过的用户实例添加到返回数据中
+        attrs['user'] = user
+        return attrs

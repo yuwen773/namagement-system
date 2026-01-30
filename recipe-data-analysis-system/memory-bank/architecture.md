@@ -470,15 +470,19 @@ backend/
 ├── behavior_logs/          # 行为日志 ⏳
 ├── static/                 # 静态文件目录 ✅
 ├── mediafiles/             # 媒体文件目录 ✅
+├── verify_script/          # 验证脚本目录 ✅
+│   ├── test_db_connection.py       # 数据库连接测试 ✅
+│   ├── verify_user_model.py        # 用户模型验证脚本 ✅
+│   ├── verify_recipe_model.py      # 菜谱模型验证脚本 ✅
+│   ├── verify_category_model.py    # 分类模型验证脚本 ✅
+│   ├── verify_ingredient_models.py # 食材模型验证脚本 ✅
+│   ├── verify_favorite_model.py    # 收藏模型验证脚本 ✅
+│   └── test_login.py               # 登录接口测试脚本 ✅
 ├── manage.py               # Django 管理脚本
 ├── .env                    # 环境变量（本地，不提交）✅
 ├── .env.example            # 环境变量模板（提交）✅
 ├── requirements.txt        # Python 依赖列表 ✅
-├── README.md               # 后端说明文档 ✅
-├── verify_user_model.py    # 用户模型验证脚本 ✅
-├── verify_recipe_model.py  # 菜谱模型验证脚本 ✅
-├── verify_ingredient_models.py  # 食材模型验证脚本 ✅
-└── verify_favorite_model.py  # 收藏模型验证脚本 ✅
+└── README.md               # 后端说明文档 ✅
 ```
 
 ### 环境配置说明
@@ -591,6 +595,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     password_confirm # 确认密码（必填）
     email          # 邮箱（可选，唯一）
 
+class LoginSerializer(serializers.Serializer):
+    """用户登录序列化器"""
+    username       # 用户名（必填）
+    password        # 密码（必填，write_only）
+    # 验证：用户名密码验证、账户激活状态检查
+    # 返回：验证通过后附加 user 实例到 validated_data
+
 class UserSerializer(serializers.ModelSerializer):
     """用户基础序列化器"""
     # 返回用户基本信息（不含敏感数据）
@@ -607,6 +618,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
   - 密码强度验证（使用 Django 内置验证器）
   - 两次密码一致性验证
   - 创建用户和用户资料（使用事务）
+- `LoginSerializer` - 登录请求数据验证
+  - 使用 Django 的 `authenticate()` 验证用户名密码
+  - 检查账户是否激活（`is_active`）
+  - 验证通过后将 `user` 实例附加到 `validated_data`
 - `UserSerializer` - 返回用户基本信息（不含密码）
 - `UserProfileSerializer` - 用户资料序列化
 
@@ -618,6 +633,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
 def register(request):
     """用户注册接口"""
     # POST /api/accounts/register/
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login(request):
+    """用户登录接口"""
+    # POST /api/accounts/login/
+    # 验证用户名密码，生成 JWT Token
+    # 更新最后登录时间
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -631,6 +654,11 @@ def health_check(request):
   - 验证请求数据
   - 创建用户和用户资料（使用事务确保原子性）
   - 返回用户基本信息
+- `login` - 处理用户登录请求
+  - 验证用户名和密码（使用 Django 的 `authenticate()`）
+  - 更新用户最后登录时间（`last_login`）
+  - 生成 JWT Token（access_token 和 refresh_token）
+  - 返回 Token 和用户基本信息
 - `health_check` - 健康检查，用于测试模块是否正常工作
 
 #### `accounts/urls.py` - 路由
@@ -638,6 +666,7 @@ def health_check(request):
 ```python
 urlpatterns = [
     path('register/', views.register, name='register'),
+    path('login/', views.login, name='login'),
     path('health/', views.health_check, name='health_check'),
 ]
 ```
@@ -683,6 +712,48 @@ Content-Type: application/json
   "data": null,
   "errors": {
     "username": ["该用户名已被注册"]
+  }
+}
+```
+
+**登录接口请求示例**：
+```bash
+POST /api/accounts/login/
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "Test1234"
+}
+```
+
+**登录成功响应（200）**：
+```json
+{
+  "code": 200,
+  "message": "登录成功",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM4MjQyMjM4LCJpYXQiOjE3MzgyNDA2MzgsImp0aSI6IjRkZmE5YmJlLWY1NzQtNDNmYS1hMzYxLWU5M2RiM2YzNTdjZCIsInVzZXJfaWQiOjF9.rK6h...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTczODMyNjYzOCwiaWF0IjoxNzM4MjQwNjM4LCJqdGkiOiJlYTNhOGJlOS0wZjQyLTRjNDItOWI4ZC1iZjE3NjUzYjYwZTciLCJ1c2VyX2lkIjoxfQ.xyz...",
+    "user": {
+      "id": 1,
+      "username": "testuser",
+      "email": "test@example.com",
+      "role": "user",
+      "is_active": true
+    }
+  }
+}
+```
+
+**登录失败响应（400）**：
+```json
+{
+  "code": 400,
+  "message": "参数验证失败",
+  "data": null,
+  "errors": {
+    "non_field_errors": ["用户名或密码错误"]
   }
 }
 ```

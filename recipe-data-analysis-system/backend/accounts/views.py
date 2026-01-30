@@ -7,9 +7,11 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.db import transaction
+from django.utils import timezone
 from utils.response import ApiResponse
 from utils.exceptions import ValidationError as BusinessValidationError
-from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
+from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer, LoginSerializer
+from .models import User
 
 
 @api_view(['POST'])
@@ -96,4 +98,78 @@ def health_check(request):
     return ApiResponse.success(
         data={'status': 'healthy', 'module': 'accounts'},
         message='accounts 模块运行正常'
+    )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login(request):
+    """
+    用户登录接口
+
+    请求方法：POST
+    路由：/api/accounts/login/
+
+    请求参数：
+        - username: 用户名（必填）
+        - password: 密码（必填）
+
+    成功响应（200）：
+        {
+            "code": 200,
+            "message": "登录成功",
+            "data": {
+                "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                "user": {
+                    "id": 1,
+                    "username": "testuser",
+                    "email": "test@example.com",
+                    "role": "user",
+                    "is_active": true
+                }
+            }
+        }
+
+    错误响应（400）：
+        {
+            "code": 400,
+            "message": "参数验证失败",
+            "errors": {...}
+        }
+
+    Returns:
+        Response: 登录结果响应
+    """
+    serializer = LoginSerializer(data=request.data)
+
+    if serializer.is_valid():
+        user = serializer.validated_data['user']
+
+        # 更新最后登录时间
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+
+        # 生成 JWT Token
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        # 返回 Token 和用户信息
+        response_data = {
+            'token': access_token,
+            'refresh_token': refresh_token,
+            'user': UserSerializer(user).data
+        }
+
+        return ApiResponse.success(
+            data=response_data,
+            message='登录成功'
+        )
+
+    # 验证失败，返回详细错误信息
+    return ApiResponse.error(
+        message='参数验证失败',
+        errors=serializer.errors
     )
