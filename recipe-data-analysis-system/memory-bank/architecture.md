@@ -1,7 +1,7 @@
 # 菜谱数据分析系统 - 架构设计
 
 > 更新日期: 2026-01-30
-> 当前阶段: 阶段三进行中（3/6 步骤完成）
+> 当前阶段: 阶段四进行中（1/7 步骤完成）
 
 ---
 
@@ -439,7 +439,9 @@ backend/
 │   ├── migrations/
 │   │   └── 0001_initial.py
 │   ├── models.py          # User, UserProfile, UserManager
-│   └── ...
+│   ├── serializers.py     # 序列化器（注册验证）
+│   ├── views.py           # 视图（注册、登录等）
+│   └── urls.py            # 路由配置
 ├── recipes/                # 菜谱模块 ✅
 │   ├── migrations/
 │   │   ├── 0001_initial.py
@@ -576,6 +578,114 @@ BEHAVIOR_FAVORITE = 'favorite'
 - 定义系统常量
 - 避免硬编码
 - 提供类型安全
+
+### 认证模块详细说明 ✅
+
+#### `accounts/serializers.py` - 序列化器
+
+```python
+class RegisterSerializer(serializers.ModelSerializer):
+    """用户注册序列化器"""
+    username       # 用户名（3-50字符，必填）
+    password        # 密码（至少8位，必填）
+    password_confirm # 确认密码（必填）
+    email          # 邮箱（可选，唯一）
+
+class UserSerializer(serializers.ModelSerializer):
+    """用户基础序列化器"""
+    # 返回用户基本信息（不含敏感数据）
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """用户资料序列化器"""
+    # 序列化用户资料信息
+```
+
+**作用**：
+- `RegisterSerializer` - 注册请求数据验证
+  - 用户名唯一性检查
+  - 邮箱唯一性检查（如提供）
+  - 密码强度验证（使用 Django 内置验证器）
+  - 两次密码一致性验证
+  - 创建用户和用户资料（使用事务）
+- `UserSerializer` - 返回用户基本信息（不含密码）
+- `UserProfileSerializer` - 用户资料序列化
+
+#### `accounts/views.py` - 视图
+
+```python
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register(request):
+    """用户注册接口"""
+    # POST /api/accounts/register/
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """健康检查接口"""
+    # GET /api/accounts/health/
+```
+
+**作用**：
+- `register` - 处理用户注册请求
+  - 验证请求数据
+  - 创建用户和用户资料（使用事务确保原子性）
+  - 返回用户基本信息
+- `health_check` - 健康检查，用于测试模块是否正常工作
+
+#### `accounts/urls.py` - 路由
+
+```python
+urlpatterns = [
+    path('register/', views.register, name='register'),
+    path('health/', views.health_check, name='health_check'),
+]
+```
+
+**作用**：
+- 定义 accounts 模块的 URL 路由
+- 通过主路由 `/api/accounts/` 前缀访问
+
+**注册接口请求示例**：
+```bash
+POST /api/accounts/register/
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "Test1234",
+  "password_confirm": "Test1234",
+  "email": "test@example.com"
+}
+```
+
+**成功响应（201）**：
+```json
+{
+  "code": 201,
+  "message": "注册成功",
+  "data": {
+    "id": 1,
+    "username": "testuser",
+    "email": "test@example.com",
+    "role": "user",
+    "is_active": true,
+    "created_at": "2026-01-30T14:01:48.812786+08:00"
+  }
+}
+```
+
+**错误响应（400）**：
+```json
+{
+  "code": 400,
+  "message": "参数验证失败",
+  "data": null,
+  "errors": {
+    "username": ["该用户名已被注册"]
+  }
+}
+```
 
 ### API 规范
 
