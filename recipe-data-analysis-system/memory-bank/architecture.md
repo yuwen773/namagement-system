@@ -1,6 +1,6 @@
 # 菜谱数据分析系统 - 架构设计
 
-> 更新日期: 2026-01-30
+> 更新日期: 2026-01-30（阶段四第4步完成）
 
 ---
 
@@ -63,6 +63,24 @@ recipe-data-analysis-system/
 ├── memory-bank/        # 项目文档
 └── CLAUDE.md           # 开发指导
 ```
+
+---
+
+## 后端模块说明
+
+### accounts - 用户认证模块
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `models.py` | User 模型（用户名/密码/角色/状态）、UserProfile 模型（昵称/头像/简介） |
+| `serializers.py` | RegisterSerializer（注册验证）、LoginSerializer（登录验证）、UserSerializer（用户信息序列化） |
+| `views.py` | register（注册）、login（登录+JWT生成）、me（获取当前用户） |
+| `urls.py` | `/api/accounts/register/`、`/api/accounts/login/`、`/api/accounts/me/` |
+
+**已实现接口**（4/7）：
+- `POST /api/accounts/register/` - 用户注册
+- `POST /api/accounts/login/` - 用户登录（返回 JWT Token）
+- `GET /api/accounts/me/` - 获取当前用户信息（需认证）
 
 ---
 
