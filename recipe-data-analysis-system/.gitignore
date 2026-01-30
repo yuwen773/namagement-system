@@ -69,3 +69,10 @@ frontend/.vite/
 
 # 数据集 dataset
 recipe_corpus_full.json
+data-scripts/dataset/
+data-scripts/output/
+data-scripts/spiders/output/
+output/
+
+# 测试数据库
+temp_test_db.*
