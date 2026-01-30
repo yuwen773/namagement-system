@@ -66,3 +66,6 @@ frontend/.vite/
 *.bak
 *.tmp
 .cache/
+
+# 数据集 dataset
+recipe_corpus_full.json

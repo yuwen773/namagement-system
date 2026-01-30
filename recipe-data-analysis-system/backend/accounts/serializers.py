@@ -210,6 +210,97 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['user_id', 'username', 'created_at']
 
 
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    """
+    更新用户资料序列化器
+
+    用于更新用户个人资料信息。
+    验证规则：
+    - 昵称：可选，最大50个字符
+    - 个人简介：可选，最大500个字符
+    - 头像 URL：可选，需符合 URL 格式
+    - 手机号：可选，需符合手机号格式且唯一
+    """
+
+    nickname = serializers.CharField(
+        max_length=50,
+        required=False,
+        allow_blank=True,
+        error_messages={
+            'max_length': '昵称不能超过50个字符'
+        },
+        help_text='用户显示的昵称'
+    )
+
+    bio = serializers.CharField(
+        max_length=500,
+        required=False,
+        allow_blank=True,
+        error_messages={
+            'max_length': '个人简介不能超过500个字符'
+        },
+        help_text='用户自我介绍'
+    )
+
+    avatar_url = serializers.URLField(
+        max_length=500,
+        required=False,
+        allow_blank=True,
+        error_messages={
+            'invalid': '头像 URL 格式不正确'
+        },
+        help_text='用户头像图片地址'
+    )
+
+    phone = serializers.CharField(
+        max_length=20,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        error_messages={
+            'max_length': '手机号不能超过20个字符'
+        },
+        help_text='用户手机号码'
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ['nickname', 'phone', 'bio', 'avatar_url']
+
+    def validate_phone(self, value):
+        """
+        验证手机号格式和唯一性
+
+        Args:
+            value: 手机号
+
+        Returns:
+            str: 验证通过的手机号
+
+        Raises:
+            serializers.ValidationError: 手机号格式不正确或已被使用
+        """
+        import re
+
+        # 如果为空或 None，直接返回
+        if not value:
+            return value
+
+        # 验证手机号格式（支持中国大陆手机号）
+        if not re.match(r'^1[3-9]\d{9}$', value):
+            raise serializers.ValidationError('手机号格式不正确')
+
+        # 检查手机号是否已被其他用户使用
+        # 排除当前用户的资料
+        if self.instance and hasattr(self.instance, 'id'):
+            if UserProfile.objects.exclude(id=self.instance.id).filter(phone=value).exists():
+                raise serializers.ValidationError('该手机号已被使用')
+        elif UserProfile.objects.filter(phone=value).exists():
+            raise serializers.ValidationError('该手机号已被使用')
+
+        return value
+
+
 class LoginSerializer(serializers.Serializer):
     """
     用户登录序列化器
@@ -274,3 +365,139 @@ class LoginSerializer(serializers.Serializer):
         # 将验证通过的用户实例添加到返回数据中
         attrs['user'] = user
         return attrs
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    修改密码序列化器
+
+    处理用户修改密码请求的数据验证。
+    验证规则：
+    - 旧密码必填，需与当前密码一致
+    - 新密码必填，至少8位，需通过密码强度验证
+    - 确认新密码必填，需与新密码一致
+    """
+
+    old_password = serializers.CharField(
+        max_length=128,
+        required=True,
+        write_only=True,
+        error_messages={
+            'required': '旧密码不能为空',
+            'blank': '旧密码不能为空'
+        },
+        help_text='当前使用的密码',
+        style={'input_type': 'password'}
+    )
+
+    new_password = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        required=True,
+        write_only=True,
+        error_messages={
+            'required': '新密码不能为空',
+            'blank': '新密码不能为空',
+            'min_length': '新密码至少需要8个字符'
+        },
+        help_text='新的密码，至少8个字符',
+        style={'input_type': 'password'}
+    )
+
+    new_password_confirm = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        required=True,
+        write_only=True,
+        error_messages={
+            'required': '确认新密码不能为空',
+            'blank': '确认新密码不能为空'
+        },
+        help_text='确认新密码，需与新密码一致',
+        style={'input_type': 'password'}
+    )
+
+    def validate_old_password(self, value):
+        """
+        验证旧密码是否正确
+
+        Args:
+            value: 旧密码
+
+        Returns:
+            str: 验证通过的旧密码
+
+        Raises:
+            serializers.ValidationError: 旧密码不正确
+        """
+        # 从上下文中获取用户实例
+        user = self.context.get('user')
+        if not user:
+            raise serializers.ValidationError('无法获取用户信息')
+
+        # 验证旧密码是否正确
+        if not user.check_password(value):
+            raise serializers.ValidationError('旧密码不正确')
+
+        return value
+
+    def validate_new_password(self, value):
+        """
+        验证新密码强度
+
+        Args:
+            value: 新密码
+
+        Returns:
+            str: 验证通过的新密码
+
+        Raises:
+            serializers.ValidationError: 密码强度不足
+        """
+        try:
+            validate_password(value)
+        except serializers.ValidationError as e:
+            raise serializers.ValidationError(str(e.messages[0]) if e.messages else '密码强度不足')
+        return value
+
+    def validate(self, attrs):
+        """
+        联合验证：新密码和确认新密码是否一致
+
+        Args:
+            attrs: 所有字段数据
+
+        Returns:
+            dict: 验证通过的数据
+
+        Raises:
+            serializers.ValidationError: 两次新密码不一致
+        """
+        new_password = attrs.get('new_password')
+        new_password_confirm = attrs.get('new_password_confirm')
+        old_password = attrs.get('old_password')
+
+        if new_password != new_password_confirm:
+            raise serializers.ValidationError({'new_password_confirm': '两次输入的新密码不一致'})
+
+        # 验证新密码不能与旧密码相同
+        if new_password == old_password:
+            raise serializers.ValidationError({'new_password': '新密码不能与旧密码相同'})
+
+        return attrs
+
+    def save(self):
+        """
+        保存新密码
+
+        Returns:
+            User: 更新后的用户实例
+        """
+        user = self.context.get('user')
+        new_password = self.validated_data.get('new_password')
+
+        # 设置新密码（会自动加密）
+        user.set_password(new_password)
+        user.save()
+
+        return user

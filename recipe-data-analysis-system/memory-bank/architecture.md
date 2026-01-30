@@ -1,6 +1,6 @@
 # 菜谱数据分析系统 - 架构设计
 
-> 更新日期: 2026-01-30（阶段四第4步完成）
+> 更新日期: 2026-01-30（阶段四完成）
 
 ---
 
@@ -51,7 +51,7 @@ recipe-data-analysis-system/
 ├── frontend/           # Vue 3 前端
 ├── backend/            # Django 后端
 │   ├── config/         # 项目配置
-│   ├── utils/          # 公共工具（response/exceptions/pagination）
+│   ├── utils/          # 公共工具（response/exceptions/pagination/permissions）
 │   ├── accounts/       # 用户认证
 │   ├── recipes/        # 菜谱模块
 │   ├── categories/     # 分类模块
@@ -73,14 +73,34 @@ recipe-data-analysis-system/
 | 文件 | 作用 |
 |:-----|:-----|
 | `models.py` | User 模型（用户名/密码/角色/状态）、UserProfile 模型（昵称/头像/简介） |
-| `serializers.py` | RegisterSerializer（注册验证）、LoginSerializer（登录验证）、UserSerializer（用户信息序列化） |
-| `views.py` | register（注册）、login（登录+JWT生成）、me（获取当前用户） |
-| `urls.py` | `/api/accounts/register/`、`/api/accounts/login/`、`/api/accounts/me/` |
+| `serializers.py` | RegisterSerializer（注册）、LoginSerializer（登录）、UserSerializer（用户信息）、UpdateProfileSerializer（更新资料）、ChangePasswordSerializer（修改密码） |
+| `views.py` | register（注册）、login（登录+JWT生成）、me（获取/更新当前用户）、change_password（修改密码）、role_check（角色检查）、admin_stats（管理员统计） |
+| `urls.py` | `/api/accounts/register/`、`/api/accounts/login/`、`/api/accounts/me/`、`/api/accounts/password/`、`/api/accounts/role-check/`、`/api/accounts/admin/stats/` |
 
-**已实现接口**（4/7）：
+**已实现接口**（7/7）：
 - `POST /api/accounts/register/` - 用户注册
 - `POST /api/accounts/login/` - 用户登录（返回 JWT Token）
 - `GET /api/accounts/me/` - 获取当前用户信息（需认证）
+- `PUT /api/accounts/me/` - 更新当前用户资料（需认证）
+- `PUT /api/accounts/password/` - 修改密码（需认证）
+- `GET /api/accounts/role-check/` - 角色检查（需认证）
+- `GET /api/accounts/admin/stats/` - 管理员统计（需管理员权限）
+
+---
+
+### utils - 公共工具模块
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `response.py` | 统一响应格式（ApiResponse） |
+| `exceptions.py` | 自定义异常类（BusinessError, ValidationError, NotFoundError, PermissionDeniedError） |
+| `pagination.py` | 分页工具类 |
+| `permissions.py` | 权限检查类（IsAdminUser, IsAdminUserOrReadOnly） |
+| `constants.py` | 常量定义（UserRole, CategoryType, IngredientCategory, BehaviorType） |
+
+**权限类说明**：
+- `IsAdminUser` - 仅允许管理员访问，普通用户返回 403
+- `IsAdminUserOrReadOnly` - 管理员可全部操作，普通用户仅读操作
 
 ---
 

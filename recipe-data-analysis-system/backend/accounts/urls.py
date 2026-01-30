@@ -18,6 +18,15 @@ urlpatterns = [
     # 获取当前用户信息（需要认证）
     path('me/', views.me, name='me'),
 
+    # 修改密码（需要认证）
+    path('password/', views.change_password, name='change_password'),
+
+    # 角色检查（需要认证，用于测试权限）
+    path('role-check/', views.role_check, name='role_check'),
+
+    # 管理员统计（仅管理员可访问）
+    path('admin/stats/', views.admin_stats, name='admin_stats'),
+
     # 健康检查
     path('health/', views.health_check, name='health_check'),
 ]
