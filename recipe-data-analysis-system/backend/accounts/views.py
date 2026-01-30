@@ -5,7 +5,7 @@
 """
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db import transaction
 from django.utils import timezone
 from utils.response import ApiResponse
@@ -172,4 +172,47 @@ def login(request):
     return ApiResponse.error(
         message='参数验证失败',
         errors=serializer.errors
+    )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def me(request):
+    """
+    获取当前用户信息接口
+
+    请求方法：GET
+    路由：/api/accounts/me/
+
+    请求头：
+        Authorization: Bearer <access_token>
+
+    成功响应（200）：
+        {
+            "code": 200,
+            "message": "获取成功",
+            "data": {
+                "id": 1,
+                "username": "testuser",
+                "email": "test@example.com",
+                "role": "user",
+                "is_active": true,
+                "created_at": "2026-01-30T12:00:00Z"
+            }
+        }
+
+    错误响应（401）：
+        {
+            "code": 401,
+            "message": "未提供有效的认证凭据",
+            "data": null
+        }
+
+    Returns:
+        Response: 当前用户信息
+    """
+    serializer = UserSerializer(request.user)
+    return ApiResponse.success(
+        data=serializer.data,
+        message='获取成功'
     )

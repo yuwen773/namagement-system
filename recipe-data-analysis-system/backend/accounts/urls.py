@@ -15,6 +15,9 @@ urlpatterns = [
     # 用户登录
     path('login/', views.login, name='login'),
 
+    # 获取当前用户信息（需要认证）
+    path('me/', views.me, name='me'),
+
     # 健康检查
     path('health/', views.health_check, name='health_check'),
 ]

@@ -11,7 +11,7 @@
 | 阶段一 | 项目初始化与基础架构 | 4/4 ✅ |
 | 阶段二 | 数据库设计与模型创建 | 6/6 ✅ |
 | 阶段三 | 数据准备与导入 | 4/6 ⏳ |
-| 阶段四 | 用户认证与权限系统 | 2/7 ⏳ |
+| 阶段四 | 用户认证与权限系统 | 3/7 ⏳ |
 
 ---
 
@@ -471,7 +471,7 @@ python import_recipes.py ../output/test_cleaned_output.json
 |:----:|:------|:----:|:----:|
 | 4.1 | 实现用户注册接口 | ✅ 已验证 | 2026-01-30 |
 | 4.2 | 实现用户登录接口 | ✅ 已验证 | 2026-01-30 |
-| 4.3 | 实现 Token 验证中间件 | ⏳ | - |
+| 4.3 | 实现 Token 验证中间件 | ✅ 待测试 | 2026-01-30 |
 | 4.4 | 实现获取当前用户信息接口 | ⏳ | - |
 | 4.5 | 实现更新用户信息接口 | ⏳ | - |
 | 4.6 | 实现修改密码接口 | ⏳ | - |
@@ -745,6 +745,169 @@ python verify_script/test_login.py
 - 最后登录时间正确更新
 - 返回格式符合后端 API 规范
 - 可以继续进行下一步（Token 验证中间件）
+
+### 阶段四步骤3完成总结
+
+#### 创建的文件
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `backend/accounts/authentication.py` | JWT 认证类 |
+| `backend/verify_script/test_auth_middleware.py` | 认证中间件测试脚本 |
+
+#### 修改的文件
+
+| 文件 | 变更 |
+|:-----|:-----|
+| `backend/config/settings.py` | 添加 `DEFAULT_AUTHENTICATION_CLASSES` 配置 |
+| `backend/accounts/views.py` | 添加 `me` 视图（获取当前用户信息）|
+| `backend/accounts/urls.py` | 添加 `/api/accounts/me/` 路由 |
+
+#### JWT 认证类功能
+
+**`authentication.py` - JWTAuthentication 类**：
+
+**认证流程**：
+1. 从 `Authorization` 请求头中提取 Token
+2. 验证 Token 格式（需以 `Bearer ` 开头）
+3. 使用 `rest_framework_simplejwt` 解析并验证 Token
+4. 返回认证用户
+
+**错误处理**：
+| 场景 | HTTP 状态码 | 错误消息 |
+|:-----|:----------:|:---------|
+| 未提供 Token | - | 返回 `None`（允许匿名访问）|
+| Token 格式错误 | 401 | 无效的 Token 请求头 |
+| Token 无效/过期 | 401 | Token 无效或已过期 |
+| 用户不存在 | 401 | 用户不存在 |
+| 用户已禁用 | 401 | 该用户已被禁用 |
+
+**使用方式**：
+
+```python
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def protected_view(request):
+    # request.user 包含当前认证用户
+    user = request.user
+    ...
+```
+
+**请求头格式**：
+```
+Authorization: Bearer <access_token>
+```
+
+#### 获取当前用户信息接口
+
+**接口信息**：
+- 路由：`GET /api/accounts/me/`
+- 权限：需要认证（`IsAuthenticated`）
+
+**成功响应（200）**：
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "id": 1,
+    "username": "testuser",
+    "email": "test@example.com",
+    "role": "user",
+    "is_active": true,
+    "created_at": "2026-01-30T12:00:00Z"
+  }
+}
+```
+
+**错误响应（401）**：
+```json
+{
+  "code": 401,
+  "message": "未提供有效的认证凭据"
+}
+```
+
+#### 运行测试
+
+```bash
+# 启动开发服务器
+cd backend
+python manage.py runserver 8000
+
+# 在另一个终端运行测试
+python verify_script/test_auth_middleware.py
+```
+
+#### 测试场景
+
+| 测试场景 | 预期结果 |
+|:--------|:---------|
+| 有效 Token 访问受保护接口 | ✅ 返回 200 和用户信息 |
+| 无 Token 访问受保护接口 | ✅ 返回 401 |
+| 无效 Token 访问受保护接口 | ✅ 返回 401 |
+| 错误的 Token 格式（缺少 Bearer） | ✅ 返回 401 |
+| 已禁用用户访问 | ✅ 返回 401 |
+
+#### 验证结果（2026-01-30）
+
+**状态**：⏳ **待用户测试验证**
+
+**测试前准备**：
+1. 确保开发服务器正在运行（`python manage.py runserver 8000`）
+2. 运行测试脚本：`python verify_script/test_auth_middleware.py`
+
+**预期测试结果**：
+```
+============================================================
+JWT 认证中间件测试
+============================================================
+测试服务器: http://localhost:8000
+
+创建测试用户...
+  ✓ 创建测试用户: auth_test_user
+  ✓ 用户已激活
+
+获取 JWT Token...
+  → Access Token: eyJ0eXAiOiJKV1QiLCJhbGc...
+  → Refresh Token: eyJ0eXAiOiJKV1QiLCJhbGc...
+
+开始测试...
+
+[测试] 有效 Token 访问受保护接口
+  ✓ 请求成功
+  → 用户名: auth_test_user
+  → 邮箱: authtest@example.com
+  → 角色: user
+
+[测试] 无 Token 访问受保护接口
+  ✓ 正确拒绝访问 (401)
+
+[测试] 无效 Token 访问受保护接口
+  ✓ 正确拒绝访问 (401)
+
+[测试] 错误的 Token 格式
+  ✓ 正确拒绝访问 (401) - 缺少 Bearer 前缀
+
+[测试] 已禁用用户访问
+  ✓ 正确拒绝访问 (401) - 用户已禁用
+
+测试结果汇总
+  ✓ PASS  有效 Token
+  ✓ PASS  无 Token
+  ✓ PASS  无效 Token
+  ✓ PASS  错误 Token 格式
+  ✓ PASS  已禁用用户
+
+总计: 5 通过, 0 失败
+
+============================================================
+[OK] 所有测试通过！认证中间件功能正常
+============================================================
+```
 
 ---
 

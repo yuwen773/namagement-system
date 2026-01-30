@@ -440,6 +440,7 @@ backend/
 │   │   └── 0001_initial.py
 │   ├── models.py          # User, UserProfile, UserManager
 │   ├── serializers.py     # 序列化器（注册验证）
+│   ├── authentication.py  # JWT 认证类
 │   ├── views.py           # 视图（注册、登录等）
 │   └── urls.py            # 路由配置
 ├── recipes/                # 菜谱模块 ✅
@@ -477,7 +478,8 @@ backend/
 │   ├── verify_category_model.py    # 分类模型验证脚本 ✅
 │   ├── verify_ingredient_models.py # 食材模型验证脚本 ✅
 │   ├── verify_favorite_model.py    # 收藏模型验证脚本 ✅
-│   └── test_login.py               # 登录接口测试脚本 ✅
+│   ├── test_login.py               # 登录接口测试脚本 ✅
+│   └── test_auth_middleware.py     # JWT 认证中间件测试脚本 ✅
 ├── manage.py               # Django 管理脚本
 ├── .env                    # 环境变量（本地，不提交）✅
 ├── .env.example            # 环境变量模板（提交）✅
@@ -765,6 +767,164 @@ Content-Type: application/json
 - **分页参数**: `page`, `page_size` (max 100)
 - **认证方式**: JWT (24h)
 - **路由命名**: `/api/{module}/{resource}/`，自定义动作用 kebab-case
+
+### JWT 认证架构
+
+#### 认证流程
+
+```
+客户端                    Django 服务端
+   │                            │
+   │  POST /api/accounts/login  │
+   │  {username, password}      │
+   │───────────────────────────>│
+   │                            │ 验证用户名密码
+   │                            │ 生成 JWT Token
+   │  {token, user}             │
+   │<───────────────────────────│
+   │                            │
+   │  GET /api/accounts/me      │
+   │  Authorization: Bearer xxx │
+   │───────────────────────────>│
+   │                            │ 验证 Token
+   │                            │ 获取用户信息
+   │  {user_info}               │
+   │<───────────────────────────│
+```
+
+#### JWT 配置
+
+| 配置项 | 值 | 说明 |
+|:------|:----:|:-----|
+| ACCESS_TOKEN_LIFETIME | 24h | 访问令牌有效期 |
+| REFRESH_TOKEN_LIFETIME | 7 days | 刷新令牌有效期 |
+| ALGORITHM | HS256 | 签名算法 |
+| AUTH_HEADER_TYPES | Bearer | 认证头类型 |
+| USER_ID_CLAIM | user_id | 用户 ID 声明 |
+
+#### 认证类：`JWTAuthentication`
+
+**文件位置**：`backend/accounts/authentication.py`
+
+**核心功能**：
+1. **Token 提取**：从 `Authorization` 请求头提取 JWT Token
+2. **Token 验证**：使用 `rest_framework_simplejwt` 验证 Token 有效性
+3. **用户认证**：从 Token 中解析用户 ID 并查询用户
+4. **状态检查**：验证用户是否激活
+
+**认证流程图**：
+
+```
+                    接收请求
+                       │
+                       ▼
+            检查 Authorization 头
+                       │
+           ┌───────────┴───────────┐
+           │                       │
+      存在 Token              不存在 Token
+           │                       │
+           ▼                       ▼
+    检查格式 (Bearer)          返回 None
+           │                   (允许匿名访问)
+           ▼
+    解析 JWT Token
+           │
+   ┌───────┴───────┐
+   │               │
+Token 有效      Token 无效/过期
+   │               │
+   ▼               ▼
+获取 user_id    抛出 401 错误
+   │
+   ▼
+查询用户
+   │
+┌──┴──┐
+│    │
+存在  不存在
+│    │
+▼    ▼
+检查状态  抛出 401 错误
+│
+▼
+返回 (user, token)
+```
+
+#### 受保护的视图示例
+
+**创建受保护接口**：
+
+```python
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from utils.response import ApiResponse
+from accounts.serializers import UserSerializer
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # 要求认证
+def me(request):
+    """获取当前用户信息"""
+    # request.user 包含当前认证用户
+    serializer = UserSerializer(request.user)
+    return ApiResponse.success(
+        data=serializer.data,
+        message='获取成功'
+    )
+```
+
+#### 错误响应格式
+
+| HTTP 状态码 | 场景 | 响应体 |
+|:-----------:|:-----|:-------|
+| 401 | Token 缺失 | `{"code": 401, "message": "未提供有效的认证凭据"}` |
+| 401 | Token 格式错误 | `{"code": 401, "message": "无效的 Token 请求头..."}` |
+| 401 | Token 无效/过期 | `{"code": 401, "message": "Token 无效或已过期..."}` |
+| 401 | 用户不存在 | `{"code": 401, "message": "用户不存在"}` |
+| 401 | 用户已禁用 | `{"code": 401, "message": "该用户已被禁用"}` |
+
+#### 使用示例
+
+**前端携带 Token 请求**：
+
+```javascript
+// 登录后获取 Token
+const response = await fetch('http://localhost:8000/api/accounts/login/', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({username, password})
+});
+const {data} = await response.json();
+const token = data.token;
+
+// 携带 Token 访问受保护接口
+const meResponse = await fetch('http://localhost:8000/api/accounts/me/', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+const userData = await meResponse.json();
+```
+
+#### 设计说明
+
+| 设计决策 | 理由 |
+|:---------|:-----|
+| 使用 `rest_framework_simplejwt` | 成熟的 JWT 库，减少自实现风险 |
+| 自定义 `JWTAuthentication` 类 | 与项目需求深度集成，统一错误处理 |
+| Token 存储在请求头 | 标准 HTTP 认证方式，支持 CORS |
+| 返回 None 而非异常（无 Token） | 允许视图灵活控制匿名访问 |
+| 双重认证类配置 | JWT + Session，支持 Django Admin |
+
+#### 各文件作用
+
+| 文件 | 作用 | 关键类/函数 |
+|:-----|:-----|:-----------|
+| `accounts/authentication.py` | JWT 认证类 | `JWTAuthentication.authenticate()` |
+| `accounts/views.py` | 注册、登录、当前用户视图 | `register()`, `login()`, `me()` |
+| `accounts/serializers.py` | 认证序列化器 | `RegisterSerializer`, `LoginSerializer` |
+| `config/settings.py` | 认证配置 | `REST_FRAMEWORK`, `SIMPLE_JWT` |
+| `verify_script/test_auth_middleware.py` | 认证测试脚本 | `test_valid_token()`, `test_invalid_token()` |
 
 ---
 
