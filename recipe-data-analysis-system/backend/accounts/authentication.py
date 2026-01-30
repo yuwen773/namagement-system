@@ -6,6 +6,7 @@ JWT 认证模块
 from rest_framework import authentication, exceptions
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class JWTAuthentication(authentication.BaseAuthentication):
@@ -95,8 +96,12 @@ class JWTAuthentication(authentication.BaseAuthentication):
         Raises:
             AuthenticationFailed: Token 无效、过期或用户不存在
         """
+        # 导入 User 模型（避免循环导入）
+        from .models import User
+
         try:
             # 使用 SimpleJWT 验证 Token
+            # 这可能抛出 InvalidToken, TokenError 或其他异常
             access_token = AccessToken(token)
 
             # 获取用户 ID
@@ -106,9 +111,6 @@ class JWTAuthentication(authentication.BaseAuthentication):
                 raise exceptions.AuthenticationFailed(
                     'Token 中未包含用户信息'
                 )
-
-            # 导入 User 模型（避免循环导入）
-            from .models import User
 
             # 查询用户
             user = User.objects.get(id=user_id)
@@ -122,19 +124,20 @@ class JWTAuthentication(authentication.BaseAuthentication):
             # 返回用户和 Token
             return (user, access_token)
 
-        except User.DoesNotExist:
+        except (InvalidToken, TokenError, UnicodeDecodeError, ValueError) as e:
+            # Token 无效、过期或格式错误
+            raise exceptions.AuthenticationFailed(
+                'Token 无效或已过期'
+            )
+
+        except ObjectDoesNotExist:
+            # 用户不存在
             raise exceptions.AuthenticationFailed(
                 '用户不存在'
             )
 
-        except (InvalidToken, TokenError) as e:
-            # Token 无效或过期
-            raise exceptions.AuthenticationFailed(
-                f'Token 无效或已过期：{str(e)}'
-            )
-
         except Exception as e:
-            # 其他未预期的错误
+            # 其他未预期的错误（不应该发生）
             raise exceptions.AuthenticationFailed(
                 f'认证失败：{str(e)}'
             )

@@ -25,17 +25,17 @@ def print_header(text):
 
 def print_success(text):
     """打印成功信息"""
-    print(f"  ✓ {text}")
+    print(f"  [OK] {text}")
 
 
 def print_error(text):
     """打印错误信息"""
-    print(f"  ✗ {text}")
+    print(f"  [FAIL] {text}")
 
 
 def print_info(text):
     """打印信息"""
-    print(f"  → {text}")
+    print(f"  [INFO] {text}")
 
 
 def create_test_user():
