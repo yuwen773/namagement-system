@@ -27,6 +27,10 @@ urlpatterns = [
     path('api/ingredients/', include('ingredients.urls')),
     path('api/favorites/', include('favorites.urls')),
     path('api/analytics/', include('analytics.urls')),
+    path('api/admin/analytics/', include('analytics.admin_urls')),
+    path('api/admin/recipes/', include('recipes.admin_urls')),
+    path('api/admin/categories/', include('categories.admin_urls')),
+    path('api/admin/ingredients/', include('ingredients.admin_urls')),
 ]
 
 # 开发环境下提供媒体文件服务
