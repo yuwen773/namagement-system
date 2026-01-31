@@ -84,4 +84,31 @@ export function checkRole() {
   return request.get('/api/accounts/role-check/')
 }
 
+/**
+ * 获取用户列表（管理员）
+ * @param {Object} params - 查询参数 { page, page_size, search, role }
+ * @returns {Promise} 用户列表
+ */
+export function getUserList(params) {
+  return request.get('/api/accounts/admin/users/', { params })
+}
+
+/**
+ * 封禁用户（管理员）
+ * @param {number} userId - 用户ID
+ * @returns {Promise} 操作结果
+ */
+export function banUser(userId) {
+  return request.put(`/api/accounts/admin/users/${userId}/ban/`)
+}
+
+/**
+ * 解封用户（管理员）
+ * @param {number} userId - 用户ID
+ * @returns {Promise} 操作结果
+ */
+export function unbanUser(userId) {
+  return request.put(`/api/accounts/admin/users/${userId}/unban/`)
+}
+
 export default request

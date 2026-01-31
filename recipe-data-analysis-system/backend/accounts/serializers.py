@@ -501,3 +501,21 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.save()
 
         return user
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    """
+    用户列表序列化器（管理员用）
+
+    用于返回用户列表信息（不含敏感数据）。
+    包含用户基本资料信息。
+    """
+
+    nickname = serializers.CharField(source='profile.nickname', read_only=True, default='')
+    phone = serializers.CharField(source='profile.phone', read_only=True, default=None)
+    last_login = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role', 'is_active', 'nickname', 'phone', 'last_login', 'created_at']
+        read_only_fields = fields

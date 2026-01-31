@@ -13,7 +13,7 @@ from utils.response import ApiResponse
 from utils.exceptions import ValidationError as BusinessValidationError, PermissionDeniedError
 from utils.permissions import IsAdminUser
 from utils.constants import UserRole
-from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer, LoginSerializer, UpdateProfileSerializer, ChangePasswordSerializer
+from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer, LoginSerializer, UpdateProfileSerializer, ChangePasswordSerializer, UserListSerializer
 from .models import User
 
 
@@ -462,4 +462,256 @@ def role_check(request):
     return ApiResponse.success(
         data=response_data,
         message='角色检查成功'
+    )
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def user_list(request):
+    """
+    用户列表接口（仅管理员可访问）
+
+    请求方法：GET
+    路由：/api/accounts/admin/users/
+
+    请求头：
+        Authorization: Bearer <access_token>
+
+    请求参数：
+        - page: 页码（可选，默认为1）
+        - page_size: 每页数量（可选，默认20，最大100）
+        - search: 搜索关键词（可选，搜索用户名或邮箱）
+        - role: 角色筛选（可选，user/admin）
+
+    请求示例：
+        GET /api/accounts/admin/users/?page=1&page_size=20&search=test&role=user
+
+    成功响应（200）：
+        {
+            "code": 200,
+            "message": "获取成功",
+            "data": {
+                "count": 150,
+                "next": null,
+                "previous": "http://localhost:8000/api/accounts/admin/users/?page=1",
+                "results": [
+                    {
+                        "id": 1,
+                        "username": "testuser",
+                        "email": "test@example.com",
+                        "role": "user",
+                        "is_active": true,
+                        "nickname": "测试用户",
+                        "phone": "13800138000",
+                        "last_login": "2026-01-30T12:00:00Z",
+                        "created_at": "2026-01-30T12:00:00Z"
+                    }
+                ]
+            }
+        }
+
+    错误响应（403）：
+        {
+            "code": 403,
+            "message": "权限不足，仅管理员可访问",
+            "data": null
+        }
+
+    Returns:
+        Response: 用户列表响应
+    """
+    from utils.pagination import StandardPagination
+    from rest_framework.decorators import authentication_classes, permission_classes
+    from rest_framework.settings import api_settings
+
+    # 获取查询参数
+    page = request.query_params.get('page', 1)
+    page_size = request.query_params.get('page_size', StandardPagination.page_size)
+    search = request.query_params.get('search', '')
+    role_filter = request.query_params.get('role', '')
+
+    # 构建查询集
+    queryset = User.objects.all()
+
+    # 搜索功能（用户名或邮箱）
+    if search:
+        queryset = queryset.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search)
+        )
+
+    # 角色筛选
+    if role_filter:
+        if role_filter in [UserRole.USER, UserRole.ADMIN]:
+            queryset = queryset.filter(role=role_filter)
+
+    # 按创建时间降序排列
+    queryset = queryset.order_by('-created_at')
+
+    # 分页
+    paginator = StandardPagination()
+    page_size = int(page_size)
+    # 限制最大 page_size
+    if page_size > paginator.max_page_size:
+        page_size = paginator.max_page_size
+
+    paginator.page_size = page_size
+    paginated_queryset = paginator.paginate_queryset(queryset, request)
+
+    # 序列化数据
+    serializer = UserListSerializer(paginated_queryset, many=True)
+
+    return ApiResponse.success(
+        data=paginator.get_paginated_response(serializer.data),
+        message='获取成功'
+    )
+
+
+@api_view(['PUT'])
+@permission_classes([IsAdminUser])
+def ban_user(request, user_id):
+    """
+    封禁用户接口（仅管理员可访问）
+
+    请求方法：PUT
+    路由：/api/accounts/admin/users/<user_id>/ban/
+
+    请求头：
+        Authorization: Bearer <access_token>
+
+    路径参数：
+        - user_id: 用户 ID
+
+    成功响应（200）：
+        {
+            "code": 200,
+            "message": "用户已封禁",
+            "data": {
+                "id": 2,
+                "username": "testuser",
+                "email": "test@example.com",
+                "role": "user",
+                "is_active": false,
+                "created_at": "2026-01-30T12:00:00Z"
+            }
+        }
+
+    错误响应（400）：
+        {
+            "code": 400,
+            "message": "不能封禁自己",
+            "data": null
+        }
+
+    错误响应（403）：
+        {
+            "code": 403,
+            "message": "权限不足，仅管理员可访问",
+            "data": null
+        }
+
+    错误响应（404）：
+        {
+            "code": 404,
+            "message": "用户不存在",
+            "data": null
+        }
+
+    Returns:
+        Response: 封禁用户响应
+    """
+    # 防止封禁自己
+    if request.user.id == int(user_id):
+        raise BusinessValidationError(detail='不能封禁自己')
+
+    # 获取目标用户
+    try:
+        target_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        raise BusinessValidationError(detail='用户不存在', code=404)
+
+    # 检查用户是否已被封禁
+    if not target_user.is_active:
+        raise BusinessValidationError(detail='该用户已被封禁')
+
+    # 封禁用户
+    target_user.is_active = False
+    target_user.save(update_fields=['is_active'])
+
+    return ApiResponse.success(
+        data=UserListSerializer(target_user).data,
+        message='用户已封禁'
+    )
+
+
+@api_view(['PUT'])
+@permission_classes([IsAdminUser])
+def unban_user(request, user_id):
+    """
+    解封用户接口（仅管理员可访问）
+
+    请求方法：PUT
+    路由：/api/accounts/admin/users/<user_id>/unban/
+
+    请求头：
+        Authorization: Bearer <access_token>
+
+    路径参数：
+        - user_id: 用户 ID
+
+    成功响应（200）：
+        {
+            "code": 200,
+            "message": "用户已解封",
+            "data": {
+                "id": 2,
+                "username": "testuser",
+                "email": "test@example.com",
+                "role": "user",
+                "is_active": true,
+                "created_at": "2026-01-30T12:00:00Z"
+            }
+        }
+
+    错误响应（400）：
+        {
+            "code": 400,
+            "message": "该用户未被封禁",
+            "data": null
+        }
+
+    错误响应（403）：
+        {
+            "code": 403,
+            "message": "权限不足，仅管理员可访问",
+            "data": null
+        }
+
+    错误响应（404）：
+        {
+            "code": 404,
+            "message": "用户不存在",
+            "data": null
+        }
+
+    Returns:
+        Response: 解封用户响应
+    """
+    # 获取目标用户
+    try:
+        target_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        raise BusinessValidationError(detail='用户不存在', code=404)
+
+    # 检查用户是否已被封禁
+    if target_user.is_active:
+        raise BusinessValidationError(detail='该用户未被封禁')
+
+    # 解封用户
+    target_user.is_active = True
+    target_user.save(update_fields=['is_active'])
+
+    return ApiResponse.success(
+        data=UserListSerializer(target_user).data,
+        message='用户已解封'
     )

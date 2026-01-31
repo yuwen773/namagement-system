@@ -1,6 +1,6 @@
 # 菜谱数据分析系统 - 架构设计
 
-> 更新日期: 2026-01-31
+> 更新日期: 2026-01-31（阶段十二完成）
 ---
 
 ## ⚠️ 文档定位
@@ -83,6 +83,9 @@ recipe-data-analysis-system/
 - `PUT /api/accounts/password/` - 修改密码
 - `GET /api/accounts/role-check/` - 角色检查
 - `GET /api/accounts/admin/stats/` - 管理员统计
+- `GET /api/accounts/admin/users/` - 用户列表（仅管理员，支持搜索、角色筛选、分页）
+- `PUT /api/accounts/admin/users/<id>/ban/` - 封禁用户（仅管理员，禁止封禁自己）
+- `PUT /api/accounts/admin/users/<id>/unban/` - 解封用户（仅管理员）
 
 ---
 
@@ -205,14 +208,25 @@ recipe-data-analysis-system/
 - `/recipes/:id` - 菜谱详情
 - `/category/:type?/:value?` - 分类页
 - `/hot` - 热门菜谱
+- `/analytics` - 数据概览（数据分析）
+- `/ingredients-frequency` - 食材频率分析
 - `/login` - 登录
 - `/register` - 注册
 - `/profile` - 个人信息（需认证）
 - `/change-password` - 修改密码（需认证）
+- `/admin` - 用户管理（需管理员权限）
 
 ### stores - Pinia 状态管理
 
 **user store**：`token`, `userInfo`, `isLoggedIn`, `isAdmin`, `setToken()`, `setUserInfo()`, `logout()`
+
+### api - API 请求模块
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `auth.js` | 用户认证 API + 用户管理 API（管理员） + axios 实例配置 |
+| `recipes.js` | 菜谱、分类、食材、收藏 API |
+| `analytics.js` | 数据分析 API（菜系/难度/口味/食材统计） |
 
 ### views - 页面组件
 
@@ -223,10 +237,33 @@ recipe-data-analysis-system/
 | `RecipeDetail.vue` | 菜谱详情页（收藏、分享） |
 | `RecipeCategory.vue` | 分类浏览页 |
 | `RecipeHot.vue` | 热门菜谱页 |
+| `RecipeAnalytics.vue` | 数据概览页（4个 ECharts 图表：菜系饼图、难度柱状图、口味雷达图、高频食材条形图） |
+| `IngredientFrequency.vue` | 食材频率页（9种分类筛选、Top20/50/100切换、搜索、统计卡片、排行榜、ECharts图表） |
 | `Login.vue` | 登录页 |
 | `Register.vue` | 注册页 |
 | `Profile.vue` | 个人信息页 |
 | `ChangePassword.vue` | 修改密码页 |
+| `UserManagement.vue` | 用户管理页（管理员专用，用户列表、搜索、角色筛选、封禁/解封、分页） |
+
+### components - 公共组件
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `AppNavbar.vue` | 顶部导航栏（含搜索、用户菜单、移动端菜单） |
+| `HelloWorld.vue` | 示例组件 |
+
+### 数据可视化组件
+
+**ECharts 图表配置**（RecipeAnalytics.vue）：
+- **菜系分布饼图**：环形饼图，展示各菜系占比
+- **难度统计柱状图**：垂直柱状图，展示 easy/medium/hard 分布
+- **口味偏好雷达图**：雷达图，展示 Top 6 口味标签
+- **高频食材条形图**：水平条形图，展示 Top 15 食材
+
+**配色方案**：
+- 主色：`#c2622e`（琥珀橙）
+- 辅色：`#d4773a`（浅琥珀）、`#a35220`（深琥珀）
+- 图表色板：温暖色调（amber, orange, gold, coral）
 
 ---
 

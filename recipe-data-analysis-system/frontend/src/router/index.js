@@ -55,6 +55,24 @@ const routes = [
     name: 'change-password',
     component: () => import('../views/ChangePassword.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/analytics',
+    name: 'analytics',
+    component: () => import('../views/RecipeAnalytics.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/ingredients-frequency',
+    name: 'ingredients-frequency',
+    component: () => import('../views/IngredientFrequency.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../views/UserManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
@@ -70,6 +88,9 @@ router.beforeEach((to, from, next) => {
   // 如果页面需要认证但用户未登录，跳转到登录页
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next({ name: 'login', query: { redirect: to.fullPath } })
+  } else if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    // 如果页面需要管理员权限但用户不是管理员，跳转到首页
+    next({ name: 'home' })
   } else {
     next()
   }

@@ -36,6 +36,7 @@
 | 阶段七 | 普通用户模块 - 数据展示（只读） | 4/4 ✅ |
 | 阶段八 | 前端 - 用户认证页面 | 4/4 ✅ |
 | 阶段九 | 前端 - 菜谱探索页面 | 5/5 ✅ |
+| 阶段十 | 前端 - 数据可视化页面 | 2/4 ⏳ |
 
 ---
 
@@ -150,11 +151,48 @@
 
 ---
 
+## 阶段十：前端 - 数据可视化页面 ⏳
+
+| 步骤 | 任务 | 状态 | 日期 |
+|:----:|:------|:----:|:----:|
+| 10.1 | 创建数据分析 API 模块 | ✅ | 2026-01-31 |
+| 10.2 | 创建数据概览页面（4个图表） | ✅ | 2026-01-31 |
+| 10.3 | 创建食材频率页面 | ✅ | 2026-01-31 |
+| 10.4 | 实现图表交互与数据导出 | ⏳ | - |
+
+**实现成果**：
+- `frontend/src/api/analytics.js` - 4个数据分析接口
+- `frontend/src/views/RecipeAnalytics.vue` - 数据概览页面（饼图、柱状图、雷达图、水平条形图）
+- `frontend/src/views/IngredientFrequency.vue` - 食材频率页面（分类筛选、搜索、排行榜、图表）
+- 路由与导航栏已更新
+
+---
+
+## 阶段十二：管理员模块 - 用户管理 ✅
+
+| 步骤 | 任务 | 状态 | 日期 |
+|:----:|:------|:----:|:----:|
+| 12.1 | 实现用户列表接口 | ✅ | 2026-01-31 |
+| 12.2 | 实现封禁/解封用户接口 | ✅ | 2026-01-31 |
+| 12.3 | 创建用户管理页面 | ✅ | 2026-01-31 |
+
+**实现成果**：
+- `backend/accounts/serializers.py` - 新增 `UserListSerializer`
+- `backend/accounts/views.py` - 新增 `user_list`、`ban_user`、`unban_user` 视图
+- `backend/accounts/urls.py` - 新增路由：
+  - `/api/accounts/admin/users/` (GET) - 用户列表
+  - `/api/accounts/admin/users/<id>/ban/` (PUT) - 封禁用户
+  - `/api/accounts/admin/users/<id>/unban/` (PUT) - 解封用户
+- `frontend/src/api/auth.js` - 新增 `getUserList`、`banUser`、`unbanUser` API 函数
+- `frontend/src/views/UserManagement.vue` - 用户管理页面（搜索、筛选、封禁/解封、分页）
+- `frontend/src/router/index.js` - 新增 `/admin` 路由，设置管理员权限检查
+
+---
+
 ## 待完成阶段
 
 | 阶段 | 名称 | 步骤数 |
 |:----:|:------|:-----:|
-| 阶段十 | 前端 - 数据可视化页面 | 4 |
 | 阶段十一 | 前端 - 收藏功能页面 | 3 |
 | 阶段十二-十六 | 管理员模块 | 15+ |
 | 阶段十七 | 用户行为数据模拟 | 4 |
