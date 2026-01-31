@@ -132,7 +132,7 @@
           <router-link
             v-for="cuisine in cuisines"
             :key="cuisine.name"
-            :to="`/category/cuisine/${cuisine.value}`"
+            :to="`/category/cuisine/${cuisine.name}`"
             class="cuisine-card"
             :style="{ '--accent-color': cuisine.color }"
           >
@@ -204,12 +204,15 @@ const stats = [
 
 // 菜系数据
 const cuisines = [
-  { name: '川菜', value: 'sichuan', emoji: '🌶️', desc: '麻辣鲜香', color: '#e74c3c', image: 'https://images.unsplash.com/photo-1564579829002-64eb95778512?w=400&h=300&fit=crop' },
+  // { name: '川菜', value: 'sichuan', emoji: '🌶️', desc: '麻辣鲜香', color: '#e74c3c', image: 'https://images.unsplash.com/
+  // photo-1564579829002-64eb95778513?w=400&h=300&fit=crop' },
+   { name: '川菜', value: 'sichuan', emoji: '🌶️', desc: '麻辣鲜香', color: '#e74c3c', image: 'https://loremflickr.com/400/300/spicy,hotpot?lock=10' },
   { name: '粤菜', value: 'cantonese', emoji: '🥢', desc: '清淡鲜美', color: '#3498db', image: 'https://images.unsplash.com/photo-1534256958597-7fe685cbd745?w=400&h=300&fit=crop' },
   { name: '湘菜', value: 'hunan', emoji: '🔥', desc: '香辣浓郁', color: '#e67e22', image: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=400&h=300&fit=crop' },
   { name: '鲁菜', value: 'shandong', emoji: '🍲', desc: '咸鲜醇厚', color: '#f39c12', image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop' },
   { name: '苏菜', value: 'jiangsu', emoji: '🐟', desc: '清淡甜美', color: '#1abc9c', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop' },
-  { name: '浙菜', value: 'zhejiang', emoji: '🦐', desc: '鲜嫩软滑', color: '#9b59b6', image: 'https://images.unsplash.com/photo-1511690656952-34342e732595?w=400&h=300&fit=crop' },
+  // { name: '浙菜', value: 'zhejiang', emoji: '🦐', desc: '鲜嫩软滑', color: '#9b59b6', image: 'https://images.unsplash.com/photo-1511690656952-34342e732595?w=400&h=300&fit=crop' },
+    { name: '浙菜', value: 'zhejiang', emoji: '🦐', desc: '鲜嫩软滑', color: '#9b59b6', image: 'https://loremflickr.com/400/300/steamed,fish?lock=20' },
   { name: '闽菜', value: 'fujian', emoji: '🦀', desc: '鲜香清淡', color: '#34495e', image: 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=400&h=300&fit=crop' },
   { name: '徽菜', value: 'anhui', emoji: '🍄', desc: '重油重色', color: '#795548', image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop' }
 ]
