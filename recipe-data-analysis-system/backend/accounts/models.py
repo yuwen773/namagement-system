@@ -151,6 +151,22 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
+    def set_password(self, raw_password):
+        """
+        重写 set_password 方法，直接存储明文密码
+        """
+        self.password = raw_password
+
+    def check_password(self, raw_password):
+        """
+        重写 check_password 方法，直接比较明文密码
+        """
+        def setter(raw_password):
+            self.set_password(raw_password)
+            self.save(update_fields=["password"])
+        
+        return self.password == raw_password
+
     class Meta:
         db_table = 'users'
         verbose_name = '用户'
