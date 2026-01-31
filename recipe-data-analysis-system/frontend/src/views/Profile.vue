@@ -1,18 +1,5 @@
 <template>
   <div class="profile-container">
-    <!-- 顶部导航 -->
-    <div class="profile-header">
-      <div class="header-content">
-        <button class="back-button" @click="goBack">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>返回</span>
-        </button>
-        <h1 class="page-title">个人中心</h1>
-      </div>
-    </div>
-
     <!-- 主要内容区 -->
     <div class="profile-content">
       <div class="profile-card">
@@ -243,11 +230,6 @@ const handleSave = async () => {
   }
 }
 
-// 返回上一页
-const goBack = () => {
-  router.back()
-}
-
 // 跳转到修改密码页面
 const goToChangePassword = () => {
   router.push({ name: 'change-password' })
@@ -285,63 +267,14 @@ onMounted(() => {
   min-height: 100vh;
   font-family: 'DM Sans', sans-serif;
   background: linear-gradient(180deg, #faf8f5 0%, #f5f0e8 100%);
-}
-
-/* ========== 顶部导航 ========== */
-.profile-header {
-  background: white;
-  border-bottom: 1px solid #f0ebe3;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.header-content {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 1rem 2rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  background: none;
-  color: #8b7355;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  background: #f5f0e8;
-  color: #c2622e;
-}
-
-.back-button svg {
-  width: 20px;
-  height: 20px;
-}
-
-.page-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #3d2914;
+  padding-top: 1rem;
 }
 
 /* ========== 主要内容区 ========== */
 .profile-content {
   max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem 2rem 2rem;
 }
 
 .profile-card {
@@ -579,15 +512,11 @@ onMounted(() => {
 /* ========== 响应式设计 ========== */
 @media (max-width: 768px) {
   .profile-content {
-    padding: 1rem;
+    padding: 0 1rem 1rem;
   }
 
   .user-info {
     padding: 1.5rem;
-  }
-
-  .header-content {
-    padding: 1rem;
   }
 
   .info-grid {
