@@ -1,18 +1,10 @@
 <template>
   <div class="recipe-category-page">
-    <!-- 顶部标题区 -->
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <h1 class="page-title">{{ pageTitle }}</h1>
-          <p class="page-subtitle">{{ pageSubtitle }}</p>
-        </div>
-        <!-- 返回按钮 -->
-        <el-button :icon="ArrowLeft" @click="goBack" class="back-button">
-          返回列表
-        </el-button>
-      </div>
-    </header>
+    <!-- 页面标题区 -->
+    <div class="page-header-section">
+      <h1 class="page-title">{{ pageTitle }}</h1>
+      <p class="page-subtitle">{{ pageSubtitle }}</p>
+    </div>
 
     <!-- 主内容区 -->
     <div class="main-content">
@@ -154,7 +146,6 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
 import { getRecipeList, getCategories } from '@/api/recipes'
 
 const router = useRouter()
@@ -342,11 +333,6 @@ const goToDetail = (id) => {
   router.push({ name: 'recipe-detail', params: { id } })
 }
 
-// 返回上一页
-const goBack = () => {
-  router.push({ name: 'recipe-list' })
-}
-
 // 从路由参数初始化分类
 const initFromRoute = () => {
   const { type, value } = route.params
@@ -391,27 +377,11 @@ watch(() => route.params, () => {
   font-family: 'DM Sans', sans-serif;
 }
 
-/* ========== 顶部标题区 ========== */
-.page-header {
-  background: white;
-  border-bottom: 1px solid #f0ebe3;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 12px rgba(61, 41, 20, 0.04);
-}
-
-.header-content {
+/* ========== 页面标题区 ========== */
+.page-header-section {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-left {
-  flex: 1;
+  padding: 2rem 2rem 1.5rem;
 }
 
 .page-title {
@@ -427,18 +397,6 @@ watch(() => route.params, () => {
   color: #8b7355;
   font-size: 0.95rem;
   margin: 0.25rem 0 0 0;
-}
-
-.back-button {
-  color: #6b5c4d;
-  border-color: #e5ddd3;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  color: #c2622e;
-  border-color: #c2622e;
-  background: rgba(194, 98, 46, 0.05);
 }
 
 /* ========== 主内容区 ========== */

@@ -1,14 +1,5 @@
 <template>
   <div class="recipe-detail-page">
-    <!-- 返回导航 -->
-    <div class="back-navigation">
-      <div class="nav-content">
-        <el-button :icon="ArrowLeft" @click="goBack" class="back-button">
-          返回菜谱列表
-        </el-button>
-      </div>
-    </div>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
       <el-skeleton animated>
@@ -201,7 +192,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Star, StarFilled, Share } from '@element-plus/icons-vue'
+import { Star, StarFilled, Share } from '@element-plus/icons-vue'
 import { getRecipeDetail, checkFavoriteStatus, addFavorite, removeFavorite } from '@/api/recipes'
 import { useUserStore } from '@/stores/user'
 
@@ -359,40 +350,14 @@ onMounted(() => {
   min-height: 100vh;
   background: #faf8f5;
   font-family: 'DM Sans', sans-serif;
-}
-
-/* ========== 返回导航 ========== */
-.back-navigation {
-  background: white;
-  border-bottom: 1px solid #f0ebe3;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.nav-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem 2rem;
-}
-
-.back-button {
-  color: #6b5c4d;
-  border-color: #e5ddd3;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  color: #c2622e;
-  border-color: #c2622e;
-  background: rgba(194, 98, 46, 0.05);
+  padding-top: 1rem;
 }
 
 /* ========== 加载状态 ========== */
 .loading-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 2rem 0;
 }
 
 /* ========== 404 状态 ========== */
@@ -800,7 +765,6 @@ section {
 }
 
 @media (max-width: 640px) {
-  .nav-content,
   .detail-container,
   .content-wrapper {
     padding-left: 1rem;

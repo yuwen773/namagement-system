@@ -1,45 +1,41 @@
 <template>
   <div class="recipe-hot-page">
-    <!-- 顶部导航栏 -->
-    <header class="page-header">
-      <div class="header-content">
-        <!-- 返回按钮 -->
-        <el-button class="back-button" :icon="ArrowLeft" @click="goBack" circle />
-        <div class="header-left">
-          <div class="title-row">
-            <!-- 火焰图标 -->
-            <div class="fire-icon">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 23c-3.866 0-7-3.134-7-7 0-2.5 1.5-5 2.5-7.5.833-2 1.5-3.5 1.5-5.5 0 2 1.5 3.5 3 5.5s2.5 5 2.5 7.5c0 3.866-3.134 7-7 7zm0-2c2.761 0 5-2.239 5-5 0-1.5-.5-3-1.5-5-1-2-1.5-3.5-1.5-4.5 0 1-.5 2.5-1.5 4.5s-1.5 3.5-1.5 5c0 2.761 2.239 5 5 5z"/>
-              </svg>
-            </div>
-            <h1 class="page-title">热门菜谱</h1>
-          </div>
+    <!-- 页面标题和排序区 -->
+    <div class="page-header-section">
+      <div class="title-row">
+        <!-- 火焰图标 -->
+        <div class="fire-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 23c-3.866 0-7-3.134-7-7 0-2.5 1.5-5 2.5-7.5.833-2 1.5-3.5 1.5-5.5 0 2 1.5 3.5 3 5.5s2.5 5 2.5 7.5c0 3.866-3.134 7-7 7zm0-2c2.761 0 5-2.239 5-5 0-1.5-.5-3-1.5-5-1-2-1.5-3.5-1.5-4.5 0 1-.5 2.5-1.5 4.5s-1.5 3.5-1.5 5c0 2.761 2.239 5 5 5z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="page-title">热门菜谱</h1>
           <p class="page-subtitle">最受欢迎的美味菜谱，精选推荐</p>
         </div>
-        <!-- 排序选择 -->
-        <div class="sort-section">
-          <el-radio-group v-model="sortBy" @change="handleSortChange" class="sort-group">
-            <el-radio-button value="view_count">
-              <span class="sort-option">
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 12c-.3 0-.5-.1-.7-.3l-4-4c-.4-.4-.4-1 0-1.4s1-.4 1.4 0L8 10.2l3.3-3.3c.4-.4 1-.4 1.4 0s.4 1 0 1.4l-4 4c-.2.2-.4.3-.7.3z"/>
-                </svg>
-                按点击量
-              </span>
-            </el-radio-button>
-            <el-radio-button value="favorite_count">
-              <span class="sort-option">
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
-                </svg>
-                按收藏量
-              </span>
-            </el-radio-button>
-          </el-radio-group>
-        </div>
       </div>
-    </header>
+      <!-- 排序选择 -->
+      <div class="sort-section">
+        <el-radio-group v-model="sortBy" @change="handleSortChange" class="sort-group">
+          <el-radio-button value="view_count">
+            <span class="sort-option">
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 12c-.3 0-.5-.1-.7-.3l-4-4c-.4-.4-.4-1 0-1.4s1-.4 1.4 0L8 10.2l3.3-3.3c.4-.4 1-.4 1.4 0s.4 1 0 1.4l-4 4c-.2.2-.4.3-.7.3z"/>
+              </svg>
+              按点击量
+            </span>
+          </el-radio-button>
+          <el-radio-button value="favorite_count">
+            <span class="sort-option">
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+              </svg>
+              按收藏量
+            </span>
+          </el-radio-button>
+        </el-radio-group>
+      </div>
+    </div>
 
     <!-- 主内容区 -->
     <main class="main-content">
@@ -149,7 +145,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
 import { getHotRecipes } from '@/api/recipes'
 
 const router = useRouter()
@@ -209,11 +204,6 @@ const goToDetail = (id) => {
   router.push({ name: 'recipe-detail', params: { id } })
 }
 
-// 返回上一页
-const goBack = () => {
-  router.back()
-}
-
 // 跳转到列表页
 const goToList = () => {
   router.push({ name: 'recipe-list' })
@@ -234,45 +224,15 @@ onMounted(() => {
   font-family: 'DM Sans', sans-serif;
 }
 
-/* ========== 顶部导航栏 ========== */
-.page-header {
-  background: white;
-  border-bottom: 1px solid #f0ebe3;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 12px rgba(61, 41, 20, 0.04);
-}
-
-.header-content {
+/* ========== 页面标题区 ========== */
+.page-header-section {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem 2rem;
+  padding: 2rem 2rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-}
-
-.back-button {
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  background: #f5f0e8;
-  border: 1px solid #e5ddd3;
-  color: #6b5c4d;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  background: #c2622e;
-  border-color: #c2622e;
-  color: white;
-  transform: translateX(-2px);
-}
-
-.header-left {
-  flex: 1;
 }
 
 .title-row {
@@ -656,17 +616,14 @@ onMounted(() => {
 
 /* ========== 响应式设计 ========== */
 @media (max-width: 968px) {
-  .header-content {
-    flex-wrap: wrap;
-  }
-
-  .back-button {
-    order: -1;
+  .page-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
   }
 
   .sort-section {
     width: 100%;
-    order: 3;
   }
 
   .sort-group {
@@ -675,10 +632,6 @@ onMounted(() => {
 
   .sort-group :deep(.el-radio-button) {
     flex: 1;
-  }
-
-  .page-subtitle {
-    margin-left: 0;
   }
 
   .recipe-grid-hot {
