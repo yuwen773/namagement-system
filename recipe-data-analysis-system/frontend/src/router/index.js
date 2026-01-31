@@ -9,6 +9,30 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/recipes',
+    name: 'recipe-list',
+    component: () => import('../views/RecipeList.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/recipes/:id',
+    name: 'recipe-detail',
+    component: () => import('../views/RecipeDetail.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/category/:type?/:value?',
+    name: 'recipe-category',
+    component: () => import('../views/RecipeCategory.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/hot',
+    name: 'recipe-hot',
+    component: () => import('../views/RecipeHot.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('../views/Login.vue'),
