@@ -45,6 +45,19 @@
           </svg>
           <span>热门</span>
         </router-link>
+        <router-link to="/analytics" class="nav-link" @click="navClick">
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 3v16h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 12l3-3 2.5 2.5L16 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>数据分析</span>
+        </router-link>
+        <router-link to="/ingredients-frequency" class="nav-link" @click="navClick">
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>食材频率</span>
+        </router-link>
       </div>
 
       <!-- 右侧操作区 -->
@@ -150,6 +163,8 @@
         <router-link to="/recipes" class="mobile-nav-link" @click="closeMobileMenu">菜谱浏览</router-link>
         <router-link to="/category" class="mobile-nav-link" @click="closeMobileMenu">分类浏览</router-link>
         <router-link to="/hot" class="mobile-nav-link hot-mobile" @click="closeMobileMenu">热门菜谱</router-link>
+        <router-link to="/analytics" class="mobile-nav-link" @click="closeMobileMenu">数据分析</router-link>
+        <router-link to="/ingredients-frequency" class="mobile-nav-link" @click="closeMobileMenu">食材频率</router-link>
         <div v-if="!userStore.isLoggedIn" class="mobile-auth-section">
           <router-link to="/login" class="mobile-auth-link" @click="closeMobileMenu">登录</router-link>
           <router-link to="/register" class="mobile-auth-link primary" @click="closeMobileMenu">注册</router-link>
