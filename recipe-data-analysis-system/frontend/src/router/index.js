@@ -74,47 +74,48 @@ const routes = [
     component: () => import('../views/IngredientFrequency.vue'),
     meta: { requiresAuth: false }
   },
+  // ========== 管理员路由（使用 AdminLayout） ==========
   {
     path: '/admin',
-    name: 'admin',
-    component: () => import('../views/UserManagement.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/recipes',
-    name: 'admin-recipes',
-    component: () => import('../views/RecipeManagement.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/ingredients',
-    name: 'admin-ingredients',
-    component: () => import('../views/IngredientManagement.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/categories',
-    name: 'admin-categories',
-    component: () => import('../views/CategoryManagement.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/analytics',
-    name: 'admin-analytics',
-    component: () => import('../views/AdminAnalytics.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/dashboard',
-    name: 'admin-dashboard',
-    component: () => import('../views/AdminDashboard.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/behavior',
-    name: 'admin-behavior',
-    component: () => import('../views/UserBehaviorAnalytics.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
+    component: () => import('../layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'admin',
+        component: () => import('../views/UserManagement.vue')
+      },
+      {
+        path: 'recipes',
+        name: 'admin-recipes',
+        component: () => import('../views/RecipeManagement.vue')
+      },
+      {
+        path: 'ingredients',
+        name: 'admin-ingredients',
+        component: () => import('../views/IngredientManagement.vue')
+      },
+      {
+        path: 'categories',
+        name: 'admin-categories',
+        component: () => import('../views/CategoryManagement.vue')
+      },
+      {
+        path: 'analytics',
+        name: 'admin-analytics',
+        component: () => import('../views/AdminAnalytics.vue')
+      },
+      {
+        path: 'dashboard',
+        name: 'admin-dashboard',
+        component: () => import('../views/AdminDashboard.vue')
+      },
+      {
+        path: 'behavior',
+        name: 'admin-behavior',
+        component: () => import('../views/UserBehaviorAnalytics.vue')
+      }
+    ]
   }
 ]
 

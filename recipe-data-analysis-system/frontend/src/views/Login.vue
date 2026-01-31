@@ -181,9 +181,13 @@ const handleLogin = async () => {
 
       ElMessage.success('登录成功，欢迎回来！')
 
-      // 跳转到首页
+      // 管理员跳转到管理后台，普通用户跳转到首页
       setTimeout(() => {
-        router.push('/')
+        if (user.is_admin) {
+          router.push('/admin/dashboard')
+        } else {
+          router.push('/')
+        }
       }, 500)
     } else {
       ElMessage.error(response.message || '登录失败')

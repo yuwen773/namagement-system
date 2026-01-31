@@ -67,12 +67,18 @@ import AppNavbar from '@/components/AppNavbar.vue'
 const route = useRoute()
 const userStore = useUserStore()
 
-// 登录/注册页面不显示导航栏和页脚
+// 登录/注册页面和管理后台不显示导航栏和页脚
 const showNavbar = computed(() => {
+  if (route.path.startsWith('/admin')) {
+    return false
+  }
   return !['login', 'register'].includes(route.name?.toLowerCase())
 })
 
 const showFooter = computed(() => {
+  if (route.path.startsWith('/admin')) {
+    return false
+  }
   return !['login', 'register'].includes(route.name?.toLowerCase())
 })
 </script>

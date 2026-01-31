@@ -52,6 +52,12 @@
           </svg>
           <span>数据分析</span>
         </router-link>
+        <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="nav-link admin-link" @click="navClick">
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>管理后台</span>
+        </router-link>
         <router-link to="/ingredients-frequency" class="nav-link" @click="navClick">
           <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -105,49 +111,11 @@
               </svg>
               我的收藏
             </router-link>
-            <router-link v-if="userStore.isAdmin" to="/admin" class="dropdown-item" @click="userMenuOpen = false">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 4h18M8 4v16M8 10h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              用户管理
-            </router-link>
-            <router-link v-if="userStore.isAdmin" to="/admin/recipes" class="dropdown-item" @click="userMenuOpen = false">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              菜谱管理
-            </router-link>
-            <router-link v-if="userStore.isAdmin" to="/admin/ingredients" class="dropdown-item" @click="userMenuOpen = false">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a2 2 0 01-2-2V6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              食材管理
-            </router-link>
-            <router-link v-if="userStore.isAdmin" to="/admin/categories" class="dropdown-item" @click="userMenuOpen = false">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 8h10M5 12h8M5 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M16 6H8a4 4 0 00-4 4v0a4 4 0 004 4h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              分类管理
-            </router-link>
-            <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="dropdown-item" @click="userMenuOpen = false">
+            <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="dropdown-item admin-entry" @click="userMenuOpen = false">
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              数据仪表盘
-            </router-link>
-            <router-link v-if="userStore.isAdmin" to="/admin/analytics" class="dropdown-item" @click="userMenuOpen = false">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              深度分析
-            </router-link>
-            <router-link v-if="userStore.isAdmin" to="/admin/behavior" class="dropdown-item" @click="userMenuOpen = false">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="1.5"/>
-                <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-              行为分析
+              <span>管理后台</span>
             </router-link>
             <router-link to="/change-password" class="dropdown-item" @click="userMenuOpen = false">
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -431,6 +399,46 @@ onUnmounted(() => {
 
 .hot-link.router-link-active::after {
   background: linear-gradient(135deg, #ff8c5a 0%, #ff6b35 100%);
+}
+
+/* ========== 管理员入口 ========== */
+.admin-link {
+  background: linear-gradient(135deg, rgba(194, 98, 46, 0.12) 0%, rgba(194, 98, 46, 0.08) 100%);
+  color: #c2622e;
+  font-weight: 600;
+}
+
+.admin-link:hover {
+  background: linear-gradient(135deg, rgba(194, 98, 46, 0.18) 0%, rgba(194, 98, 46, 0.12) 100%);
+  color: #a35220;
+}
+
+.admin-link.router-link-active {
+  color: #a35220;
+}
+
+.admin-link.router-link-active::after {
+  background: linear-gradient(135deg, #c2622e 0%, #a35220 100%);
+}
+
+/* 下拉菜单中的管理员入口 */
+.dropdown-item.admin-entry {
+  background: linear-gradient(135deg, rgba(194, 98, 46, 0.1) 0%, rgba(194, 98, 46, 0.05) 100%);
+  color: #c2622e;
+  font-weight: 500;
+}
+
+.dropdown-item.admin-entry:hover {
+  background: linear-gradient(135deg, rgba(194, 98, 46, 0.15) 0%, rgba(194, 98, 46, 0.1) 100%);
+  color: #a35220;
+}
+
+.dropdown-item.admin-entry svg {
+  color: #c2622e;
+}
+
+.dropdown-item.admin-entry:hover svg {
+  color: #a35220;
 }
 
 /* ========== 右侧操作区 ========== */
