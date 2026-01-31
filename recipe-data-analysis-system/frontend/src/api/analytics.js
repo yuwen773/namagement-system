@@ -75,6 +75,83 @@ export function getAdminIngredientPairsAnalytics(params) {
   return request.get('/api/admin/analytics/ingredient-pairs/', { params })
 }
 
+// ==================== 管理员仪表盘 API ====================
+
+/**
+ * 获取数据总览（仅管理员）
+ * @returns {Promise} 数据总览 { total_recipes, total_users, today_new_recipes, today_new_users, today_active_users, total_favorites, updated_at }
+ */
+export function getDashboardOverview() {
+  return request.get('/api/admin/dashboard/overview/')
+}
+
+/**
+ * 获取数据趋势（仅管理员）
+ * @param {Object} params - 查询参数
+ * @param {string} params.period - 时间范围（day/week/month）
+ * @param {number} params.days - 天数（1-90）
+ * @returns {Promise} 数据趋势 { period, days, data: { dates, recipe_counts, user_counts, favorite_counts } }
+ */
+export function getDashboardTrends(params) {
+  return request.get('/api/admin/dashboard/trends/', { params })
+}
+
+/**
+ * 获取用户行为统计（仅管理员）
+ * @returns {Promise} 用户行为统计 { behavior_distribution, active_user_distribution, page_views, updated_at }
+ */
+/**
+ * 获取用户行为统计（仅管理员）
+ * @returns {Promise} 用户行为统计 { behavior_distribution, active_user_distribution, page_views, updated_at }
+ */
+export function getDashboardBehaviors() {
+  return request.get('/api/admin/dashboard/behaviors/')
+}
+
+/**
+ * 获取点击流分析数据（仅管理员）
+ * @param {Object} params - 查询参数
+ * @param {number} params.days - 分析时间范围天数（1-90，默认30）
+ * @param {number} params.limit_path - 返回路径数量（1-50，默认20）
+ * @returns {Promise} 点击流分析数据 { summary, behavior_distribution, conversion_funnel, path_patterns }
+ */
+export function getClickStreamAnalytics(params) {
+  return request.get('/api/admin/analytics/clickstream/', { params })
+}
+
+/**
+ * 获取活跃用户分析数据（仅管理员）
+ * @param {Object} params - 查询参数
+ * @param {number} params.days - 分析时间范围天数（7-90，默认30）
+ * @param {string} params.trend_by - 趋势聚合方式（day/week/month，默认day）
+ * @param {boolean} params.include_trend - 是否返回趋势数据（默认true）
+ * @returns {Promise} 活跃用户分析数据 { summary, dau, wau, mau, stickiness, trend }
+ */
+export function getActiveUsersAnalytics(params) {
+  return request.get('/api/admin/analytics/active-users/', { params })
+}
+
+/**
+ * 获取登录频次分析数据（仅管理员）
+ * @param {Object} params - 查询参数
+ * @param {number} params.days - 分析时间范围天数（1-90，默认30）
+ * @returns {Promise} 登录频次分析数据 { summary, login_frequency_distribution, hourly_distribution, daily_trend }
+ */
+export function getLoginFrequencyAnalytics(params) {
+  return request.get('/api/admin/analytics/login-frequency/', { params })
+}
+
+/**
+ * 获取页面停留分析数据（仅管理员）
+ * @param {Object} params - 查询参数
+ * @param {number} params.days - 分析时间范围天数（1-90，默认30）
+ * @param {string} params.page - 页面类型筛选（可选）
+ * @returns {Promise} 页面停留分析数据 { summary, page_statistics, duration_distribution, trend }
+ */
+export function getPageDurationAnalytics(params) {
+  return request.get('/api/admin/analytics/page-duration/', { params })
+}
+
 export default {
   // 普通用户 API
   getCuisinesAnalytics,
@@ -85,5 +162,14 @@ export default {
   getAdminCuisinesAnalytics,
   getAdminDifficultyAnalytics,
   getAdminHotRecipesAnalytics,
-  getAdminIngredientPairsAnalytics
+  getAdminIngredientPairsAnalytics,
+  // 管理员仪表盘 API
+  getDashboardOverview,
+  getDashboardTrends,
+  getDashboardBehaviors,
+  // 用户行为分析 API
+  getClickStreamAnalytics,
+  getActiveUsersAnalytics,
+  getLoginFrequencyAnalytics,
+  getPageDurationAnalytics
 }

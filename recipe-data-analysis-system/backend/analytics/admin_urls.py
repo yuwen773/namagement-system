@@ -17,4 +17,12 @@ urlpatterns = [
     path('hot/', views.AdminHotRecipeAnalysisView.as_view(), name='admin_hot_recipe_analysis'),
     # 管理员 - 食材关联分析
     path('ingredient-pairs/', views.AdminIngredientPairsAnalysisView.as_view(), name='admin_ingredient_pairs_analysis'),
+    # 管理员 - 点击流分析
+    path('clickstream/', views.ClickStreamAnalysisView.as_view(), name='clickstream_analysis'),
+    # 管理员 - 活跃用户分析
+    path('active-users/', views.ActiveUsersAnalysisView.as_view(), name='active_users_analysis'),
+    # 管理员 - 登录频次分析
+    path('login-frequency/', views.LoginFrequencyAnalysisView.as_view(), name='login_frequency_analysis'),
+    # 管理员 - 页面停留分析
+    path('page-duration/', views.PageDurationAnalysisView.as_view(), name='page_duration_analysis'),
 ]
