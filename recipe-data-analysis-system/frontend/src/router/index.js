@@ -73,6 +73,30 @@ const routes = [
     name: 'admin',
     component: () => import('../views/UserManagement.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/recipes',
+    name: 'admin-recipes',
+    component: () => import('../views/RecipeManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/ingredients',
+    name: 'admin-ingredients',
+    component: () => import('../views/IngredientManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/categories',
+    name: 'admin-categories',
+    component: () => import('../views/CategoryManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/analytics',
+    name: 'admin-analytics',
+    component: () => import('../views/AdminAnalytics.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 

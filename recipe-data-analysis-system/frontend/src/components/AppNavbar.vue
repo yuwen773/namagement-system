@@ -103,7 +103,32 @@
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 4h18M8 4v16M8 10h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              管理后台
+              用户管理
+            </router-link>
+            <router-link v-if="userStore.isAdmin" to="/admin/recipes" class="dropdown-item" @click="userMenuOpen = false">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              菜谱管理
+            </router-link>
+            <router-link v-if="userStore.isAdmin" to="/admin/ingredients" class="dropdown-item" @click="userMenuOpen = false">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a2 2 0 01-2-2V6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              食材管理
+            </router-link>
+            <router-link v-if="userStore.isAdmin" to="/admin/categories" class="dropdown-item" @click="userMenuOpen = false">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 8h10M5 12h8M5 16h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 6H8a4 4 0 00-4 4v0a4 4 0 004 4h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              分类管理
+            </router-link>
+            <router-link v-if="userStore.isAdmin" to="/admin/analytics" class="dropdown-item" @click="userMenuOpen = false">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              数据分析
             </router-link>
             <router-link to="/change-password" class="dropdown-item" @click="userMenuOpen = false">
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
