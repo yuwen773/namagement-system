@@ -628,6 +628,94 @@ Content-Type: multipart/form-data
 
 ---
 
+### 8. 批量导入菜谱（管理员专用）
+
+**接口地址：** `POST /api/admin/recipes/import/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+Content-Type: multipart/form-data
+```
+
+**权限要求：** 仅管理员可访问
+
+**请求参数：**
+
+| 参数       | 类型   | 必填 | 说明                                     |
+|:-----------|:-------|:-----|:-----------------------------------------|
+| file       | file   | 是   | 导入文件（支持 CSV 或 JSON 格式）        |
+| file_type  | string | 否   | 文件类型（csv/json，可选，自动检测）     |
+
+**文件格式限制：**
+- JSON 格式：UTF-8 编码的 JSON 数组
+- CSV 格式：UTF-8 或 GBK 编码的 CSV 文件
+
+**JSON 文件格式示例：**
+```json
+[
+    {
+        "name": "红烧肉",
+        "cuisine_type": "家常菜",
+        "scene_type": "晚餐",
+        "target_audience": "大众",
+        "difficulty": "medium",
+        "cooking_time": 60,
+        "steps": "1. 焯水... 2. 炒糖色...",
+        "flavor_tags": "甜,咸香",
+        "image_url": "",
+        "ingredients": [
+            {"ingredient_id": 1, "amount": "500g", "sort_order": 1},
+            {"ingredient_id": 2, "amount": "适量", "sort_order": 2}
+        ]
+    }
+]
+```
+
+**CSV 文件格式示例：**
+```csv
+name,cuisine_type,scene_type,target_audience,difficulty,cooking_time,steps,flavor_tags,image_url
+红烧肉,家常菜,晚餐,大众,medium,60,"1. 焯水... 2. 炒糖色...",甜,咸香,
+宫保鸡丁,川菜,晚餐,大众,medium,30,"1. 切配... 2. 炒制...",辣,甜,
+```
+
+**成功响应（200）：**
+```json
+{
+    "code": 200,
+    "message": "菜谱导入完成，成功 95 条，失败 5 条",
+    "data": {
+        "total": 100,
+        "success_count": 95,
+        "failed_count": 5,
+        "failed_records": [
+            {"row": 3, "name": "测试菜谱", "error": "菜谱名称不能为空"},
+            {"row": 7, "name": "无效菜谱", "error": "食材 ID 999 不存在"}
+        ]
+    }
+}
+```
+
+**错误响应（400）：**
+```json
+{
+    "code": 400,
+    "message": "请上传导入文件",
+    "data": null
+}
+```
+
+**错误响应（403）：**
+```json
+{
+    "code": 403,
+    "message": "权限不足，仅管理员可访问",
+    "data": null
+}
+```
+
+---
+
 ## 分类模块 (categories)
 
 ### 1. 分类列表
@@ -716,6 +804,220 @@ GET /api/categories/cuisine/
 
 ---
 
+### 3. 管理员 - 分类列表
+
+**接口地址：** `GET /api/admin/categories/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**请求参数：**
+
+| 参数     | 类型   | 必填 | 说明 |
+|:---------|:-------|:-----|:-----|
+| type     | string | 否   | 分类类型筛选 |
+| search   | string | 否   | 搜索分类名称（模糊匹配） |
+| page     | int    | 否   | 页码（默认1） |
+| page_size| int    | 否   | 每页数量（默认20，最大100） |
+
+**成功响应（200）：**
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "count": 50,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": 1,
+                "name": "川菜",
+                "type": "cuisine",
+                "type_display": "菜系",
+                "sort_order": 1,
+                "created_at": "2026-01-30T12:00:00Z",
+                "updated_at": "2026-01-30T12:00:00Z"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### 4. 管理员 - 创建分类
+
+**接口地址：** `POST /api/admin/categories/create/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**请求参数：**
+
+| 参数      | 类型   | 必填 | 说明                     |
+|:----------|:-------|:-----|:-------------------------|
+| name      | string | 是   | 分类名称                 |
+| type      | string | 是   | 分类类型（cuisine/scene/crowd/taste） |
+| sort_order| int    | 否   | 排序序号（默认0）        |
+
+**请求示例：**
+```json
+{
+    "name": "湘菜",
+    "type": "cuisine",
+    "sort_order": 5
+}
+```
+
+**成功响应（201）：**
+```json
+{
+    "code": 201,
+    "message": "创建成功",
+    "data": {
+        "id": 10,
+        "name": "湘菜",
+        "type": "cuisine",
+        "type_display": "菜系",
+        "sort_order": 5,
+        "created_at": "2026-01-31T12:00:00Z",
+        "updated_at": "2026-01-31T12:00:00Z"
+    }
+}
+```
+
+**错误响应（400）：**
+```json
+{
+    "code": 400,
+    "message": "分类类型 \"cuisine\" 下已存在名称为 \"川菜\" 的分类",
+    "data": null
+}
+```
+
+---
+
+### 5. 管理员 - 更新分类
+
+**接口地址：** `PUT /api/admin/categories/{category_id}/update/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**路径参数：**
+
+| 参数         | 类型 | 必填 | 说明   |
+|:-------------|:-----|:-----|:-------|
+| category_id  | int  | 是   | 分类ID |
+
+**请求参数：**
+
+| 参数      | 类型   | 必填 | 说明     |
+|:----------|:-------|:-----|:---------|
+| name      | string | 否   | 分类名称 |
+| type      | string | 否   | 分类类型 |
+| sort_order| int    | 否   | 排序序号 |
+
+**请求示例：**
+```json
+{
+    "name": "湘菜",
+    "sort_order": 3
+}
+```
+
+**成功响应（200）：**
+```json
+{
+    "code": 200,
+    "message": "更新成功",
+    "data": {
+        "id": 10,
+        "name": "湘菜",
+        "type": "cuisine",
+        "type_display": "菜系",
+        "sort_order": 3,
+        "created_at": "2026-01-31T12:00:00Z",
+        "updated_at": "2026-01-31T12:15:00Z"
+    }
+}
+```
+
+**错误响应（404）：**
+```json
+{
+    "code": 404,
+    "message": "分类不存在",
+    "data": null
+}
+```
+
+---
+
+### 6. 管理员 - 删除分类
+
+**接口地址：** `DELETE /api/admin/categories/{category_id}/delete/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**路径参数：**
+
+| 参数         | 类型 | 必填 | 说明   |
+|:-------------|:-----|:-----|:-------|
+| category_id  | int  | 是   | 分类ID |
+
+**功能说明：**
+- 检查分类是否存在
+- 检查分类是否被菜谱使用
+- 删除分类
+
+**成功响应（200）：**
+```json
+{
+    "code": 200,
+    "message": "删除成功",
+    "data": null
+}
+```
+
+**错误响应（400）：**
+```json
+{
+    "code": 400,
+    "message": "该分类正在被菜谱使用，无法删除",
+    "data": null
+}
+```
+
+**错误响应（404）：**
+```json
+{
+    "code": 404,
+    "message": "分类不存在",
+    "data": null
+}
+```
+
+---
+
 ## 食材模块 (ingredients)
 
 ### 1. 食材列表
@@ -764,6 +1066,179 @@ GET /api/ingredients/?category=meat&search=鸡
             }
         ]
     }
+}
+```
+
+---
+
+### 2. 管理员 - 食材列表
+
+**接口地址：** `GET /api/admin/ingredients/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**请求参数：**
+
+| 参数     | 类型   | 必填 | 说明 |
+|:---------|:-------|:-----|:-----|
+| category | string | 否   | 食材分类筛选 |
+| search   | string | 否   | 搜索食材名称（模糊匹配） |
+| page     | int    | 否   | 页码（默认1） |
+| page_size| int    | 否   | 每页数量（默认20，最大100） |
+
+**成功响应（200）：**
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "count": 100,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": 1,
+                "name": "鸡肉",
+                "category": "meat",
+                "category_display": "肉类",
+                "created_at": "2026-01-30T12:00:00Z",
+                "updated_at": "2026-01-30T12:00:00Z"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### 3. 管理员 - 创建食材
+
+**接口地址：** `POST /api/admin/ingredients/create/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**请求参数：**
+
+| 参数     | 类型   | 必填 | 说明 |
+|:---------|:-------|:-----|:-----|
+| name     | string | 是   | 食材名称 |
+| category | string | 是   | 食材分类 |
+
+**请求示例：**
+```json
+{
+    "name": "测试食材",
+    "category": "other"
+}
+```
+
+**成功响应（201）：**
+```json
+{
+    "code": 201,
+    "message": "创建成功",
+    "data": {
+        "id": 100,
+        "name": "测试食材",
+        "category": "other",
+        "category_display": "其他",
+        "created_at": "2026-01-31T12:00:00Z",
+        "updated_at": "2026-01-31T12:00:00Z"
+    }
+}
+```
+
+---
+
+### 4. 管理员 - 更新食材
+
+**接口地址：** `PUT /api/admin/ingredients/{ingredient_id}/update/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**路径参数：**
+
+| 参数           | 类型 | 必填 | 说明   |
+|:---------------|:-----|:-----|:-------|
+| ingredient_id  | int  | 是   | 食材ID |
+
+**请求参数：**
+
+| 参数     | 类型   | 必填 | 说明 |
+|:---------|:-------|:-----|:-----|
+| name     | string | 否   | 食材名称 |
+| category | string | 否   | 食材分类 |
+
+**成功响应（200）：**
+```json
+{
+    "code": 200,
+    "message": "更新成功",
+    "data": {
+        "id": 100,
+        "name": "更新后的名称",
+        "category": "meat",
+        "category_display": "肉类",
+        "created_at": "2026-01-31T12:00:00Z",
+        "updated_at": "2026-01-31T12:30:00Z"
+    }
+}
+```
+
+---
+
+### 5. 管理员 - 删除食材
+
+**接口地址：** `DELETE /api/admin/ingredients/{ingredient_id}/delete/`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**权限要求：** 仅管理员可访问
+
+**路径参数：**
+
+| 参数           | 类型 | 必填 | 说明   |
+|:---------------|:-----|:-----|:-------|
+| ingredient_id  | int  | 是   | 食材ID |
+
+**功能说明：**
+- 检查食材是否存在
+- 检查食材是否被菜谱使用
+- 删除食材
+
+**成功响应（200）：**
+```json
+{
+    "code": 200,
+    "message": "删除成功",
+    "data": null
+}
+```
+
+**错误响应（400）：**
+```json
+{
+    "code": 400,
+    "message": "该食材正在被菜谱使用，无法删除",
+    "data": null
 }
 ```
 
