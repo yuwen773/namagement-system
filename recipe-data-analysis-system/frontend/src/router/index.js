@@ -19,6 +19,18 @@ const routes = [
     name: 'register',
     component: () => import('../views/Register.vue'),
     meta: { requiresAuth: false }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/change-password',
+    name: 'change-password',
+    component: () => import('../views/ChangePassword.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 
