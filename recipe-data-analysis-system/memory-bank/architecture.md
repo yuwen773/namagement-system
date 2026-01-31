@@ -1,6 +1,6 @@
 # 菜谱数据分析系统 - 架构设计
 
-> 更新日期: 2026-01-30（阶段七第4步完成，食材使用频率统计接口测试通过 6/6）
+> 更新日期: 2026-01-31（阶段八第1步完成，登录页面实现）
 
 ---
 
@@ -49,6 +49,18 @@ API 层 (Django + DRF)
 ```
 recipe-data-analysis-system/
 ├── frontend/           # Vue 3 前端
+│   ├── src/
+│   │   ├── api/        # API 请求模块
+│   │   ├── assets/     # 静态资源
+│   │   ├── components/ # 公共组件
+│   │   ├── router/     # 路由配置
+│   │   ├── stores/     # Pinia 状态管理
+│   │   ├── views/      # 页面组件
+│   │   ├── App.vue     # 根组件
+│   │   └── main.js     # 入口文件
+│   ├── index.html      # HTML 模板
+│   ├── package.json    # 依赖配置
+│   └── vite.config.js  # Vite 配置
 ├── backend/            # Django 后端
 │   ├── config/         # 项目配置
 │   ├── utils/          # 公共工具（response/exceptions/pagination/permissions）
@@ -396,6 +408,97 @@ python verify_script/test_hot_recipes.py
 **认证方式**：JWT Token (`Authorization: Bearer <token>`)
 
 **分页参数**：`page`, `page_size` (默认20, 最大100)
+
+---
+
+## 前端模块说明
+
+### api - API 请求模块
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `auth.js` | 封装用户认证相关 API（登录、注册、获取用户信息、更新资料、修改密码、角色检查） |
+
+**已实现接口**（6/6）：
+- `login(username, password)` - 用户登录
+- `register(data)` - 用户注册
+- `getCurrentUser()` - 获取当前用户信息
+- `updateProfile(data)` - 更新用户资料
+- `changePassword(data)` - 修改密码
+- `checkRole()` - 角色检查
+
+**axios 配置**：
+- 基础 URL：`http://localhost:8000`
+- 请求超时：10 秒
+- 请求拦截器：自动添加 Authorization 头
+- 响应拦截器：统一处理响应格式和错误
+
+---
+
+### router - 路由模块
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `index.js` | 路由配置、路由守卫 |
+
+**已配置路由**（3/18）：
+- `/` - 首页 (Home.vue)
+- `/login` - 登录页 (Login.vue)
+- `/register` - 注册页 (Register.vue，待实现)
+
+**路由守卫**：
+- 检查 `meta.requiresAuth` 是否需要认证
+- 未认证用户跳转到登录页，携带 redirect 参数
+
+---
+
+### stores - Pinia 状态管理
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `user.js` | 用户状态管理 |
+
+**user store 状态**：
+- `token` - JWT Token
+- `userInfo` - 用户信息对象
+
+**user store getters**：
+- `isLoggedIn` - 是否已登录
+- `isAdmin` - 是否是管理员
+
+**user store actions**：
+- `setToken(token)` - 设置 Token
+- `setUserInfo(userInfo)` - 设置用户信息
+- `logout()` - 退出登录
+
+**数据持久化**：
+- Token 和 userInfo 同步存储到 localStorage
+
+---
+
+### views - 页面组件
+
+| 文件 | 作用 |
+|:-----|:-----|
+| `Home.vue` | 首页 |
+| `Login.vue` | 登录页（美食主题设计） |
+| `Register.vue` | 注册页（待实现） |
+
+**Login.vue 组件**：
+- **设计风格**：美食主题，温暖琥珀橙配色
+- **布局**：双栏设计（左侧品牌展示 + 右侧登录表单）
+- **字体**：Playfair Display（标题）+ DM Sans（正文）
+- **功能**：用户名/密码登录、记住我、表单验证、错误提示
+- **响应式**：移动端隐藏左侧装饰区
+
+**主题配色**：
+| 颜色名 | 值 | 用途 |
+|:-------|:-----|:-----|
+| 琥珀橙主色 | #d4773a | 渐变背景、按钮 |
+| 琥珀橙深色 | #c2622e | 按钮渐变、强调色 |
+| 琥珀橙暗色 | #a35220 | 边框、阴影 |
+| 巧克力棕 | #3d2914 | 标题、文字 |
+| 奶油白 | #faf8f5 | 页面背景 |
 
 ---
 
