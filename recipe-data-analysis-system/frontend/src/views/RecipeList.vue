@@ -1,30 +1,66 @@
 <template>
   <div class="recipe-list-page">
-    <!-- 顶部导航栏 -->
-    <header class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <h1 class="page-title">探索菜谱</h1>
-          <p class="page-subtitle">发现 20,000+ 精选菜谱，开启美味之旅</p>
-        </div>
-        <!-- 搜索框 -->
-        <div class="search-section">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索菜谱名称或食材..."
-            size="large"
-            :prefix-icon="Search"
-            clearable
-            class="search-input"
-            @keyup.enter="handleSearch"
-          >
-            <template #append>
-              <el-button :icon="Search" @click="handleSearch" />
-            </template>
-          </el-input>
-        </div>
+    <!-- 页面标题区 -->
+    <div class="page-header-section">
+      <div class="page-header-content">
+        <h1 class="page-title">探索菜谱</h1>
+        <p class="page-subtitle">发现 20,000+ 精选菜谱，开启美味之旅</p>
       </div>
-    </header>
+      <!-- 搜索框 -->
+      <div class="search-section">
+        <el-popover
+          :visible="searchHistoryVisible && searchHistory.length > 0"
+          placement="bottom"
+          :width="300"
+          trigger="click"
+          popper-class="search-history-popover"
+        >
+          <template #reference>
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索菜谱名称或食材..."
+              size="large"
+              :prefix-icon="Search"
+              clearable
+              class="search-input"
+              @focus="searchHistoryVisible = true"
+              @blur="handleSearchBlur"
+              @keyup.enter="handleSearch"
+              @clear="handleClearSearch"
+            >
+              <template #append>
+                <el-button :icon="Search" @click="handleSearch" />
+              </template>
+            </el-input>
+          </template>
+          <div class="search-history">
+            <div class="history-header">
+              <span>搜索历史</span>
+              <el-button text size="small" @click="clearSearchHistory">清空</el-button>
+            </div>
+            <div class="history-list">
+              <div
+                v-for="(item, index) in searchHistory"
+                :key="index"
+                class="history-item"
+                @click="useSearchHistory(item)"
+              >
+                <svg viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 12c-.3 0-.5-.1-.7-.3l-4-4c-.4-.4-.4-1 0-1.4s1-.4 1.4 0L8 10.2l3.3-3.3c.4-.4 1-.4 1.4 0s.4 1 0 1.4l-4 4c-.2.2-.4.3-.7.3z"/>
+                </svg>
+                <span>{{ item }}</span>
+                <el-button
+                  text
+                  size="small"
+                  :icon="Close"
+                  @click.stop="removeSearchHistory(index)"
+                />
+              </div>
+            </div>
+          </div>
+        </el-popover>
+      </div>
+    </div>
 
     <!-- 主内容区 -->
     <div class="main-content">
@@ -97,6 +133,21 @@
 
       <!-- 菜谱列表区 -->
       <main class="recipe-list-section">
+        <!-- 搜索状态提示 -->
+        <div v-if="isSearching" class="search-status-bar">
+          <div class="search-status-content">
+            <span class="search-status-text">
+              搜索结果：<strong>"{{ searchKeyword }}"</strong>
+            </span>
+            <span class="search-status-count">
+              找到 {{ pagination.total }} 个相关菜谱
+            </span>
+          </div>
+          <el-button size="small" @click="handleClearSearch">
+            清除搜索
+          </el-button>
+        </div>
+
         <!-- 加载状态 -->
         <div v-if="loading" class="loading-container">
           <el-skeleton :rows="6" animated />
@@ -111,9 +162,11 @@
               <text x="50" y="55" text-anchor="middle" font-size="20" fill="currentColor">?</text>
             </svg>
           </div>
-          <h3>暂无菜谱</h3>
-          <p>试试调整筛选条件或搜索其他关键词</p>
-          <el-button type="primary" @click="resetFilters">重置筛选</el-button>
+          <h3>{{ isSearching ? '未找到相关菜谱' : '暂无菜谱' }}</h3>
+          <p>{{ isSearching ? `没有找到与"${searchKeyword}"相关的菜谱，试试其他关键词吧` : '试试调整筛选条件或搜索其他关键词' }}</p>
+          <el-button type="primary" @click="resetFilters">
+            {{ isSearching ? '清除搜索' : '重置筛选' }}
+          </el-button>
         </div>
 
         <!-- 菜谱卡片网格 -->
@@ -187,7 +240,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Close } from '@element-plus/icons-vue'
 import { getRecipeList, getCategories, searchRecipes } from '@/api/recipes'
 
 const router = useRouter()
@@ -197,6 +250,12 @@ const loading = ref(false)
 const searchKeyword = ref('')
 const recipeList = ref([])
 const cuisineList = ref([])
+const isSearching = ref(false) // 搜索状态标识
+const searchHistoryVisible = ref(false) // 搜索历史弹窗显示
+const searchHistory = ref([]) // 搜索历史记录
+
+// 搜索历史存储key
+const SEARCH_HISTORY_KEY = 'recipe_search_history'
 
 // 筛选条件
 const filters = reactive({
@@ -275,15 +334,25 @@ const loadRecipes = async () => {
 
 // 搜索
 const handleSearch = async () => {
-  if (!searchKeyword.value.trim()) {
+  const keyword = searchKeyword.value.trim()
+  if (!keyword) {
+    // 清空搜索，返回正常列表
+    isSearching.value = false
+    pagination.page = 1
     loadRecipes()
     return
   }
 
+  // 保存搜索历史
+  saveSearchHistory(keyword)
+
+  isSearching.value = true
   loading.value = true
+  pagination.page = 1
+  searchHistoryVisible.value = false
   try {
     const params = {
-      keyword: searchKeyword.value.trim(),
+      keyword: keyword,
       search_type: 'name',
       page: 1,
       page_size: pagination.pageSize
@@ -293,12 +362,121 @@ const handleSearch = async () => {
     if (response.code === 200) {
       recipeList.value = response.data.results || []
       pagination.total = response.data.count || 0
-      pagination.page = 1
+      if (pagination.total > 0) {
+        ElMessage.success(`找到 ${pagination.total} 个相关菜谱`)
+      }
     }
   } catch (error) {
     ElMessage.error(error.message || '搜索失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 执行搜索（用于分页）
+const executeSearch = async () => {
+  if (!searchKeyword.value.trim()) {
+    isSearching.value = false
+    loadRecipes()
+    return
+  }
+
+  isSearching.value = true
+  loading.value = true
+  try {
+    const params = {
+      keyword: searchKeyword.value.trim(),
+      search_type: 'name',
+      page: pagination.page,
+      page_size: pagination.pageSize
+    }
+
+    const response = await searchRecipes(params)
+    if (response.code === 200) {
+      recipeList.value = response.data.results || []
+      pagination.total = response.data.count || 0
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '搜索失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载搜索历史
+const loadSearchHistory = () => {
+  try {
+    const history = localStorage.getItem(SEARCH_HISTORY_KEY)
+    if (history) {
+      searchHistory.value = JSON.parse(history)
+    }
+  } catch (error) {
+    console.error('加载搜索历史失败:', error)
+    searchHistory.value = []
+  }
+}
+
+// 保存搜索历史
+const saveSearchHistory = (keyword) => {
+  // 移除重复项
+  const index = searchHistory.value.indexOf(keyword)
+  if (index > -1) {
+    searchHistory.value.splice(index, 1)
+  }
+  // 添加到开头
+  searchHistory.value.unshift(keyword)
+  // 限制历史记录数量为10条
+  if (searchHistory.value.length > 10) {
+    searchHistory.value = searchHistory.value.slice(0, 10)
+  }
+  // 保存到localStorage
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory.value))
+  } catch (error) {
+    console.error('保存搜索历史失败:', error)
+  }
+}
+
+// 清除搜索
+const handleClearSearch = () => {
+  searchKeyword.value = ''
+  isSearching.value = false
+  pagination.page = 1
+  loadRecipes()
+}
+
+// 搜索输入框失焦处理（延迟隐藏历史）
+const handleSearchBlur = () => {
+  setTimeout(() => {
+    searchHistoryVisible.value = false
+  }, 200)
+}
+
+// 使用搜索历史
+const useSearchHistory = (keyword) => {
+  searchKeyword.value = keyword
+  searchHistoryVisible.value = false
+  handleSearch()
+}
+
+// 删除单条搜索历史
+const removeSearchHistory = (index) => {
+  searchHistory.value.splice(index, 1)
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory.value))
+  } catch (error) {
+    console.error('更新搜索历史失败:', error)
+  }
+}
+
+// 清空搜索历史
+const clearSearchHistory = () => {
+  searchHistory.value = []
+  try {
+    localStorage.removeItem(SEARCH_HISTORY_KEY)
+    ElMessage.success('搜索历史已清空')
+  } catch (error) {
+    console.error('清空搜索历史失败:', error)
   }
 }
 
@@ -311,7 +489,11 @@ const handleFilterChange = () => {
 // 分页变化
 const handlePageChange = (page) => {
   pagination.page = page
-  loadRecipes()
+  if (isSearching.value) {
+    executeSearch()
+  } else {
+    loadRecipes()
+  }
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -320,7 +502,11 @@ const handlePageChange = (page) => {
 const handleSizeChange = (size) => {
   pagination.pageSize = size
   pagination.page = 1
-  loadRecipes()
+  if (isSearching.value) {
+    executeSearch()
+  } else {
+    loadRecipes()
+  }
 }
 
 // 重置筛选
@@ -329,6 +515,7 @@ const resetFilters = () => {
   filters.difficulty = ''
   filters.ordering = '-created_at'
   searchKeyword.value = ''
+  isSearching.value = false
   pagination.page = 1
   loadRecipes()
 }
@@ -352,6 +539,7 @@ const goToHot = () => {
 onMounted(() => {
   loadCategories()
   loadRecipes()
+  loadSearchHistory()
 })
 </script>
 
@@ -364,27 +552,18 @@ onMounted(() => {
   font-family: 'DM Sans', sans-serif;
 }
 
-/* ========== 顶部导航栏 ========== */
-.page-header {
-  background: white;
-  border-bottom: 1px solid #f0ebe3;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 12px rgba(61, 41, 20, 0.04);
-}
-
-.header-content {
+/* ========== 页面标题区 ========== */
+.page-header-section {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem 2rem;
+  padding: 2rem 2rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
 }
 
-.header-left {
+.page-header-content {
   flex: 1;
 }
 
@@ -441,7 +620,7 @@ onMounted(() => {
 .main-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0 2rem 2rem;
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 2rem;
@@ -575,6 +754,43 @@ onMounted(() => {
 /* ========== 菜谱列表区 ========== */
 .recipe-list-section {
   min-height: 600px;
+}
+
+/* 搜索状态栏 */
+.search-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
+  border: 1px solid #f0ebe3;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(61, 41, 20, 0.04);
+}
+
+.search-status-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-status-text {
+  color: #6b5c4d;
+  font-size: 0.95rem;
+}
+
+.search-status-text strong {
+  color: #c2622e;
+}
+
+.search-status-count {
+  padding: 0.25rem 0.75rem;
+  background: rgba(194, 98, 46, 0.1);
+  color: #c2622e;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 /* 加载状态 */
@@ -776,9 +992,10 @@ onMounted(() => {
 }
 
 @media (max-width: 968px) {
-  .header-content {
+  .page-header-section {
     flex-direction: column;
     align-items: stretch;
+    padding: 1.5rem 1rem 1rem;
   }
 
   .search-section {
@@ -787,6 +1004,7 @@ onMounted(() => {
 
   .main-content {
     grid-template-columns: 1fr;
+    padding: 0 1rem 1rem;
   }
 
   .filter-sidebar {
@@ -799,16 +1017,8 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .header-content {
-    padding: 1rem;
-  }
-
   .page-title {
     font-size: 1.5rem;
-  }
-
-  .main-content {
-    padding: 1rem;
   }
 
   .recipe-grid {
@@ -826,5 +1036,73 @@ onMounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+</style>
+
+<style>
+/* 搜索历史弹窗样式（全局样式，因为使用了popper-class） */
+.search-history-popover {
+  padding: 0 !important;
+}
+
+.search-history {
+  padding: 0.75rem 0;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem 0.5rem;
+  border-bottom: 1px solid #f0ebe3;
+}
+
+.history-header span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8b7355;
+}
+
+.history-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-item:hover {
+  background: rgba(194, 98, 46, 0.05);
+}
+
+.history-item svg {
+  width: 14px;
+  height: 14px;
+  color: #b8a99a;
+  flex-shrink: 0;
+}
+
+.history-item span {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #6b5c4d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item .el-button {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.history-item:hover .el-button {
+  opacity: 1;
 }
 </style>
