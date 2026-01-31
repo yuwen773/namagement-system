@@ -99,6 +99,12 @@
               </svg>
               个人中心
             </router-link>
+            <router-link to="/favorites" class="dropdown-item" @click="userMenuOpen = false">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 1.314C12.438-3.248 23.534 4.735 10 15-3.534 4.736 3.562-3.248 10 1.314z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              我的收藏
+            </router-link>
             <router-link v-if="userStore.isAdmin" to="/admin" class="dropdown-item" @click="userMenuOpen = false">
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 4h18M8 4v16M8 10h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -124,11 +130,24 @@
               </svg>
               分类管理
             </router-link>
+            <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="dropdown-item" @click="userMenuOpen = false">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              数据仪表盘
+            </router-link>
             <router-link v-if="userStore.isAdmin" to="/admin/analytics" class="dropdown-item" @click="userMenuOpen = false">
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              数据分析
+              深度分析
+            </router-link>
+            <router-link v-if="userStore.isAdmin" to="/admin/behavior" class="dropdown-item" @click="userMenuOpen = false">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+              行为分析
             </router-link>
             <router-link to="/change-password" class="dropdown-item" @click="userMenuOpen = false">
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -190,6 +209,7 @@
         <router-link to="/hot" class="mobile-nav-link hot-mobile" @click="closeMobileMenu">热门菜谱</router-link>
         <router-link to="/analytics" class="mobile-nav-link" @click="closeMobileMenu">数据分析</router-link>
         <router-link to="/ingredients-frequency" class="mobile-nav-link" @click="closeMobileMenu">食材频率</router-link>
+        <router-link to="/favorites" class="mobile-nav-link" @click="closeMobileMenu">我的收藏</router-link>
         <div v-if="!userStore.isLoggedIn" class="mobile-auth-section">
           <router-link to="/login" class="mobile-auth-link" @click="closeMobileMenu">登录</router-link>
           <router-link to="/register" class="mobile-auth-link primary" @click="closeMobileMenu">注册</router-link>

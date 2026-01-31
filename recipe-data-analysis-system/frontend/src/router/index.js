@@ -51,6 +51,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/favorites',
+    name: 'favorites',
+    component: () => import('../views/MyFavorites.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/change-password',
     name: 'change-password',
     component: () => import('../views/ChangePassword.vue'),
@@ -96,6 +102,18 @@ const routes = [
     path: '/admin/analytics',
     name: 'admin-analytics',
     component: () => import('../views/AdminAnalytics.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'admin-dashboard',
+    component: () => import('../views/AdminDashboard.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/behavior',
+    name: 'admin-behavior',
+    component: () => import('../views/UserBehaviorAnalytics.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
