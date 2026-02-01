@@ -40,8 +40,16 @@ class RecipeListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'cuisine_type', 'scene_type', 'difficulty',
             'cooking_time', 'image_url', 'flavor_tags', 'view_count',
-            'favorite_count', 'created_at'
+            'favorite_count', 'created_at', 'target_audience', 'steps',
+            'ingredients'
         ]
+
+    ingredients = serializers.SerializerMethodField()
+
+    def get_ingredients(self, obj):
+        """获取食材列表"""
+        ingredients = obj.recipe_ingredients.all()
+        return RecipeIngredientSerializer(ingredients, many=True).data
 
 
 class RecipeImageUploadSerializer(serializers.Serializer):

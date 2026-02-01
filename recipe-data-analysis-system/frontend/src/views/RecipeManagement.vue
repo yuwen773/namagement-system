@@ -177,7 +177,7 @@
     <el-dialog
       v-model="showEditDialog"
       :title="isEditMode ? '编辑菜谱' : '新增菜谱'"
-      width="600px"
+      width="800px"
       :close-on-click-modal="false"
     >
       <el-form :model="formData" :rules="formRules" ref="formRef" label-width="100px">
@@ -217,12 +217,20 @@
           <el-input v-model="formData.flavor_tags" placeholder="多个标签用逗号分隔，如：辣,甜" />
         </el-form-item>
         <el-form-item label="制作步骤" prop="steps">
-          <el-input v-model="formData.steps" type="textarea" :rows="4" placeholder="请输入制作步骤" />
+          <el-input v-model="formData.steps" type="textarea" :rows="6" placeholder="请输入制作步骤" />
         </el-form-item>
         <el-form-item label="食材列表">
           <div class="ingredients-editor">
             <div v-for="(ing, index) in formData.ingredients" :key="index" class="ingredient-row">
-              <el-input-number v-model="ing.ingredient_id" :min="1" placeholder="食材ID" controls-position="right" class="ingredient-id-input" />
+              <el-select v-model="ing.ingredient" placeholder="选择食材" class="ingredient-select" filterable>
+                <el-option
+                  v-for="item in ingredientsList"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+              <span class="ingredient-name-display">{{ ing.ingredient_name }}</span>
               <el-input v-model="ing.amount" placeholder="用量" class="ingredient-amount-input" />
               <el-input-number v-model="ing.sort_order" :min="1" placeholder="排序" controls-position="right" class="ingredient-order-input" />
               <el-button @click="removeIngredient(index)" type="danger" text>删除</el-button>
@@ -286,7 +294,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminRecipeList, createRecipe, updateRecipe, deleteRecipe, importRecipes } from '@/api/recipes'
-import { getCategories } from '@/api/recipes'
+import { getCategories, getIngredients } from '@/api/recipes'
 
 // 状态
 const loading = ref(false)
@@ -306,6 +314,7 @@ const totalCount = ref(0)
 const cuisines = ref([])
 const scenes = ref([])
 const audiences = ref([])
+const ingredientsList = ref([])
 
 // 对话框状态
 const showEditDialog = ref(false)
@@ -361,6 +370,16 @@ const fetchCategories = async () => {
     audiences.value = crowdRes.data || []
   } catch (error) {
     console.error('获取分类数据失败:', error)
+  }
+}
+
+// 获取食材列表
+const fetchIngredients = async () => {
+  try {
+    const response = await getIngredients({ page_size: 1000 })
+    ingredientsList.value = response.data?.results || response.data || []
+  } catch (error) {
+    console.error('获取食材列表失败:', error)
   }
 }
 
@@ -428,9 +447,15 @@ const openCreateDialog = () => {
 }
 
 // 打开编辑对话框
-const openEditDialog = (recipe) => {
+const openEditDialog = async (recipe) => {
   isEditMode.value = true
   editingRecipeId.value = recipe.id
+
+  // 确保食材列表已加载（用于新增时选择）
+  if (ingredientsList.value.length === 0) {
+    await fetchIngredients()
+  }
+
   formData.value = {
     name: recipe.name || '',
     cuisine_type: recipe.cuisine_type || '',
@@ -441,7 +466,7 @@ const openEditDialog = (recipe) => {
     image_url: recipe.image_url || '',
     flavor_tags: recipe.flavor_tags || '',
     steps: recipe.steps || '',
-    ingredients: []
+    ingredients: recipe.ingredients || []
   }
   showEditDialog.value = true
 }
@@ -466,7 +491,8 @@ const resetFormData = () => {
 // 添加食材
 const addIngredient = () => {
   formData.value.ingredients.push({
-    ingredient_id: null,
+    ingredient: null,
+    ingredient_name: '',
     amount: '',
     sort_order: formData.value.ingredients.length + 1
   })
@@ -575,6 +601,7 @@ const handleImport = async () => {
 // 页面加载时获取数据
 onMounted(() => {
   fetchCategories()
+  fetchIngredients()
   fetchRecipeList()
 })
 </script>
@@ -1049,8 +1076,8 @@ onMounted(() => {
   align-items: center;
 }
 
-.ingredient-id-input {
-  width: 100px;
+.ingredient-select {
+  width: 180px;
 }
 
 .ingredient-amount-input {
@@ -1059,6 +1086,17 @@ onMounted(() => {
 
 .ingredient-order-input {
   width: 100px;
+}
+
+.ingredient-name-display {
+  color: #3d2914;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-width: 80px;
+  white-space: nowrap;
+  background: #f5f0e8;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
 }
 
 .unit-text {

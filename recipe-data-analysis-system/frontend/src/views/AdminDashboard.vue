@@ -739,7 +739,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 2rem;
+  white-space: nowrap;
   background: linear-gradient(135deg, #d4773a 0%, #c2622e 100%);
   color: white;
   border: none;
