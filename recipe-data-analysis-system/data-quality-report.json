@@ -1,0 +1,131 @@
+{
+  "report_time": "2026-01-31 22:36:15",
+  "summary": {
+    "total_users": 100,
+    "total_behaviors": 6496,
+    "total_page_views": 717,
+    "recipes_with_views": 3159,
+    "recipes_with_favorites": 831,
+    "quality_score": 85,
+    "issues": [],
+    "warnings": [
+      "page_view 比例异常: 11.0%（预期 1-10%）"
+    ]
+  },
+  "details": {
+    "users": {
+      "mock_user_count": 100,
+      "with_profiles": 100,
+      "with_nickname": 100,
+      "with_bio": 100,
+      "is_active": 100
+    },
+    "behavior_types": {
+      "favorite": 852,
+      "login": 331,
+      "page_view": 717,
+      "search": 1145,
+      "view": 3451
+    },
+    "expected_ratios": {
+      "login": [
+        0.03,
+        0.07
+      ],
+      "search": [
+        0.15,
+        0.25
+      ],
+      "view": [
+        0.5,
+        0.7
+      ],
+      "favorite": [
+        0.1,
+        0.2
+      ],
+      "page_view": [
+        0.01,
+        0.1
+      ]
+    },
+    "actual_ratios": {
+      "login": {
+        "count": 331,
+        "ratio": 5.1,
+        "expected": "3-7%"
+      },
+      "search": {
+        "count": 1145,
+        "ratio": 17.6,
+        "expected": "15-25%"
+      },
+      "view": {
+        "count": 3451,
+        "ratio": 53.1,
+        "expected": "50-70%"
+      },
+      "favorite": {
+        "count": 852,
+        "ratio": 13.1,
+        "expected": "10-20%"
+      },
+      "page_view": {
+        "count": 717,
+        "ratio": 11.0,
+        "expected": "1-10%"
+      }
+    },
+    "time_range": {
+      "earliest": "2026-01-31 14:09",
+      "latest": "2026-01-31 14:19",
+      "days_span": 0
+    },
+    "hour_distribution": {
+      "day_ratio": 100.0,
+      "sample_size": 1000
+    },
+    "recipe_stats": {
+      "total_recipes": 20004,
+      "recipes_with_views": 3159,
+      "recipes_with_favorites": 831,
+      "unreasonable_count": 0
+    },
+    "completeness": {
+      "IP 地址": {
+        "fill_rate": 100.0,
+        "null_count": 0
+      },
+      "User-Agent": {
+        "fill_rate": 100.0,
+        "null_count": 0
+      },
+      "extra_data": {
+        "fill_rate": 100.0,
+        "null_count": 0
+      },
+      "page_view IP": {
+        "fill_rate": 100.0,
+        "null_count": 0
+      },
+      "page_view User-Agent": {
+        "fill_rate": 100.0,
+        "null_count": 0
+      },
+      "page_type": {
+        "fill_rate": 100.0,
+        "null_count": 0
+      }
+    },
+    "user_coverage": {
+      "active_users": 100,
+      "total_users": 100,
+      "coverage": 100.0
+    },
+    "avg_behaviors_per_user": 65.0,
+    "anomalies": {
+      "count": 0,
+      "details": []
+    }
+  }
+}
