@@ -358,8 +358,9 @@ const loadMonthAttendance = async () => {
   if (!employeeId.value) return
 
   try {
+    const lastDay = new Date(currentYear.value, currentMonth.value, 0).getDate()
     const startDate = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-01`
-    const endDate = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-31`
+    const endDate = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
     const res = await getMyAttendance({
       employee_id: employeeId.value,
@@ -389,8 +390,9 @@ const loadMonthStatistics = async () => {
   if (!employeeId.value) return
 
   try {
+    const lastDay = new Date(currentYear.value, currentMonth.value, 0).getDate()
     const startDate = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-01`
-    const endDate = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-31`
+    const endDate = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
     const res = await getAttendanceStatistics({
       start_date: startDate,
