@@ -8,6 +8,18 @@
       <router-view />
     </main>
 
+    <!-- 滚动到顶部按钮 -->
+    <button
+      v-if="showScrollTop"
+      class="scroll-top-btn"
+      @click="scrollToTop"
+      title="滚动到顶部"
+    >
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 4l-6 6M10 4l6 6M10 4v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
     <!-- 页脚 -->
     <footer v-if="showFooter" class="app-footer">
       <div class="footer-content">
@@ -59,7 +71,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import AppNavbar from '@/components/AppNavbar.vue'
@@ -67,7 +79,9 @@ import AppNavbar from '@/components/AppNavbar.vue'
 const route = useRoute()
 const userStore = useUserStore()
 
-// 登录/注册页面和管理后台不显示导航栏和页脚
+const showScrollTop = ref(false)
+
+// 登录/注册页面和管理后台不显示导航栏和页脚和滚动按钮
 const showNavbar = computed(() => {
   if (route.path.startsWith('/admin')) {
     return false
@@ -80,6 +94,24 @@ const showFooter = computed(() => {
     return false
   }
   return !['login', 'register'].includes(route.name?.toLowerCase())
+})
+
+// 滚动监听
+const handleScroll = () => {
+  showScrollTop.value = window.scrollY > 300
+}
+
+// 滚动到顶部
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
@@ -120,6 +152,8 @@ body {
 .app-main {
   flex: 1;
   min-height: calc(100vh - 72px);
+  position: relative;
+  z-index: 1;
 }
 
 .app-main.with-navbar {
@@ -258,6 +292,50 @@ body {
   --el-message-bg-color: rgba(217, 83, 79, 0.95);
 }
 
+/* ========== 滚动到顶部按钮 ========== */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #d4773a 0%, #c2622e 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(194, 98, 46, 0.35);
+  z-index: 900;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: scrollTopFadeIn 0.3s ease forwards;
+}
+
+.scroll-top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(194, 98, 46, 0.45);
+}
+
+.scroll-top-btn:active {
+  transform: translateY(0);
+}
+
+.scroll-top-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+@keyframes scrollTopFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ========== 响应式设计 ========== */
 @media (max-width: 968px) {
   .footer-content {
@@ -272,7 +350,7 @@ body {
   }
 
   .app-main.with-navbar {
-    padding-top: 72px;
+    padding-top: 64px;
   }
 }
 </style>

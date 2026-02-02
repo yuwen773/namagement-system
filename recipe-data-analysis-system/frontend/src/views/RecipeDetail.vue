@@ -195,6 +195,7 @@ import { ElMessage } from 'element-plus'
 import { Star, StarFilled, Share } from '@element-plus/icons-vue'
 import { getRecipeDetail, checkFavoriteStatus, addFavorite, removeFavorite } from '@/api/recipes'
 import { useUserStore } from '@/stores/user'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 const route = useRoute()
@@ -224,10 +225,11 @@ const loadRecipeDetail = async () => {
       notFound.value = true
     }
   } catch (error) {
-    if (error.message?.includes('不存在') || error.message?.includes('404')) {
+    const errorData = error.data || error.response?.data
+    if (errorData?.code === 404 || errorData?.type === 'not_found') {
       notFound.value = true
     } else {
-      ElMessage.error(error.message || '加载菜谱详情失败')
+      ElMessage.error(getErrorTip(error).message)
     }
   } finally {
     loading.value = false
@@ -277,7 +279,7 @@ const toggleFavorite = async () => {
       ElMessage.success('收藏成功')
     }
   } catch (error) {
-    ElMessage.error(error.message || '操作失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     favoriteLoading.value = false
   }

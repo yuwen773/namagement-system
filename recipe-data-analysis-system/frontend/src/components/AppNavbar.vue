@@ -205,8 +205,18 @@ const userMenuRef = ref(null)
 const searchInput = ref(null)
 
 // 滚动处理
-const handleScroll = () => {
-  isScrolled.value = window.scrollY > 20
+const handleScroll = (e) => {
+  let scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop
+  
+  // 兼容某些情况下滚动容器不是 window 的问题
+  if (e && e.target && e.target.scrollTop > 0) {
+    // 忽略 window 和 document 的 target，避免重复计算（虽然 scrollY 已经涵盖）
+    if (e.target !== window && e.target !== document) {
+      scrollTop = Math.max(scrollTop, e.target.scrollTop)
+    }
+  }
+  
+  isScrolled.value = scrollTop > 10
 }
 
 // 搜索
@@ -269,12 +279,14 @@ const handleClickOutside = (e) => {
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
+  handleScroll()
+  // 使用 capture: true 捕获所有子元素的滚动事件
+  window.addEventListener('scroll', handleScroll, true)
   document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('scroll', handleScroll, true)
   document.removeEventListener('click', handleClickOutside)
   document.body.style.overflow = ''
 })
@@ -289,16 +301,17 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 9999;
   background: transparent;
   transition: all 0.3s ease;
   font-family: 'DM Sans', sans-serif;
+  min-height: 72px;
 }
 
 .app-navbar.navbar-scrolled {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 2px 20px rgba(61, 41, 20, 0.08);
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(61, 41, 20, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .navbar-container {
@@ -309,6 +322,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
+  height: 72px;
+  box-sizing: border-box;
 }
 
 /* ========== Logo ========== */
@@ -877,8 +892,13 @@ onUnmounted(() => {
 }
 
 @media (max-width: 640px) {
+  .app-navbar {
+    min-height: 64px;
+  }
+
   .navbar-container {
     padding: 0.75rem 1rem;
+    height: 64px;
   }
 
   .logo-text {

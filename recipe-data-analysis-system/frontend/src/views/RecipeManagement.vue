@@ -295,6 +295,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminRecipeList, createRecipe, updateRecipe, deleteRecipe, importRecipes } from '@/api/recipes'
 import { getCategories, getIngredients } from '@/api/recipes'
+import { getErrorTip } from '@/utils/errorHandler'
 
 // 状态
 const loading = ref(false)
@@ -411,7 +412,7 @@ const fetchRecipeList = async () => {
     recipeList.value = response.data.results || []
     totalCount.value = response.data.count || 0
   } catch (error) {
-    ElMessage.error(error.message || '获取菜谱列表失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }
@@ -525,7 +526,7 @@ const handleSubmit = async () => {
     showEditDialog.value = false
     fetchRecipeList()
   } catch (error) {
-    ElMessage.error(error.message || '操作失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     submitting.value = false
   }
@@ -550,7 +551,7 @@ const handleDelete = async (recipe) => {
     fetchRecipeList()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      ElMessage.error(getErrorTip(error).message)
     }
   }
 }
@@ -592,7 +593,7 @@ const handleImport = async () => {
     importFile.value = null
     fetchRecipeList()
   } catch (error) {
-    ElMessage.error(error.message || '导入失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     importing.value = false
   }

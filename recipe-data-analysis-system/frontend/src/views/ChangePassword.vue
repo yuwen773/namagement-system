@@ -120,6 +120,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { changePassword } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -245,7 +246,7 @@ const handleSubmit = async () => {
       }, 1500)
     }
   } catch (error) {
-    ElMessage.error('修改失败：' + error.message)
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     submitting.value = false
   }

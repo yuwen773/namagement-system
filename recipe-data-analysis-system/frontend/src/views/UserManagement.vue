@@ -149,6 +149,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { getUserList, banUser, unbanUser } from '@/api/auth'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const userStore = useUserStore()
 
@@ -188,7 +189,7 @@ const fetchUserList = async () => {
     userList.value = response.data.results || []
     totalCount.value = response.data.count || 0
   } catch (error) {
-    ElMessage.error(error.message || '获取用户列表失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }
@@ -236,7 +237,7 @@ const handleBan = async (user) => {
     fetchUserList()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '封禁失败')
+      ElMessage.error(getErrorTip(error).message)
     }
   } finally {
     banningUserId.value = null
@@ -262,7 +263,7 @@ const handleUnban = async (user) => {
     fetchUserList()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '解封失败')
+      ElMessage.error(getErrorTip(error).message)
     }
   } finally {
     unbanningUserId.value = null

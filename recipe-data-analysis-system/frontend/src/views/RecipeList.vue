@@ -242,6 +242,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search, Close } from '@element-plus/icons-vue'
 import { getRecipeList, getCategories, searchRecipes } from '@/api/recipes'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 
@@ -326,7 +327,7 @@ const loadRecipes = async () => {
       pagination.total = response.data.count || 0
     }
   } catch (error) {
-    ElMessage.error(error.message || '加载菜谱列表失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }
@@ -367,7 +368,7 @@ const handleSearch = async () => {
       }
     }
   } catch (error) {
-    ElMessage.error(error.message || '搜索失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }
@@ -397,7 +398,7 @@ const executeSearch = async () => {
       pagination.total = response.data.count || 0
     }
   } catch (error) {
-    ElMessage.error(error.message || '搜索失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }

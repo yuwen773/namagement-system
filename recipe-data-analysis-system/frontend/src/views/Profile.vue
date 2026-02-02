@@ -148,6 +148,7 @@ import { ElMessage } from 'element-plus'
 import { Edit, Loading } from '@element-plus/icons-vue'
 import { getCurrentUser, updateProfile } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -193,7 +194,7 @@ const loadUserInfo = async () => {
       userStore.setUserInfo(response.data)
     }
   } catch (error) {
-    ElMessage.error('获取用户信息失败：' + error.message)
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }
@@ -224,7 +225,7 @@ const handleSave = async () => {
       showEditDialog.value = false
     }
   } catch (error) {
-    ElMessage.error('保存失败：' + error.message)
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     saving.value = false
   }

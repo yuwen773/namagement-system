@@ -26,8 +26,19 @@ request.interceptors.response.use(
     return response.data
   },
   error => {
-    const message = error.response?.data?.message || error.message || '请求失败'
-    return Promise.reject(new Error(message))
+    // 保留完整的错误响应数据，便于前端解析
+    const errorData = error.response?.data || {}
+    const message = errorData.message || error.message || '请求失败'
+
+    // 创建包含完整信息的错误对象
+    const apiError = new Error(message)
+    apiError.response = error.response
+    apiError.data = errorData
+    apiError.code = errorData.code
+    apiError.errors = errorData.errors
+    apiError.suggestions = errorData.data?.suggestions || []
+
+    return Promise.reject(apiError)
   }
 )
 

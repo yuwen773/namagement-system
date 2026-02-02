@@ -185,6 +185,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Message } from '@element-plus/icons-vue'
 import { register } from '@/api/auth'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -289,13 +290,18 @@ const handleRegister = async () => {
       ElMessage.error(response.message || '注册失败')
     }
   } catch (error) {
-    // 处理后端返回的验证错误
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors
-      const firstError = Object.values(errors)[0]
-      ElMessage.error(Array.isArray(firstError) ? firstError[0] : firstError)
-    } else {
-      ElMessage.error(error.message || '注册失败，请稍后重试')
+    const { message } = getErrorTip(error)
+    ElMessage.error(message)
+
+    // 字段错误显示在表单下
+    const errorData = error.data || error.response?.data
+    if (errorData?.errors) {
+      formRef.value?.clearValidate()
+      for (const [field, errors] of Object.entries(errorData.errors)) {
+        if (errors?.[0]) {
+          formRef.value?.setFieldError(field, errors[0])
+        }
+      }
     }
   } finally {
     loading.value = false

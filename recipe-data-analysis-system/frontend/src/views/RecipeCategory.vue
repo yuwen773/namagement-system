@@ -147,6 +147,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getRecipeList, getCategories } from '@/api/recipes'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 const route = useRoute()
@@ -283,7 +284,7 @@ const loadRecipes = async () => {
       pagination.total = response.data.count || 0
     }
   } catch (error) {
-    ElMessage.error(error.message || '加载菜谱列表失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }

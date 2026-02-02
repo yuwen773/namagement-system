@@ -146,6 +146,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getHotRecipes } from '@/api/recipes'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 
@@ -188,7 +189,7 @@ const loadHotRecipes = async () => {
       recipeList.value = response.data.results || []
     }
   } catch (error) {
-    ElMessage.error(error.message || '加载热门菜谱失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }

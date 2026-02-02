@@ -11,7 +11,7 @@ from utils.response import ApiResponse
 from utils.pagination import StandardPagination
 from utils.permissions import IsAdminUser
 from utils.constants import CategoryType
-from utils.exceptions import ValidationError, NotFoundError, BusinessError
+from utils.exceptions import ValidationError, NotFoundError, StateNotAllowedError, ErrorCode
 from .models import Category
 from .serializers import (
     CategoryListSerializer,
@@ -285,7 +285,10 @@ def admin_delete_category(request, category_id):
         is_used = False
 
     if is_used:
-        raise BusinessError('该分类正在被菜谱使用，无法删除')
+        raise StateNotAllowedError(
+            detail='该分类正在被菜谱使用，无法删除',
+            suggestions=['请先删除使用该分类的菜谱', '或联系管理员进行处理']
+        )
 
     # 删除分类
     category.delete()

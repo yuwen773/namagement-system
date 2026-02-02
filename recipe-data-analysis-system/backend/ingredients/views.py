@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.db.models import Q
 from utils.response import ApiResponse
-from utils.exceptions import ValidationError as BusinessValidationError, NotFoundError, BusinessError
+from utils.exceptions import ValidationError as BusinessValidationError, NotFoundError, StateNotAllowedError, ErrorCode
 from utils.permissions import IsAdminUser
 from utils.pagination import StandardPagination
 from utils.constants import IngredientCategory
@@ -297,7 +297,10 @@ def admin_delete_ingredient(request, ingredient_id):
     is_used = RecipeIngredient.objects.filter(ingredient=ingredient).exists()
 
     if is_used:
-        raise BusinessError('该食材正在被菜谱使用，无法删除')
+        raise StateNotAllowedError(
+            detail='该食材正在被菜谱使用，无法删除',
+            suggestions=['请先删除使用该食材的菜谱', '或联系管理员进行处理']
+        )
 
     # 删除食材
     ingredient.delete()

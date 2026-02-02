@@ -92,7 +92,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             serializers.ValidationError: 用户名已存在
         """
         if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError('该用户名已被注册')
+            raise serializers.ValidationError({
+                'message': f'用户名 "{value}" 已被注册，请尝试其他用户名',
+                'code': 'USERNAME_ALREADY_EXISTS',
+                'suggestions': ['尝试使用 " {value}123" 或 "{value}_" + 数字 的组合', '使用您的邮箱前缀作为用户名']
+            })
         return value
 
     def validate_email(self, value):
@@ -109,7 +113,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             serializers.ValidationError: 邮箱已存在
         """
         if value and User.objects.filter(email=value).exists():
-            raise serializers.ValidationError('该邮箱已被注册')
+            raise serializers.ValidationError({
+                'message': f'邮箱 "{value}" 已被注册，请使用其他邮箱',
+                'code': 'EMAIL_ALREADY_EXISTS',
+                'suggestions': ['使用其他未注册的邮箱', '如果忘记了密码，请使用找回密码功能']
+            })
         return value
 
     def validate_password(self, value):
@@ -128,7 +136,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         try:
             validate_password(value)
         except serializers.ValidationError as e:
-            raise serializers.ValidationError(str(e.messages[0]) if e.messages else '密码强度不足')
+            messages = list(e.messages) if e.messages else []
+            raise serializers.ValidationError({
+                'message': messages[0] if messages else '密码强度不足',
+                'code': 'PASSWORD_TOO_WEAK',
+                'suggestions': ['密码长度至少8个字符', '包含大小写字母和数字', '包含特殊字符（如!@#$%等）']
+            })
         return value
 
     def validate(self, attrs):
@@ -309,8 +322,10 @@ class LoginSerializer(serializers.Serializer):
     验证规则：
     - 用户名必填
     - 密码必填
-    - 验证用户名和密码是否匹配
+    - 验证用户名是否存在
+    - 验证密码是否正确
     - 验证账户是否激活
+    - 验证账户是否被封禁
     """
 
     username = serializers.CharField(
@@ -339,6 +354,12 @@ class LoginSerializer(serializers.Serializer):
         """
         验证用户名和密码是否正确
 
+        提供详细的失败原因：
+        - 用户名不存在
+        - 密码错误
+        - 账户已被禁用
+        - 账户已被封禁
+
         Args:
             attrs: 包含 username 和 password 的字典
 
@@ -346,21 +367,37 @@ class LoginSerializer(serializers.Serializer):
             dict: 验证通过的数据，包含 user 实例
 
         Raises:
-            serializers.ValidationError: 用户名或密码错误、账户未激活
+            serializers.ValidationError: 用户名或密码错误、账户状态异常
         """
         from django.contrib.auth import authenticate
+        from .models import User
 
         username = attrs.get('username')
         password = attrs.get('password')
 
-        # 使用 Django 的 authenticate 函数验证用户名和密码
-        user = authenticate(username=username, password=password)
+        # 先检查用户名是否存在
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            # 用户名不存在，给出友好提示
+            raise serializers.ValidationError({
+                'username': '用户名不存在，请检查输入是否正确',
+                'code': 'USERNAME_NOT_FOUND'
+            })
 
-        if user is None:
-            raise serializers.ValidationError('用户名或密码错误')
-
+        # 检查账户是否被禁用
         if not user.is_active:
-            raise serializers.ValidationError('该账户已被禁用，请联系管理员')
+            raise serializers.ValidationError({
+                'non_field_errors': ['账户已被禁用，请联系管理员解封'],
+                'code': 'ACCOUNT_DISABLED'
+            })
+
+        # 验证密码是否正确
+        if not user.check_password(password):
+            raise serializers.ValidationError({
+                'password': '密码错误，请重新输入',
+                'code': 'PASSWORD_WRONG'
+            })
 
         # 将验证通过的用户实例添加到返回数据中
         attrs['user'] = user

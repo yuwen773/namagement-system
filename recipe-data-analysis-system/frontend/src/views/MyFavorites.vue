@@ -142,6 +142,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getFavoriteList, removeFavorite } from '@/api/recipes'
+import { getErrorTip } from '@/utils/errorHandler'
 
 const router = useRouter()
 
@@ -226,7 +227,7 @@ const loadFavorites = async () => {
     }
   } catch (error) {
     console.error('加载收藏列表失败:', error)
-    ElMessage.error(error.message || '加载收藏列表失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     loading.value = false
   }
@@ -281,7 +282,7 @@ const confirmRemoveFavorite = async () => {
     }
   } catch (error) {
     console.error('取消收藏失败:', error)
-    ElMessage.error(error.message || '取消收藏失败')
+    ElMessage.error(getErrorTip(error).message)
   } finally {
     confirmDialogVisible.value = false
     removingRecipeId.value = null

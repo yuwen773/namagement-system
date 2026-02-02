@@ -135,6 +135,7 @@ import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { login } from '@/api/auth'
+import { getErrorTip, getFieldError } from '@/utils/errorHandler'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -190,10 +191,23 @@ const handleLogin = async () => {
         }
       }, 500)
     } else {
+      // 业务错误（code !== 200）
       ElMessage.error(response.message || '登录失败')
     }
   } catch (error) {
-    ElMessage.error(error.message || '登录失败，请检查用户名和密码')
+    const { message } = getErrorTip(error)
+    ElMessage.error(message)
+
+    // 字段错误显示在表单下
+    const errorData = error.data || error.response?.data
+    if (errorData?.errors) {
+      formRef.value?.clearValidate()
+      for (const [field, errors] of Object.entries(errorData.errors)) {
+        if (errors?.[0]) {
+          formRef.value?.setFieldError(field, errors[0])
+        }
+      }
+    }
   } finally {
     loading.value = false
   }

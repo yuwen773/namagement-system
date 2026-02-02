@@ -15,7 +15,12 @@ from django.db import IntegrityError
 from django.utils import timezone
 
 from utils.response import ApiResponse
-from utils.exceptions import ValidationError as BusinessValidationError, NotFoundError, StateNotAllowedError
+from utils.exceptions import (
+    ValidationError as BusinessValidationError,
+    NotFoundError,
+    StateNotAllowedError,
+    ErrorCode,
+)
 from utils.constants import BehaviorType
 from utils.pagination import StandardPagination
 
