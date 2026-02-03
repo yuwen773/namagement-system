@@ -184,7 +184,7 @@ const handleLogin = async () => {
 
       // 管理员跳转到管理后台，普通用户跳转到首页
       setTimeout(() => {
-        if (user.is_admin) {
+        if (user.role === 'admin') {
           router.push('/admin/dashboard')
         } else {
           router.push('/')
