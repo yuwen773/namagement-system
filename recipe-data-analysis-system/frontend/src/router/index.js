@@ -124,9 +124,23 @@ const router = createRouter({
   routes
 })
 
+// 用于标记是否已经验证过 token
+let hasValidatedToken = false
+
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
+
+  // 如果本地有 token 且还没有验证过，先验证 token
+  if (userStore.token && !hasValidatedToken) {
+    hasValidatedToken = true
+    const isValid = await userStore.validateToken()
+    if (!isValid && to.meta.requiresAuth) {
+      // token 无效且目标页面需要认证，跳转到登录页
+      next({ name: 'login', query: { redirect: to.fullPath } })
+      return
+    }
+  }
 
   // 如果页面需要认证但用户未登录，跳转到登录页
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
