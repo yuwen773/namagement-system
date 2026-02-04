@@ -1,14 +1,9 @@
 """
-推荐模块 URL Configuration
+推荐模块路由配置
 """
-from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import RecommendationRuleViewSet, RecommendedProductViewSet
 
 router = DefaultRouter()
 router.register(r'rules', RecommendationRuleViewSet, basename='recommendation-rule')
 router.register(r'products', RecommendedProductViewSet, basename='recommended-product')
-
-urlpatterns = [
-    path('', include(router.urls)),
-]
