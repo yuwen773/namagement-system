@@ -13,6 +13,7 @@ from .serializers import (
     ModificationCaseListSerializer,
     ModificationCaseDetailSerializer,
     ModificationCaseCreateSerializer,
+    ModificationCaseUpdateSerializer,
     FAQSerializer
 )
 
@@ -52,7 +53,11 @@ class ModificationCaseViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return ModificationCaseListSerializer
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action == 'create':
+            return ModificationCaseCreateSerializer
+        if self.action == 'partial_update':
+            return ModificationCaseUpdateSerializer
+        if self.action in ['update']:
             return ModificationCaseCreateSerializer
         return ModificationCaseDetailSerializer
 

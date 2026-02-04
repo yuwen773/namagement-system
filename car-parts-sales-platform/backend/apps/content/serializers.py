@@ -46,6 +46,28 @@ class ModificationCaseCreateSerializer(serializers.ModelSerializer):
         ]
 
 
+class ModificationCaseUpdateSerializer(serializers.ModelSerializer):
+    """改装案例更新序列化器（部分更新时使用）"""
+
+    class Meta:
+        model = ModificationCase
+        fields = [
+            'title', 'summary', 'content',
+            'cover_image', 'author', 'status',
+            'sort_order', 'published_at'
+        ]
+        extra_kwargs = {
+            'title': {'required': False},
+            'summary': {'required': False},
+            'content': {'required': False},
+            'cover_image': {'required': False},
+            'author': {'required': False},
+            'status': {'required': False},
+            'sort_order': {'required': False},
+            'published_at': {'required': False},
+        }
+
+
 class FAQSerializer(serializers.ModelSerializer):
     """常见问题序列化器"""
     category_display = serializers.CharField(source='get_category_display', read_only=True)

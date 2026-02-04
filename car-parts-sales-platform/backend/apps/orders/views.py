@@ -351,15 +351,15 @@ class CartViewSet(viewsets.ViewSet):
             cart_item = CartItem.objects.get(cart=cart, product=product)
             # 更新数量
             new_quantity = cart_item.quantity + quantity
-            if product.stock < new_quantity:
-                return ApiResponse.error(message=f'商品库存不足，最多可添加{product.stock}件')
+            if product.stock_quantity < new_quantity:
+                return ApiResponse.error(message=f'商品库存不足，最多可添加{product.stock_quantity}件')
             cart_item.quantity = new_quantity
             cart_item.save()
             message = '购物车商品数量已更新'
         except CartItem.DoesNotExist:
             # 添加新商品
-            if product.stock < quantity:
-                return ApiResponse.error(message=f'商品库存不足，最多可添加{product.stock}件')
+            if product.stock_quantity < quantity:
+                return ApiResponse.error(message=f'商品库存不足，最多可添加{product.stock_quantity}件')
             cart_item = CartItem.objects.create(
                 cart=cart,
                 product=product,
@@ -376,7 +376,7 @@ class CartViewSet(viewsets.ViewSet):
         result_serializer = CartItemSerializer(cart_item)
         return ApiResponse.success(data=result_serializer.data, message=message)
 
-    @action(detail=False, methods=['put'], url_path='items/(?P<item_id>[^/.]+)')
+    @action(detail=False, methods=['put', 'patch'], url_path='items/(?P<item_id>[^/.]+)')
     def update_item(self, request, item_id=None):
         """
         更新购物车商品数量
@@ -401,8 +401,8 @@ class CartViewSet(viewsets.ViewSet):
             return ApiResponse.error(message='购物车商品不存在')
 
         # 检查库存
-        if cart_item.product.stock < quantity:
-            return ApiResponse.error(message=f'商品库存不足，最多可设置{quantity}件')
+        if cart_item.product.stock_quantity < quantity:
+            return ApiResponse.error(message=f'商品库存不足，最多可设置{cart_item.product.stock_quantity}件')
 
         cart_item.quantity = quantity
         cart_item.save()
@@ -435,7 +435,7 @@ class CartViewSet(viewsets.ViewSet):
 
         return ApiResponse.success(message='商品已从购物车删除')
 
-    @action(detail=False, methods=['delete'], url_path='items')
+    @action(detail=False, methods=['delete'], url_path='clear')
     def clear_cart(self, request):
         """
         清空购物车

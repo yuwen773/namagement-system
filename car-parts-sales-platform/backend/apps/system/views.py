@@ -121,6 +121,9 @@ class MessageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """普通用户只能看自己的消息"""
         queryset = Message.objects.all()
+        # 检查用户是否已认证
+        if not self.request.user.is_authenticated:
+            return queryset.none()  # 未认证用户返回空查询集
         if not self.request.user.is_staff:
             # 非管理员只能看自己的消息或全员消息
             queryset = queryset.filter(

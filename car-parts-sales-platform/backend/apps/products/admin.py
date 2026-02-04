@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, ProductImage, ProductAttribute
+from .models import Category, Product, ProductImage, ProductAttribute, Review
 
 
 class ProductImageInline(admin.TabularInline):
@@ -71,3 +71,12 @@ class ProductAttributeAdmin(admin.ModelAdmin):
     list_filter = ['attr_name', 'product']
     search_fields = ['attr_name', 'attr_value', 'product__name']
     list_per_page = 20
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['id', 'product', 'user_id', 'rating', 'comment', 'is_anonymous', 'created_at']
+    list_filter = ['rating', 'is_anonymous', 'product']
+    search_fields = ['comment', 'product__name', 'user_id']
+    list_per_page = 20
+    ordering = ['-created_at']

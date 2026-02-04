@@ -144,3 +144,38 @@ class ProductAttribute(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.attr_name}: {self.attr_value}"
+
+
+class Review(models.Model):
+    """
+    商品评价
+    """
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='商品'
+    )
+    user_id = models.IntegerField('用户ID', db_index=True)
+    order_item_id = models.IntegerField('订单项ID', null=True, blank=True, db_index=True)
+    rating = models.PositiveSmallIntegerField(
+        '评分',
+        choices=[(1, '1星'), (2, '2星'), (3, '3星'), (4, '4星'), (5, '5星')],
+        default=5
+    )
+    comment = models.TextField('评价内容', blank=True)
+    images = models.JSONField('评价图片', default=list, blank=True)
+    is_anonymous = models.BooleanField('匿名评价', default=False)
+    created_at = models.DateTimeField('创建时间', default=django.utils.timezone.now)
+    updated_at = models.DateTimeField('更新时间', auto_now=True)
+
+    class Meta:
+        db_table = 'reviews'
+        verbose_name = '商品评价'
+        verbose_name_plural = '商品评价'
+        ordering = ['-created_at']
+        # 确保用户对同一订单项只能评价一次
+        unique_together = ['product', 'order_item_id']
+
+    def __str__(self):
+        return f"{self.product.name} - 评分{self.rating}"

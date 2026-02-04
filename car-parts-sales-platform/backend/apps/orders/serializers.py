@@ -244,9 +244,9 @@ class CartItemCreateSerializer(serializers.ModelSerializer):
         """验证商品是否存在且可购买"""
         from apps.products.models import Product
         product = attrs['product']
-        if product.status != Product.Status.PUBLISHED:
+        if product.status != 'published':
             raise serializers.ValidationError('该商品暂不可购买')
-        if product.stock < attrs['quantity']:
+        if product.stock_quantity < attrs['quantity']:
             raise serializers.ValidationError('商品库存不足')
         return attrs
 

@@ -256,7 +256,7 @@ class Cart(models.Model):
         total = 0
         for item in items:
             product = item.product
-            if product and product.status == Product.Status.PUBLISHED:
+            if product and product.status == 'published':
                 total += product.price * item.quantity
             else:
                 # 如果商品不存在或已下架，使用购物车记录的价格
