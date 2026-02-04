@@ -829,6 +829,7 @@
 > 前端接口对接遵循 [后端 API 标准](dev-standards/frontend-api-standards.md)
 > **MUST**:使用 frontend-design skill  设计页面
 > **MUST**: 所有页面必须符合 [前端设计系统](docs/frontend-design-system.md) 规范
+> **MUST**: 接口对接必须遵循 [后端接口文档](api\api.md) 规范
 ### 7.1 公共组件开发
 
 #### 7.1.1 布局组件
