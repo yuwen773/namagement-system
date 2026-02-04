@@ -97,6 +97,12 @@ const router = createRouter({
       component: () => import('@/views/RegisterView.vue'),
       meta: { title: '注册', hideInMenu: true }
     },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/views/ForgotPasswordView.vue'),
+      meta: { title: '忘记密码', hideInMenu: true }
+    },
     // 管理端布局路由
     {
       path: '/admin',

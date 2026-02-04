@@ -16,10 +16,10 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     // 登录
-    async login(username, password) {
+    async login(phone, password) {
       this.isLoading = true
       try {
-        const data = await loginApi({ username, password })
+        const data = await loginApi({ phone, password })
         this.token = data.token
         this.user = data.user
         localStorage.setItem('token', data.token)

@@ -9,21 +9,21 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const form = ref({
-  username: '',
+  phone: '',
   password: ''
 })
 
 const loading = ref(false)
 
 async function handleLogin() {
-  if (!form.value.username || !form.value.password) {
+  if (!form.value.phone || !form.value.password) {
     ElMessage.warning('请输入手机号和密码')
     return
   }
 
   loading.value = true
   try {
-    await authStore.login(form.value.username, form.value.password)
+    await authStore.login(form.value.phone, form.value.password)
     ElMessage.success('登录成功')
     const redirect = route.query.redirect || '/'
     router.push(redirect)
@@ -36,6 +36,10 @@ async function handleLogin() {
 
 function goToRegister() {
   router.push({ name: 'register' })
+}
+
+function goToForgotPassword() {
+  router.push({ name: 'forgot-password' })
 }
 </script>
 
@@ -130,10 +134,10 @@ function goToRegister() {
         </div>
 
         <!-- Login Form -->
-        <el-form :model="form" label-position="top" class="login-form">
+        <el-form :model="form" label-position="top" class="login-form" @submit.prevent="handleLogin">
           <el-form-item label="手机号">
             <el-input
-              v-model="form.username"
+              v-model="form.phone"
               placeholder="请输入手机号"
               size="large"
               @keyup.enter="handleLogin"
@@ -166,10 +170,10 @@ function goToRegister() {
 
           <div class="form-actions">
             <el-checkbox>记住我</el-checkbox>
-            <el-link type="primary">忘记密码？</el-link>
+            <el-link type="primary" @click="goToForgotPassword">忘记密码？</el-link>
           </div>
 
-          <button class="btn btn-primary" :disabled="loading" @click="handleLogin">
+          <button type="submit" class="btn btn-primary" :disabled="loading" @click="handleLogin">
             <span v-if="loading">
               <svg class="loading-icon" viewBox="0 0 24 24" fill="none" width="20" height="20">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
