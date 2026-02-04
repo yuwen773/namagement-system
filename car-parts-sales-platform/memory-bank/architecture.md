@@ -81,6 +81,59 @@ draft → pending → published → archived
 - JWT Token: Access 2小时, Refresh 7天
 - 手机号唯一标识 (username 已禁用)
 - Token 存储在 localStorage
+- **密码存储**: 明文存储（开发环境），生产环境需改为哈希加密
+
+### 认证相关文件说明
+
+#### 后端认证文件
+| 文件 | 作用 |
+|------|------|
+| `backend/apps/users/models.py` | User 模型定义，UserManager 自定义管理器（明文密码存储） |
+| `backend/apps/users/serializers.py` | UserCreateSerializer（注册）、UserLoginSerializer（明文密码验证） |
+| `backend/apps/users/views.py` | AuthViewSet（register/login/me action）、UserViewSet（用户管理） |
+| `backend/apps/users/auth_urls.py` | 认证专用路由配置（独立于用户管理路由） |
+| `backend/apps/users/urls.py` | 用户管理路由配置（包含地址管理） |
+
+#### 前端认证文件
+| 文件 | 作用 |
+|------|------|
+| `frontend/src/api/modules/auth.js` | 认证 API 封装（loginApi, registerApi, getCurrentUserApi, resetPasswordApi） |
+| `frontend/src/stores/auth.js` | Pinia 认证状态管理（login, register, getCurrentUser, logout, updateUser） |
+| `frontend/src/views/LoginView.vue` | 登录页面（Industrial Performance 风格，分屏设计） |
+| `frontend/src/views/RegisterView.vue` | 注册页面（Industrial Performance 风格，福利展示） |
+| `frontend/src/views/ForgotPasswordView.vue` | 忘记密码页面（三步流程，步骤指示器） |
+| `frontend/src/router/index.js` | 路由配置（添加 forgot-password 路由） |
+
+### API 路由架构
+```
+/api/auth/register/    → AuthViewSet.register()   → 用户注册
+/api/auth/login/       → AuthViewSet.login()      → 用户登录
+/api/auth/me/          → AuthViewSet.me()         → 获取当前用户
+/api/auth/password/reset/ → (未实现)              → 重置密码
+
+/api/users/            → UserViewSet.list()        → 用户列表（管理员）
+/api/users/{id}/       → UserViewSet.retrieve()    → 用户详情
+/api/users/addresses/  → UserAddressViewSet        → 地址管理
+```
+
+### 认证流程
+```
+注册流程:
+1. 用户填写手机号、密码、昵称
+2. 前端调用 POST /api/auth/register/
+3. 后端验证手机号唯一性、密码格式
+4. 创建 User（明文密码），生成 JWT Token
+5. 返回 token 和 user 信息
+6. 前端存储 token 到 localStorage
+
+登录流程:
+1. 用户填写手机号、密码
+2. 前端调用 POST /api/auth/login/
+3. 后端查询 User，明文比较密码
+4. 检查账户状态（active/banned）
+5. 生成 JWT Token
+6. 返回 token 和 user 信息
+```
 
 ### API 响应格式
 ```json
@@ -211,6 +264,8 @@ draft → pending → published → archived
 - ProductDetailView.vue - 商品详情页（图片画廊、评价系统）
 - CartView.vue - 购物车页（商品列表、订单摘要）
 - LoginView.vue - 登录页（分屏设计、品牌展示）
+- RegisterView.vue - 注册页（分屏设计、会员福利展示）
+- ForgotPasswordView.vue - 忘记密码（三步流程：验证手机→设置密码→完成）
 
 ### 已实现组件
 - AppHeader.vue - 深色玻璃态头部

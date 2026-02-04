@@ -41,9 +41,22 @@
 | ProductListView.vue | ✅ | 商品列表页：筛选侧边栏、搜索排序、网格卡片展示 |
 | ProductDetailView.vue | ✅ | 商品详情页：图片画廊、价格计算、库存状态、评价系统 |
 | LoginView.vue | ✅ | 登录页：分屏设计、品牌展示、功能特性列表 |
+| RegisterView.vue | ✅ | 注册页：分屏设计、会员福利展示、服务条款同意 |
+| ForgotPasswordView.vue | ✅ | 忘记密码：三步流程（验证手机→设置密码→完成） |
 | CartView.vue | ✅ | 购物车页：商品列表、数量控制、订单摘要、结算功能 |
 
 ## 更新历史
+
+### 2026-02-04
+- **Phase 7 Step 5**: 认证页面开发完成 (7.2.0)
+  - 重新设计 `RegisterView.vue` - Industrial Performance 风格深色主题注册页
+  - 创建 `ForgotPasswordView.vue` - 三步密码重置流程页面
+  - 修复表单提交刷新问题 - 添加 `@submit.prevent` 和 `type="submit"`
+  - 统一 API 字段命名 - 使用 `phone` 替代 `username`
+  - 后端路由优化 - 分离 `auth_urls.py` 避免重复前缀
+  - 密码改为明文存储（开发环境）
+
+### 2026-02-04
 
 ### 2026-02-04
 - **Phase 7 Step 4**: 设计系统文档创建
