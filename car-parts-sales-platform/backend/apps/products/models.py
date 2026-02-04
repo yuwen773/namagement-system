@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.html import strip_tags
 import django.utils.timezone
-from simple_history.models import HistoricalRecords
+# from simple_history.models import HistoricalRecords  # Temporarily disabled for debugging
 
 
 class Category(models.Model):

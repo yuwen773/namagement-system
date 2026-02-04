@@ -225,20 +225,46 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ApiResponse.success(data=serializer.data)
         else:
             # 提交评价
+            if not request.user.is_authenticated:
+                return ApiResponse.error(message='请先登录', code=401)
+
             product = self.get_object()
-            user_id = request.user.id if request.user.is_authenticated else 1
+            order_item_id = request.data.get('order_item_id')
+
+            # 验证订单项（如果提供）
+            if order_item_id:
+                from apps.orders.models import OrderItem, Order
+
+                try:
+                    order_item = OrderItem.objects.select_related('order').get(id=order_item_id)
+                    order = order_item.order
+
+                    # 验证订单所有者
+                    if order.user_id != request.user.id:
+                        return ApiResponse.error(message='只能评价自己的订单', code=403)
+
+                    # 验证订单状态
+                    if order.status != Order.Status.COMPLETED:
+                        return ApiResponse.error(message='只有已完成的订单才能评价')
+
+                    # 验证商品是否匹配
+                    if order_item.product_id != product.id:
+                        return ApiResponse.error(message='订单商品与评价商品不匹配')
+
+                except OrderItem.DoesNotExist:
+                    return ApiResponse.error(message='订单项不存在', code=404)
 
             create_data = {
                 'rating': request.data.get('rating', 5),
                 'comment': request.data.get('comment', ''),
                 'images': request.data.get('images', []),
                 'is_anonymous': request.data.get('is_anonymous', False),
-                'order_item_id': request.data.get('order_item_id'),
+                'order_item_id': order_item_id,
             }
 
             serializer = ReviewCreateSerializer(data=create_data)
             serializer.is_valid(raise_exception=True)
-            serializer.save(product=product, user_id=user_id)
+            serializer.save(product=product, user_id=request.user.id)
 
             # 返回完整评价信息
             review = Review.objects.get(id=serializer.instance.id)
@@ -359,6 +385,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         - is_anonymous: 是否匿名
         - order_item_id: 订单项ID（可选）
         """
+        # 验证用户登录
+        if not request.user.is_authenticated:
+            return ApiResponse.error(message='请先登录', code=401)
+
         # 从URL获取商品ID
         product_id = kwargs.get('product_id')
         if not product_id:
@@ -369,8 +399,30 @@ class ReviewViewSet(viewsets.ModelViewSet):
         except Product.DoesNotExist:
             return ApiResponse.error(message='商品不存在', code=404)
 
-        # 获取当前用户ID（如果未登录则使用默认ID）
-        user_id = request.user.id if request.user.is_authenticated else 1
+        order_item_id = request.data.get('order_item_id')
+
+        # 验证订单项（如果提供）
+        if order_item_id:
+            from apps.orders.models import OrderItem, Order
+
+            try:
+                order_item = OrderItem.objects.select_related('order').get(id=order_item_id)
+                order = order_item.order
+
+                # 验证订单所有者
+                if order.user_id != request.user.id:
+                    return ApiResponse.error(message='只能评价自己的订单', code=403)
+
+                # 验证订单状态
+                if order.status != Order.Status.COMPLETED:
+                    return ApiResponse.error(message='只有已完成的订单才能评价')
+
+                # 验证商品是否匹配
+                if order_item.product_id != product.id:
+                    return ApiResponse.error(message='订单商品与评价商品不匹配')
+
+            except OrderItem.DoesNotExist:
+                return ApiResponse.error(message='订单项不存在', code=404)
 
         # 准备创建数据
         create_data = {
@@ -378,12 +430,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
             'comment': request.data.get('comment', ''),
             'images': request.data.get('images', []),
             'is_anonymous': request.data.get('is_anonymous', False),
-            'order_item_id': request.data.get('order_item_id'),
+            'order_item_id': order_item_id,
         }
 
         serializer = ReviewCreateSerializer(data=create_data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(product=product, user_id=user_id)
+        serializer.save(product=product, user_id=request.user.id)
 
         # 返回完整评价信息
         review = Review.objects.get(id=serializer.instance.id)

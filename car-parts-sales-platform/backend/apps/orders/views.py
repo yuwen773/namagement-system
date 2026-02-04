@@ -205,6 +205,46 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = OrderListSerializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data)
 
+    @action(detail=True, methods=['post'], url_path='return')
+    def return_order(self, request, pk=None):
+        """
+        申请退换货
+
+        从订单直接申请退换货，自动关联订单信息
+
+        请求参数：
+        - request_type: 申请类型 (return/refund)
+        - reason: 原因描述
+        - evidence_images: 凭证图片列表（可选）
+        """
+        order = self.get_object()
+
+        # 只有已完成的订单可以申请退换货
+        if order.status != Order.Status.COMPLETED:
+            return ApiResponse.error(message='只有已完成订单可以申请退换货')
+
+        # 检查是否已有待处理的退换货申请
+        existing_return = ReturnRequest.objects.filter(
+            order=order,
+            status__in=[ReturnRequest.Status.PENDING, ReturnRequest.Status.APPROVED]
+        ).first()
+        if existing_return:
+            return ApiResponse.error(message='该订单已有退换货申请正在处理中')
+
+        # 创建退换货申请
+        data = request.data.copy()
+        data['order'] = order.id
+
+        serializer = ReturnRequestCreateSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(order=order)
+            return ApiResponse.success(
+                data=ReturnRequestDetailSerializer(serializer.instance).data,
+                message='退换货申请提交成功',
+                code=201
+            )
+        return ApiResponse.error(message='申请提交失败', errors=serializer.errors)
+
 
 class ReturnRequestViewSet(viewsets.ModelViewSet):
     """

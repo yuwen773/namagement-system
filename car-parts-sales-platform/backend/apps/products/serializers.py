@@ -135,6 +135,29 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("图片必须是列表格式")
         return value
 
+    def validate(self, attrs):
+        """验证订单项是否属于已完成订单"""
+        order_item_id = attrs.get('order_item_id')
+
+        if order_item_id:
+            from apps.orders.models import OrderItem, Order
+
+            try:
+                order_item = OrderItem.objects.select_related('order').get(id=order_item_id)
+                order = order_item.order
+
+                # 验证订单状态必须是已完成
+                if order.status != Order.Status.COMPLETED:
+                    raise serializers.ValidationError("只有已完成的订单才能评价")
+
+                # 验证订单商品是否匹配（在视图层面验证 product_id）
+                # 这里只是验证订单状态的有效性
+
+            except OrderItem.DoesNotExist:
+                raise serializers.ValidationError("订单项不存在")
+
+        return attrs
+
 
 class ReviewListSerializer(serializers.ModelSerializer):
     """评价列表序列化器（简洁版）"""
