@@ -211,3 +211,116 @@ class ReturnRequest(models.Model):
 
     def __str__(self):
         return f'{self.order.order_no} - {self.get_request_type_display()} - {self.get_status_display()}'
+
+
+class Cart(models.Model):
+    """
+    购物车模型
+
+    每个用户只有一个购物车，购物车关联用户
+    """
+    user = models.OneToOneField(
+        AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='cart',
+        verbose_name='所属用户'
+    )
+
+    # 购物车中商品总数量
+    total_items = models.PositiveIntegerField('商品总数', default=0)
+
+    # 购物车中商品总金额
+    total_price = models.DecimalField('商品总金额', max_digits=10, decimal_places=2, default=0)
+
+    # 创建/更新时间
+    created_at = models.DateTimeField('创建时间', default=timezone.now)
+    updated_at = models.DateTimeField('更新时间', auto_now=True)
+
+    class Meta:
+        db_table = 'carts'
+        verbose_name = '购物车'
+        verbose_name_plural = '购物车管理'
+
+    def __str__(self):
+        return f'{self.user.nickname or self.user.phone} 的购物车'
+
+    def update_totals(self):
+        """更新购物车统计信息"""
+        from django.db.models import Sum, Count
+        from apps.products.models import Product
+
+        items = self.items.all()
+        self.total_items = items.aggregate(total=Count('id'))['total'] or 0
+
+        # 计算总金额（使用商品当前价格）
+        total = 0
+        for item in items:
+            product = item.product
+            if product and product.status == Product.Status.PUBLISHED:
+                total += product.price * item.quantity
+            else:
+                # 如果商品不存在或已下架，使用购物车记录的价格
+                total += item.price * item.quantity
+
+        self.total_price = total
+        self.save(update_fields=['total_items', 'total_price', 'updated_at'])
+
+
+class CartItem(models.Model):
+    """
+    购物车商品模型
+
+    购物车中的每个商品项
+    """
+    cart = models.ForeignKey(
+        Cart,
+        on_delete=models.CASCADE,
+        related_name='items',
+        verbose_name='所属购物车'
+    )
+
+    product = models.ForeignKey(
+        'products.Product',
+        on_delete=models.CASCADE,
+        related_name='cart_items',
+        verbose_name='商品'
+    )
+
+    # 商品信息（冗余存储，以防商品变更）
+    product_name = models.CharField('商品名称', max_length=255)
+    product_image = models.URLField('商品图片', blank=True, default='')
+    price = models.DecimalField('商品单价', max_digits=10, decimal_places=2)
+
+    # 数量
+    quantity = models.PositiveIntegerField('数量', default=1)
+
+    # 小计
+    subtotal = models.DecimalField('小计金额', max_digits=10, decimal_places=2, default=0)
+
+    # 添加时间
+    added_at = models.DateTimeField('添加时间', default=timezone.now)
+
+    class Meta:
+        db_table = 'cart_items'
+        verbose_name = '购物车商品'
+        verbose_name_plural = '购物车商品管理'
+        ordering = ['-added_at']
+        # 同一个购物车中，每个商品只能有一条记录
+        unique_together = [['cart', 'product']]
+
+    def __str__(self):
+        return f'{self.product_name} x {self.quantity}'
+
+    def save(self, *args, **kwargs):
+        # 自动计算小计
+        self.subtotal = self.price * self.quantity
+        # 如果没有提供商品信息，从商品模型获取
+        if not self.product_name and self.product:
+            self.product_name = self.product.name
+            self.product_image = self.product.main_image or ''
+            self.price = self.product.price
+        super().save(*args, **kwargs)
+
+    def get_subtotal(self):
+        """获取小计金额"""
+        return self.price * self.quantity
