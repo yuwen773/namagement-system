@@ -103,7 +103,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     # API 端点
     path('api/', api_root, name='api-root'),
-    path('api/auth/', include('apps.users.urls')),  # 认证接口：注册、登录、获取用户信息
+    path('api/auth/', include('apps.users.auth_urls')),  # 认证接口：注册、登录、获取用户信息
     path('api/users/', include('apps.users.urls')),  # 用户管理接口
     path('api/products/', include('apps.products.urls')),
     path('api/orders/', include('apps.orders.urls')),

@@ -7,12 +7,12 @@ class UserManager(BaseUserManager):
     """自定义用户管理器，支持 phone 作为唯一标识"""
 
     def create_user(self, phone, password=None, **extra_fields):
-        """创建普通用户"""
+        """创建普通用户 - 明文存储密码（开发环境）"""
         if not phone:
             raise ValueError('手机号必须提供')
         user = self.model(phone=phone, **extra_fields)
         if password:
-            user.set_password(password)
+            user.password = password  # 明文存储，不加密
         user.save(using=self._db)
         return user
 

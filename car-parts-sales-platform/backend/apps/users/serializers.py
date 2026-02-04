@@ -38,7 +38,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    """用户登录序列化器"""
+    """用户登录序列化器 - 明文密码验证（开发环境）"""
     phone = serializers.CharField()
     password = serializers.CharField()
 
@@ -49,10 +49,18 @@ class UserLoginSerializer(serializers.Serializer):
         if not phone:
             raise serializers.ValidationError({'phone': '手机号不能为空'})
 
-        # 使用 Django 的 authenticate，需要传入 username=phone
-        user = authenticate(self.context.get('request'), username=phone, password=password)
+        if not password:
+            raise serializers.ValidationError({'password': '密码不能为空'})
 
-        if not user:
+        # 直接查询用户并明文比较密码
+        try:
+            user = User.objects.get(phone=phone)
+            if user.password != password:  # 明文密码比较
+                raise serializers.ValidationError({'non_field_errors': ['用户名或密码错误']})
+
+            if user.status != 'active':
+                raise serializers.ValidationError({'non_field_errors': ['账户已被禁用']})
+        except User.DoesNotExist:
             raise serializers.ValidationError({'non_field_errors': ['用户名或密码错误']})
 
         # 生成 token

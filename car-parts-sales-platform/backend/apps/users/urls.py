@@ -1,16 +1,19 @@
 """
 用户模块 URL Configuration
+
+用户管理相关路由（不包含认证接口）
+认证接口已分离到 auth_urls.py
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AuthViewSet, UserViewSet, UserAddressViewSet
+from .views import UserViewSet, UserAddressViewSet
 
 router = DefaultRouter()
-router.register(r'auth', AuthViewSet, basename='auth')
 router.register(r'', UserViewSet, basename='user')
 
 urlpatterns = [
     path('', include(router.urls)),
+    # 地址管理接口
     path('addresses/', UserAddressViewSet.as_view({
         'get': 'list',
         'post': 'create'
