@@ -1,7 +1,7 @@
 """
 订单管理视图集
 
-包含订单、订单商品、退换货申请的视图
+包含订单、订单商品、退换货申请、购物车的视图
 """
 from django.utils import timezone
 from rest_framework import viewsets, status
@@ -13,12 +13,13 @@ from django.db.models import Q
 
 from utils.response import ApiResponse
 from utils.pagination import StandardPagination
-from .models import Order, OrderItem, ReturnRequest
+from .models import Order, OrderItem, ReturnRequest, Cart, CartItem
 from .serializers import (
     OrderListSerializer, OrderDetailSerializer, OrderCreateSerializer,
     OrderUpdateSerializer, OrderShipSerializer,
     ReturnRequestListSerializer, ReturnRequestDetailSerializer,
-    ReturnRequestCreateSerializer, ReturnRequestProcessSerializer
+    ReturnRequestCreateSerializer, ReturnRequestProcessSerializer,
+    CartSerializer, CartItemSerializer, CartItemCreateSerializer, CartItemUpdateSerializer
 )
 
 
@@ -296,3 +297,167 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
             result_serializer = ReturnRequestDetailSerializer(return_request)
             return ApiResponse.success(data=result_serializer.data, message='退换货申请处理成功')
         return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
+
+
+class CartViewSet(viewsets.ViewSet):
+    """
+    购物车视图集
+
+    提供购物车的操作：
+    - GET /api/orders/cart/ - 获取购物车
+    - POST /api/orders/cart/items/ - 添加商品
+    - PUT /api/orders/cart/items/{id}/ - 更新数量
+    - DELETE /api/orders/cart/items/{id}/ - 删除商品
+    - DELETE /api/orders/cart/items/ - 清空购物车
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get_cart(self, user):
+        """获取或创建用户的购物车"""
+        cart, created = Cart.objects.get_or_create(user=user)
+        return cart
+
+    def list(self, request):
+        """
+        获取购物车
+
+        返回购物车信息及所有商品列表
+        """
+        cart = self.get_cart(request.user)
+        serializer = CartSerializer(cart)
+        return ApiResponse.success(data=serializer.data, message='获取购物车成功')
+
+    @action(detail=False, methods=['post'], url_path='items')
+    def add_item(self, request):
+        """
+        添加商品到购物车
+
+        请求参数：
+        - product: 商品ID
+        - quantity: 数量（可选，默认为1）
+        """
+        serializer = CartItemCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
+
+        product = serializer.validated_data['product']
+        quantity = serializer.validated_data.get('quantity', 1)
+
+        cart = self.get_cart(request.user)
+
+        # 检查商品是否已在购物车中
+        try:
+            cart_item = CartItem.objects.get(cart=cart, product=product)
+            # 更新数量
+            new_quantity = cart_item.quantity + quantity
+            if product.stock < new_quantity:
+                return ApiResponse.error(message=f'商品库存不足，最多可添加{product.stock}件')
+            cart_item.quantity = new_quantity
+            cart_item.save()
+            message = '购物车商品数量已更新'
+        except CartItem.DoesNotExist:
+            # 添加新商品
+            if product.stock < quantity:
+                return ApiResponse.error(message=f'商品库存不足，最多可添加{product.stock}件')
+            cart_item = CartItem.objects.create(
+                cart=cart,
+                product=product,
+                product_name=product.name,
+                product_image=product.main_image or '',
+                price=product.price,
+                quantity=quantity
+            )
+            message = '商品已添加到购物车'
+
+        # 更新购物车统计
+        cart.update_totals()
+
+        result_serializer = CartItemSerializer(cart_item)
+        return ApiResponse.success(data=result_serializer.data, message=message)
+
+    @action(detail=False, methods=['put'], url_path='items/(?P<item_id>[^/.]+)')
+    def update_item(self, request, item_id=None):
+        """
+        更新购物车商品数量
+
+        URL参数：
+        - item_id: 购物车商品ID
+
+        请求参数：
+        - quantity: 新的数量
+        """
+        serializer = CartItemUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
+
+        quantity = serializer.validated_data['quantity']
+
+        cart = self.get_cart(request.user)
+
+        try:
+            cart_item = CartItem.objects.get(cart=cart, id=item_id)
+        except CartItem.DoesNotExist:
+            return ApiResponse.error(message='购物车商品不存在')
+
+        # 检查库存
+        if cart_item.product.stock < quantity:
+            return ApiResponse.error(message=f'商品库存不足，最多可设置{quantity}件')
+
+        cart_item.quantity = quantity
+        cart_item.save()
+
+        # 更新购物车统计
+        cart.update_totals()
+
+        result_serializer = CartItemSerializer(cart_item)
+        return ApiResponse.success(data=result_serializer.data, message='商品数量已更新')
+
+    @action(detail=False, methods=['delete'], url_path='items/(?P<item_id>[^/.]+)')
+    def remove_item(self, request, item_id=None):
+        """
+        删除购物车商品
+
+        URL参数：
+        - item_id: 购物车商品ID
+        """
+        cart = self.get_cart(request.user)
+
+        try:
+            cart_item = CartItem.objects.get(cart=cart, id=item_id)
+        except CartItem.DoesNotExist:
+            return ApiResponse.error(message='购物车商品不存在')
+
+        cart_item.delete()
+
+        # 更新购物车统计
+        cart.update_totals()
+
+        return ApiResponse.success(message='商品已从购物车删除')
+
+    @action(detail=False, methods=['delete'], url_path='items')
+    def clear_cart(self, request):
+        """
+        清空购物车
+
+        删除购物车中的所有商品
+        """
+        cart = self.get_cart(request.user)
+
+        # 删除所有购物车商品
+        CartItem.objects.filter(cart=cart).delete()
+
+        # 更新购物车统计
+        cart.update_totals()
+
+        return ApiResponse.success(message='购物车已清空')
+
+    @action(detail=False, methods=['get'], url_path='count')
+    def cart_count(self, request):
+        """
+        获取购物车商品数量
+
+        返回购物车中商品的总数量
+        """
+        cart = self.get_cart(request.user)
+        return ApiResponse.success(data={'count': cart.total_items})
