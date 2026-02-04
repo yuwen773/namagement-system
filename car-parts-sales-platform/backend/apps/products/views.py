@@ -1,5 +1,6 @@
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from utils.response import ApiResponse
 from .models import Category, Product, ProductImage, ProductAttribute
@@ -90,6 +91,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     destroy: 删除商品（管理员）
     """
     queryset = Product.objects.all()
+    permission_classes = [AllowAny]  # 允许匿名浏览商品
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = {
         'category': ['exact', 'in'],
@@ -110,15 +112,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """获取商品列表"""
         queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return ApiResponse.success(data={
-                'results': serializer.data,
-                'total': self.paginator.count,
-                'page': self.paginator.page.number,
-                'page_size': self.paginator.page_size
-            })
+        # Temporarily disable pagination for debugging
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data)
 

@@ -75,7 +75,7 @@ class Product(models.Model):
     is_new = models.BooleanField('是否新品', default=False)
     created_at = models.DateTimeField('创建时间', default=django.utils.timezone.now)
     updated_at = models.DateTimeField('更新时间', auto_now=True)
-    history = HistoricalRecords()
+    # history = HistoricalRecords()  # Temporarily disabled for debugging
 
     class Meta:
         db_table = 'products'

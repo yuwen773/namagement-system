@@ -51,7 +51,7 @@ class ProductAttributeSerializer(serializers.ModelSerializer):
 
 class ProductListSerializer(serializers.ModelSerializer):
     """商品列表序列化器（简洁版）"""
-    category_name = serializers.CharField(source='category.name', read_only=True, default=None)
+    category_name = serializers.SerializerMethodField()
     image_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -68,10 +68,13 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_image_count(self, obj):
         return obj.images.count()
 
+    def get_category_name(self, obj):
+        return obj.category.name if obj.category else None
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     """商品详情序列化器（完整版）"""
-    category_name = serializers.CharField(source='category.name', read_only=True, default=None)
+    category_name = serializers.SerializerMethodField()
     images = ProductImageSerializer(many=True, read_only=True)
     attributes = ProductAttributeSerializer(many=True, read_only=True)
 
@@ -87,3 +90,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['sales_count', 'view_count', 'created_at', 'updated_at']
+
+    def get_category_name(self, obj):
+        return obj.category.name if obj.category else None
