@@ -1,0 +1,5597 @@
+swagger: '2.0'
+info:
+  title: 汽车改装件销售推荐平台 API
+  description: |
+    汽车改装件销售推荐平台 RESTful API 文档
+
+    ## 功能模块
+    - **用户管理**: 用户注册、登录、个人信息、收货地址
+    - **商品管理**: 商品分类、商品列表、商品详情、商品评价
+    - **订单管理**: 购物车、订单创建、订单列表、订单详情、退换货
+    - **营销管理**: 优惠券领取、我的优惠券
+    - **推荐管理**: 热门推荐、新品推荐、个性化推荐
+    - **内容管理**: 改装案例、常见问题
+    - **系统管理**: 系统配置、站内消息、操作日志
+
+    ## 认证方式
+    本 API 使用 JWT (JSON Web Token) 进行身份认证。
+
+    ### 获取 Token
+    1. **注册**: `POST /api/auth/register/`
+    2. **登录**: `POST /api/auth/login/`
+
+    ### 使用 Token
+    在请求头中添加:
+    ```
+    Authorization: Bearer <your_access_token>
+    ```
+
+    ## 统一响应格式
+    所有 API 返回格式:
+    ```json
+    {
+        "code": 200,
+        "message": "操作成功",
+        "data": {...}
+    }
+    ```
+
+    分页响应格式:
+    ```json
+    {
+        "code": 200,
+        "message": "获取成功",
+        "data": {
+            "count": 100,
+            "page": 1,
+            "page_size": 20,
+            "results": [...]
+        }
+    }
+    ```
+  termsOfService: https://www.example.com/terms/
+  contact:
+    email: support@example.com
+  license:
+    name: MIT License
+  version: v1.0
+host: 127.0.0.1:8000
+schemes:
+- http
+basePath: /
+consumes:
+- application/json
+produces:
+- application/json
+securityDefinitions:
+  Basic:
+    type: basic
+security:
+- Basic: []
+paths:
+  /api/:
+    get:
+      operationId: api_list
+      description: API 根视图 - 返回所有可用的 API 端点
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/auth/:
+    get:
+      operationId: api_auth_list
+      description: 用户视图集
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/User'
+      tags:
+      - api
+    post:
+      operationId: api_auth_create
+      description: 用户视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    parameters: []
+  /api/auth/addresses/:
+    get:
+      operationId: api_auth_addresses_list
+      description: 用户地址视图集
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    post:
+      operationId: api_auth_addresses_create
+      description: 用户地址视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddressCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddressCreate'
+      tags:
+      - api
+    parameters: []
+  /api/auth/addresses/{id}/:
+    get:
+      operationId: api_auth_addresses_read
+      description: 用户地址视图集
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    put:
+      operationId: api_auth_addresses_update
+      description: 用户地址视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddress'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    patch:
+      operationId: api_auth_addresses_partial_update
+      description: 用户地址视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddress'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    delete:
+      operationId: api_auth_addresses_delete
+      description: 用户地址视图集
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/auth/addresses/{id}/set-default/:
+    post:
+      operationId: api_auth_addresses_set_default
+      description: 设为默认地址
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddress'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/auth/auth/login/:
+    post:
+      operationId: api_auth_auth_login
+      description: 用户登录
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/auth/auth/register/:
+    post:
+      operationId: api_auth_auth_register
+      description: 用户注册
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/auth/me/:
+    get:
+      operationId: api_auth_me
+      description: 获取当前用户信息
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/User'
+      tags:
+      - api
+    parameters: []
+  /api/auth/profile/:
+    put:
+      operationId: api_auth_profile
+      description: 更新当前用户资料
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    parameters: []
+  /api/auth/{id}/:
+    get:
+      operationId: api_auth_read
+      description: 用户视图集
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    put:
+      operationId: api_auth_update
+      description: 用户视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    patch:
+      operationId: api_auth_partial_update
+      description: 用户视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    delete:
+      operationId: api_auth_delete
+      description: 用户视图集
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/content/cases/:
+    get:
+      operationId: api_content_cases_list
+      description: 获取案例列表
+      parameters:
+      - name: status
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ModificationCaseList'
+      tags:
+      - api
+    post:
+      operationId: api_content_cases_create
+      description: 创建案例
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ModificationCaseCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ModificationCaseCreate'
+      tags:
+      - api
+    parameters: []
+  /api/content/cases/{id}/:
+    get:
+      operationId: api_content_cases_read
+      description: 获取案例详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ModificationCaseDetail'
+      tags:
+      - api
+    put:
+      operationId: api_content_cases_update
+      description: 更新案例
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ModificationCaseCreate'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ModificationCaseCreate'
+      tags:
+      - api
+    patch:
+      operationId: api_content_cases_partial_update
+      description: 部分更新（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ModificationCaseUpdate'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ModificationCaseUpdate'
+      tags:
+      - api
+    delete:
+      operationId: api_content_cases_delete
+      description: 删除案例
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 改装案例 的 唯一整数值。
+      required: true
+      type: integer
+  /api/content/faqs/:
+    get:
+      operationId: api_content_faqs_list
+      description: 获取问题列表
+      parameters:
+      - name: category
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_active
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/FAQ'
+      tags:
+      - api
+    post:
+      operationId: api_content_faqs_create
+      description: 创建问题
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/FAQ'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/FAQ'
+      tags:
+      - api
+    parameters: []
+  /api/content/faqs/{id}/:
+    get:
+      operationId: api_content_faqs_read
+      description: 获取问题详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/FAQ'
+      tags:
+      - api
+    put:
+      operationId: api_content_faqs_update
+      description: 更新问题
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/FAQ'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/FAQ'
+      tags:
+      - api
+    patch:
+      operationId: api_content_faqs_partial_update
+      description: 部分更新（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/FAQ'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/FAQ'
+      tags:
+      - api
+    delete:
+      operationId: api_content_faqs_delete
+      description: 删除问题
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 常见问题 的 唯一整数值。
+      required: true
+      type: integer
+  /api/marketing/coupons/:
+    get:
+      operationId: api_marketing_coupons_list
+      description: 获取优惠券列表
+      parameters:
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/CouponList'
+      tags:
+      - api
+    post:
+      operationId: api_marketing_coupons_create
+      description: 创建优惠券
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Coupon'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/Coupon'
+      tags:
+      - api
+    parameters: []
+  /api/marketing/coupons/my-coupons/:
+    get:
+      operationId: api_marketing_coupons_my_coupons
+      summary: 获取当前用户的优惠券
+      description: |-
+        查询参数：
+        - status: 状态筛选（unused/used/expired）
+      parameters:
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/Coupon'
+      tags:
+      - api
+    parameters: []
+  /api/marketing/coupons/{id}/:
+    get:
+      operationId: api_marketing_coupons_read
+      description: 获取优惠券详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Coupon'
+      tags:
+      - api
+    put:
+      operationId: api_marketing_coupons_update
+      description: 更新优惠券
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Coupon'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Coupon'
+      tags:
+      - api
+    patch:
+      operationId: api_marketing_coupons_partial_update
+      description: 部分更新（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Coupon'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Coupon'
+      tags:
+      - api
+    delete:
+      operationId: api_marketing_coupons_delete
+      description: 删除优惠券
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 优惠券 的 唯一整数值。
+      required: true
+      type: integer
+  /api/marketing/coupons/{id}/claim/:
+    post:
+      operationId: api_marketing_coupons_claim
+      summary: 领取优惠券
+      description: |-
+        业务逻辑：
+        1. 检查优惠券是否存在且有效
+        2. 检查是否在有效期内
+        3. 检查是否还有剩余数量
+        4. 检查用户是否超过限领数量
+        5. 记录领取信息并增加已发放数量
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Coupon'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/Coupon'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 优惠券 的 唯一整数值。
+      required: true
+      type: integer
+  /api/marketing/user-coupons/:
+    get:
+      operationId: api_marketing_user-coupons_list
+      description: 获取用户优惠券列表
+      parameters:
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/UserCoupon'
+      tags:
+      - api
+    post:
+      operationId: api_marketing_user-coupons_create
+      description: 用户优惠券管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserCoupon'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserCoupon'
+      tags:
+      - api
+    parameters: []
+  /api/marketing/user-coupons/{id}/:
+    get:
+      operationId: api_marketing_user-coupons_read
+      description: 获取用户优惠券详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserCoupon'
+      tags:
+      - api
+    put:
+      operationId: api_marketing_user-coupons_update
+      description: 用户优惠券管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserCoupon'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserCoupon'
+      tags:
+      - api
+    patch:
+      operationId: api_marketing_user-coupons_partial_update
+      description: 用户优惠券管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserCoupon'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserCoupon'
+      tags:
+      - api
+    delete:
+      operationId: api_marketing_user-coupons_delete
+      description: 用户优惠券管理 ViewSet
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 用户优惠券 的 唯一整数值。
+      required: true
+      type: integer
+  /api/orders/cart/:
+    get:
+      operationId: api_orders_cart_list
+      summary: 获取购物车
+      description: 返回购物车信息及所有商品列表
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/orders/cart/clear/:
+    delete:
+      operationId: api_orders_cart_clear_cart
+      summary: 清空购物车
+      description: 删除购物车中的所有商品
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/orders/cart/count/:
+    get:
+      operationId: api_orders_cart_cart_count
+      summary: 获取购物车商品数量
+      description: 返回购物车中商品的总数量
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/orders/cart/items/:
+    post:
+      operationId: api_orders_cart_add_item
+      summary: 添加商品到购物车
+      description: |-
+        请求参数：
+        - product: 商品ID
+        - quantity: 数量（可选，默认为1）
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/orders/cart/items/{item_id}/:
+    delete:
+      operationId: api_orders_cart_remove_item
+      summary: 删除购物车商品
+      description: |-
+        URL参数：
+        - item_id: 购物车商品ID
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: item_id
+      in: path
+      required: true
+      type: string
+  /api/orders/orders/:
+    get:
+      operationId: api_orders_orders_list
+      description: 列表查询
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/OrderList'
+      tags:
+      - api
+    post:
+      operationId: api_orders_orders_create
+      description: 创建订单
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OrderCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderCreate'
+      tags:
+      - api
+    parameters: []
+  /api/orders/orders/my-orders/:
+    get:
+      operationId: api_orders_orders_my_orders
+      summary: 我的订单
+      description: |-
+        查询参数：
+        - status: 订单状态筛选（可选）
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/OrderDetail'
+      tags:
+      - api
+    parameters: []
+  /api/orders/orders/{id}/:
+    get:
+      operationId: api_orders_orders_read
+      description: 详情查询
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderDetail'
+      tags:
+      - api
+    put:
+      operationId: api_orders_orders_update
+      description: 更新订单
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OrderUpdate'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderUpdate'
+      tags:
+      - api
+    patch:
+      operationId: api_orders_orders_partial_update
+      summary: 订单视图集
+      description: |-
+        提供订单的 CRUD 操作：
+        - list: 获取订单列表
+        - retrieve: 获取订单详情
+        - create: 创建订单
+        - update: 更新订单
+        - destroy: 删除订单
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OrderUpdate'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderUpdate'
+      tags:
+      - api
+    delete:
+      operationId: api_orders_orders_delete
+      description: 删除订单
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/orders/orders/{id}/cancel/:
+    post:
+      operationId: api_orders_orders_cancel
+      summary: 取消订单
+      description: 只有待付款和待发货的订单可以取消
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OrderDetail'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderDetail'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/orders/orders/{id}/confirm/:
+    post:
+      operationId: api_orders_orders_confirm
+      summary: 确认收货
+      description: 只有已发货的订单可以确认收货
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OrderDetail'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderDetail'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/orders/orders/{id}/return/:
+    post:
+      operationId: api_orders_orders_return_order
+      summary: 申请退换货
+      description: |-
+        从订单直接申请退换货，自动关联订单信息
+
+        请求参数：
+        - request_type: 申请类型 (return/refund)
+        - reason: 原因描述
+        - evidence_images: 凭证图片列表（可选）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OrderDetail'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderDetail'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/orders/orders/{id}/ship/:
+    post:
+      operationId: api_orders_orders_ship
+      summary: 订单发货（管理员操作）
+      description: |-
+        请求参数：
+        - express_company: 物流公司
+        - tracking_number: 物流单号
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OrderDetail'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/OrderDetail'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/orders/returns/:
+    get:
+      operationId: api_orders_returns_list
+      description: 列表查询
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ReturnRequestList'
+      tags:
+      - api
+    post:
+      operationId: api_orders_returns_create
+      description: 创建退换货申请
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ReturnRequestCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ReturnRequestCreate'
+      tags:
+      - api
+    parameters: []
+  /api/orders/returns/{id}/:
+    get:
+      operationId: api_orders_returns_read
+      description: 详情查询
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ReturnRequestDetail'
+      tags:
+      - api
+    put:
+      operationId: api_orders_returns_update
+      summary: 退换货申请视图集
+      description: |-
+        提供退换货申请的 CRUD 操作：
+        - list: 获取退换货申请列表
+        - retrieve: 获取退换货申请详情
+        - create: 创建退换货申请
+        - update: 更新退换货申请（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ReturnRequestDetail'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ReturnRequestDetail'
+      tags:
+      - api
+    patch:
+      operationId: api_orders_returns_partial_update
+      summary: 退换货申请视图集
+      description: |-
+        提供退换货申请的 CRUD 操作：
+        - list: 获取退换货申请列表
+        - retrieve: 获取退换货申请详情
+        - create: 创建退换货申请
+        - update: 更新退换货申请（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ReturnRequestDetail'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ReturnRequestDetail'
+      tags:
+      - api
+    delete:
+      operationId: api_orders_returns_delete
+      summary: 退换货申请视图集
+      description: |-
+        提供退换货申请的 CRUD 操作：
+        - list: 获取退换货申请列表
+        - retrieve: 获取退换货申请详情
+        - create: 创建退换货申请
+        - update: 更新退换货申请（管理员）
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/orders/returns/{id}/process/:
+    post:
+      operationId: api_orders_returns_process
+      summary: 处理退换货申请（管理员操作）
+      description: |-
+        请求参数：
+        - status: 处理状态 (approved/rejected/completed)
+        - admin_note: 处理意见
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ReturnRequestDetail'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ReturnRequestDetail'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/products/attributes/:
+    get:
+      operationId: api_products_attributes_list
+      description: 商品属性管理 ViewSet
+      parameters:
+      - name: product
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ProductAttribute'
+      tags:
+      - api
+    post:
+      operationId: api_products_attributes_create
+      description: 商品属性管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductAttribute'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductAttribute'
+      tags:
+      - api
+    parameters: []
+  /api/products/attributes/{id}/:
+    get:
+      operationId: api_products_attributes_read
+      description: 商品属性管理 ViewSet
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductAttribute'
+      tags:
+      - api
+    put:
+      operationId: api_products_attributes_update
+      description: 商品属性管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductAttribute'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductAttribute'
+      tags:
+      - api
+    patch:
+      operationId: api_products_attributes_partial_update
+      description: 商品属性管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductAttribute'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductAttribute'
+      tags:
+      - api
+    delete:
+      operationId: api_products_attributes_delete
+      description: 商品属性管理 ViewSet
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品属性 的 唯一整数值。
+      required: true
+      type: integer
+  /api/products/categories/:
+    get:
+      operationId: api_products_categories_list
+      description: 获取分类列表
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/Category'
+      tags:
+      - api
+    post:
+      operationId: api_products_categories_create
+      description: 创建分类
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Category'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/Category'
+      tags:
+      - api
+    parameters: []
+  /api/products/categories/tree/:
+    get:
+      operationId: api_products_categories_tree
+      description: 获取完整分类树
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/Category'
+      tags:
+      - api
+    parameters: []
+  /api/products/categories/{id}/:
+    get:
+      operationId: api_products_categories_read
+      description: 获取分类详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Category'
+      tags:
+      - api
+    put:
+      operationId: api_products_categories_update
+      description: 更新分类
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Category'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Category'
+      tags:
+      - api
+    patch:
+      operationId: api_products_categories_partial_update
+      description: 部分更新
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Category'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Category'
+      tags:
+      - api
+    delete:
+      operationId: api_products_categories_delete
+      description: 删除分类
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品分类 的 唯一整数值。
+      required: true
+      type: integer
+  /api/products/images/:
+    get:
+      operationId: api_products_images_list
+      description: 商品图片管理 ViewSet
+      parameters:
+      - name: product
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ProductImage'
+      tags:
+      - api
+    post:
+      operationId: api_products_images_create
+      description: 商品图片管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductImage'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductImage'
+      tags:
+      - api
+    parameters: []
+  /api/products/images/{id}/:
+    get:
+      operationId: api_products_images_read
+      description: 商品图片管理 ViewSet
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductImage'
+      tags:
+      - api
+    put:
+      operationId: api_products_images_update
+      description: 商品图片管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductImage'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductImage'
+      tags:
+      - api
+    patch:
+      operationId: api_products_images_partial_update
+      description: 商品图片管理 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductImage'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductImage'
+      tags:
+      - api
+    delete:
+      operationId: api_products_images_delete
+      description: 商品图片管理 ViewSet
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品图片 的 唯一整数值。
+      required: true
+      type: integer
+  /api/products/products/:
+    get:
+      operationId: api_products_products_list
+      description: 获取商品列表
+      parameters:
+      - name: category
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: category__in
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: price__gte
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: price__lte
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: status
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_featured
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_new
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    post:
+      operationId: api_products_products_create
+      description: 创建商品
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductList'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    parameters: []
+  /api/products/products/featured/:
+    get:
+      operationId: api_products_products_featured
+      description: 获取推荐商品
+      parameters:
+      - name: category
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: category__in
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: price__gte
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: price__lte
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: status
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_featured
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_new
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    parameters: []
+  /api/products/products/new-arrivals/:
+    get:
+      operationId: api_products_products_new_arrivals
+      description: 获取新品上市
+      parameters:
+      - name: category
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: category__in
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: price__gte
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: price__lte
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: status
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_featured
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_new
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    parameters: []
+  /api/products/products/{id}/:
+    get:
+      operationId: api_products_products_read
+      description: 获取商品详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductDetail'
+      tags:
+      - api
+    put:
+      operationId: api_products_products_update
+      description: 更新商品
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductList'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    patch:
+      operationId: api_products_products_partial_update
+      description: 部分更新（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductList'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    delete:
+      operationId: api_products_products_delete
+      description: 删除商品
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品 的 唯一整数值。
+      required: true
+      type: integer
+  /api/products/products/{id}/archive/:
+    post:
+      operationId: api_products_products_archive
+      description: 下架商品
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductList'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品 的 唯一整数值。
+      required: true
+      type: integer
+  /api/products/products/{id}/publish/:
+    post:
+      operationId: api_products_products_publish
+      description: 发布商品
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductList'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品 的 唯一整数值。
+      required: true
+      type: integer
+  /api/products/products/{id}/reviews/:
+    get:
+      operationId: api_products_products_reviews_read
+      description: 获取或提交商品评价
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    post:
+      operationId: api_products_products_reviews_create
+      description: 获取或提交商品评价
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ProductList'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ProductList'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品 的 唯一整数值。
+      required: true
+      type: integer
+  /api/products/reviews/:
+    get:
+      operationId: api_products_reviews_list
+      description: 获取评价列表
+      parameters:
+      - name: product
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: rating
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/ReviewList'
+      tags:
+      - api
+    post:
+      operationId: api_products_reviews_create
+      summary: 提交商品评价
+      description: |-
+        请求参数：
+        - product_id: 商品ID（URL中）
+        - rating: 评分（1-5）
+        - comment: 评价内容
+        - images: 评价图片列表
+        - is_anonymous: 是否匿名
+        - order_item_id: 订单项ID（可选）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ReviewCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ReviewCreate'
+      tags:
+      - api
+    parameters: []
+  /api/products/reviews/{id}/:
+    get:
+      operationId: api_products_reviews_read
+      description: 获取评价详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Review'
+      tags:
+      - api
+    put:
+      operationId: api_products_reviews_update
+      summary: 商品评价 ViewSet
+      description: |-
+        提供以下接口：
+        - GET /api/products/reviews/ - 获取评价列表
+        - GET /api/products/reviews/{id}/ - 获取评价详情
+        - POST /api/products/products/{product_id}/reviews/ - 提交评价
+        - GET /api/products/products/{product_id}/reviews/ - 获取商品评价列表
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Review'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Review'
+      tags:
+      - api
+    patch:
+      operationId: api_products_reviews_partial_update
+      summary: 商品评价 ViewSet
+      description: |-
+        提供以下接口：
+        - GET /api/products/reviews/ - 获取评价列表
+        - GET /api/products/reviews/{id}/ - 获取评价详情
+        - POST /api/products/products/{product_id}/reviews/ - 提交评价
+        - GET /api/products/products/{product_id}/reviews/ - 获取商品评价列表
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Review'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Review'
+      tags:
+      - api
+    delete:
+      operationId: api_products_reviews_delete
+      description: 删除评价（管理员）
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 商品评价 的 唯一整数值。
+      required: true
+      type: integer
+  /api/recommendations/products/:
+    get:
+      operationId: api_recommendations_products_list
+      description: 获取推荐商品列表
+      parameters:
+      - name: rule
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/RecommendedProduct'
+      tags:
+      - api
+    post:
+      operationId: api_recommendations_products_create
+      description: 添加推荐商品
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RecommendedProductCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendedProductCreate'
+      tags:
+      - api
+    parameters: []
+  /api/recommendations/products/{id}/:
+    get:
+      operationId: api_recommendations_products_read
+      description: 获取推荐商品详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendedProduct'
+      tags:
+      - api
+    put:
+      operationId: api_recommendations_products_update
+      description: 更新推荐商品
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RecommendedProductCreate'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendedProductCreate'
+      tags:
+      - api
+    patch:
+      operationId: api_recommendations_products_partial_update
+      description: 部分更新（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RecommendedProductCreate'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendedProductCreate'
+      tags:
+      - api
+    delete:
+      operationId: api_recommendations_products_delete
+      description: 删除推荐商品
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 推荐商品 的 唯一整数值。
+      required: true
+      type: integer
+  /api/recommendations/rules/:
+    get:
+      operationId: api_recommendations_rules_list
+      description: 获取推荐规则列表
+      parameters:
+      - name: rule_type
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_active
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/RecommendationRule'
+      tags:
+      - api
+    post:
+      operationId: api_recommendations_rules_create
+      description: 创建推荐规则
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RecommendationRule'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendationRule'
+      tags:
+      - api
+    parameters: []
+  /api/recommendations/rules/active/:
+    get:
+      operationId: api_recommendations_rules_active
+      description: 获取启用的推荐规则
+      parameters:
+      - name: rule_type
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_active
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/RecommendationRule'
+      tags:
+      - api
+    parameters: []
+  /api/recommendations/rules/{id}/:
+    get:
+      operationId: api_recommendations_rules_read
+      description: 获取规则详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendationRuleDetail'
+      tags:
+      - api
+    put:
+      operationId: api_recommendations_rules_update
+      description: 更新推荐规则
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RecommendationRule'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendationRule'
+      tags:
+      - api
+    patch:
+      operationId: api_recommendations_rules_partial_update
+      description: 部分更新（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/RecommendationRule'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/RecommendationRule'
+      tags:
+      - api
+    delete:
+      operationId: api_recommendations_rules_delete
+      description: 删除推荐规则
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 推荐规则 的 唯一整数值。
+      required: true
+      type: integer
+  /api/system/configs/:
+    get:
+      operationId: api_system_configs_list
+      description: 获取配置列表
+      parameters:
+      - name: category
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: is_editable
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/SystemConfigList'
+      tags:
+      - api
+    post:
+      operationId: api_system_configs_create
+      description: 创建配置
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/SystemConfig'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/SystemConfig'
+      tags:
+      - api
+    parameters: []
+  /api/system/configs/{id}/:
+    get:
+      operationId: api_system_configs_read
+      description: 获取配置详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/SystemConfig'
+      tags:
+      - api
+    put:
+      operationId: api_system_configs_update
+      description: 更新配置
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/SystemConfig'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/SystemConfig'
+      tags:
+      - api
+    patch:
+      operationId: api_system_configs_partial_update
+      description: 部分更新（管理员）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/SystemConfig'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/SystemConfig'
+      tags:
+      - api
+    delete:
+      operationId: api_system_configs_delete
+      description: 删除配置
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 系统配置 的 唯一整数值。
+      required: true
+      type: integer
+  /api/system/logs/:
+    get:
+      operationId: api_system_logs_list
+      description: 获取日志列表
+      parameters:
+      - name: action_type
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: object_type
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: status
+        in: query
+        description: ''
+        required: false
+        type: string
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/OperationLogList'
+      tags:
+      - api
+    post:
+      operationId: api_system_logs_create
+      description: 操作日志 ViewSet（仅管理员可访问）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OperationLog'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/OperationLog'
+      tags:
+      - api
+    parameters: []
+  /api/system/logs/{id}/:
+    get:
+      operationId: api_system_logs_read
+      description: 获取日志详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/OperationLog'
+      tags:
+      - api
+    put:
+      operationId: api_system_logs_update
+      description: 操作日志 ViewSet（仅管理员可访问）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OperationLog'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/OperationLog'
+      tags:
+      - api
+    patch:
+      operationId: api_system_logs_partial_update
+      description: 操作日志 ViewSet（仅管理员可访问）
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/OperationLog'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/OperationLog'
+      tags:
+      - api
+    delete:
+      operationId: api_system_logs_delete
+      description: 操作日志 ViewSet（仅管理员可访问）
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      description: 标识此 操作日志 的 唯一整数值。
+      required: true
+      type: integer
+  /api/system/messages/:
+    get:
+      operationId: api_system_messages_list
+      description: 获取消息列表
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/MessageList'
+      tags:
+      - api
+    post:
+      operationId: api_system_messages_create
+      description: 发送消息
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/MessageCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/MessageCreate'
+      tags:
+      - api
+    parameters: []
+  /api/system/messages/my-messages/:
+    get:
+      operationId: api_system_messages_my_messages
+      summary: 获取当前用户的消息
+      description: |-
+        查询参数：
+        - status: 状态筛选（draft/sent/read）
+        - message_type: 消息类型
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: search
+        in: query
+        description: 搜索关键词。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/Message'
+      tags:
+      - api
+    parameters: []
+  /api/system/messages/{id}/:
+    get:
+      operationId: api_system_messages_read
+      description: 获取消息详情
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Message'
+      tags:
+      - api
+    put:
+      operationId: api_system_messages_update
+      description: 更新消息
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Message'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Message'
+      tags:
+      - api
+    patch:
+      operationId: api_system_messages_partial_update
+      description: 站内消息 ViewSet
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Message'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Message'
+      tags:
+      - api
+    delete:
+      operationId: api_system_messages_delete
+      description: 删除消息
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/system/messages/{id}/mark-read/:
+    post:
+      operationId: api_system_messages_mark_read
+      description: 标记消息已读
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Message'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/Message'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/users/:
+    get:
+      operationId: api_users_list
+      description: 用户视图集
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/User'
+      tags:
+      - api
+    post:
+      operationId: api_users_create
+      description: 用户视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    parameters: []
+  /api/users/addresses/:
+    get:
+      operationId: api_users_addresses_list
+      description: 用户地址视图集
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    post:
+      operationId: api_users_addresses_create
+      description: 用户地址视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddressCreate'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddressCreate'
+      tags:
+      - api
+    parameters: []
+  /api/users/addresses/{id}/:
+    get:
+      operationId: api_users_addresses_read
+      description: 用户地址视图集
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    put:
+      operationId: api_users_addresses_update
+      description: 用户地址视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddress'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    patch:
+      operationId: api_users_addresses_partial_update
+      description: 用户地址视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddress'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    delete:
+      operationId: api_users_addresses_delete
+      description: 用户地址视图集
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/users/addresses/{id}/set-default/:
+    post:
+      operationId: api_users_addresses_set_default
+      description: 设为默认地址
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserAddress'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserAddress'
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/users/auth/login/:
+    post:
+      operationId: api_users_auth_login
+      description: 用户登录
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/users/auth/register/:
+    post:
+      operationId: api_users_auth_register
+      description: 用户注册
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+      - api
+    parameters: []
+  /api/users/me/:
+    get:
+      operationId: api_users_me
+      description: 获取当前用户信息
+      parameters:
+      - name: ordering
+        in: query
+        description: 用于排序结果的字段。
+        required: false
+        type: string
+      - name: page
+        in: query
+        description: 分页结果集中的页码。
+        required: false
+        type: integer
+      - name: page_size
+        in: query
+        description: 每页返回的结果数量。
+        required: false
+        type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+            - count
+            - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/User'
+      tags:
+      - api
+    parameters: []
+  /api/users/profile/:
+    put:
+      operationId: api_users_profile
+      description: 更新当前用户资料
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    parameters: []
+  /api/users/{id}/:
+    get:
+      operationId: api_users_read
+      description: 用户视图集
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    put:
+      operationId: api_users_update
+      description: 用户视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    patch:
+      operationId: api_users_partial_update
+      description: 用户视图集
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/User'
+      tags:
+      - api
+    delete:
+      operationId: api_users_delete
+      description: 用户视图集
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+definitions:
+  User:
+    required:
+    - phone
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      phone:
+        title: 手机号
+        type: string
+        maxLength: 11
+        minLength: 1
+      nickname:
+        title: 昵称
+        type: string
+        maxLength: 50
+      avatar:
+        title: 头像URL
+        type: string
+        format: uri
+        maxLength: 200
+        x-nullable: true
+      email:
+        title: 电子邮件地址
+        type: string
+        format: email
+        maxLength: 254
+      points:
+        title: 积分
+        type: integer
+        readOnly: true
+      status:
+        title: 状态
+        type: string
+        enum:
+        - active
+        - banned
+        readOnly: true
+      created_at:
+        title: 注册时间
+        type: string
+        format: date-time
+        readOnly: true
+  UserAddress:
+    required:
+    - recipient_name
+    - phone
+    - address
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      user:
+        $ref: '#/definitions/User'
+      recipient_name:
+        title: 收货人姓名
+        type: string
+        maxLength: 50
+        minLength: 1
+      phone:
+        title: 收货人手机号
+        type: string
+        maxLength: 11
+        minLength: 1
+      province:
+        title: 省份
+        type: string
+        maxLength: 50
+      city:
+        title: 城市
+        type: string
+        maxLength: 50
+      district:
+        title: 区县
+        type: string
+        maxLength: 50
+      address:
+        title: 详细地址
+        type: string
+        maxLength: 255
+        minLength: 1
+      is_default:
+        title: 是否默认地址
+        type: boolean
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  UserAddressCreate:
+    required:
+    - recipient_name
+    - phone
+    - address
+    type: object
+    properties:
+      recipient_name:
+        title: 收货人姓名
+        type: string
+        maxLength: 50
+        minLength: 1
+      phone:
+        title: 收货人手机号
+        type: string
+        maxLength: 11
+        minLength: 1
+      province:
+        title: 省份
+        type: string
+        maxLength: 50
+      city:
+        title: 城市
+        type: string
+        maxLength: 50
+      district:
+        title: 区县
+        type: string
+        maxLength: 50
+      address:
+        title: 详细地址
+        type: string
+        maxLength: 255
+        minLength: 1
+      is_default:
+        title: 是否默认地址
+        type: boolean
+  ModificationCaseList:
+    required:
+    - title
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      title:
+        title: 标题
+        type: string
+        maxLength: 200
+        minLength: 1
+      summary:
+        title: 摘要
+        type: string
+        maxLength: 500
+      cover_image:
+        title: 封面图片URL
+        type: string
+        maxLength: 500
+      author:
+        title: 作者
+        type: string
+        maxLength: 100
+      status:
+        title: 状态
+        type: string
+        enum:
+        - draft
+        - published
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      view_count:
+        title: 浏览量
+        type: integer
+        readOnly: true
+      published_at:
+        title: 发布时间
+        type: string
+        format: date-time
+        x-nullable: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+  ModificationCaseCreate:
+    required:
+    - title
+    - content
+    type: object
+    properties:
+      title:
+        title: 标题
+        type: string
+        maxLength: 200
+        minLength: 1
+      summary:
+        title: 摘要
+        type: string
+        maxLength: 500
+      content:
+        title: 内容
+        type: string
+        minLength: 1
+      cover_image:
+        title: 封面图片URL
+        type: string
+        maxLength: 500
+      author:
+        title: 作者
+        type: string
+        maxLength: 100
+      status:
+        title: 状态
+        type: string
+        enum:
+        - draft
+        - published
+      sort_order:
+        title: 排序权重
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      published_at:
+        title: 发布时间
+        type: string
+        format: date-time
+        x-nullable: true
+  ModificationCaseDetail:
+    required:
+    - title
+    - content
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      title:
+        title: 标题
+        type: string
+        maxLength: 200
+        minLength: 1
+      summary:
+        title: 摘要
+        type: string
+        maxLength: 500
+      content:
+        title: 内容
+        type: string
+        minLength: 1
+      cover_image:
+        title: 封面图片URL
+        type: string
+        maxLength: 500
+      author:
+        title: 作者
+        type: string
+        maxLength: 100
+      status:
+        title: 状态
+        type: string
+        enum:
+        - draft
+        - published
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      view_count:
+        title: 浏览量
+        type: integer
+        readOnly: true
+      sort_order:
+        title: 排序权重
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      published_at:
+        title: 发布时间
+        type: string
+        format: date-time
+        x-nullable: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  ModificationCaseUpdate:
+    type: object
+    properties:
+      title:
+        title: 标题
+        type: string
+        maxLength: 200
+        minLength: 1
+      summary:
+        title: 摘要
+        type: string
+        maxLength: 500
+      content:
+        title: 内容
+        type: string
+        minLength: 1
+      cover_image:
+        title: 封面图片URL
+        type: string
+        maxLength: 500
+      author:
+        title: 作者
+        type: string
+        maxLength: 100
+      status:
+        title: 状态
+        type: string
+        enum:
+        - draft
+        - published
+      sort_order:
+        title: 排序权重
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      published_at:
+        title: 发布时间
+        type: string
+        format: date-time
+        x-nullable: true
+  FAQ:
+    required:
+    - question
+    - answer
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      question:
+        title: 问题
+        type: string
+        maxLength: 500
+        minLength: 1
+      answer:
+        title: 答案
+        type: string
+        minLength: 1
+      category:
+        title: 分类
+        type: string
+        enum:
+        - order
+        - payment
+        - shipping
+        - product
+        - return
+        - account
+        - other
+      category_display:
+        title: Category display
+        type: string
+        readOnly: true
+        minLength: 1
+      sort_order:
+        title: 排序
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      is_active:
+        title: 是否启用
+        type: boolean
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  CouponList:
+    required:
+    - name
+    - valid_from
+    - valid_until
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      name:
+        title: 优惠券名称
+        type: string
+        maxLength: 100
+        minLength: 1
+      description:
+        title: 优惠券描述
+        type: string
+      discount_type:
+        title: 优惠类型
+        type: string
+        enum:
+        - full_reduction
+        - discount
+      min_amount:
+        title: 使用门槛
+        type: string
+        format: decimal
+      discount_amount:
+        title: 优惠金额
+        type: string
+        format: decimal
+      discount_rate:
+        title: 折扣率
+        type: string
+        format: decimal
+        x-nullable: true
+      valid_from:
+        title: 有效期开始
+        type: string
+        format: date-time
+      valid_until:
+        title: 有效期结束
+        type: string
+        format: date-time
+      total_quantity:
+        title: 发放总量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      issued_quantity:
+        title: 已发放数量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      is_active:
+        title: 是否启用
+        type: boolean
+  Coupon:
+    required:
+    - name
+    - valid_from
+    - valid_until
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      name:
+        title: 优惠券名称
+        type: string
+        maxLength: 100
+        minLength: 1
+      description:
+        title: 优惠券描述
+        type: string
+      discount_type:
+        title: 优惠类型
+        type: string
+        enum:
+        - full_reduction
+        - discount
+      min_amount:
+        title: 使用门槛
+        type: string
+        format: decimal
+      discount_amount:
+        title: 优惠金额
+        type: string
+        format: decimal
+      discount_rate:
+        title: 折扣率
+        type: string
+        format: decimal
+        x-nullable: true
+      valid_from:
+        title: 有效期开始
+        type: string
+        format: date-time
+      valid_until:
+        title: 有效期结束
+        type: string
+        format: date-time
+      total_quantity:
+        title: 发放总量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      per_user_limit:
+        title: 每人限领数量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      issued_quantity:
+        title: 已发放数量
+        type: integer
+        readOnly: true
+      is_active:
+        title: 是否启用
+        type: boolean
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  UserCoupon:
+    required:
+    - coupon_id
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      coupon:
+        $ref: '#/definitions/Coupon'
+      coupon_id:
+        title: Coupon id
+        type: integer
+      status:
+        title: 使用状态
+        type: string
+        enum:
+        - unused
+        - used
+        - expired
+        readOnly: true
+      used_order:
+        title: 使用的订单
+        type: integer
+        readOnly: true
+        x-nullable: true
+      obtained_at:
+        title: 领取时间
+        type: string
+        format: date-time
+        readOnly: true
+      used_at:
+        title: 使用时间
+        type: string
+        format: date-time
+        readOnly: true
+        x-nullable: true
+  OrderList:
+    required:
+    - user
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      order_no:
+        title: 订单号
+        type: string
+        readOnly: true
+        minLength: 1
+      user:
+        title: 所属用户
+        type: integer
+      user_phone:
+        title: User phone
+        type: string
+        readOnly: true
+        minLength: 1
+      user_nickname:
+        title: User nickname
+        type: string
+        readOnly: true
+        minLength: 1
+      total_amount:
+        title: 订单总额
+        type: string
+        format: decimal
+      discount_amount:
+        title: 优惠金额
+        type: string
+        format: decimal
+      pay_amount:
+        title: 实付金额
+        type: string
+        format: decimal
+      status:
+        title: 订单状态
+        type: string
+        enum:
+        - pending_payment
+        - pending_shipment
+        - shipped
+        - completed
+        - cancelled
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      items_count:
+        title: Items count
+        type: integer
+        readOnly: true
+      express_company:
+        title: 物流公司
+        type: string
+        maxLength: 50
+      tracking_number:
+        title: 物流单号
+        type: string
+        maxLength: 100
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  OrderItemCreate:
+    type: object
+    properties:
+      product:
+        title: 商品
+        type: integer
+        x-nullable: true
+      quantity:
+        title: 购买数量
+        type: integer
+        maximum: 4294967295
+        minimum: 0
+  OrderCreate:
+    required:
+    - recipient_name
+    - recipient_phone
+    - recipient_address
+    - items
+    type: object
+    properties:
+      recipient_name:
+        title: 收货人姓名
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_phone:
+        title: 收货人手机号
+        type: string
+        maxLength: 11
+        minLength: 1
+      recipient_province:
+        title: 省份
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_city:
+        title: 城市
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_district:
+        title: 区县
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_address:
+        title: 详细地址
+        type: string
+        maxLength: 255
+        minLength: 1
+      total_amount:
+        title: 订单总额
+        type: string
+        format: decimal
+      discount_amount:
+        title: 优惠金额
+        type: string
+        format: decimal
+      shipping_fee:
+        title: 运费
+        type: string
+        format: decimal
+      pay_amount:
+        title: 实付金额
+        type: string
+        format: decimal
+      coupon_id:
+        title: Coupon id
+        type: integer
+        x-nullable: true
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/OrderItemCreate'
+      remark:
+        title: 订单备注
+        type: string
+  OrderItem:
+    required:
+    - product_name
+    - product_price
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      product:
+        title: 商品
+        type: integer
+        x-nullable: true
+      product_name:
+        title: 商品名称
+        type: string
+        maxLength: 255
+        minLength: 1
+      product_image:
+        title: 商品图片
+        type: string
+        format: uri
+        maxLength: 200
+      product_price:
+        title: 购买单价
+        type: string
+        format: decimal
+      quantity:
+        title: 购买数量
+        type: integer
+        maximum: 4294967295
+        minimum: 0
+      subtotal:
+        title: 小计金额
+        type: string
+        format: decimal
+        readOnly: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+  OrderDetail:
+    required:
+    - recipient_name
+    - recipient_phone
+    - recipient_address
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      order_no:
+        title: 订单号
+        type: string
+        readOnly: true
+        minLength: 1
+      user:
+        title: 所属用户
+        type: integer
+        readOnly: true
+      user_phone:
+        title: User phone
+        type: string
+        readOnly: true
+        minLength: 1
+      user_nickname:
+        title: User nickname
+        type: string
+        readOnly: true
+        minLength: 1
+      recipient_name:
+        title: 收货人姓名
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_phone:
+        title: 收货人手机号
+        type: string
+        maxLength: 11
+        minLength: 1
+      recipient_province:
+        title: 省份
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_city:
+        title: 城市
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_district:
+        title: 区县
+        type: string
+        maxLength: 50
+        minLength: 1
+      recipient_address:
+        title: 详细地址
+        type: string
+        maxLength: 255
+        minLength: 1
+      full_address:
+        title: Full address
+        type: string
+        readOnly: true
+      total_amount:
+        title: 订单总额
+        type: string
+        format: decimal
+        readOnly: true
+      discount_amount:
+        title: 优惠金额
+        type: string
+        format: decimal
+        readOnly: true
+      shipping_fee:
+        title: 运费
+        type: string
+        format: decimal
+      pay_amount:
+        title: 实付金额
+        type: string
+        format: decimal
+        readOnly: true
+      coupon:
+        title: 使用的优惠券
+        type: integer
+        x-nullable: true
+      coupon_name:
+        title: Coupon name
+        type: string
+        readOnly: true
+        minLength: 1
+        x-nullable: true
+      status:
+        title: 订单状态
+        type: string
+        enum:
+        - pending_payment
+        - pending_shipment
+        - shipped
+        - completed
+        - cancelled
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      express_company:
+        title: 物流公司
+        type: string
+        maxLength: 50
+      tracking_number:
+        title: 物流单号
+        type: string
+        maxLength: 100
+      remark:
+        title: 订单备注
+        type: string
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/OrderItem'
+        readOnly: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+      paid_at:
+        title: 付款时间
+        type: string
+        format: date-time
+        x-nullable: true
+      shipped_at:
+        title: 发货时间
+        type: string
+        format: date-time
+        x-nullable: true
+      completed_at:
+        title: 完成时间
+        type: string
+        format: date-time
+        x-nullable: true
+  OrderUpdate:
+    type: object
+    properties:
+      status:
+        title: 订单状态
+        type: string
+        enum:
+        - pending_payment
+        - pending_shipment
+        - shipped
+        - completed
+        - cancelled
+      express_company:
+        title: 物流公司
+        type: string
+        maxLength: 50
+      tracking_number:
+        title: 物流单号
+        type: string
+        maxLength: 100
+      remark:
+        title: 订单备注
+        type: string
+  ReturnRequestList:
+    required:
+    - order
+    - reason
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      order:
+        title: 关联订单
+        type: integer
+      order_no:
+        title: Order no
+        type: string
+        readOnly: true
+        minLength: 1
+      user_phone:
+        title: User phone
+        type: string
+        readOnly: true
+        minLength: 1
+      request_type:
+        title: 申请类型
+        type: string
+        enum:
+        - return
+        - exchange
+      request_type_display:
+        title: Request type display
+        type: string
+        readOnly: true
+        minLength: 1
+      reason:
+        title: 退换货原因
+        type: string
+        minLength: 1
+      status:
+        title: 处理状态
+        type: string
+        enum:
+        - pending
+        - approved
+        - rejected
+        - completed
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      created_at:
+        title: 申请时间
+        type: string
+        format: date-time
+        readOnly: true
+      processed_at:
+        title: 处理时间
+        type: string
+        format: date-time
+        readOnly: true
+        x-nullable: true
+  ReturnRequestCreate:
+    required:
+    - order
+    - reason
+    type: object
+    properties:
+      order:
+        title: 关联订单
+        type: integer
+      request_type:
+        title: 申请类型
+        type: string
+        enum:
+        - return
+        - exchange
+      reason:
+        title: 退换货原因
+        type: string
+        minLength: 1
+      evidence_images:
+        title: 凭证图片URL列表
+        type: object
+        x-nullable: true
+  ReturnRequestDetail:
+    required:
+    - order
+    - reason
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      order:
+        title: 关联订单
+        type: integer
+      order_info:
+        $ref: '#/definitions/OrderList'
+      request_type:
+        title: 申请类型
+        type: string
+        enum:
+        - return
+        - exchange
+      request_type_display:
+        title: Request type display
+        type: string
+        readOnly: true
+        minLength: 1
+      reason:
+        title: 退换货原因
+        type: string
+        minLength: 1
+      evidence_images:
+        title: 凭证图片URL列表
+        type: object
+        x-nullable: true
+      status:
+        title: 处理状态
+        type: string
+        enum:
+        - pending
+        - approved
+        - rejected
+        - completed
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      admin_note:
+        title: 处理意见
+        type: string
+      created_at:
+        title: 申请时间
+        type: string
+        format: date-time
+        readOnly: true
+      processed_at:
+        title: 处理时间
+        type: string
+        format: date-time
+        readOnly: true
+        x-nullable: true
+  ProductAttribute:
+    required:
+    - attr_name
+    - attr_value
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      attr_name:
+        title: 属性名称
+        type: string
+        maxLength: 100
+        minLength: 1
+      attr_value:
+        title: 属性值
+        type: string
+        maxLength: 500
+        minLength: 1
+      sort_order:
+        title: 排序
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+  Category:
+    required:
+    - name
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      name:
+        title: 分类名称
+        type: string
+        maxLength: 50
+        minLength: 1
+      parent:
+        title: 父分类
+        type: integer
+        x-nullable: true
+      parent_name:
+        title: Parent name
+        type: string
+        readOnly: true
+        minLength: 1
+      sort_order:
+        title: 排序权重
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      is_active:
+        title: 是否启用
+        type: boolean
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+      children_count:
+        title: Children count
+        type: string
+        readOnly: true
+  ProductImage:
+    required:
+    - image_url
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      image_url:
+        title: 图片URL
+        type: string
+        maxLength: 500
+        minLength: 1
+      sort_order:
+        title: 排序
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+  ProductList:
+    required:
+    - name
+    - price
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      name:
+        title: 商品名称
+        type: string
+        maxLength: 200
+        minLength: 1
+      price:
+        title: 销售价格
+        type: string
+        format: decimal
+      original_price:
+        title: 原价
+        type: string
+        format: decimal
+      category:
+        title: 商品分类
+        type: integer
+        x-nullable: true
+      category_name:
+        title: Category name
+        type: string
+        readOnly: true
+      main_image:
+        title: 主图URL
+        type: string
+        maxLength: 500
+      status:
+        title: 商品状态
+        type: string
+        enum:
+        - draft
+        - pending
+        - published
+        - archived
+      sales_count:
+        title: 销量
+        type: integer
+        readOnly: true
+      view_count:
+        title: 浏览量
+        type: integer
+        readOnly: true
+      is_featured:
+        title: 是否推荐
+        type: boolean
+      is_new:
+        title: 是否新品
+        type: boolean
+      stock_quantity:
+        title: 库存数量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      image_count:
+        title: Image count
+        type: string
+        readOnly: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+  ProductDetail:
+    required:
+    - name
+    - price
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      name:
+        title: 商品名称
+        type: string
+        maxLength: 200
+        minLength: 1
+      description:
+        title: 商品描述
+        type: string
+      price:
+        title: 销售价格
+        type: string
+        format: decimal
+      original_price:
+        title: 原价
+        type: string
+        format: decimal
+      category:
+        title: 商品分类
+        type: integer
+        x-nullable: true
+      category_name:
+        title: Category name
+        type: string
+        readOnly: true
+      main_image:
+        title: 主图URL
+        type: string
+        maxLength: 500
+      status:
+        title: 商品状态
+        type: string
+        enum:
+        - draft
+        - pending
+        - published
+        - archived
+      stock_quantity:
+        title: 库存数量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      sales_count:
+        title: 销量
+        type: integer
+        readOnly: true
+      view_count:
+        title: 浏览量
+        type: integer
+        readOnly: true
+      is_featured:
+        title: 是否推荐
+        type: boolean
+      is_new:
+        title: 是否新品
+        type: boolean
+      images:
+        type: array
+        items:
+          $ref: '#/definitions/ProductImage'
+        readOnly: true
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/ProductAttribute'
+        readOnly: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  ReviewList:
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      rating:
+        title: 评分
+        type: integer
+        enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      comment:
+        title: 评价内容
+        type: string
+      images:
+        title: 评价图片
+        type: object
+      user_id_display:
+        title: User id display
+        type: string
+        readOnly: true
+      is_anonymous:
+        title: 匿名评价
+        type: boolean
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+  ReviewCreate:
+    type: object
+    properties:
+      order_item_id:
+        title: 订单项ID
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+        x-nullable: true
+      rating:
+        title: 评分
+        type: integer
+        enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      comment:
+        title: 评价内容
+        type: string
+      images:
+        title: 评价图片
+        type: object
+      is_anonymous:
+        title: 匿名评价
+        type: boolean
+  Review:
+    required:
+    - product
+    - user_id
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      product:
+        title: 商品
+        type: integer
+      product_name:
+        title: Product name
+        type: string
+        readOnly: true
+        minLength: 1
+      user_id:
+        title: 用户ID
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      user_id_display:
+        title: User id display
+        type: string
+        readOnly: true
+      order_item_id:
+        title: 订单项ID
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+        x-nullable: true
+      rating:
+        title: 评分
+        type: integer
+        enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      comment:
+        title: 评价内容
+        type: string
+      images:
+        title: 评价图片
+        type: object
+      is_anonymous:
+        title: 匿名评价
+        type: boolean
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  RecommendedProduct:
+    required:
+    - rule
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      rule:
+        title: 推荐规则
+        type: integer
+      rule_name:
+        title: Rule name
+        type: string
+        readOnly: true
+        minLength: 1
+      product:
+        $ref: '#/definitions/ProductList'
+      sort_order:
+        title: 排序权重
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      remark:
+        title: 备注
+        type: string
+        maxLength: 200
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+  RecommendedProductCreate:
+    required:
+    - rule
+    - product
+    type: object
+    properties:
+      rule:
+        title: 推荐规则
+        type: integer
+      product:
+        title: 商品
+        type: integer
+      sort_order:
+        title: 排序权重
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      remark:
+        title: 备注
+        type: string
+        maxLength: 200
+  RecommendationRule:
+    required:
+    - name
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      name:
+        title: 规则名称
+        type: string
+        maxLength: 100
+        minLength: 1
+      rule_type:
+        title: 规则类型
+        type: string
+        enum:
+        - hot
+        - new
+        - personalized
+        - category
+      rule_type_display:
+        title: Rule type display
+        type: string
+        readOnly: true
+        minLength: 1
+      description:
+        title: 规则描述
+        type: string
+      config:
+        title: 配置参数
+        type: object
+      priority:
+        title: 优先级
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      limit:
+        title: 限制数量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      is_active:
+        title: 是否启用
+        type: boolean
+      product_count:
+        title: Product count
+        type: string
+        readOnly: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  RecommendationRuleDetail:
+    required:
+    - name
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      name:
+        title: 规则名称
+        type: string
+        maxLength: 100
+        minLength: 1
+      rule_type:
+        title: 规则类型
+        type: string
+        enum:
+        - hot
+        - new
+        - personalized
+        - category
+      rule_type_display:
+        title: Rule type display
+        type: string
+        readOnly: true
+        minLength: 1
+      description:
+        title: 规则描述
+        type: string
+      config:
+        title: 配置参数
+        type: object
+      priority:
+        title: 优先级
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      limit:
+        title: 限制数量
+        type: integer
+        maximum: 2147483647
+        minimum: -2147483648
+      is_active:
+        title: 是否启用
+        type: boolean
+      recommended_products:
+        title: Recommended products
+        type: string
+        readOnly: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  SystemConfigList:
+    required:
+    - key
+    - value
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      key:
+        title: 配置键
+        type: string
+        maxLength: 100
+        minLength: 1
+      value:
+        title: 配置值
+        type: string
+        minLength: 1
+      description:
+        title: 描述
+        type: string
+        maxLength: 500
+      category:
+        title: 分类
+        type: string
+        enum:
+        - basic
+        - seo
+        - trade
+        - other
+      is_editable:
+        title: 是否可编辑
+        type: boolean
+  SystemConfig:
+    required:
+    - key
+    - value
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      key:
+        title: 配置键
+        type: string
+        maxLength: 100
+        minLength: 1
+      value:
+        title: 配置值
+        type: string
+        minLength: 1
+      description:
+        title: 描述
+        type: string
+        maxLength: 500
+      category:
+        title: 分类
+        type: string
+        enum:
+        - basic
+        - seo
+        - trade
+        - other
+      is_editable:
+        title: 是否可编辑
+        type: boolean
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: 更新时间
+        type: string
+        format: date-time
+        readOnly: true
+  OperationLogList:
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      operator:
+        title: 操作人
+        type: integer
+        x-nullable: true
+      operator_name:
+        title: Operator name
+        type: string
+        readOnly: true
+        minLength: 1
+      action_type:
+        title: 操作类型
+        type: string
+        enum:
+        - create
+        - update
+        - delete
+        - login
+        - logout
+        - other
+      action_type_display:
+        title: Action type display
+        type: string
+        readOnly: true
+        minLength: 1
+      object_type:
+        title: 操作对象类型
+        type: string
+        maxLength: 100
+      detail:
+        title: 操作详情
+        type: string
+      status:
+        title: 状态
+        type: string
+        enum:
+        - success
+        - failed
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+  OperationLog:
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      operator:
+        title: 操作人
+        type: integer
+        x-nullable: true
+      operator_name:
+        title: Operator name
+        type: string
+        readOnly: true
+        minLength: 1
+      action_type:
+        title: 操作类型
+        type: string
+        enum:
+        - create
+        - update
+        - delete
+        - login
+        - logout
+        - other
+      action_type_display:
+        title: Action type display
+        type: string
+        readOnly: true
+        minLength: 1
+      object_type:
+        title: 操作对象类型
+        type: string
+        maxLength: 100
+      object_id:
+        title: 操作对象ID
+        type: string
+        maxLength: 100
+      detail:
+        title: 操作详情
+        type: string
+      ip_address:
+        title: IP地址
+        type: string
+        minLength: 1
+        x-nullable: true
+      status:
+        title: 状态
+        type: string
+        enum:
+        - success
+        - failed
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      error_message:
+        title: 错误信息
+        type: string
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
+  MessageList:
+    required:
+    - title
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      title:
+        title: 标题
+        type: string
+        maxLength: 200
+        minLength: 1
+      message_type:
+        title: 消息类型
+        type: string
+        enum:
+        - announcement
+        - notification
+        - promotion
+        - system
+      message_type_display:
+        title: Message type display
+        type: string
+        readOnly: true
+        minLength: 1
+      status:
+        title: 状态
+        type: string
+        enum:
+        - draft
+        - sent
+        - read
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      sent_at:
+        title: 发送时间
+        type: string
+        format: date-time
+        x-nullable: true
+      read_at:
+        title: 阅读时间
+        type: string
+        format: date-time
+        x-nullable: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+  MessageCreate:
+    required:
+    - title
+    - content
+    - message_type
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      recipient:
+        title: 接收用户
+        type: integer
+        x-nullable: true
+      title:
+        title: 标题
+        type: string
+        maxLength: 200
+        minLength: 1
+      content:
+        title: 内容
+        type: string
+        minLength: 1
+      message_type:
+        title: 消息类型
+        type: string
+        enum:
+        - announcement
+        - notification
+        - promotion
+        - system
+  Message:
+    required:
+    - title
+    - content
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      recipient:
+        title: 接收用户
+        type: integer
+        x-nullable: true
+      recipient_name:
+        title: Recipient name
+        type: string
+        readOnly: true
+        minLength: 1
+      title:
+        title: 标题
+        type: string
+        maxLength: 200
+        minLength: 1
+      content:
+        title: 内容
+        type: string
+        minLength: 1
+      message_type:
+        title: 消息类型
+        type: string
+        enum:
+        - announcement
+        - notification
+        - promotion
+        - system
+      message_type_display:
+        title: Message type display
+        type: string
+        readOnly: true
+        minLength: 1
+      status:
+        title: 状态
+        type: string
+        enum:
+        - draft
+        - sent
+        - read
+      status_display:
+        title: Status display
+        type: string
+        readOnly: true
+        minLength: 1
+      sent_at:
+        title: 发送时间
+        type: string
+        format: date-time
+        readOnly: true
+        x-nullable: true
+      read_at:
+        title: 阅读时间
+        type: string
+        format: date-time
+        readOnly: true
+        x-nullable: true
+      created_at:
+        title: 创建时间
+        type: string
+        format: date-time
+        readOnly: true
