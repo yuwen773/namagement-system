@@ -8,3 +8,4 @@ Pillow>=10.0
 python-dotenv>=1.0
 passlib>=1.7
 django-simple-history>=3.5
+drf-yasg>=1.21
