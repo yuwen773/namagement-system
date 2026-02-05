@@ -258,7 +258,7 @@ async function fetchRelatedProducts() {
           @mouseleave="handleMouseLeave"
         >
           <img
-            :src="product?.images?.[selectedImage]?.image || product?.image"
+            :src="product?.images?.[selectedImage]?.image_url || product?.main_image"
             :alt="product?.name"
             class="main-image"
             :class="{ 'zoom-active': zoomActive }"
@@ -282,7 +282,7 @@ async function fetchRelatedProducts() {
             :class="['thumbnail-item', { active: selectedImage === index }]"
             @click="selectedImage = index"
           >
-            <img :src="img.image" :alt="`${product.name} - ${index + 1}`" />
+            <img :src="img.image_url" :alt="`${product.name} - ${index + 1}`" />
           </div>
         </div>
       </div>

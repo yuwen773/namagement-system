@@ -398,7 +398,7 @@ function clearFilters() {
           >
             <!-- Product Image -->
             <div class="product-image-box">
-              <img :src="product.image" :alt="product.name" class="product-img" />
+              <img :src="product.main_image" :alt="product.name" class="product-img" />
               <div class="product-overlay">
                 <button class="view-detail-btn">查看详情</button>
               </div>
