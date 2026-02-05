@@ -2,65 +2,43 @@
 
 ## 技术栈
 
-### 后端
-- Python 3.12.7 + Django 6.0.2 + DRF 3.16.1
-- JWT 认证 (djangorestframework-simplejwt)
-- MySQL 8.0+ (utf8mb4)
-
-### 前端
-- Vue 3 + Vite 7 + Element Plus
-- Pinia 状态管理 + Vue Router 4
-- Tailwind CSS + Axios
+**后端**: Python 3.12.7 + Django 6.0.2 + DRF 3.16.1 + JWT + MySQL 8.0+
+**前端**: Vue 3 + Vite 7 + Element Plus + Pinia + Vue Router 4 + Tailwind CSS
 
 ## 目录结构
 
 ```
 backend/
-├── config/              # Django 配置、路由
+├── config/          # Django 配置
 ├── apps/
-│   ├── users/           # User, UserAddress
-│   ├── products/        # Category, Product, Review
-│   ├── orders/          # Order, OrderItem, Cart, ReturnRequest
-│   ├── marketing/       # Coupon, UserCoupon
+│   ├── users/       # User, UserAddress, BrowsingHistory
+│   ├── products/    # Category, Product, Review
+│   ├── orders/      # Order, OrderItem, Cart, ReturnRequest
+│   ├── marketing/   # Coupon, UserCoupon
 │   ├── recommendations/ # RecommendationRule
-│   ├── content/         # ModificationCase, FAQ
-│   └── system/          # SystemConfig, Message, OperationLog
-├── utils/               # ApiResponse, 分页, 异常
-└── scripts/             # 数据填充、验证、导出
+│   ├── content/     # ModificationCase, FAQ
+│   └── system/      # SystemConfig, Message, OperationLog
+├── utils/           # ApiResponse, 分页, 异常
+└── scripts/         # 数据填充、验证
 
-frontend/
-├── src/
-│   ├── api/             # 请求封装、API 模块
-│   ├── components/      # 公共组件
-│   │   ├── common/      # AppHeader, AppFooter, Breadcrumb
-│   │   └── layouts/     # UserLayout, AdminLayout
-│   ├── views/           # 页面组件
-│   ├── stores/          # Pinia 状态管理
-│   ├── router/          # 路由配置
-│   └── utils/           # 工具函数
-└── public/              # 静态资源
+frontend/src/
+├── api/             # API 封装
+├── components/      # 公共组件
+├── views/           # 页面组件
+├── stores/          # Pinia 状态管理
+├── router/          # 路由配置
+└── utils/           # 工具函数
 ```
 
 ## 数据模型关系
 
 ```
-User (1) ──► (N) UserAddress
-User (1) ──► (N) Order
-User (1) ──► (1) Cart ──► (N) CartItem
-User (1) ──► (N) UserCoupon
-User (1) ──► (N) Review
-
-Category (1) ──► (N) Category (自关联)
-Category (1) ──► (N) Product
-
-Product (1) ──► (N) ProductImage
-Product (1) ──► (N) ProductAttribute
-Product (1) ──► (N) OrderItem
-Product (1) ──► (N) Review
-
+User (1) ──► (N) UserAddress, Order, Cart, UserCoupon, Review, BrowsingHistory
+Cart (1) ──► (N) CartItem
+Order (1) ──► (N) OrderItem, ReturnRequest
+Category (1) ──► (N) Category (自关联), Product
+Product (1) ──► (N) ProductImage, ProductAttribute, Review
 Coupon (1) ──► (N) UserCoupon
-Order (1) ──► (N) OrderItem
-Order (1) ──► (N) ReturnRequest
 ```
 
 ## 核心业务逻辑
@@ -79,61 +57,8 @@ draft → pending → published → archived
 
 ### 认证机制
 - JWT Token: Access 2小时, Refresh 7天
-- 手机号唯一标识 (username 已禁用)
-- Token 存储在 localStorage
-- **密码存储**: 明文存储（开发环境），生产环境需改为哈希加密
-
-### 认证相关文件说明
-
-#### 后端认证文件
-| 文件 | 作用 |
-|------|------|
-| `backend/apps/users/models.py` | User 模型定义，UserManager 自定义管理器（明文密码存储） |
-| `backend/apps/users/serializers.py` | UserCreateSerializer（注册）、UserLoginSerializer（明文密码验证） |
-| `backend/apps/users/views.py` | AuthViewSet（register/login/me action）、UserViewSet（用户管理） |
-| `backend/apps/users/auth_urls.py` | 认证专用路由配置（独立于用户管理路由） |
-| `backend/apps/users/urls.py` | 用户管理路由配置（包含地址管理） |
-
-#### 前端认证文件
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/api/modules/auth.js` | 认证 API 封装（loginApi, registerApi, getCurrentUserApi, resetPasswordApi） |
-| `frontend/src/stores/auth.js` | Pinia 认证状态管理（login, register, getCurrentUser, logout, updateUser） |
-| `frontend/src/views/LoginView.vue` | 登录页面（Industrial Performance 风格，分屏设计） |
-| `frontend/src/views/RegisterView.vue` | 注册页面（Industrial Performance 风格，福利展示） |
-| `frontend/src/views/ForgotPasswordView.vue` | 忘记密码页面（三步流程，步骤指示器） |
-| `frontend/src/router/index.js` | 路由配置（添加 forgot-password 路由） |
-
-### API 路由架构
-```
-/api/auth/register/    → AuthViewSet.register()   → 用户注册
-/api/auth/login/       → AuthViewSet.login()      → 用户登录
-/api/auth/me/          → AuthViewSet.me()         → 获取当前用户
-/api/auth/password/reset/ → (未实现)              → 重置密码
-
-/api/users/            → UserViewSet.list()        → 用户列表（管理员）
-/api/users/{id}/       → UserViewSet.retrieve()    → 用户详情
-/api/users/addresses/  → UserAddressViewSet        → 地址管理
-```
-
-### 认证流程
-```
-注册流程:
-1. 用户填写手机号、密码、昵称
-2. 前端调用 POST /api/auth/register/
-3. 后端验证手机号唯一性、密码格式
-4. 创建 User（明文密码），生成 JWT Token
-5. 返回 token 和 user 信息
-6. 前端存储 token 到 localStorage
-
-登录流程:
-1. 用户填写手机号、密码
-2. 前端调用 POST /api/auth/login/
-3. 后端查询 User，明文比较密码
-4. 检查账户状态（active/banned）
-5. 生成 JWT Token
-6. 返回 token 和 user 信息
-```
+- 手机号唯一标识
+- 密码明文存储（开发环境）
 
 ### API 响应格式
 ```json
@@ -144,138 +69,78 @@ draft → pending → published → archived
 }
 ```
 
-分页响应:
-```json
-{
-  "code": 200,
-  "message": "获取成功",
-  "data": {
-    "count": 100,
-    "page": 1,
-    "page_size": 20,
-    "results": [...]
-  }
-}
-```
+## 前端页面组件
 
-## 前端布局架构
+| 页面 | 功能 |
+|------|------|
+| Home | 轮播图、分类导航、热门推荐、新品推荐 |
+| ProductList | 分类筛选、价格筛选、排序、分页 |
+| ProductDetail | 放大镜、属性展示、相关推荐、评价列表、浏览历史追踪 |
+| Cart | 商品管理、优惠券选择、价格计算 |
+| Checkout | 地址选择/新增、优惠券选择、商品清单、金额明细 |
+| Payment | 订单信息、支付方式选择、支付结果、倒计时 |
+| OrderList | 状态筛选、订单搜索、支付/取消/确认功能 |
+| OrderDetail | 状态时间轴、物流信息、价格明细、退换货 |
+| UserCenter | 个人资料、地址管理、积分、优惠券、评价、售后、消息 |
+| BrowsingHistory | 按时间分组显示、快捷操作、清空历史 |
 
-### 用户端布局 (UserLayout)
-- **文件**: `frontend/src/components/layouts/UserLayout.vue`
-- **作用**: 包装所有用户端页面，提供统一的头部和底部
-- **子组件**:
-  - `AppHeader.vue` - 顶部导航栏
-  - `AppFooter.vue` - 底部信息栏
-- **特性**: 支持页面切换动画、返回顶部按钮
+## 设计系统
 
-### 管理端布局 (AdminLayout)
-- **文件**: `frontend/src/views/admin/AdminLayout.vue`
-- **作用**: 管理后台专用布局
-- **子组件**:
-  - `AdminSidebar.vue` - 左侧导航菜单（可折叠）
-  - `Breadcrumb.vue` - 面包屑导航
-- **特性**: 支持侧边栏折叠、响应式适配
-
-### AppHeader 组件
-- **文件**: `frontend/src/components/common/AppHeader.vue`
-- **功能**:
-  - 顶部欢迎语 + 用户登录状态导航
-  - Logo + 搜索框 + 购物车图标
-  - 主导航菜单（首页、全部商品、分类、热销、新品、领券中心）
-- **特性**:
-  - 购物车数量角标
-  - 消息中心未读数量提示
-  - 响应式适配（移动端隐藏部分元素）
-
-### AppFooter 组件
-- **文件**: `frontend/src/components/common/AppFooter.vue`
-- **功能**:
-  - 新手指南、配送方式、售后服务、关于我们等链接
-  - 客服热线和服务时间
-  - 友情链接
-  - 版权信息和备案号
-- **特性**: 响应式三栏布局
-
-### AdminSidebar 组件
-- **文件**: `frontend/src/components/common/AdminSidebar.vue`
-- **功能**:
-  - Logo 区域 + 折叠按钮
-  - 导航菜单（数据统计、商品/订单/用户/营销/内容/系统管理）
-  - 底部快捷按钮（返回前台、退出登录）
-- **特性**:
-  - 折叠状态持久化到 localStorage
-  - 与 AdminLayout 通过 storage 事件同步
-
-### Breadcrumb 组件
-- **文件**: `frontend/src/components/common/Breadcrumb.vue`
-- **功能**: 自动生成面包屑导航
-- **特性**:
-  - 支持用户端和管理端路由
-  - 自动识别详情页
-  - 支持自定义右侧内容插槽
+**Industrial Performance Aesthetic** - 工业性能美学
+- 深色主题 (#0f172a, #1e293b)
+- 橙色强调色 (#f97316)
+- 玻璃态效果 (backdrop-filter)
 
 ## 关键设计决策
 
-### 数据冗余
-- OrderItem/CartItem 存储商品快照 (名称、图片、价格)
-- 防止商品删除/修改导致历史数据丢失
+| 决策 | 说明 |
+|------|------|
+| 数据冗余 | OrderItem/CartItem 存储商品快照，防止数据丢失 |
+| 分类设计 | 自关联外键实现无限级分类 |
+| 购物车 | Cart 与 User 一对一，自动计算总额 |
+| 地址管理 | 设置新默认地址时自动取消旧默认地址 |
+| 评价系统 | 每个订单商品只能评价一次 |
+| 浏览历史 | 商品快照存储，自动去重，软关联设计 |
 
-### 分类设计
-- 自关联外键实现无限级分类
-- 叶子分类 (无子分类) 用于关联商品
+## API 路由
 
-### 购物车
-- Cart 与 User 一对一关系
-- 自动计算 total_price 和 total_quantity
+```
+/api/auth/          → 认证 (register, login, me)
+/api/users/         → 用户管理、地址、浏览历史
+/api/products/      → 商品、分类、评价
+/api/orders/        → 订单、购物车、退换货
+/api/marketing/     → 优惠券
+/api/recommendations/ → 推荐规则
+/api/content/       → 改装案例、FAQ
+/api/system/        → 系统配置、消息、日志
+```
 
-### 地址管理
-- 设置新默认地址时自动取消旧默认地址
+## 购物车架构
 
-### 评价系统
-- 每个订单商品只能评价一次
-- 评价关联 order_item_id
+### 数据模型
+- Cart: 与 User 一对一，存储 total_items、total_price
+- CartItem: 存储商品快照防止数据丢失
 
-### 前端路由设计
-- 嵌套路由：用户端使用 UserLayout，管理端使用 AdminLayout
-- 路由守卫：自动获取用户信息、检查登录状态、验证管理员权限
-- 登录/注册页面独立布局（无头部底部）
+### 优惠券计算
+- 满减券: `selectedPrice >= min_purchase_amount` 时抵扣 `discount_amount`
+- 折扣券: `selectedPrice × discount_percent / 100`
 
-## 前端设计系统
+## 浏览历史架构
 
-### 设计理念
-**Industrial Performance Aesthetic** - 工业性能美学
-- 体现汽车改装行业的专业性和技术感
-- 深色主题配合玻璃态效果
-- 橙色强调色 (#f97316) 体现性能感
+### BrowsingHistory 模型
+```python
+user: ForeignKey(User)
+product_id: IntegerField
+product_name: CharField  # 快照
+product_image: URLField  # 快照
+product_price: DecimalField  # 快照
+viewed_at: DateTimeField
+```
 
-### 设计规范文档
-详见 `docs/frontend-design-system.md`，包含：
-- 颜色系统（主色、中性色、功能色）
-- 排版系统（字体家族、大小、字重）
-- 间距系统（基于 4px 的 7 级体系）
-- 组件规范（按钮、输入框、卡片、徽章等）
-- 响应式设计（5 级断点）
-- 动画与交互（过渡、缓动、悬停效果）
-- 代码规范（Vue、CSS、TypeScript）
+### 设计决策
+- **商品快照**: 存储名称、图片、价格，防止商品删除后历史失效
+- **自动去重**: 同一商品多次浏览只保留最新记录
+- **软关联**: 使用 product_id 而非外键，允许商品删除后历史记录仍可展示
 
-### 已实现页面
-- HomeView.vue - 首页（动态渐变背景、分类导航、商品推荐）
-- ProductListView.vue - 商品列表页（筛选侧边栏、搜索排序）
-- ProductDetailView.vue - 商品详情页（图片画廊、评价系统）
-- CartView.vue - 购物车页（商品列表、订单摘要）
-- LoginView.vue - 登录页（分屏设计、品牌展示）
-- RegisterView.vue - 注册页（分屏设计、会员福利展示）
-- ForgotPasswordView.vue - 忘记密码（三步流程：验证手机→设置密码→完成）
-
-### 已实现组件
-- AppHeader.vue - 深色玻璃态头部
-- AppFooter.vue - 深色主题底部
-- AdminSidebar.vue - 可折叠侧边栏
-- Breadcrumb.vue - 自动生成面包屑
-- UserLayout.vue - 用户端布局容器
-- AdminLayout.vue - 管理端布局容器
-
-## 前端路由设计
-- 嵌套路由：用户端使用 UserLayout，管理端使用 AdminLayout
-- 路由守卫：自动获取用户信息、检查登录状态、验证管理员权限
-- 登录/注册页面独立布局（无头部底部）
+### 自动追踪
+在 ProductDetailView 中，登录用户访问商品详情时自动记录浏览历史，静默失败不影响体验。

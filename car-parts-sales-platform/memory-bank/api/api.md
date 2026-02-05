@@ -91,11 +91,11 @@ API 根视图 - 返回所有可用的 API 端点
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|None|
 
-<a id="opIdapi_auth_list"></a>
+<a id="opIdapi_users_list"></a>
 
-## GET api_auth_list
+## GET api_users_list
 
-GET /api/auth/
+GET /api/users/
 
 用户视图集
 
@@ -163,11 +163,11 @@ GET /api/auth/
 |status|active|
 |status|banned|
 
-<a id="opIdapi_auth_create"></a>
+<a id="opIdapi_users_create"></a>
 
-## POST api_auth_create
+## POST api_users_create
 
-POST /api/auth/
+POST /api/users/
 
 用户视图集
 
@@ -211,435 +211,12 @@ POST /api/auth/
 |---|---|---|---|
 |201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|none|[User](#schemauser)|
 
-<a id="opIdapi_auth_addresses_list"></a>
 
-## GET api_auth_addresses_list
+<a id="opIdapi_auth_login"></a>
 
-GET /api/auth/addresses/
+## POST api_auth_login
 
-用户地址视图集
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|ordering|query|string| 否 |用于排序结果的字段。|
-|page|query|integer| 否 |分页结果集中的页码。|
-|page_size|query|integer| 否 |每页返回的结果数量。|
-
-> 返回示例
-
-> 200 Response
-
-```json
-{
-  "count": 0,
-  "next": "http://example.com",
-  "previous": "http://example.com",
-  "results": [
-    {
-      "id": 0,
-      "user": {
-        "id": 0,
-        "phone": "string",
-        "nickname": "string",
-        "avatar": "http://example.com",
-        "email": "user@example.com",
-        "points": 0,
-        "status": "active",
-        "created_at": "2019-08-24T14:15:22Z"
-      },
-      "recipient_name": "string",
-      "phone": "string",
-      "province": "string",
-      "city": "string",
-      "district": "string",
-      "address": "string",
-      "is_default": true,
-      "created_at": "2019-08-24T14:15:22Z",
-      "updated_at": "2019-08-24T14:15:22Z"
-    }
-  ]
-}
-```
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|Inline|
-
-### 返回数据结构
-
-状态码 **200**
-
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|» count|integer|true|none||none|
-|» next|string(uri)¦null|false|none||none|
-|» previous|string(uri)¦null|false|none||none|
-|» results|[[UserAddress](#schemauseraddress)]|true|none||none|
-|»» id|integer|false|read-only|ID|none|
-|»» user|[User](#schemauser)|false|none||none|
-|»»» id|integer|false|read-only|ID|none|
-|»»» phone|string|true|none|手机号|none|
-|»»» nickname|string|false|none|昵称|none|
-|»»» avatar|string(uri)¦null|false|none|头像URL|none|
-|»»» email|string(email)|false|none|电子邮件地址|none|
-|»»» points|integer|false|read-only|积分|none|
-|»»» status|string|false|read-only|状态|none|
-|»»» created_at|string(date-time)|false|read-only|注册时间|none|
-|»» recipient_name|string|true|none|收货人姓名|none|
-|»» phone|string|true|none|收货人手机号|none|
-|»» province|string|false|none|省份|none|
-|»» city|string|false|none|城市|none|
-|»» district|string|false|none|区县|none|
-|»» address|string|true|none|详细地址|none|
-|»» is_default|boolean|false|none|是否默认地址|none|
-|»» created_at|string(date-time)|false|read-only|创建时间|none|
-|»» updated_at|string(date-time)|false|read-only|更新时间|none|
-
-#### 枚举值
-
-|属性|值|
-|---|---|
-|status|active|
-|status|banned|
-
-<a id="opIdapi_auth_addresses_create"></a>
-
-## POST api_auth_addresses_create
-
-POST /api/auth/addresses/
-
-用户地址视图集
-
-> Body 请求参数
-
-```json
-{
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true
-}
-```
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|body|body|[UserAddressCreate](#schemauseraddresscreate)| 是 |none|
-
-> 返回示例
-
-> 201 Response
-
-```json
-{
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true
-}
-```
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|none|[UserAddressCreate](#schemauseraddresscreate)|
-
-<a id="opIdapi_auth_addresses_read"></a>
-
-## GET api_auth_addresses_read
-
-GET /api/auth/addresses/{id}/
-
-用户地址视图集
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|id|path|string| 是 |none|
-
-> 返回示例
-
-> 200 Response
-
-```json
-{
-  "id": 0,
-  "user": {
-    "id": 0,
-    "phone": "string",
-    "nickname": "string",
-    "avatar": "http://example.com",
-    "email": "user@example.com",
-    "points": 0,
-    "status": "active",
-    "created_at": "2019-08-24T14:15:22Z"
-  },
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true,
-  "created_at": "2019-08-24T14:15:22Z",
-  "updated_at": "2019-08-24T14:15:22Z"
-}
-```
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[UserAddress](#schemauseraddress)|
-
-<a id="opIdapi_auth_addresses_update"></a>
-
-## PUT api_auth_addresses_update
-
-PUT /api/auth/addresses/{id}/
-
-用户地址视图集
-
-> Body 请求参数
-
-```json
-{
-  "user": {
-    "phone": "string",
-    "nickname": "string",
-    "avatar": "http://example.com",
-    "email": "user@example.com"
-  },
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true
-}
-```
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|id|path|string| 是 |none|
-|body|body|[UserAddress](#schemauseraddress)| 是 |none|
-
-> 返回示例
-
-> 200 Response
-
-```json
-{
-  "id": 0,
-  "user": {
-    "id": 0,
-    "phone": "string",
-    "nickname": "string",
-    "avatar": "http://example.com",
-    "email": "user@example.com",
-    "points": 0,
-    "status": "active",
-    "created_at": "2019-08-24T14:15:22Z"
-  },
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true,
-  "created_at": "2019-08-24T14:15:22Z",
-  "updated_at": "2019-08-24T14:15:22Z"
-}
-```
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[UserAddress](#schemauseraddress)|
-
-<a id="opIdapi_auth_addresses_partial_update"></a>
-
-## PATCH api_auth_addresses_partial_update
-
-PATCH /api/auth/addresses/{id}/
-
-用户地址视图集
-
-> Body 请求参数
-
-```json
-{
-  "user": {
-    "phone": "string",
-    "nickname": "string",
-    "avatar": "http://example.com",
-    "email": "user@example.com"
-  },
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true
-}
-```
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|id|path|string| 是 |none|
-|body|body|[UserAddress](#schemauseraddress)| 是 |none|
-
-> 返回示例
-
-> 200 Response
-
-```json
-{
-  "id": 0,
-  "user": {
-    "id": 0,
-    "phone": "string",
-    "nickname": "string",
-    "avatar": "http://example.com",
-    "email": "user@example.com",
-    "points": 0,
-    "status": "active",
-    "created_at": "2019-08-24T14:15:22Z"
-  },
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true,
-  "created_at": "2019-08-24T14:15:22Z",
-  "updated_at": "2019-08-24T14:15:22Z"
-}
-```
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[UserAddress](#schemauseraddress)|
-
-<a id="opIdapi_auth_addresses_delete"></a>
-
-## DELETE api_auth_addresses_delete
-
-DELETE /api/auth/addresses/{id}/
-
-用户地址视图集
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|id|path|string| 是 |none|
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|204|[No Content](https://tools.ietf.org/html/rfc7231#section-6.3.5)|none|None|
-
-<a id="opIdapi_auth_addresses_set_default"></a>
-
-## POST api_auth_addresses_set_default
-
-POST /api/auth/addresses/{id}/set-default/
-
-设为默认地址
-
-> Body 请求参数
-
-```json
-{
-  "user": {
-    "phone": "string",
-    "nickname": "string",
-    "avatar": "http://example.com",
-    "email": "user@example.com"
-  },
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true
-}
-```
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|id|path|string| 是 |none|
-|body|body|[UserAddress](#schemauseraddress)| 是 |none|
-
-> 返回示例
-
-> 201 Response
-
-```json
-{
-  "id": 0,
-  "user": {
-    "id": 0,
-    "phone": "string",
-    "nickname": "string",
-    "avatar": "http://example.com",
-    "email": "user@example.com",
-    "points": 0,
-    "status": "active",
-    "created_at": "2019-08-24T14:15:22Z"
-  },
-  "recipient_name": "string",
-  "phone": "string",
-  "province": "string",
-  "city": "string",
-  "district": "string",
-  "address": "string",
-  "is_default": true,
-  "created_at": "2019-08-24T14:15:22Z",
-  "updated_at": "2019-08-24T14:15:22Z"
-}
-```
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|none|[UserAddress](#schemauseraddress)|
-
-<a id="opIdapi_auth_auth_login"></a>
-
-## POST api_auth_auth_login
-
-POST /api/auth/auth/login/
+POST /api/auth/login/
 
 用户登录
 
@@ -649,11 +226,11 @@ POST /api/auth/auth/login/
 |---|---|---|---|
 |201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|none|None|
 
-<a id="opIdapi_auth_auth_register"></a>
+<a id="opIdapi_auth_register"></a>
 
-## POST api_auth_auth_register
+## POST api_auth_register
 
-POST /api/auth/auth/register/
+POST /api/auth/register/
 
 用户注册
 
@@ -663,11 +240,11 @@ POST /api/auth/auth/register/
 |---|---|---|---|
 |201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|none|None|
 
-<a id="opIdapi_auth_me"></a>
+<a id="opIdapi_users_me"></a>
 
-## GET api_auth_me
+## GET api_users_me
 
-GET /api/auth/me/
+GET /api/users/me/
 
 获取当前用户信息
 
@@ -735,11 +312,11 @@ GET /api/auth/me/
 |status|active|
 |status|banned|
 
-<a id="opIdapi_auth_profile"></a>
+<a id="opIdapi_users_profile"></a>
 
-## PUT api_auth_profile
+## PUT api_users_profile
 
-PUT /api/auth/profile/
+PUT /api/users/profile/
 
 更新当前用户资料
 
@@ -783,11 +360,11 @@ PUT /api/auth/profile/
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[User](#schemauser)|
 
-<a id="opIdapi_auth_read"></a>
+<a id="opIdapi_users_read"></a>
 
-## GET api_auth_read
+## GET api_users_read
 
-GET /api/auth/{id}/
+GET /api/users/{id}/
 
 用户视图集
 
@@ -820,60 +397,12 @@ GET /api/auth/{id}/
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[User](#schemauser)|
 
-<a id="opIdapi_auth_update"></a>
 
-## PUT api_auth_update
+<a id="opIdapi_users_partial_update"></a>
 
-PUT /api/auth/{id}/
+## PATCH api_users_partial_update
 
-用户视图集
-
-> Body 请求参数
-
-```json
-{
-  "phone": "string",
-  "nickname": "string",
-  "avatar": "http://example.com",
-  "email": "user@example.com"
-}
-```
-
-### 请求参数
-
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|id|path|string| 是 |none|
-|body|body|[User](#schemauser)| 是 |none|
-
-> 返回示例
-
-> 200 Response
-
-```json
-{
-  "id": 0,
-  "phone": "string",
-  "nickname": "string",
-  "avatar": "http://example.com",
-  "email": "user@example.com",
-  "points": 0,
-  "status": "active",
-  "created_at": "2019-08-24T14:15:22Z"
-}
-```
-
-### 返回结果
-
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[User](#schemauser)|
-
-<a id="opIdapi_auth_partial_update"></a>
-
-## PATCH api_auth_partial_update
-
-PATCH /api/auth/{id}/
+PATCH /api/users/{id}/
 
 用户视图集
 
@@ -918,11 +447,11 @@ PATCH /api/auth/{id}/
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[User](#schemauser)|
 
-<a id="opIdapi_auth_delete"></a>
+<a id="opIdapi_users_delete"></a>
 
-## DELETE api_auth_delete
+## DELETE api_users_delete
 
-DELETE /api/auth/{id}/
+DELETE /api/users/{id}/
 
 用户视图集
 
@@ -8154,6 +7683,194 @@ PUT /api/users/profile/
 |状态码|状态码含义|说明|数据模型|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|none|[User](#schemauser)|
+
+<a id="opIdapi_users_change_password"></a>
+
+## POST api_users_change_password
+
+POST /api/users/change-password/
+
+修改当前用户密码
+
+> Body 请求参数
+
+```json
+{
+  "old_password": "string",
+  "new_password": "string"
+}
+```
+
+### 请求参数
+
+|名称|位置|类型|必选|说明|
+|---|---|---|---|---|
+|body|body|object| 是 |none|
+
+#### 属性
+
+|名称|类型|必选|约束|中文名|说明|
+|---|---|---|---|---|---|
+|old_password|string|true|none|原密码|none|
+|new_password|string|true|none|新密码|none|
+
+> 返回示例
+
+> 200 Response
+
+```json
+{
+  "code": 200,
+  "message": "密码修改成功",
+  "data": null
+}
+```
+
+### 返回结果
+
+|状态码|状态码含义|说明|数据模型|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|成功|None|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|原密码错误或新密码不符合要求|None|
+
+<a id="opIdapi_users_browsing_history_list_history"></a>
+
+## GET api_users_browsing_history_list_history
+
+GET /api/users/browsing-history/list_history/
+
+获取当前用户的浏览历史列表
+
+### 请求参数
+
+|名称|位置|类型|必选|说明|
+|---|---|---|---|---|
+|limit|query|integer| 否 |返回的记录数，默认为20|
+|offset|query|integer| 否 |跳过的记录数，用于分页|
+
+> 返回示例
+
+> 200 Response
+
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": [
+    {
+      "id": 1,
+      "product_id": 123,
+      "product_name": "高性能刹车片",
+      "product_image": "https://example.com/image.jpg",
+      "product_price": "299.99",
+      "viewed_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+### 返回结果
+
+|状态码|状态码含义|说明|数据模型|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|成功|None|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7231#section-6.5.1)|未认证|None|
+
+<a id="opIdapi_users_browsing_history_add"></a>
+
+## POST api_users_browsing_history_add
+
+POST /api/users/browsing-history/add/
+
+添加商品浏览记录（自动去重，如果已存在则更新浏览时间）
+
+> Body 请求参数
+
+```json
+{
+  "product_id": 1,
+  "product_name": "string",
+  "product_image": "http://example.com",
+  "product_price": "99.99"
+}
+```
+
+### 请求参数
+
+|名称|位置|类型|必选|说明|
+|---|---|---|---|---|
+|body|body|object| 是 |none|
+
+#### 属性
+
+|名称|类型|必选|约束|中文名|说明|
+|---|---|---|---|---|---|
+|product_id|integer|true|none|商品ID|none|
+|product_name|string|true|none|商品名称|none|
+|product_image|string¦null|false|none|商品图片URL|none|
+|product_price|string¦null|false|none|商品价格|none|
+
+> 返回示例
+
+> 201 Response
+
+```json
+{
+  "code": 201,
+  "message": "添加成功",
+  "data": {
+    "id": 1,
+    "product_id": 123,
+    "product_name": "高性能刹车片",
+    "product_image": "https://example.com/image.jpg",
+    "product_price": "299.99",
+    "viewed_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+### 返回结果
+
+|状态码|状态码含义|说明|数据模型|
+|---|---|---|---|
+|201|[Created](https://tools.ietf.org/html/rfc7231#section-6.3.2)|成功|None|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|请求参数错误|None|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7231#section-6.5.1)|未认证|None|
+
+<a id="opIdapi_users_browsing_history_clear"></a>
+
+## DELETE api_users_browsing_history_clear
+
+DELETE /api/users/browsing-history/clear/
+
+清空当前用户的所有浏览记录
+
+### 请求参数
+
+|名称|位置|类型|必选|说明|
+|---|---|---|---|---|
+
+> 返回示例
+
+> 200 Response
+
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": {
+    "deleted_count": 15
+  }
+}
+```
+
+### 返回结果
+
+|状态码|状态码含义|说明|数据模型|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|成功，返回删除的记录数|None|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7231#section-6.5.1)|未认证|None|
+
 
 <a id="opIdapi_users_read"></a>
 
