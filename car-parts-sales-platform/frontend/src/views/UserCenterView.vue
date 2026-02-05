@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -122,6 +122,14 @@ onMounted(async () => {
 
   // 根据当前菜单加载数据
   await loadMenuData(activeMenu.value)
+})
+
+// 监听路由查询参数变化，切换菜单
+watch(() => route.query.tab, async (newTab) => {
+  if (newTab && userMenu.find(m => m.id === newTab)) {
+    activeMenu.value = newTab
+    await loadMenuData(newTab)
+  }
 })
 
 // 监听菜单切换

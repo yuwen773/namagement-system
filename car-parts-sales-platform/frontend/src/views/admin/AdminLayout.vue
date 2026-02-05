@@ -17,7 +17,7 @@
             </defs>
           </svg>
           <transition name="logo-text">
-            <span v-show="!isCollapsed" class="logo-text">改装件管理</span>
+            <span v-if="!isCollapsed" class="logo-text">改装件管理</span>
           </transition>
         </div>
       </div>
@@ -34,13 +34,11 @@
           <div class="nav-item-content">
             <component :is="item.icon" class="nav-icon" />
             <transition name="nav-text">
-              <span v-show="!isCollapsed" class="nav-text">{{ item.title }}</span>
+              <span v-if="!isCollapsed" class="nav-text">{{ item.title }}</span>
             </transition>
-            <transition name="submenu-arrow">
-              <el-icon v-if="!isCollapsed && item.children" class="submenu-arrow" :class="{ expanded: expandedMenus.includes(item.path) }">
-                <ArrowRight />
-              </el-icon>
-            </transition>
+            <el-icon v-if="!isCollapsed && item.children" class="submenu-arrow" :class="{ expanded: expandedMenus.includes(item.path) }">
+              <ArrowRight />
+            </el-icon>
           </div>
 
           <!-- 子菜单 -->
@@ -345,7 +343,7 @@ const handleUserCommand = async (command) => {
       router.push('/')
       break
     case 'profile':
-      router.push('/admin/profile')
+      router.push('/user/profile')
       break
     case 'settings':
       router.push('/admin/system/config')
