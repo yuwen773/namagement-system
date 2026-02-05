@@ -7,10 +7,12 @@ from .models import User, UserAddress, BrowsingHistory
 
 class UserSerializer(serializers.ModelSerializer):
     """用户详情序列化器"""
+    is_staff = serializers.BooleanField(read_only=True)  # 添加管理员标识字段
+
     class Meta:
         model = User
-        fields = ('id', 'phone', 'nickname', 'avatar', 'email', 'points', 'status', 'created_at')
-        read_only_fields = ('id', 'points', 'status', 'created_at')
+        fields = ('id', 'phone', 'nickname', 'avatar', 'email', 'points', 'status', 'is_staff', 'created_at')
+        read_only_fields = ('id', 'points', 'status', 'is_staff', 'created_at')
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

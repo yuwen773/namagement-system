@@ -97,16 +97,53 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = StandardPagination
 
     def get_queryset(self):
+        """获取查询集，支持搜索和分页"""
         # 普通用户只能查看自己，管理员可以查看所有
-        if self.request.user.is_staff:
-            return User.objects.all().order_by('-created_at')
-        return User.objects.filter(id=self.request.user.id)
+        if not self.request.user.is_staff:
+            return User.objects.filter(id=self.request.user.id)
+
+        # 管理员可以查看所有用户，支持搜索
+        queryset = User.objects.all().order_by('-created_at')
+
+        # 搜索功能：支持手机号和昵称搜索
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(phone__icontains=search) | Q(nickname__icontains=search)
+            )
+
+        # 状态筛选
+        status_filter = self.request.query_params.get('status', '').strip()
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        return queryset
 
     def get_permissions(self):
         """管理员专用端点需要管理员权限"""
-        if self.action in ['detail', 'status', 'addresses']:
+        # list 和 retrieve 也要求管理员权限
+        if self.action in ['list', 'retrieve', 'status', 'addresses']:
             return [permissions.IsAdminUser()]
         return [permissions.IsAuthenticated()]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        获取用户详情（管理员专用）
+        使用标准的 DRF retrieve 方法，返回包含地址信息的完整数据
+        """
+        user = self.get_object()
+        addresses = UserAddress.objects.filter(user=user).order_by('-is_default', '-created_at')
+
+        data = {
+            'user': UserSerializer(user).data,
+            'addresses': UserAddressSerializer(addresses, many=True).data,
+            'address_count': addresses.count(),
+            'default_address': UserAddressSerializer(
+                addresses.filter(is_default=True).first()
+            ).data if addresses.filter(is_default=True).exists() else None
+        }
+        return ApiResponse.success(data=data)
 
     @action(detail=False, methods=['get'])
     def me(self, request):
@@ -148,49 +185,57 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return ApiResponse.success(message='密码修改成功')
 
-    @action(detail=True, methods=['get'], url_path='admin-detail')
-    def detail(self, request, pk=None):
-        """获取用户详情（管理员专用）- 包含地址和积分信息"""
-        try:
-            user = self.get_object()
-            addresses = UserAddress.objects.filter(user=user).order_by('-is_default', '-created_at')
-
-            data = {
-                'user': UserSerializer(user).data,
-                'addresses': UserAddressSerializer(addresses, many=True).data,
-                'address_count': addresses.count(),
-                'default_address': UserAddressSerializer(
-                    addresses.filter(is_default=True).first()
-                ).data if addresses.filter(is_default=True).exists() else None
-            }
-            return ApiResponse.success(data=data)
-        except Exception as e:
-            return ApiResponse.error(message=f'获取用户详情失败: {str(e)}')
-
     @action(detail=True, methods=['patch'], url_path='status')
     def status(self, request, pk=None):
-        """更新用户状态（管理员专用）- 启用/禁用用户"""
+        """
+        更新用户状态（管理员专用）- 启用/禁用用户
+        支持两种格式：
+        1. {"status": "active"} 或 {"status": "banned"} - 内部状态字段
+        2. {"is_active": false} - 文档示例格式（兼容处理）
+        """
         try:
             user = self.get_object()
+
+            # 优先使用 status 字段
             new_status = request.data.get('status')
+            is_active = request.data.get('is_active')
 
-            if not new_status:
-                return ApiResponse.error(message='请提供状态值')
+            if new_status is not None:
+                # 使用 status 字段 (active/banned)
+                if new_status not in ['active', 'banned']:
+                    return ApiResponse.error(message='状态值无效，必须是 active 或 banned')
 
-            if new_status not in ['active', 'banned']:
-                return ApiResponse.error(message='状态值无效，必须是 active 或 banned')
+                # 不允许管理员禁用自己
+                if user.id == request.user.id and new_status == 'banned':
+                    return ApiResponse.error(message='不能禁用自己的账号')
 
-            # 不允许管理员禁用自己
-            if user.id == request.user.id and new_status == 'banned':
-                return ApiResponse.error(message='不能禁用自己的账号')
+                user.status = new_status
+                user.save()
 
-            user.status = new_status
-            user.save()
+                return ApiResponse.success(
+                    data=UserSerializer(user).data,
+                    message=f'用户状态已更新为 {user.get_status_display()}'
+                )
 
-            return ApiResponse.success(
-                data=UserSerializer(user).data,
-                message=f'用户状态已更新为 {user.get_status_display()}'
-            )
+            elif is_active is not None:
+                # 使用 is_active 字段（文档示例格式）
+                # is_active: true -> active, is_active: false -> banned
+                new_status = 'active' if is_active else 'banned'
+
+                # 不允许管理员禁用自己
+                if user.id == request.user.id and not is_active:
+                    return ApiResponse.error(message='不能禁用自己的账号')
+
+                user.status = new_status
+                user.save()
+
+                return ApiResponse.success(
+                    data=UserSerializer(user).data,
+                    message=f'用户状态已更新为 {user.get_status_display()}'
+                )
+            else:
+                return ApiResponse.error(message='请提供状态值 (status 或 is_active)')
+
         except Exception as e:
             return ApiResponse.error(message=f'更新用户状态失败: {str(e)}')
 
