@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import F
 from utils.response import ApiResponse
@@ -510,3 +511,41 @@ class ReviewViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self.perform_destroy(instance)
         return ApiResponse.success(message='删除成功')
+
+    @action(detail=False, methods=['get'], url_path='me')
+    def my_reviews(self, request):
+        """
+        获取当前登录用户的评价列表
+
+        URL: GET /api/products/reviews/me/
+        描述: 获取当前登录用户发表的所有评价记录
+        """
+        # 验证用户登录
+        if not request.user.is_authenticated:
+            return ApiResponse.error(message='请先登录', code=401)
+
+        # 获取当前用户的评价
+        reviews = Review.objects.filter(user_id=request.user.id).order_by('-created_at')
+
+        # 支持评分筛选
+        rating = request.query_params.get('rating')
+        if rating:
+            try:
+                reviews = reviews.filter(rating=int(rating))
+            except (ValueError, TypeError):
+                pass
+
+        # 支持排序
+        ordering = request.query_params.get('ordering', '-created_at')
+        valid_orderings = ['created_at', '-created_at', 'rating', '-rating']
+        if ordering in valid_orderings:
+            reviews = reviews.order_by(ordering)
+
+        # 分页
+        page = self.paginate_queryset(reviews)
+        if page is not None:
+            serializer = ReviewSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ReviewSerializer(reviews, many=True)
+        return ApiResponse.success(data=serializer.data)
