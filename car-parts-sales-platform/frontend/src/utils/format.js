@@ -49,6 +49,15 @@ export function fromNow(date) {
 }
 
 /**
+ * 格式化相对时间（多久之前）- fromNow 的别名
+ * @param {string|number|Date} date - 日期
+ * @returns {string}
+ */
+export function formatRelativeTime(date) {
+  return fromNow(date)
+}
+
+/**
  * 格式化金额
  * @param {number} amount - 金额
  * @param {number} decimals - 小数位数，默认 2

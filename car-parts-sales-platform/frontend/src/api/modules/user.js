@@ -82,5 +82,30 @@ export function getMessagesApi(params) {
  * @returns {Promise<void>}
  */
 export function readMessageApi(id) {
-  return patch(`/system/messages/${id}/read/`)
+  return post(`/system/messages/${id}/mark-read/`)
+}
+
+/**
+ * 获取浏览历史列表
+ * @returns {Promise<Array>}
+ */
+export function getBrowsingHistoryApi() {
+  return get('/users/browsing-history/list_history/')
+}
+
+/**
+ * 添加浏览记录
+ * @param {Object} data - 浏览记录数据
+ * @returns {Promise<Object>}
+ */
+export function addBrowsingHistoryApi(data) {
+  return post('/users/browsing-history/add/', data)
+}
+
+/**
+ * 清空浏览历史
+ * @returns {Promise<Object>}
+ */
+export function clearBrowsingHistoryApi() {
+  return del('/users/browsing-history/clear/')
 }

@@ -34,6 +34,18 @@ const router = createRouter({
           meta: { title: '购物车', requiresAuth: true }
         },
         {
+          path: 'checkout',
+          name: 'checkout',
+          component: () => import('@/views/CheckoutView.vue'),
+          meta: { title: '确认订单', requiresAuth: true }
+        },
+        {
+          path: 'payment/:id',
+          name: 'payment',
+          component: () => import('@/views/PaymentView.vue'),
+          meta: { title: '支付订单', requiresAuth: true }
+        },
+        {
           path: 'orders',
           name: 'orders',
           component: () => import('@/views/OrderListView.vue'),
@@ -81,6 +93,12 @@ const router = createRouter({
           name: 'user-messages',
           component: () => import('@/views/UserCenterView.vue'),
           meta: { title: '消息中心', requiresAuth: true }
+        },
+        {
+          path: 'browsing-history',
+          name: 'browsing-history',
+          component: () => import('@/views/BrowsingHistoryView.vue'),
+          meta: { title: '浏览历史', requiresAuth: true }
         }
       ]
     },
