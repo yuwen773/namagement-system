@@ -20,15 +20,19 @@
 html,
 body {
   height: 100%;
+  width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   color: #333;
   background-color: #f5f5f5;
+  overflow-x: hidden;
 }
 
 #app {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* 滚动条样式 */
@@ -93,5 +97,70 @@ img {
 .el-pagination {
   justify-content: center;
   margin-top: 20px;
+}
+
+/* 全局响应式容器 */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* 响应式网格 */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -10px;
+}
+
+.col {
+  flex: 1;
+  padding: 0 10px;
+  min-width: 0;
+}
+
+/* 响应式工具类 */
+@media (max-width: 1200px) {
+  .container {
+    max-width: 960px;
+  }
+}
+
+@media (max-width: 992px) {
+  .container {
+    max-width: 720px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: 540px;
+    padding: 0 15px;
+  }
+
+  .row {
+    margin: 0 -5px;
+  }
+
+  .col {
+    padding: 0 5px;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    max-width: 100%;
+    padding: 0 12px;
+  }
+}
+
+/* 防止内容溢出 */
+.el-table,
+.el-dialog,
+.el-drawer,
+.el-select-dropdown,
+.el-popper {
+  max-width: 100%;
 }
 </style>

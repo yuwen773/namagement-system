@@ -193,6 +193,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getCategoryListApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -206,15 +207,8 @@ const showCategories = ref(false)
 // 未读消息数量（模拟数据）
 const unreadCount = ref(0)
 
-// 顶级分类
-const topCategories = ref([
-  { id: 1, name: '发动机系统' },
-  { id: 2, name: '底盘系统' },
-  { id: 3, name: '车身改装' },
-  { id: 4, name: '内饰改装' },
-  { id: 5, name: '电子电器' },
-  { id: 6, name: '轮胎轮毂' }
-])
+// 顶级分类（从API动态获取）
+const topCategories = ref([])
 
 // 热门搜索词
 const hotKeywords = ref(['刹车片', '避震器', '进气系统', '大灯', '轮毂'])
@@ -268,6 +262,20 @@ const handleLogout = async () => {
 
 // 初始化
 onMounted(async () => {
+  // 获取分类列表
+  try {
+    // 使用较大的page_size获取所有分类
+    const response = await getCategoryListApi({ page: 1, page_size: 100 })
+    // 响应拦截器已返回data对象，格式为 { count, results }
+    // 只显示顶级分类（没有父分类的）
+    const allCategories = response?.results || []
+    console.log('分类数据:', allCategories.filter(c => !c.parent))  // 调试日志
+    topCategories.value = allCategories.filter(c => !c.parent)
+  } catch (error) {
+    console.error('获取分类列表失败:', error)
+  }
+
+  // 获取购物车
   if (authStore.isAuthenticated) {
     try {
       await cartStore.fetchCart()

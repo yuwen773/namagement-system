@@ -194,6 +194,12 @@ const router = createRouter({
           name: 'admin-messages',
           component: () => import('@/views/admin/SystemManageView.vue'),
           meta: { title: '消息管理' }
+        },
+        {
+          path: 'system/logs',
+          name: 'admin-logs',
+          component: () => import('@/views/admin/SystemManageView.vue'),
+          meta: { title: '操作日志' }
         }
       ]
     },

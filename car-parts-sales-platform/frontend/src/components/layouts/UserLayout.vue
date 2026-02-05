@@ -33,14 +33,19 @@ import AppFooter from '@/components/common/AppFooter.vue'
 <style scoped>
 .user-layout {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 .main-content {
   flex: 1;
-  padding: 0px 0;
+  width: 100%;
+  padding: 0;
   min-height: calc(100vh - 280px);
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* 页面切换动画 */
@@ -81,7 +86,7 @@ import AppFooter from '@/components/common/AppFooter.vue'
 /* 响应式 */
 @media (max-width: 768px) {
   .main-content {
-    padding: 12px 0;
+    padding: 0;
   }
 }
 </style>
