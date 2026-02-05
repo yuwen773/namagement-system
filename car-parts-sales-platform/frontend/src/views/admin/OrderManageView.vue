@@ -43,7 +43,6 @@
         </el-input>
 
         <el-select v-model="filterForm.status" placeholder="订单状态" clearable class="filter-select">
-          <el-option label="全部状态" :value="null" />
           <el-option label="待付款" value="pending_payment" />
           <el-option label="待发货" value="pending_shipment" />
           <el-option label="已发货" value="shipped" />

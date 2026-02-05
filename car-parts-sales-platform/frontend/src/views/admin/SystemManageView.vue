@@ -529,11 +529,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Setting, Unlock, Lock, Document, Search, Plus, Message, DocumentCopy,
-  Promotion, View, DocumentText, CircleCheck, CircleClose, Warning
+  Promotion, View, CircleCheck, CircleClose, Warning
 } from '@element-plus/icons-vue'
 import {
   getConfigsListApi, createConfigApi, updateConfigApi, deleteConfigApi,
@@ -545,8 +546,27 @@ import {
 } from '@/api/modules/system'
 import { getUserListApi } from '@/api/modules/user'
 
+const route = useRoute()
+
 // 当前激活标签
 const activeTab = ref('configs')
+
+// 根据路由设置默认 tab
+const setTabFromRoute = () => {
+  const path = route.path
+  if (path.endsWith('/logs')) {
+    activeTab.value = 'logs'
+  } else if (path.endsWith('/messages')) {
+    activeTab.value = 'messages'
+  } else {
+    activeTab.value = 'configs'
+  }
+}
+
+// 监听路由变化
+watch(() => route.path, () => {
+  setTabFromRoute()
+}, { immediate: true })
 
 // ==================== 系统配置 ====================
 const configList = ref([])
@@ -584,14 +604,15 @@ async function fetchConfigs() {
       is_editable: configEditableFilter.value !== null ? configEditableFilter.value : undefined
     }
     const res = await getConfigsListApi(params)
-    configList.value = res.data.results
-    configPagination.total = res.data.count
+    configList.value = res.results || []
+    configPagination.total = res.count || 0
 
     // 更新统计
-    configStats.total = res.data.count
-    configStats.editable = res.data.results.filter(c => c.is_editable).length
-    configStats.readonly = res.data.results.filter(c => !c.is_editable).length
-    configStats.basic = res.data.results.filter(c => c.category === 'basic').length
+    const results = res.results || []
+    configStats.total = res.count || 0
+    configStats.editable = results.filter(c => c.is_editable).length
+    configStats.readonly = results.filter(c => !c.is_editable).length
+    configStats.basic = results.filter(c => c.category === 'basic').length
   } catch (err) {
     ElMessage.error('获取配置列表失败')
   } finally {
@@ -697,14 +718,15 @@ async function fetchMessages() {
       search: messageSearch.value || undefined
     }
     const res = await getMessagesListApi(params)
-    messageList.value = res.data.results
-    messagePagination.total = res.data.count
+    messageList.value = res.results || []
+    messagePagination.total = res.count || 0
 
     // 更新统计
-    messageStats.total = res.data.count
-    messageStats.draft = res.data.results.filter(m => m.status === 'draft').length
-    messageStats.sent = res.data.results.filter(m => m.status === 'sent').length
-    messageStats.read = res.data.results.filter(m => m.status === 'read').length
+    const results = res.results || []
+    messageStats.total = res.count || 0
+    messageStats.draft = results.filter(m => m.status === 'draft').length
+    messageStats.sent = results.filter(m => m.status === 'sent').length
+    messageStats.read = results.filter(m => m.status === 'read').length
   } catch (err) {
     ElMessage.error('获取消息列表失败')
   } finally {
@@ -801,16 +823,17 @@ async function fetchLogs() {
       status: logStatusFilter.value || undefined
     }
     const res = await getLogsListApi(params)
-    logList.value = res.data.results
-    logPagination.total = res.data.count
+    logList.value = res.results || []
+    logPagination.total = res.count || 0
 
     // 更新统计
-    logStats.total = res.data.count
-    logStats.success = res.data.results.filter(l => l.status === 'success').length
-    logStats.failed = res.data.results.filter(l => l.status === 'failed').length
+    const results = res.results || []
+    logStats.total = res.count || 0
+    logStats.success = results.filter(l => l.status === 'success').length
+    logStats.failed = results.filter(l => l.status === 'failed').length
     // 简单统计今日日志
     const today = new Date().toDateString()
-    logStats.today = res.data.results.filter(l => new Date(l.created_at).toDateString() === today).length
+    logStats.today = results.filter(l => new Date(l.created_at).toDateString() === today).length
   } catch (err) {
     ElMessage.error('获取日志列表失败')
   } finally {
@@ -849,7 +872,7 @@ onMounted(async () => {
   // 获取用户列表（用于消息接收人选择）
   try {
     const res = await getUserListApi({ page: 1, page_size: 1000 })
-    userList.value = res.data.results
+    userList.value = res.results || []
   } catch (err) {
     console.error('获取用户列表失败', err)
   }

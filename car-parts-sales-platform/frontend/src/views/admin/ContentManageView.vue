@@ -74,7 +74,6 @@
             </el-input>
 
             <el-select v-model="caseFilter.status" placeholder="状态" clearable class="filter-select">
-              <el-option label="全部状态" :value="null" />
               <el-option label="已发布" value="published" />
               <el-option label="草稿" value="draft" />
             </el-select>
@@ -201,7 +200,6 @@
             </el-input>
 
             <el-select v-model="faqFilter.category" placeholder="问题分类" clearable class="filter-select">
-              <el-option label="全部分类" :value="null" />
               <el-option label="订单相关" value="order" />
               <el-option label="支付相关" value="payment" />
               <el-option label="物流相关" value="shipping" />
@@ -211,7 +209,6 @@
             </el-select>
 
             <el-select v-model="faqFilter.isActive" placeholder="状态" clearable class="filter-select">
-              <el-option label="全部状态" :value="null" />
               <el-option label="启用" :value="true" />
               <el-option label="禁用" :value="false" />
             </el-select>

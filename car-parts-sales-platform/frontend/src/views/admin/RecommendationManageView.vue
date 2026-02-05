@@ -77,7 +77,6 @@
             </el-input>
 
             <el-select v-model="ruleFilter.type" placeholder="规则类型" clearable class="filter-select">
-              <el-option label="全部类型" :value="null" />
               <el-option label="热门推荐" value="hot" />
               <el-option label="新品推荐" value="new" />
               <el-option label="个性化推荐" value="personalized" />
@@ -85,7 +84,6 @@
             </el-select>
 
             <el-select v-model="ruleFilter.status" placeholder="状态" clearable class="filter-select">
-              <el-option label="全部状态" :value="null" />
               <el-option label="启用" :value="true" />
               <el-option label="禁用" :value="false" />
             </el-select>
@@ -196,7 +194,6 @@
               class="filter-select"
               @change="handleProductSearch"
             >
-              <el-option label="全部规则" :value="null" />
               <el-option
                 v-for="rule in allRules"
                 :key="rule.id"

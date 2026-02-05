@@ -37,8 +37,8 @@
                 <span class="unit">元</span>
               </el-form-item>
 
-              <el-form-item label="商品库存" prop="stock">
-                <el-input-number v-model="formData.stock" :min="0" :step="1" controls-position="right" style="width: 200px" />
+              <el-form-item label="商品库存" prop="stock_quantity">
+                <el-input-number v-model="formData.stock_quantity" :min="0" :step="1" controls-position="right" style="width: 200px" />
                 <span class="unit">件</span>
               </el-form-item>
 
@@ -207,7 +207,7 @@ const formData = reactive({
   name: '',
   category: null,
   price: 0,
-  stock: 0,
+  stock_quantity: 0,
   description: '',
   content: '',
   image: '',
@@ -226,7 +226,7 @@ const formRules = {
   name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   category: [{ required: true, message: '请选择商品分类', trigger: 'change' }],
   price: [{ required: true, message: '请输入商品价格', trigger: 'blur' }],
-  stock: [{ required: true, message: '请输入商品库存', trigger: 'blur' }]
+  stock_quantity: [{ required: true, message: '请输入商品库存', trigger: 'blur' }]
 }
 
 // 获取分类树
@@ -251,7 +251,7 @@ const fetchProductDetail = async () => {
       name: data.name || '',
       category: data.category || null,
       price: data.price || 0,
-      stock: data.stock || 0,
+      stock_quantity: data.stock_quantity || 0,
       description: data.description || '',
       content: data.content || '',
       image: data.image || '',
@@ -302,7 +302,7 @@ const resetForm = () => {
     name: '',
     category: null,
     price: 0,
-    stock: 0,
+    stock_quantity: 0,
     description: '',
     content: '',
     image: '',
@@ -339,7 +339,7 @@ const handleSubmit = async () => {
       name: formData.name,
       category: formData.category,
       price: formData.price,
-      stock: formData.stock,
+      stock_quantity: formData.stock_quantity,
       description: formData.description,
       content: formData.content,
       image: formData.image,

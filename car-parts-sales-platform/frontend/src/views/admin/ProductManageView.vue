@@ -7,7 +7,7 @@
         <p class="page-subtitle">管理平台商品信息、分类和库存</p>
       </div>
       <div class="header-actions">
-        <el-button :icon="FolderOpened" @click="showCategoryDialog = true">
+        <el-button :icon="FolderOpened" @click="categoryDialogVisible = true">
           分类管理
         </el-button>
         <el-button type="primary" :icon="Plus" @click="handleAdd">
@@ -42,7 +42,6 @@
         />
 
         <el-select v-model="filterForm.status" placeholder="商品状态" clearable class="filter-select">
-          <el-option label="全部状态" :value="null" />
           <el-option label="草稿" value="draft" />
           <el-option label="待审核" value="pending" />
           <el-option label="已发布" value="published" />
@@ -125,9 +124,9 @@
         <el-table-column label="价格" width="130" align="right">
           <template #default="{ row }">
             <div class="price-cell">
-              <div class="current-price">¥{{ (row.price || 0).toFixed(2) }}</div>
-              <div v-if="row.original_price && row.original_price > row.price" class="original-price">
-                ¥{{ row.original_price.toFixed(2) }}
+              <div class="current-price">¥{{ Number(row.price || 0).toFixed(2) }}</div>
+              <div v-if="Number(row.original_price || 0) > Number(row.price || 0)" class="original-price">
+                ¥{{ Number(row.original_price || 0).toFixed(2) }}
               </div>
             </div>
           </template>
@@ -135,8 +134,8 @@
 
         <el-table-column label="库存" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="getStockType(row.stock)" size="small">
-              {{ row.stock }}
+            <el-tag :type="getStockType(row.stock_quantity)" size="small">
+              {{ row.stock_quantity }}
             </el-tag>
           </template>
         </el-table-column>
@@ -243,16 +242,16 @@
               <div class="card-category">{{ item.category_name || '-' }}</div>
 
               <div class="card-price-row">
-                <span class="current-price">¥{{ (item.price || 0).toFixed(2) }}</span>
-                <span v-if="item.original_price && item.original_price > item.price" class="original-price">
-                  ¥{{ item.original_price.toFixed(2) }}
+                <span class="current-price">¥{{ Number(item.price || 0).toFixed(2) }}</span>
+                <span v-if="Number(item.original_price || 0) > Number(item.price || 0)" class="original-price">
+                  ¥{{ Number(item.original_price || 0).toFixed(2) }}
                 </span>
               </div>
 
               <div class="card-stats">
                 <span class="stat-item">
                   <el-icon><ShoppingCart /></el-icon>
-                  {{ item.stock }} 库存
+                  {{ item.stock_quantity }} 库存
                 </span>
                 <span class="stat-item">
                   <el-icon><TrendCharts /></el-icon>

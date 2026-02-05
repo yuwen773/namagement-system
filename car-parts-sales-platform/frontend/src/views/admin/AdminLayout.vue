@@ -374,6 +374,26 @@ onMounted(() => {
   if (collapsed) {
     isCollapsed.value = collapsed === 'true'
   }
+
+  // 添加窗口大小变化监听
+  const handleResize = () => {
+    const width = window.innerWidth
+    // 在小屏幕上自动折叠侧边栏
+    if (width <= 768) {
+      isCollapsed.value = true
+    }
+  }
+
+  // 初始检查
+  handleResize()
+
+  // 监听窗口大小变化
+  window.addEventListener('resize', handleResize)
+
+  // 组件卸载时移除监听
+  onUnmounted(() => {
+    window.removeEventListener('resize', handleResize)
+  })
 })
 </script>
 
@@ -400,24 +420,27 @@ onMounted(() => {
 
   display: flex;
   min-height: 100vh;
+  width: 100%;
   background: var(--bg-color);
+  overflow-x: hidden;
 }
 
 /* ========================================
    侧边栏样式
    ======================================== */
 .sidebar {
-  position: fixed;
-  left: 0;
+  position: sticky;
   top: 0;
-  bottom: 0;
   width: var(--sidebar-width);
+  height: 100vh;
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
   z-index: 1000;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 .sidebar.collapsed {
@@ -588,15 +611,16 @@ onMounted(() => {
    主内容区域
    ======================================== */
 .main-wrapper {
-  margin-left: var(--sidebar-width);
-  min-height: 100vh;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: calc(100% - var(--sidebar-width));
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .main-wrapper.collapsed {
-  margin-left: var(--sidebar-collapsed-width);
+  width: calc(100% - var(--sidebar-collapsed-width));
 }
 
 /* ========================================
@@ -610,11 +634,11 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 100;
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -775,7 +799,9 @@ onMounted(() => {
 .main-content {
   flex: 1;
   padding: 24px;
-  min-height: calc(100vh - var(--header-height));
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* ========================================
@@ -838,31 +864,53 @@ onMounted(() => {
 /* ========================================
    响应式设计
    ======================================== */
+@media (max-width: 1200px) {
+  .search-wrapper {
+    width: 220px;
+  }
+
+  .header-left {
+    flex: 0 1 auto;
+  }
+}
+
 @media (max-width: 1024px) {
   .search-wrapper {
-    width: 200px;
+    width: 180px;
   }
 
   .user-info {
     display: none;
   }
+
+  .main-content {
+    padding: 20px;
+  }
 }
 
 @media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
   .sidebar {
-    width: var(--sidebar-collapsed-width);
+    position: fixed;
+    width: var(--sidebar-width);
+    height: 100vh;
+    z-index: 1001;
   }
 
   .sidebar.collapsed {
     width: 0;
+    transform: translateX(-100%);
   }
 
   .main-wrapper {
-    margin-left: var(--sidebar-collapsed-width);
+    width: 100%;
   }
 
   .main-wrapper.collapsed {
-    margin-left: 0;
+    width: 100%;
   }
 
   .top-header {
@@ -879,6 +927,18 @@ onMounted(() => {
 
   .main-content {
     padding: 16px;
+  }
+
+  /* Add mobile overlay when sidebar is open */
+  .sidebar:not(.collapsed)::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
   }
 }
 </style>

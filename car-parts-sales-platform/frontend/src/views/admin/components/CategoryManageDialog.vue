@@ -44,7 +44,6 @@
             </span>
             <span class="node-actions">
               <el-tag v-if="!data.is_active" type="info" size="small">已禁用</el-tag>
-              <el-tag v-else-if="data.product_count > 0" type="success" size="small">{{ data.product_count }}件</el-tag>
               <el-button link type="primary" size="small" :icon="Plus" @click="handleAddChild(data)">添加子类</el-button>
               <el-button link type="primary" size="small" :icon="Edit" @click="handleEdit(data)">编辑</el-button>
               <el-button link type="danger" size="small" :icon="Delete" @click="handleDelete(data)">删除</el-button>
@@ -93,21 +92,6 @@
             <el-radio :value="true">启用</el-radio>
             <el-radio :value="false">禁用</el-radio>
           </el-radio-group>
-        </el-form-item>
-
-        <el-form-item label="图标">
-          <el-input v-model="editForm.icon" placeholder="图标类名（可选）" clearable />
-        </el-form-item>
-
-        <el-form-item label="描述">
-          <el-input
-            v-model="editForm.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入分类描述"
-            maxlength="200"
-            show-word-limit
-          />
         </el-form-item>
       </el-form>
 
@@ -172,9 +156,7 @@ const editForm = reactive({
   name: '',
   parent: null,
   sort_order: 0,
-  is_active: true,
-  icon: '',
-  description: ''
+  is_active: true
 })
 
 // 表单验证规则
@@ -227,9 +209,7 @@ const handleAdd = () => {
     name: '',
     parent: null,
     sort_order: 0,
-    is_active: true,
-    icon: '',
-    description: ''
+    is_active: true
   })
   editDialogVisible.value = true
 }
@@ -241,9 +221,7 @@ const handleAddChild = (data) => {
     name: '',
     parent: data.id,
     sort_order: 0,
-    is_active: true,
-    icon: '',
-    description: ''
+    is_active: true
   })
   editDialogVisible.value = true
 }
@@ -255,9 +233,7 @@ const handleEdit = (data) => {
     name: data.name,
     parent: data.parent || null,
     sort_order: data.sort_order || 0,
-    is_active: data.is_active !== false,
-    icon: data.icon || '',
-    description: data.description || ''
+    is_active: data.is_active !== false
   })
   editDialogVisible.value = true
 }
@@ -267,12 +243,6 @@ const handleDelete = async (data) => {
   // 检查是否有子分类
   if (data.children && data.children.length > 0) {
     ElMessage.warning('该分类下有子分类，无法删除')
-    return
-  }
-
-  // 检查是否有商品
-  if (data.product_count > 0) {
-    ElMessage.warning('该分类下有商品，无法删除')
     return
   }
 
@@ -308,9 +278,7 @@ const handleSubmit = async () => {
       name: editForm.name,
       parent: editForm.parent,
       sort_order: editForm.sort_order,
-      is_active: editForm.is_active,
-      icon: editForm.icon,
-      description: editForm.description
+      is_active: editForm.is_active
     }
 
     if (editForm.id) {

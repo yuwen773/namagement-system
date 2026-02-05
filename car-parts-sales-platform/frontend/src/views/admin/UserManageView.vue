@@ -43,49 +43,71 @@
         :data="tableData"
         stripe
         style="width: 100%"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
       >
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column label="头像" width="80">
+        <el-table-column prop="id" label="ID" width="70" align="center" fixed="left" />
+        
+        <el-table-column label="头像" width="80" align="center">
           <template #default="{ row }">
-            <el-avatar :src="row.avatar" :size="50">
-              {{ row.nickname?.charAt(0) || 'U' }}
+            <el-avatar :src="row.avatar" :size="40" shape="circle" :style="{ backgroundColor: getRandomColor(row.nickname) }">
+              {{ row.nickname?.charAt(0)?.toUpperCase() || 'U' }}
             </el-avatar>
           </template>
         </el-table-column>
-        <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="nickname" label="昵称" min-width="120" />
-        <el-table-column prop="email" label="邮箱" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="points" label="积分" width="100" align="right">
+        
+        <el-table-column prop="nickname" label="昵称" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="points">{{ row.points?.toLocaleString() || 0 }}</span>
+            <span class="nickname-text">{{ row.nickname || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        
+        <el-table-column prop="phone" label="手机号" width="130" align="center" />
+        
+        <el-table-column prop="is_staff" label="角色" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'active' ? '正常' : '已禁用' }}
+            <el-tag :type="row.is_staff ? 'warning' : 'info'" effect="light" size="small" round>
+              {{ row.is_staff ? '管理员' : '用户' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="is_staff" label="用户类型" width="100">
+        
+        <el-table-column prop="points" label="积分" width="120" align="right">
           <template #default="{ row }">
-            <el-tag :type="row.is_staff ? 'warning' : 'info'" size="small">
-              {{ row.is_staff ? '管理员' : '普通用户' }}
-            </el-tag>
+            <span class="points-text">{{ row.points?.toLocaleString() || 0 }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="注册时间" width="160">
+        
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            {{ formatDate(row.created_at) }}
+            <div class="status-indicator">
+              <span :class="['status-dot', row.status === 'active' ? 'active' : 'banned']"></span>
+              <span>{{ row.status === 'active' ? '正常' : '禁用' }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+
+        <el-table-column prop="created_at" label="注册时间" width="160" align="center">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" :icon="View" @click="handleView(row)">查看</el-button>
+            <span class="date-text">{{ formatDate(row.created_at) }}</span>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="操作" width="180" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button 
+              type="primary" 
+              link 
+              size="small" 
+              :icon="View" 
+              @click="handleView(row)"
+            >
+              详情
+            </el-button>
+            <el-divider direction="vertical" />
             <el-button
               v-if="row.status === 'active'"
-              link
               type="danger"
+              link
               size="small"
               @click="handleToggleStatus(row)"
             >
@@ -93,8 +115,8 @@
             </el-button>
             <el-button
               v-else
-              link
               type="success"
+              link
               size="small"
               @click="handleToggleStatus(row)"
             >
@@ -173,6 +195,17 @@ const formatDate = (dateStr) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// 生成随机背景色
+const getRandomColor = (name) => {
+  if (!name) return '#909399'
+  const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#79bbff', '#95d475', '#eebe77', '#f89898']
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return colors[Math.abs(hash) % colors.length]
 }
 
 // 获取用户列表
@@ -285,7 +318,9 @@ onMounted(() => {
 }
 
 .filter-card {
-  border: 1px solid #e8e8e8;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .filter-form {
@@ -293,12 +328,48 @@ onMounted(() => {
 }
 
 .table-card {
-  border: 1px solid #e8e8e8;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
-.points {
+.nickname-text {
+  font-weight: 500;
+  color: #303133;
+}
+
+.points-text {
+  font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+  color: #E6A23C;
   font-weight: 600;
-  color: #f97316;
+}
+
+.date-text {
+  color: #909399;
+  font-size: 13px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-dot.active {
+  background-color: #67C23A;
+  box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.2);
+}
+
+.status-dot.banned {
+  background-color: #F56C6C;
+  box-shadow: 0 0 0 2px rgba(245, 108, 108, 0.2);
 }
 
 .pagination-wrapper {
@@ -318,9 +389,5 @@ onMounted(() => {
 
 :deep(.el-table .cell) {
   padding: 8px 0;
-}
-
-:deep(.el-avatar) {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
 }
 </style>
