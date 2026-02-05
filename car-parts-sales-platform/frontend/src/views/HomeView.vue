@@ -175,7 +175,7 @@ async function addToCart(productId) {
             class="category-card"
             @click="goToCategory(category.id)"
           >
-            <div class="category-icon">
+            <div class="category-icon" style="width: 75px;">
               <span>{{ category.icon }}</span>
             </div>
             <div class="category-info">
