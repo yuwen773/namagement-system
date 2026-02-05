@@ -166,6 +166,12 @@ const router = createRouter({
           meta: { title: '营销管理' }
         },
         {
+          path: 'recommendations',
+          name: 'admin-recommendations',
+          component: () => import('@/views/admin/RecommendationManageView.vue'),
+          meta: { title: '推荐管理' }
+        },
+        {
           path: 'content',
           name: 'admin-content',
           component: () => import('@/views/admin/ContentManageView.vue'),
@@ -229,7 +235,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // 检查是否需要管理员权限
-    if (to.meta.requiresAdmin && !authStore.user?.is_admin) {
+    if (to.meta.requiresAdmin && !authStore.user?.is_staff) {
       next({ name: 'home' })
       return
     }
