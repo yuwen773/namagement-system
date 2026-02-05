@@ -486,8 +486,16 @@ class UserCouponViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """获取用户优惠券列表"""
         queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
 
+        # 按 status 参数筛选
+        status_param = request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+
+        # 按领取时间倒序排序
+        queryset = queryset.order_by('-obtained_at')
+
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)

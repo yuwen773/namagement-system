@@ -64,11 +64,12 @@ class MessageListSerializer(serializers.ModelSerializer):
 
     message_type_display = serializers.CharField(source='get_message_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    recipient_name = serializers.CharField(source='recipient.nickname', read_only=True, default=None)
 
     class Meta:
         model = Message
         fields = [
-            'id', 'title', 'message_type', 'message_type_display',
+            'id', 'recipient', 'recipient_name', 'title', 'content', 'message_type', 'message_type_display',
             'status', 'status_display', 'sent_at', 'read_at', 'created_at'
         ]
 
@@ -101,5 +102,5 @@ class OperationLogListSerializer(serializers.ModelSerializer):
         model = OperationLog
         fields = [
             'id', 'operator', 'operator_name', 'action_type', 'action_type_display',
-            'object_type', 'detail', 'status', 'status_display', 'created_at'
+            'object_type', 'object_id', 'detail', 'ip_address', 'status', 'status_display', 'created_at'
         ]
