@@ -202,7 +202,7 @@ export function getFAQCategoryType(category) {
     shipping: 'warning',
     product: 'info',
     return: 'danger',
-    other: ''
+    other: 'info'
   }
-  return typeMap[category] || ''
+  return typeMap[category] || 'info'
 }

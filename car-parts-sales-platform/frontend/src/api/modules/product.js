@@ -6,10 +6,13 @@ import { get, post, put, patch, del } from '../request'
 
 /**
  * 获取商品分类列表
+ * @param {Object} params - 查询参数
+ * @param {number} params.page - 页码
+ * @param {number} params.page_size - 每页数量
  * @returns {Promise<Array>}
  */
-export function getCategoryListApi() {
-  return get('/products/categories/')
+export function getCategoryListApi(params) {
+  return get('/products/categories/', params)
 }
 
 /**
