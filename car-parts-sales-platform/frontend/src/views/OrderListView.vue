@@ -1,13 +1,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getOrderListApi } from '@/api'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getOrderListApi, payOrderApi, cancelOrderApi, confirmOrderApi } from '@/api'
 import { getOrderStatusLabel, formatCurrency, formatDateTime } from '@/utils'
 import '@fontsource/oswald'
 import '@fontsource/dm-sans'
 
+const router = useRouter()
 const loading = ref(false)
 const orders = ref([])
 const activeTab = ref('all')
+const processingOrder = ref(null)
 
 const tabs = [
   { value: 'all', label: 'All Orders' },
@@ -31,6 +35,8 @@ async function fetchOrders() {
     }
     const data = await getOrderListApi(params)
     orders.value = data.results || []
+  } catch (error) {
+    ElMessage.error('Failed to load orders')
   } finally {
     loading.value = false
   }
@@ -45,19 +51,65 @@ function handleViewOrder(id) {
   router.push({ name: 'order-detail', params: { id } })
 }
 
-function handleCancelOrder(order) {
-  // TODO: Implement cancel order
-  console.log('Cancel order:', order)
+async function handlePayOrder(order) {
+  processingOrder.value = order.id
+  try {
+    await payOrderApi(order.id)
+    ElMessage.success('Payment successful!')
+    await fetchOrders()
+  } catch (error) {
+    ElMessage.error(error.message || 'Payment failed')
+  } finally {
+    processingOrder.value = null
+  }
 }
 
-function handleConfirmOrder(order) {
-  // TODO: Implement confirm order
-  console.log('Confirm order:', order)
+async function handleCancelOrder(order) {
+  try {
+    await ElMessageBox.confirm(
+      'Are you sure you want to cancel this order? This action cannot be undone.',
+      'Cancel Order',
+      {
+        confirmButtonText: 'Yes, Cancel',
+        cancelButtonText: 'No, Keep',
+        type: 'warning'
+      }
+    )
+    processingOrder.value = order.id
+    await cancelOrderApi(order.id)
+    ElMessage.success('Order cancelled successfully')
+    await fetchOrders()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || 'Failed to cancel order')
+    }
+  } finally {
+    processingOrder.value = null
+  }
 }
 
-function handlePayOrder(order) {
-  // TODO: Implement pay order
-  console.log('Pay order:', order)
+async function handleConfirmOrder(order) {
+  try {
+    await ElMessageBox.confirm(
+      'Please confirm that you have received the goods. After confirmation, you cannot apply for after-sales service.',
+      'Confirm Receipt',
+      {
+        confirmButtonText: 'Confirm Receipt',
+        cancelButtonText: 'Cancel',
+        type: 'info'
+      }
+    )
+    processingOrder.value = order.id
+    await confirmOrderApi(order.id)
+    ElMessage.success('Order completed successfully')
+    await fetchOrders()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || 'Failed to confirm order')
+    }
+  } finally {
+    processingOrder.value = null
+  }
 }
 
 const filteredOrders = computed(() => {
@@ -167,35 +219,47 @@ const filteredOrders = computed(() => {
               <button
                 v-if="order.status === 'pending_payment'"
                 class="action-btn action-btn--primary"
+                :disabled="processingOrder === order.id"
                 @click="handlePayOrder(order)"
               >
-                <svg viewBox="0 0 24 24" fill="none">
+                <svg v-if="processingOrder !== order.id" viewBox="0 0 24 24" fill="none">
                   <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
                   <path d="M2 10H22" stroke="currentColor" stroke-width="2"/>
                 </svg>
-                Pay Now
+                <svg v-else class="btn-spinner" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="10"/>
+                </svg>
+                {{ processingOrder === order.id ? 'Processing...' : 'Pay Now' }}
               </button>
 
               <button
                 v-if="order.status === 'shipped'"
                 class="action-btn action-btn--success"
+                :disabled="processingOrder === order.id"
                 @click="handleConfirmOrder(order)"
               >
-                <svg viewBox="0 0 24 24" fill="none">
+                <svg v-if="processingOrder !== order.id" viewBox="0 0 24 24" fill="none">
                   <path d="M9 12L11 14L15 10M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                Confirm
+                <svg v-else class="btn-spinner" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="10"/>
+                </svg>
+                {{ processingOrder === order.id ? 'Processing...' : 'Confirm' }}
               </button>
 
               <button
                 v-if="['pending_payment', 'pending_shipment'].includes(order.status)"
                 class="action-btn action-btn--danger"
+                :disabled="processingOrder === order.id"
                 @click="handleCancelOrder(order)"
               >
-                <svg viewBox="0 0 24 24" fill="none">
+                <svg v-if="processingOrder !== order.id" viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                Cancel
+                <svg v-else class="btn-spinner" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="10"/>
+                </svg>
+                {{ processingOrder === order.id ? 'Processing...' : 'Cancel' }}
               </button>
             </div>
           </div>
@@ -582,6 +646,20 @@ const filteredOrders = computed(() => {
 .action-btn--danger:hover {
   background: #ef4444;
   color: white;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive */
