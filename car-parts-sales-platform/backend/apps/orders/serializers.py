@@ -285,3 +285,80 @@ class CartItemUpdateSerializer(serializers.Serializer):
         quantity = attrs['quantity']
         # 在视图验证商品库存
         return attrs
+
+
+# ==================== 管理员订单序列化器 ====================
+
+class AdminOrderListSerializer(serializers.ModelSerializer):
+    """管理员订单列表序列化器（包含更多筛选字段）"""
+
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    user_phone = serializers.CharField(source='user.phone', read_only=True)
+    user_nickname = serializers.CharField(source='user.nickname', read_only=True)
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    items_count = serializers.IntegerField(source='items.count', read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'order_no', 'user', 'user_id', 'user_phone', 'user_nickname',
+            'total_amount', 'discount_amount', 'shipping_fee', 'pay_amount',
+            'status', 'status_display', 'items_count',
+            'express_company', 'tracking_number',
+            'recipient_name', 'recipient_phone',
+            'remark',
+            'created_at', 'updated_at', 'paid_at', 'shipped_at', 'completed_at'
+        ]
+        read_only_fields = ['id', 'order_no', 'created_at', 'updated_at']
+
+
+class AdminOrderDetailSerializer(serializers.ModelSerializer):
+    """管理员订单详情序列化器（完整信息）"""
+
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    user_info = serializers.SerializerMethodField()
+    coupon_name = serializers.CharField(source='coupon.coupon.name', read_only=True, allow_null=True)
+    items = OrderItemSerializer(many=True, read_only=True)
+    full_address = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'order_no', 'user', 'user_info',
+            'recipient_name', 'recipient_phone',
+            'recipient_province', 'recipient_city', 'recipient_district',
+            'recipient_address', 'full_address',
+            'total_amount', 'discount_amount', 'shipping_fee', 'pay_amount',
+            'coupon', 'coupon_name',
+            'status', 'status_display',
+            'express_company', 'tracking_number',
+            'remark', 'items',
+            'created_at', 'updated_at', 'paid_at', 'shipped_at', 'completed_at'
+        ]
+        read_only_fields = [
+            'id', 'order_no', 'user', 'total_amount', 'discount_amount',
+            'pay_amount', 'created_at', 'updated_at'
+        ]
+
+    def get_full_address(self, obj):
+        """获取完整地址"""
+        return f'{obj.recipient_province}{obj.recipient_city}{obj.recipient_district}{obj.recipient_address}'
+
+    def get_user_info(self, obj):
+        """获取用户信息"""
+        return {
+            'id': obj.user.id,
+            'phone': obj.user.phone,
+            'nickname': obj.user.nickname,
+            'is_active': obj.user.is_active
+        }
+
+
+class ReturnRequestAuditSerializer(serializers.Serializer):
+    """售后申请审核序列化器"""
+
+    status = serializers.ChoiceField(
+        choices=[ReturnRequest.Status.APPROVED, ReturnRequest.Status.REJECTED],
+        required=True
+    )
+    admin_note = serializers.CharField(required=False, allow_blank=True, max_length=500)
