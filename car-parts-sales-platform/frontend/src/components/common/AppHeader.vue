@@ -162,7 +162,7 @@
 
         <router-link to="/products?sort=-sales" class="nav-item" :class="{ active: $route.query.sort === '-sales' }">
           <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
-            <path d="M17.657 18.657A8 8 0 016.343 7.343S7 3 7 3a4 4 0 004 4c0 1.657 1.343 3 3 3 3 1.657-1.343 3-3 3 4 4 0 004-4 8 8 0 01-4.686 8.657z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 2c0 0-4 4-4 9 0 2.5 2 4 2 6s-2 3-2 5c0 2.5 2.5 5 6 5s6-2.5 6-5c0-2-2-3-2-5s2-3.5 2-6c0-5-4-9-4-9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span>热销排行</span>
         </router-link>
