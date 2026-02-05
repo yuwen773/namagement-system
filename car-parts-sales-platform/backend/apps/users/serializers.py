@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, UserAddress
+from .models import User, UserAddress, BrowsingHistory
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -38,7 +38,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    """用户登录序列化器 - 明文密码验证（开发环境）"""
+    """用户登录序列化器 - 明文密码验证（根据用户要求）"""
     phone = serializers.CharField()
     password = serializers.CharField()
 
@@ -99,3 +99,11 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('nickname', 'avatar', 'email')
+
+
+class BrowsingHistorySerializer(serializers.ModelSerializer):
+    """浏览历史序列化器"""
+    class Meta:
+        model = BrowsingHistory
+        fields = ('id', 'product_id', 'product_name', 'product_image', 'product_price', 'viewed_at')
+        read_only_fields = ('id', 'viewed_at')

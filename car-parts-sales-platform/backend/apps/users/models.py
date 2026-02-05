@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 
@@ -7,7 +7,7 @@ class UserManager(BaseUserManager):
     """自定义用户管理器，支持 phone 作为唯一标识"""
 
     def create_user(self, phone, password=None, **extra_fields):
-        """创建普通用户 - 明文存储密码（开发环境）"""
+        """创建普通用户 - 明文存储密码（根据用户要求）"""
         if not phone:
             raise ValueError('手机号必须提供')
         user = self.model(phone=phone, **extra_fields)
@@ -101,6 +101,40 @@ class UserAddress(models.Model):
     def save(self, *args, **kwargs):
         """设置默认地址逻辑：只有一个默认地址时，之前的默认地址会被取消"""
         if self.is_default:
-            # 取消该用户其他默认地址
-            UserAddress.objects.filter(user=self.user, is_default=True).update(is_default=False)
-        super().save(*args, **kwargs)
+            with transaction.atomic():
+                # 取消该用户其他默认地址
+                UserAddress.objects.filter(user=self.user, is_default=True).update(is_default=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+
+class BrowsingHistory(models.Model):
+    """
+    用户浏览历史模型 - 存储用户浏览过的商品记录
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='browsing_history',
+        verbose_name='所属用户'
+    )
+    product_id = models.IntegerField('商品ID')
+    product_name = models.CharField('商品名称', max_length=255)
+    product_image = models.URLField('商品图片', blank=True, default='')
+    product_price = models.DecimalField('商品价格', max_digits=10, decimal_places=2)
+    viewed_at = models.DateTimeField('浏览时间', default=timezone.now, db_index=True)
+
+    class Meta:
+        db_table = 'browsing_history'
+        verbose_name = '浏览历史'
+        verbose_name_plural = '浏览历史管理'
+        ordering = ['-viewed_at']
+        # 确保同一用户对同一商品在短时间内只有一条记录（去重）
+        indexes = [
+            models.Index(fields=['user', '-viewed_at']),
+            models.Index(fields=['user', 'product_id']),
+        ]
+
+    def __str__(self):
+        return f'{self.user.phone} - {self.product_name}'
