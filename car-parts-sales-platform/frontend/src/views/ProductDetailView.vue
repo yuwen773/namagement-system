@@ -3,18 +3,31 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getProductDetailApi, getProductReviewsApi, createProductReviewApi, incrementProductViewsApi } from '@/api'
 import { useCartStore } from '@/stores/cart'
+import { useAuthStore } from '@/stores/auth'
+import { addBrowsingHistoryApi } from '@/api/modules/user'
 import { formatCurrency, fromNow } from '@/utils'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const product = ref(null)
 const reviews = ref([])
 const selectedImage = ref(0)
 const quantity = ref(1)
+
+// Image zoom states
+const zoomActive = ref(false)
+const zoomPosition = ref({ x: 0, y: 0 })
+const imageContainerRef = ref(null)
+
+// Review images
+const reviewImages = ref([])
+const imagePreviewVisible = ref(false)
+const previewImageUrl = ref('')
 
 const newReview = ref({
   rating: 5,
@@ -35,6 +48,22 @@ async function fetchProduct() {
     selectedImage.value = 0
     // Increment views
     await incrementProductViewsApi(route.params.id)
+    // Track browsing history for logged-in users
+    if (authStore.isAuthenticated) {
+      try {
+        await addBrowsingHistoryApi({
+          product_id: data.id,
+          product_name: data.name,
+          product_image: data.main_image,
+          product_price: data.price
+        })
+      } catch (error) {
+        // Silently fail for browsing history tracking
+        console.error('Failed to track browsing history:', error)
+      }
+    }
+    // Fetch related products
+    await fetchRelatedProducts()
   } finally {
     loading.value = false
   }
@@ -66,9 +95,14 @@ async function submitReview() {
   }
 
   try {
-    await createProductReviewApi(route.params.id, newReview.value)
+    const reviewData = {
+      ...newReview.value,
+      images: reviewImages.value
+    }
+    await createProductReviewApi(route.params.id, reviewData)
     ElMessage.success('评价提交成功')
     newReview.value = { rating: 5, comment: '' }
+    reviewImages.value = []
     showReviewForm.value = false
     await fetchReviews()
   } catch (error) {
@@ -100,6 +134,62 @@ const discountPercent = computed(() => {
   if (!product.value?.original_price || product.value.original_price <= product.value.price) return 0
   return Math.round(((product.value.original_price - product.value.price) / product.value.original_price) * 100)
 })
+
+// Image zoom handlers
+function handleMouseMove(event) {
+  if (!imageContainerRef.value) return
+
+  const rect = imageContainerRef.value.getBoundingClientRect()
+  const x = ((event.clientX - rect.left) / rect.width) * 100
+  const y = ((event.clientY - rect.top) / rect.height) * 100
+
+  zoomPosition.value = { x, y }
+}
+
+function handleMouseEnter() {
+  zoomActive.value = true
+}
+
+function handleMouseLeave() {
+  zoomActive.value = false
+}
+
+// Review image handlers
+function handleReviewImageUpload(file) {
+  // In production, upload to server and get URL
+  // For now, create a local preview URL
+  const url = URL.createObjectURL(file.raw)
+  reviewImages.value.push(url)
+  return false // Prevent auto upload
+}
+
+function removeReviewImage(index) {
+  reviewImages.value.splice(index, 1)
+}
+
+function previewImage(url) {
+  previewImageUrl.value = url
+  imagePreviewVisible.value = true
+}
+
+// Related products (same category products)
+const relatedProducts = ref([])
+
+async function fetchRelatedProducts() {
+  if (!product.value?.category?.id) return
+
+  try {
+    const data = await getProductListApi({
+      category: product.value.category.id,
+      page: 1,
+      page_size: 4
+    })
+    // Filter out current product
+    relatedProducts.value = data.results?.filter(p => p.id !== product.value.id).slice(0, 4) || []
+  } catch (error) {
+    console.error('Failed to fetch related products:', error)
+  }
+}
 </script>
 
 <template>
@@ -123,14 +213,28 @@ const discountPercent = computed(() => {
     <div v-loading="loading" class="detail-container">
       <!-- Product Gallery -->
       <div class="product-gallery">
-        <div class="main-image-container">
+        <div
+          ref="imageContainerRef"
+          class="main-image-container"
+          @mousemove="handleMouseMove"
+          @mouseenter="handleMouseEnter"
+          @mouseleave="handleMouseLeave"
+        >
           <img
             :src="product?.images?.[selectedImage]?.image || product?.image"
             :alt="product?.name"
             class="main-image"
+            :class="{ 'zoom-active': zoomActive }"
+            :style="zoomActive ? {
+              transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+              transform: 'scale(2)'
+            } : {}"
           />
           <div v-if="discountPercent > 0" class="discount-badge">
             -{{ discountPercent }}%
+          </div>
+          <div v-if="zoomActive" class="zoom-hint">
+            悬停查看放大细节
           </div>
         </div>
 
@@ -317,6 +421,36 @@ const discountPercent = computed(() => {
             show-word-limit
             class="review-textarea"
           />
+          <!-- Image Upload -->
+          <div class="review-images-section">
+            <span class="image-upload-label">添加图片（可选）:</span>
+            <el-upload
+              :auto-upload="false"
+              :on-change="handleReviewImageUpload"
+              :show-file-list="false"
+              accept="image/*"
+              list-type="picture-card"
+              class="review-image-uploader"
+            >
+              <div class="upload-trigger">
+                <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+                  <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span>上传图片</span>
+              </div>
+            </el-upload>
+            <div v-if="reviewImages.length" class="uploaded-images-preview">
+              <div v-for="(img, index) in reviewImages" :key="index" class="uploaded-image-item">
+                <img :src="img" @click="previewImage(img)" />
+                <button class="remove-image-btn" @click="removeReviewImage(index)">
+                  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="form-actions">
             <button class="btn btn-cancel" @click="showReviewForm = false">取消</button>
             <button class="btn btn-submit" @click="submitReview">提交评价</button>
@@ -348,9 +482,60 @@ const discountPercent = computed(() => {
             </div>
           </div>
           <p class="review-comment">{{ review.comment }}</p>
+          <!-- Review Images -->
+          <div v-if="review.images?.length" class="review-images">
+            <div
+              v-for="(img, imgIndex) in review.images"
+              :key="imgIndex"
+              class="review-image-item"
+              @click="previewImage(img)"
+            >
+              <img :src="img" :alt="`评价图片 ${imgIndex + 1}`" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Related Products Section -->
+    <div v-if="relatedProducts.length" class="related-products-section">
+      <div class="section-header-centered">
+        <h2 class="section-title">相关推荐</h2>
+        <p class="section-subtitle">更多同类型商品供您选择</p>
+      </div>
+      <div class="related-products-grid">
+        <router-link
+          v-for="relatedProduct in relatedProducts"
+          :key="relatedProduct.id"
+          :to="`/product/${relatedProduct.id}`"
+          class="related-product-card"
+        >
+          <div class="related-product-image">
+            <img :src="relatedProduct.image || relatedProduct.images?.[0]?.image" :alt="relatedProduct.name" />
+            <div v-if="relatedProduct.original_price && relatedProduct.original_price > relatedProduct.price" class="related-discount-badge">
+              -{{ Math.round(((relatedProduct.original_price - relatedProduct.price) / relatedProduct.original_price) * 100) }}%
+            </div>
+          </div>
+          <div class="related-product-info">
+            <h3 class="related-product-name">{{ relatedProduct.name }}</h3>
+            <div class="related-product-price-row">
+              <span class="related-product-price">{{ formatCurrency(relatedProduct.price) }}</span>
+              <span v-if="relatedProduct.sales" class="related-product-sales">已售 {{ relatedProduct.sales }}</span>
+            </div>
+          </div>
+        </router-link>
+      </div>
+    </div>
+
+    <!-- Image Preview Dialog -->
+    <el-dialog
+      v-model="imagePreviewVisible"
+      :show-close="true"
+      :append-to-body="true"
+      class="image-preview-dialog"
+    >
+      <img :src="previewImageUrl" alt="预览图片" class="preview-image" />
+    </el-dialog>
   </div>
 </template>
 
@@ -442,6 +627,24 @@ const discountPercent = computed(() => {
 
 .main-image-container:hover .main-image {
   transform: scale(1.05);
+}
+
+.main-image.zoom-active {
+  cursor: crosshair;
+}
+
+.zoom-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  font-size: 12px;
+  color: #ffffff;
+  pointer-events: none;
 }
 
 .discount-badge {
@@ -1064,6 +1267,248 @@ const discountPercent = computed(() => {
   transform: translateY(-10px);
 }
 
+/* Review Images Section */
+.review-images-section {
+  margin-top: 16px;
+}
+
+.image-upload-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.review-image-uploader {
+  margin-bottom: 16px;
+}
+
+.upload-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 2px dashed rgba(71, 85, 105, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-trigger:hover {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.upload-trigger svg {
+  color: #64748b;
+}
+
+.upload-trigger span {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.uploaded-images-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.uploaded-image-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.uploaded-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-image-btn:hover {
+  background: #ef4444;
+}
+
+.remove-image-btn svg {
+  color: #ffffff;
+}
+
+/* Review Images Display */
+.review-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.review-image-item {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-image-item:hover {
+  transform: scale(1.05);
+}
+
+.review-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Related Products Section */
+.related-products-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  border-top: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.section-header-centered {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.related-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.related-product-card {
+  display: block;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.related-product-card:hover {
+  border-color: #f97316;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(249, 115, 22, 0.2);
+}
+
+.related-product-image {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.related-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.related-product-card:hover .related-product-image img {
+  transform: scale(1.1);
+}
+
+.related-discount-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+}
+
+.related-product-info {
+  padding: 16px;
+}
+
+.related-product-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.related-product-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.related-product-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f97316;
+}
+
+.related-product-sales {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Image Preview Dialog */
+.image-preview-dialog {
+  background: transparent;
+}
+
+.image-preview-dialog :deep(.el-dialog) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.image-preview-dialog :deep(.el-dialog__header) {
+  display: none;
+}
+
+.image-preview-dialog :deep(.el-dialog__body) {
+  padding: 0;
+  background: transparent;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 12px;
+  display: block;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .detail-container {
@@ -1077,6 +1522,10 @@ const discountPercent = computed(() => {
 
   .service-guarantees {
     grid-template-columns: 1fr;
+  }
+
+  .related-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 
@@ -1097,6 +1546,16 @@ const discountPercent = computed(() => {
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
+  }
+
+  .related-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .uploaded-images-preview,
+  .review-images {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 </style>

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { createOrderApi } from '@/api'
+import { getMyCouponsApi } from '@/api/modules/marketing'
 import { formatCurrency } from '@/utils'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -10,17 +11,60 @@ const router = useRouter()
 const cartStore = useCartStore()
 
 const loading = ref(false)
+const couponLoading = ref(false)
 const selectedCoupon = ref(null)
+const availableCoupons = ref([])
 
 onMounted(async () => {
-  await cartStore.fetchCart()
+  await Promise.all([
+    cartStore.fetchCart(),
+    fetchAvailableCoupons()
+  ])
 })
+
+// 获取可用优惠券
+async function fetchAvailableCoupons() {
+  couponLoading.value = true
+  try {
+    const data = await getMyCouponsApi({ status: 'unused', page_size: 100 })
+    availableCoupons.value = data.results || []
+  } catch (error) {
+    console.error('获取优惠券失败:', error)
+  } finally {
+    couponLoading.value = false
+  }
+}
 
 const cartItems = computed(() => cartStore.items)
 const totalQuantity = computed(() => cartStore.totalQuantity)
 const totalPrice = computed(() => cartStore.totalPrice)
 const selectedItems = computed(() => cartItems.filter(item => item.selected))
 const selectedPrice = computed(() => cartItems.filter(item => item.selected).reduce((sum, item) => sum + item.price * item.quantity, 0))
+
+// 优惠券折扣金额
+const couponDiscount = computed(() => {
+  if (!selectedCoupon.value) return 0
+
+  const coupon = selectedCoupon.value.coupon || selectedCoupon.value
+  const discountAmount = coupon.discount_amount || 0
+  const discountPercent = coupon.discount_percent || 0
+
+  if (discountAmount > 0) {
+    // 满减券：检查是否满足门槛
+    const minAmount = coupon.min_purchase_amount || 0
+    if (selectedPrice.value >= minAmount) {
+      return Math.min(discountAmount, selectedPrice.value)
+    }
+    return 0
+  } else if (discountPercent > 0) {
+    // 折扣券
+    return Math.round(selectedPrice.value * discountPercent / 100)
+  }
+  return 0
+})
+
+// 最终价格
+const finalPrice = computed(() => Math.max(0, selectedPrice.value - couponDiscount.value))
 
 async function handleQuantityChange(item, newQuantity) {
   if (newQuantity < 1) return
@@ -198,6 +242,40 @@ async function handleClearCart() {
         <div class="order-summary">
           <h2 class="summary-title">订单摘要</h2>
 
+          <!-- Coupon Selector -->
+          <div class="coupon-section">
+            <label class="coupon-label">选择优惠券</label>
+            <el-select
+              v-model="selectedCoupon"
+              placeholder="选择优惠券"
+              clearable
+              :loading="couponLoading"
+              class="coupon-select"
+            >
+              <el-option
+                v-for="userCoupon in availableCoupons"
+                :key="userCoupon.id"
+                :label="`${userCoupon.coupon.name} - ${userCoupon.coupon.discount_amount ? '¥' + userCoupon.coupon.discount_amount : userCoupon.coupon.discount_percent + '%折'}`"
+                :value="userCoupon"
+              >
+                <div class="coupon-option">
+                  <div class="coupon-option-name">{{ userCoupon.coupon.name }}</div>
+                  <div class="coupon-option-value">
+                    {{ userCoupon.coupon.discount_amount ? '¥' + userCoupon.coupon.discount_amount : userCoupon.coupon.discount_percent + '%折' }}
+                  </div>
+                </div>
+              </el-option>
+            </el-select>
+            <div v-if="selectedCoupon" class="coupon-hint">
+              <span v-if="selectedCoupon.coupon.min_purchase_amount && selectedPrice < selectedCoupon.coupon.min_purchase_amount" class="coupon-hint-warning">
+                还差 ¥{{ (selectedCoupon.coupon.min_purchase_amount - selectedPrice).toFixed(2) }} 可用
+              </span>
+              <span v-else class="coupon-hint-success">
+                可优惠 ¥{{ couponDiscount.toFixed(2) }}
+              </span>
+            </div>
+          </div>
+
           <!-- Price Details -->
           <div class="price-details">
             <div class="price-row">
@@ -208,14 +286,14 @@ async function handleClearCart() {
               <span class="price-label">运费</span>
               <span class="price-value price-free">结算时计算</span>
             </div>
-            <div class="price-row" v-if="selectedCoupon">
+            <div class="price-row" v-if="couponDiscount > 0">
               <span class="price-label">优惠券</span>
-              <span class="price-value price-discount">-{{ formatCurrency(0) }}</span>
+              <span class="price-value price-discount">-{{ formatCurrency(couponDiscount) }}</span>
             </div>
             <div class="price-divider"></div>
             <div class="price-row price-row-total">
               <span class="price-label">合计</span>
-              <span class="price-value">{{ formatCurrency(selectedPrice) }}</span>
+              <span class="price-value">{{ formatCurrency(finalPrice) }}</span>
             </div>
           </div>
 
@@ -614,6 +692,68 @@ async function handleClearCart() {
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 24px;
+}
+
+/* Coupon Section */
+.coupon-section {
+  margin-bottom: 20px;
+}
+
+.coupon-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.coupon-select {
+  width: 100%;
+}
+
+.coupon-select :deep(.el-input__wrapper) {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  box-shadow: none;
+}
+
+.coupon-select :deep(.el-input__inner) {
+  color: #e2e8f0;
+}
+
+.coupon-select :deep(.el-input__wrapper:hover) {
+  border-color: rgba(249, 115, 22, 0.5);
+}
+
+.coupon-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.coupon-option-name {
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+.coupon-option-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f97316;
+}
+
+.coupon-hint {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.coupon-hint-warning {
+  color: #f59e0b;
+}
+
+.coupon-hint-success {
+  color: #22c55e;
 }
 
 .price-details {
