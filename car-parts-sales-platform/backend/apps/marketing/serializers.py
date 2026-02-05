@@ -1,10 +1,10 @@
 """
 营销管理序列化器
 
-包含优惠券、用户优惠券等序列化器
+包含优惠券、用户优惠券、促销活动、Banner 轮播图等序列化器
 """
 from rest_framework import serializers
-from .models import Coupon, UserCoupon
+from .models import Coupon, UserCoupon, Promotion, Banner
 
 
 class CouponSerializer(serializers.ModelSerializer):
@@ -70,3 +70,95 @@ class UserCouponListSerializer(serializers.ModelSerializer):
             return f'满{obj.coupon.min_amount}减{obj.coupon.discount_amount}'
         else:
             return f'{obj.coupon.discount_rate}折'
+
+
+class PromotionSerializer(serializers.ModelSerializer):
+    """促销活动序列化器"""
+    product_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        help_text='关联商品ID列表'
+    )
+    products = serializers.SerializerMethodField(read_only=True)
+    coupon_name = serializers.CharField(source='coupon.name', read_only=True)
+    is_valid = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Promotion
+        fields = [
+            'id', 'name', 'description', 'promotion_type', 'products', 'product_ids',
+            'coupon', 'coupon_name', 'start_time', 'end_time', 'discount_rate',
+            'discount_amount', 'image', 'sort_order', 'is_active', 'is_valid',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+    def get_products(self, obj):
+        """获取关联商品列表"""
+        from apps.products.serializers import ProductListSerializer
+        products = obj.products.all()
+        return ProductListSerializer(products, many=True).data
+
+    def create(self, validated_data):
+        """创建促销活动"""
+        product_ids = validated_data.pop('product_ids', [])
+        promotion = Promotion.objects.create(**validated_data)
+        if product_ids:
+            promotion.products.set(product_ids)
+        return promotion
+
+    def update(self, instance, validated_data):
+        """更新促销活动"""
+        product_ids = validated_data.pop('product_ids', None)
+
+        # 更新基本字段
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # 更新关联商品
+        if product_ids is not None:
+            instance.products.set(product_ids)
+
+        return instance
+
+
+class PromotionListSerializer(serializers.ModelSerializer):
+    """促销活动列表序列化器（简化版）"""
+    coupon_name = serializers.CharField(source='coupon.name', read_only=True)
+    is_valid = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Promotion
+        fields = [
+            'id', 'name', 'promotion_type', 'coupon_name', 'start_time',
+            'end_time', 'discount_rate', 'discount_amount', 'image',
+            'sort_order', 'is_active', 'is_valid', 'created_at'
+        ]
+
+
+class BannerSerializer(serializers.ModelSerializer):
+    """Banner 轮播图序列化器"""
+    is_valid = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Banner
+        fields = [
+            'id', 'title', 'subtitle', 'image', 'link_type', 'link_value',
+            'position', 'sort_order', 'is_active', 'start_time', 'end_time',
+            'is_valid', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class BannerListSerializer(serializers.ModelSerializer):
+    """Banner 列表序列化器（简化版）"""
+    is_valid = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Banner
+        fields = [
+            'id', 'title', 'image', 'link_type', 'link_value',
+            'position', 'sort_order', 'is_active', 'is_valid'
+        ]
