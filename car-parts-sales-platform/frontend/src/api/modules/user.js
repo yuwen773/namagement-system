@@ -4,6 +4,8 @@ import { get, post, put, patch, del } from '../request'
  * 用户相关 API
  */
 
+// ==================== 用户个人接口 ====================
+
 /**
  * 获取用户地址列表
  * @returns {Promise<Array>}
@@ -108,4 +110,71 @@ export function addBrowsingHistoryApi(data) {
  */
 export function clearBrowsingHistoryApi() {
   return del('/users/browsing-history/clear/')
+}
+
+// ==================== 管理员用户管理接口 ====================
+
+/**
+ * 获取用户列表（管理员）
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
+ */
+export function getUserListApi(params) {
+  return get('/users/', params)
+}
+
+/**
+ * 获取用户详情（管理员）- 包含地址信息
+ * @param {number} id - 用户ID
+ * @returns {Promise<Object>}
+ */
+export function getUserDetailApi(id) {
+  return get(`/users/${id}/admin-detail/`)
+}
+
+/**
+ * 更新用户状态（管理员）- 启用/禁用
+ * @param {number} id - 用户ID
+ * @param {string} status - 状态 (active/banned)
+ * @returns {Promise<Object>}
+ */
+export function updateUserStatusApi(id, status) {
+  return patch(`/users/${id}/status/`, { status })
+}
+
+/**
+ * 获取用户地址列表（管理员）
+ * @param {number} id - 用户ID
+ * @returns {Promise<Object>}
+ */
+export function getUserAddressesApi(id) {
+  return get(`/users/${id}/admin-addresses/`)
+}
+
+/**
+ * 创建用户（管理员）
+ * @param {Object} data - 用户数据
+ * @returns {Promise<Object>}
+ */
+export function createUserApi(data) {
+  return post('/users/', data)
+}
+
+/**
+ * 更新用户信息（管理员）
+ * @param {number} id - 用户ID
+ * @param {Object} data - 用户数据
+ * @returns {Promise<Object>}
+ */
+export function updateUserApi(id, data) {
+  return patch(`/users/${id}/`, data)
+}
+
+/**
+ * 删除用户（管理员）
+ * @param {number} id - 用户ID
+ * @returns {Promise<void>}
+ */
+export function deleteUserApi(id) {
+  return del(`/users/${id}/`)
 }

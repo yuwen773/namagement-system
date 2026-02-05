@@ -7,6 +7,9 @@ export * from './modules/product'
 export * from './modules/cart'
 export * from './modules/order'
 export * from './modules/marketing'
+export * from './modules/recommendation'
+export * from './modules/content'
+export * from './modules/system'
 
 // 请求方法
 export { default as request } from './request'
