@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import duration from 'dayjs/plugin/duration'
+import { ORDER_STATUS_MAP } from './constants'
 
 dayjs.locale('zh-cn')
 dayjs.extend(relativeTime)
@@ -125,8 +126,16 @@ export function maskPhone(phone) {
  * @returns {Object} { label, type }
  */
 export function getOrderStatusInfo(status) {
-  const { ORDER_STATUS_MAP } = require('./constants')
   return ORDER_STATUS_MAP[status] || { label: status, type: 'info' }
+}
+
+/**
+ * 获取订单状态标签（别名）
+ * @param {string} status - 状态值
+ * @returns {Object} { label, type }
+ */
+export function getOrderStatusLabel(status) {
+  return getOrderStatusInfo(status)
 }
 
 /**
