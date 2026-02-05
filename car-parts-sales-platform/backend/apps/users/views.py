@@ -255,6 +255,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class UserAddressViewSet(viewsets.ModelViewSet):
     """用户地址视图集"""
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserAddressSerializer
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -263,6 +264,12 @@ class UserAddressViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return UserAddress.objects.filter(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        """获取用户地址列表"""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return ApiResponse.success(data=serializer.data)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

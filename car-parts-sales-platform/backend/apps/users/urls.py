@@ -5,14 +5,19 @@
 认证接口已分离到 auth_urls.py
 """
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import DefaultRouter, SimpleRouter
 from .views import UserViewSet, UserAddressViewSet, BrowsingHistoryViewSet
 
-router = DefaultRouter()
-router.register(r'', UserViewSet, basename='user')
-router.register(r'addresses', UserAddressViewSet, basename='address')
-router.register(r'browsing-history', BrowsingHistoryViewSet, basename='browsing-history')
+# 为 UserViewSet 使用单独的路由器，避免与其他 ViewSet 冲突
+user_router = SimpleRouter()
+user_router.register(r'', UserViewSet, basename='user')
+
+# 其他资源使用 SimpleRouter，避免覆盖 UserViewSet 的 list 视图
+resource_router = SimpleRouter()
+resource_router.register(r'addresses', UserAddressViewSet, basename='address')
+resource_router.register(r'browsing-history', BrowsingHistoryViewSet, basename='browsing-history')
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', include(resource_router.urls)),
+    path('', include(user_router.urls)),
 ]
