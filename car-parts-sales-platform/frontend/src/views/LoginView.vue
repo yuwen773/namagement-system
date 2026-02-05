@@ -25,7 +25,8 @@ async function handleLogin() {
   try {
     await authStore.login(form.value.phone, form.value.password)
     ElMessage.success('登录成功')
-    const redirect = route.query.redirect || '/'
+    // 管理员登录后跳转到管理后台，普通用户跳转到首页
+    const redirect = route.query.redirect || (authStore.user?.is_staff ? '/admin/dashboard' : '/')
     router.push(redirect)
   } catch (error) {
     ElMessage.error(error.message || '登录失败')

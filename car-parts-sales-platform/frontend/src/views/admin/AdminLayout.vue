@@ -139,7 +139,11 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">
+                <el-dropdown-item command="frontend">
+                  <el-icon><HomeFilled /></el-icon>
+                  返回前台
+                </el-dropdown-item>
+                <el-dropdown-item divided command="profile">
                   <el-icon><User /></el-icon>
                   个人资料
                 </el-dropdown-item>
@@ -336,6 +340,10 @@ const handleMessageClick = () => {
 // 用户操作
 const handleUserCommand = async (command) => {
   switch (command) {
+    case 'frontend':
+      // 返回前台首页
+      router.push('/')
+      break
     case 'profile':
       router.push('/admin/profile')
       break

@@ -11,6 +11,13 @@
         </div>
         <div class="top-links">
           <template v-if="authStore.isAuthenticated">
+            <!-- 管理员专属入口 -->
+            <router-link v-if="authStore.user?.is_staff" to="/admin/dashboard" class="top-link admin-link">
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              后台管理
+            </router-link>
             <router-link to="/user" class="top-link">
               <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -357,6 +364,15 @@ onMounted(async () => {
 
 .logout-link:hover {
   color: #ef4444;
+}
+
+.admin-link {
+  color: #f97316;
+  font-weight: 600;
+}
+
+.admin-link:hover {
+  color: #ea580c;
 }
 
 /* 主头部 */
