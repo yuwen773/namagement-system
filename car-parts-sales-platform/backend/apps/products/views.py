@@ -6,6 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import F
 from utils.response import ApiResponse
 from .models import Category, Product, ProductImage, ProductAttribute, Review
+from .filters import ProductFilter, CategoryFilter
 from .serializers import (
     CategorySerializer, CategoryTreeSerializer,
     ProductListSerializer, ProductDetailSerializer,
@@ -112,13 +113,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     permission_classes = [AllowAny]  # 默认允许匿名浏览
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
-    filterset_fields = {
-        'category': ['exact', 'in'],
-        'price': ['gte', 'lte'],
-        'status': ['exact'],
-        'is_featured': ['exact'],
-        'is_new': ['exact'],
-    }
+    filterset_class = ProductFilter  # 使用自定义过滤器
     search_fields = ['name', 'description']
     ordering_fields = ['created_at', 'price', 'sales_count', 'view_count']
     ordering = ['-created_at']
