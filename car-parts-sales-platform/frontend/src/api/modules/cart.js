@@ -50,3 +50,11 @@ export function deleteCartItemApi(id) {
 export function clearCartApi() {
   return del('/orders/cart/clear/')
 }
+
+/**
+ * 获取购物车商品数量
+ * @returns {Promise<Object>} { count: number }
+ */
+export function getCartCountApi() {
+  return get('/orders/cart/count/')
+}
