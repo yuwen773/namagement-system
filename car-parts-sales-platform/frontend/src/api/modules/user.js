@@ -129,7 +129,7 @@ export function getUserListApi(params) {
  * @returns {Promise<Object>}
  */
 export function getUserDetailApi(id) {
-  return get(`/users/${id}/admin-detail/`)
+  return get(`/users/${id}/`)
 }
 
 /**
