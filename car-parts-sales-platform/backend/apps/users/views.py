@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils import timezone
 from utils.response import ApiResponse
 from .models import User, UserAddress, BrowsingHistory
 from .serializers import (
@@ -12,6 +13,7 @@ from .serializers import (
     UserProfileUpdateSerializer,
     BrowsingHistorySerializer,
 )
+from utils.pagination import StandardPagination
 
 
 class AuthViewSet(viewsets.ViewSet):
@@ -50,17 +52,61 @@ class AuthViewSet(viewsets.ViewSet):
             message='登录成功'
         )
 
+    @action(detail=False, methods=['post'], url_path='password/reset')
+    def password_reset(self, request):
+        """
+        密码重置接口
+        用户忘记密码时，通过验证码重置密码
+        """
+        username = request.data.get('username')
+        new_password = request.data.get('new_password')
+        code = request.data.get('code')
+
+        # 验证必填字段
+        if not username or not new_password or not code:
+            return ApiResponse.error(message='手机号、新密码和验证码不能为空')
+
+        # 查找用户
+        try:
+            user = User.objects.get(phone=username)
+        except User.DoesNotExist:
+            return ApiResponse.error(message='用户不存在')
+
+        # 模拟验证码验证（开发环境：验证码固定为 123456）
+        # 生产环境应该从 Redis 或数据库中验证
+        if code != '123456':
+            return ApiResponse.error(message='验证码错误')
+
+        # 验证新密码长度
+        if len(new_password) < 6:
+            return ApiResponse.error(message='新密码长度不能少于6位')
+
+        # 更新密码
+        user.password = new_password
+        user.save()
+
+        return ApiResponse.success(
+            message='密码重置成功'
+        )
+
 
 class UserViewSet(viewsets.ModelViewSet):
     """用户视图集"""
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardPagination
 
     def get_queryset(self):
         # 普通用户只能查看自己，管理员可以查看所有
         if self.request.user.is_staff:
-            return User.objects.all()
+            return User.objects.all().order_by('-created_at')
         return User.objects.filter(id=self.request.user.id)
+
+    def get_permissions(self):
+        """管理员专用端点需要管理员权限"""
+        if self.action in ['detail', 'status', 'addresses']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
     @action(detail=False, methods=['get'])
     def me(self, request):
@@ -101,6 +147,64 @@ class UserViewSet(viewsets.ModelViewSet):
         request.user.save()
 
         return ApiResponse.success(message='密码修改成功')
+
+    @action(detail=True, methods=['get'], url_path='admin-detail')
+    def detail(self, request, pk=None):
+        """获取用户详情（管理员专用）- 包含地址和积分信息"""
+        try:
+            user = self.get_object()
+            addresses = UserAddress.objects.filter(user=user).order_by('-is_default', '-created_at')
+
+            data = {
+                'user': UserSerializer(user).data,
+                'addresses': UserAddressSerializer(addresses, many=True).data,
+                'address_count': addresses.count(),
+                'default_address': UserAddressSerializer(
+                    addresses.filter(is_default=True).first()
+                ).data if addresses.filter(is_default=True).exists() else None
+            }
+            return ApiResponse.success(data=data)
+        except Exception as e:
+            return ApiResponse.error(message=f'获取用户详情失败: {str(e)}')
+
+    @action(detail=True, methods=['patch'], url_path='status')
+    def status(self, request, pk=None):
+        """更新用户状态（管理员专用）- 启用/禁用用户"""
+        try:
+            user = self.get_object()
+            new_status = request.data.get('status')
+
+            if not new_status:
+                return ApiResponse.error(message='请提供状态值')
+
+            if new_status not in ['active', 'banned']:
+                return ApiResponse.error(message='状态值无效，必须是 active 或 banned')
+
+            # 不允许管理员禁用自己
+            if user.id == request.user.id and new_status == 'banned':
+                return ApiResponse.error(message='不能禁用自己的账号')
+
+            user.status = new_status
+            user.save()
+
+            return ApiResponse.success(
+                data=UserSerializer(user).data,
+                message=f'用户状态已更新为 {user.get_status_display()}'
+            )
+        except Exception as e:
+            return ApiResponse.error(message=f'更新用户状态失败: {str(e)}')
+
+    @action(detail=True, methods=['get'], url_path='admin-addresses')
+    def addresses(self, request, pk=None):
+        """获取用户地址列表（管理员专用）"""
+        try:
+            user = self.get_object()
+            addresses = UserAddress.objects.filter(user=user).order_by('-is_default', '-created_at')
+            return ApiResponse.success(
+                data=UserAddressSerializer(addresses, many=True).data
+            )
+        except Exception as e:
+            return ApiResponse.error(message=f'获取用户地址失败: {str(e)}')
 
 
 class UserAddressViewSet(viewsets.ModelViewSet):
