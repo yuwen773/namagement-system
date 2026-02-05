@@ -35,13 +35,13 @@
     >
       <el-form-item label="审核结果" prop="status">
         <el-radio-group v-model="form.status">
-          <el-radio label="approved">
+          <el-radio value="approved">
             <span style="color: #67c23a">同意</span>
           </el-radio>
-          <el-radio label="rejected">
+          <el-radio value="rejected">
             <span style="color: #f56c6c">拒绝</span>
           </el-radio>
-          <el-radio label="completed">
+          <el-radio value="completed">
             <span style="color: #409eff">直接完成</span>
           </el-radio>
         </el-radio-group>

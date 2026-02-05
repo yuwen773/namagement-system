@@ -61,11 +61,11 @@
 
       <div class="filter-right">
         <el-radio-group v-model="viewMode" class="view-toggle">
-          <el-radio-button label="table">
+          <el-radio-button value="table">
             <el-icon><List /></el-icon>
             <span>列表</span>
           </el-radio-button>
-          <el-radio-button label="card">
+          <el-radio-button value="card">
             <el-icon><Grid /></el-icon>
             <span>卡片</span>
           </el-radio-button>
