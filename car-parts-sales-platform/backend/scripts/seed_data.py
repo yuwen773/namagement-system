@@ -97,6 +97,49 @@ CATEGORY_DATA = {
     },
 }
 
+# 英文关键词映射，用于生成相关图片
+CATEGORY_KEYWORDS = {
+    '发动机系统': 'car,engine',
+    '进气系统': 'car,engine,intake',
+    '排气系统': 'car,exhaust',
+    '燃油系统': 'car,fuel',
+    
+    '底盘系统': 'car,chassis',
+    '悬挂系统': 'car,suspension',
+    '制动系统': 'car,brake',
+    '转向系统': 'car,steering',
+    
+    '车身外观': 'car,exterior,tuning',
+    '车身套件': 'car,bumper,spoiler',
+    '灯光系统': 'car,headlight',
+    '车窗系统': 'car,window',
+    
+    '内饰改装': 'car,interior',
+    '座椅系统': 'car,seat',
+    '仪表系统': 'car,dashboard',
+    '音响系统': 'car,audio,speaker',
+    
+    '电子系统': 'car,tech,electronics',
+    '行车电脑': 'car,computer',
+    '导航系统': 'car,gps,navigation',
+    '安防系统': 'car,security',
+    
+    '轮胎轮毂': 'car,wheel,tire',
+    '轮胎': 'car,tire',
+    '轮毂': 'car,rim,alloy',
+    '配件': 'car,parts',
+}
+
+def get_image_url(keyword='car,parts', width=400, height=400, seed=None):
+    """
+    获取随机图片URL
+    优先使用 Unsplash 风格的关键词图片服务
+    """
+    # 如果指定了seed，使用seed保证图片固定
+    lock_param = f"?lock={seed}" if seed is not None else ""
+    # 使用 loremflickr.com，因为它支持更准确的关键词搜索
+    return f"https://loremflickr.com/{width}/{height}/{keyword}{lock_param}"
+
 # 商品名称模板
 PRODUCT_TEMPLATES = [
     "{brand} {category} 适用于{car_model}",
@@ -404,10 +447,16 @@ def create_products():
 
         # 创建商品图片（每个商品2-5张图片）
         num_images = random.randint(2, 5)
+        
+        # 获取分类对应的关键词
+        keyword = CATEGORY_KEYWORDS.get(category.name, 'car,parts')
+        if category.parent:
+            keyword = CATEGORY_KEYWORDS.get(category.parent.name, keyword)
+            
         for j in range(num_images):
             ProductImage.objects.create(
                 product=product,
-                image_url=f"https://picsum.photos/seed/prod{i}_{j}/400/400.jpg",
+                image_url=get_image_url(keyword, 400, 400, seed=f"{i}_{j}"),
                 sort_order=j
             )
 
@@ -605,7 +654,7 @@ def create_carts_and_orders(users):
                                 '安装后效果明显，赞！',
                                 '',  # 空评价
                             ]),
-                            images=[f"https://picsum.photos/seed/review_{random.randint(1, 1000)}/200/200.jpg"]
+                            images=[get_image_url('car,review', 200, 200, seed=f"review_{random.randint(1, 1000)}")]
                             if random.random() < 0.3 else [],
                             is_anonymous=random.random() < 0.5
                         )
@@ -700,7 +749,7 @@ def create_modification_cases():
             title=f"{random.choice(CASE_TITLES)} - {i+1:03d}",
             summary=f"这是一份关于{random.choice(['宝马', '奔驰', '奥迪', '大众', '本田'])}的改装案例，展示了专业的改装工艺和显著的性能提升。",
             content=random.choice(case_contents),
-            cover_image=f"https://picsum.photos/seed/case{i}/800/600.jpg",
+            cover_image=get_image_url('car,modified,tuning', 800, 600, seed=f"case{i}"),
             author=random.choice(['张技师', '李工', '王师傅', '赵工程师', '刘技师']),
             status='published' if is_published else 'draft',
             view_count=random.randint(0, 5000) if is_published else 0,
