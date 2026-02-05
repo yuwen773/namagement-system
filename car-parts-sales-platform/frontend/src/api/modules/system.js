@@ -331,6 +331,23 @@ export function getLogActionLabel(action) {
 }
 
 /**
+ * 获取操作类型颜色
+ * @param {string} action - 操作类型值
+ * @returns {string}
+ */
+export function getLogActionColor(action) {
+  const colorMap = {
+    create: 'success',
+    update: 'primary',
+    delete: 'danger',
+    login: 'info',
+    logout: 'warning',
+    other: ''
+  }
+  return colorMap[action] || ''
+}
+
+/**
  * 获取操作状态标签
  * @param {string} status - 状态值
  * @returns {string}

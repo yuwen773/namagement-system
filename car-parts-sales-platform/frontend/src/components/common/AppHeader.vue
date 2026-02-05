@@ -240,7 +240,7 @@ const handleHotSearch = (keyword) => {
 
 // 消息中心点击
 const handleMessageClick = () => {
-  router.push('/user/messages')
+  router.push('/user?tab=messages')
 }
 
 // 退出登录
