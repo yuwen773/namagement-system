@@ -172,7 +172,7 @@
             <el-pagination
               v-model:current-page="rulePagination.page"
               v-model:page-size="rulePagination.pageSize"
-              :page-sizes="[20, 50, 100]"
+              :page-sizes="[10, 30, 50]"
               :total="rulePagination.total"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleRuleSizeChange"
@@ -287,7 +287,7 @@
             <el-pagination
               v-model:current-page="productPagination.page"
               v-model:page-size="productPagination.pageSize"
-              :page-sizes="[20, 50, 100]"
+              :page-sizes="[10, 30, 50]"
               :total="productPagination.total"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleProductSizeChange"
@@ -672,7 +672,7 @@ const ruleFilter = reactive({
 })
 const rulePagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 
@@ -684,7 +684,7 @@ const productFilter = reactive({
 })
 const productPagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 
@@ -741,7 +741,7 @@ const ruleProducts = ref([])
 const currentRule = ref(null)
 const ruleProductsPagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 

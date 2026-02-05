@@ -171,7 +171,7 @@
             <el-pagination
               v-model:current-page="casePagination.page"
               v-model:page-size="casePagination.pageSize"
-              :page-sizes="[20, 50, 100]"
+              :page-sizes="[10, 30, 50]"
               :total="casePagination.total"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleCaseSizeChange"
@@ -291,7 +291,7 @@
             <el-pagination
               v-model:current-page="faqPagination.page"
               v-model:page-size="faqPagination.pageSize"
-              :page-sizes="[20, 50, 100]"
+              :page-sizes="[10, 30, 50]"
               :total="faqPagination.total"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleFAQSizeChange"
@@ -577,7 +577,7 @@ const caseFilter = reactive({
 })
 const casePagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 
@@ -591,7 +591,7 @@ const faqFilter = reactive({
 })
 const faqPagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 

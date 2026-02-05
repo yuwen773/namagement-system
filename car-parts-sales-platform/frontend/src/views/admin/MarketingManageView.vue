@@ -77,15 +77,15 @@
             </el-input>
 
             <el-select v-model="couponFilter.type" placeholder="优惠类型" clearable class="filter-select">
-              <el-option label="全部类型" :value="null" />
+              <el-option label="全部类型" value="" />
               <el-option label="满减券" value="full_reduction" />
               <el-option label="折扣券" value="discount" />
             </el-select>
 
             <el-select v-model="couponFilter.status" placeholder="状态" clearable class="filter-select">
-              <el-option label="全部状态" :value="null" />
-              <el-option label="启用" :value="true" />
-              <el-option label="禁用" :value="false" />
+              <el-option label="全部状态" value="" />
+              <el-option label="启用" value="active" />
+              <el-option label="禁用" value="inactive" />
             </el-select>
 
             <el-button type="primary" :icon="Search" @click="handleCouponSearch">搜索</el-button>
@@ -197,7 +197,7 @@
             <el-pagination
               v-model:current-page="couponPagination.page"
               v-model:page-size="couponPagination.pageSize"
-              :page-sizes="[20, 50, 100]"
+              :page-sizes="[10, 30, 50]"
               :total="couponPagination.total"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleCouponSizeChange"
@@ -212,7 +212,7 @@
         <div class="filter-toolbar">
           <div class="filter-left">
             <el-select v-model="userCouponFilter.status" placeholder="状态" clearable class="filter-select">
-              <el-option label="全部状态" :value="null" />
+              <el-option label="全部状态" value="" />
               <el-option label="未使用" value="unused" />
               <el-option label="已使用" value="used" />
               <el-option label="已过期" value="expired" />
@@ -304,7 +304,7 @@
             <el-pagination
               v-model:current-page="userCouponPagination.page"
               v-model:page-size="userCouponPagination.pageSize"
-              :page-sizes="[20, 50, 100]"
+              :page-sizes="[10, 30, 50]"
               :total="userCouponPagination.total"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleUserCouponSizeChange"
@@ -466,12 +466,12 @@ const couponLoading = ref(false)
 const couponList = ref([])
 const couponFilter = reactive({
   search: '',
-  type: null,
-  status: null
+  type: '',
+  status: ''
 })
 const couponPagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 
@@ -479,11 +479,11 @@ const couponPagination = reactive({
 const userCouponLoading = ref(false)
 const userCouponList = ref([])
 const userCouponFilter = reactive({
-  status: null
+  status: ''
 })
 const userCouponPagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 
@@ -495,7 +495,7 @@ const currentUserCouponList = ref([])
 const userCouponListLoading = ref(false)
 const userCouponListPagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 const currentCouponForUserList = ref(null)
@@ -613,8 +613,8 @@ const handleCouponSearch = () => {
 const handleCouponReset = () => {
   Object.assign(couponFilter, {
     search: '',
-    type: null,
-    status: null
+    type: '',
+    status: ''
   })
   couponPagination.page = 1
   fetchCouponList()
@@ -638,7 +638,7 @@ const handleUserCouponSearch = () => {
 }
 
 const handleUserCouponReset = () => {
-  userCouponFilter.status = null
+  userCouponFilter.status = ''
   userCouponPagination.page = 1
   fetchUserCouponList()
 }

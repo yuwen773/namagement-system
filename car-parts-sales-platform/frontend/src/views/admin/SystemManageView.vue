@@ -123,7 +123,7 @@
             v-model:current-page="configPagination.page"
             v-model:page-size="configPagination.page_size"
             :total="configPagination.total"
-            :page-sizes="[10, 20, 50, 100]"
+            :page-sizes="[10, 30, 50]"
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="fetchConfigs"
             @current-change="fetchConfigs"
@@ -248,7 +248,7 @@
             v-model:current-page="messagePagination.page"
             v-model:page-size="messagePagination.page_size"
             :total="messagePagination.total"
-            :page-sizes="[10, 20, 50, 100]"
+            :page-sizes="[10, 30, 50]"
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="fetchMessages"
             @current-change="fetchMessages"
@@ -371,7 +371,7 @@
             v-model:current-page="logPagination.page"
             v-model:page-size="logPagination.page_size"
             :total="logPagination.total"
-            :page-sizes="[10, 20, 50, 100]"
+            :page-sizes="[10, 30, 50]"
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="fetchLogs"
             @current-change="fetchLogs"
@@ -542,7 +542,7 @@ import {
   getLogsListApi,
   getConfigCategoryLabel, getConfigCategoryType,
   getMessageTypeLabel, getMessageTypeColor, getMessageStatusLabel, getMessageStatusType,
-  getLogActionLabel, getLogStatusType
+  getLogActionLabel, getLogActionColor, getLogStatusLabel, getLogStatusType
 } from '@/api/modules/system'
 import { getUserListApi } from '@/api/modules/user'
 
@@ -845,15 +845,6 @@ async function fetchLogs() {
 function viewLog(log) {
   currentLog.value = log
   logViewVisible.value = true
-}
-
-// 获取操作类型颜色
-function getLogActionColor(action) {
-  const colorMap = {
-    create: 'success', update: 'primary', delete: 'danger',
-    login: 'warning', logout: 'info', other: ''
-  }
-  return colorMap[action] || ''
 }
 
 // ==================== 工具函数 ====================
