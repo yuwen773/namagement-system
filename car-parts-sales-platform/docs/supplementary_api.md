@@ -135,12 +135,191 @@
 
 ### 7.1 系统配置与日志接口
 
+#### 7.1.1 系统配置接口 (SystemConfig)
+
 **接口规格：**
 
 | 方法 | URL | 描述 | 权限 |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/system/config/` | 获取系统配置（网站名称、SEO等） | 公开/管理员 |
-| `POST` | `/api/system/config/` | 更新系统配置 | 管理员 |
-| `POST` | `/api/system/messages/` | 发布站内信/通知 | 管理员 |
-| `GET` | `/api/system/messages/` | 获取我的消息列表 | 登录用户 |
-| `GET` | `/api/system/logs/` | 获取系统操作日志 | 管理员 |
+| `GET` | `/api/system/configs/` | 获取系统配置列表 | 公开/管理员 |
+| `GET` | `/api/system/configs/{id}/` | 获取配置详情 | 公开/管理员 |
+| `POST` | `/api/system/configs/` | 创建系统配置 | 管理员 |
+| `PUT` | `/api/system/configs/{id}/` | 更新系统配置 | 管理员 |
+| `PATCH` | `/api/system/configs/{id}/` | 部分更新配置 | 管理员 |
+| `DELETE` | `/api/system/configs/{id}/` | 删除系统配置 | 管理员 |
+
+**查询参数：**
+- `category`: 分类筛选 (basic/seo/trade/other)
+- `is_editable`: 是否可编辑筛选 (true/false)
+- `search`: 搜索关键词（配置键或描述）
+- `ordering`: 排序字段 (category/key/created_at)
+- `page`: 页码
+- `page_size`: 每页数量
+
+**响应示例 (列表)：**
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "count": 10,
+        "page": 1,
+        "page_size": 20,
+        "results": [
+            {
+                "id": 1,
+                "key": "site_name",
+                "value": "汽车改装件销售平台",
+                "description": "网站名称",
+                "category": "basic",
+                "is_editable": true
+            }
+        ]
+    }
+}
+```
+
+**请求示例 (创建/更新)：**
+```json
+{
+    "key": "site_name",
+    "value": "汽车改装件销售平台",
+    "description": "网站名称",
+    "category": "basic",
+    "is_editable": true
+}
+```
+
+#### 7.1.2 站内消息接口 (Message)
+
+**接口规格：**
+
+| 方法 | URL | 描述 | 权限 |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/system/messages/` | 获取消息列表 | 登录用户 |
+| `GET` | `/api/system/messages/{id}/` | 获取消息详情（自动标记已读） | 登录用户 |
+| `POST` | `/api/system/messages/` | 发送消息 | 管理员 |
+| `PUT` | `/api/system/messages/{id}/` | 更新消息 | 管理员 |
+| `DELETE` | `/api/system/messages/{id}/` | 删除消息 | 管理员 |
+| `GET` | `/api/system/messages/my-messages/` | 获取我的消息 | 登录用户 |
+| `POST` | `/api/system/messages/{id}/mark-read/` | 标记消息已读 | 登录用户 |
+
+**查询参数：**
+- `message_type`: 消息类型筛选 (announcement/notification/promotion/system)
+- `status`: 状态筛选 (draft/sent/read)
+- `search`: 搜索关键词（标题或内容）
+- `ordering`: 排序字段
+- `page`: 页码
+- `page_size`: 每页数量
+
+**响应示例 (列表)：**
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "count": 5,
+        "page": 1,
+        "page_size": 20,
+        "results": [
+            {
+                "id": 1,
+                "recipient": 10,
+                "recipient_name": "张三",
+                "title": "系统维护通知",
+                "content": "系统将于今晚进行维护...",
+                "message_type": "announcement",
+                "status": "sent",
+                "sent_at": "2024-01-15T10:00:00Z",
+                "read_at": null,
+                "created_at": "2024-01-15T09:00:00Z"
+            }
+        ]
+    }
+}
+```
+
+**请求示例 (发送消息)：**
+```json
+{
+    "recipient": null,
+    "title": "系统维护通知",
+    "content": "系统将于今晚进行维护...",
+    "message_type": "announcement"
+}
+```
+> 注：`recipient` 为 `null` 表示全员消息
+
+#### 7.1.3 操作日志接口 (OperationLog)
+
+**接口规格：**
+
+| 方法 | URL | 描述 | 权限 |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/system/logs/` | 获取操作日志列表 | 管理员 |
+| `GET` | `/api/system/logs/{id}/` | 获取日志详情 | 管理员 |
+
+**查询参数：**
+- `action_type`: 操作类型筛选 (create/update/delete/login/logout/other)
+- `object_type`: 对象类型筛选
+- `status`: 状态筛选 (success/failed)
+- `search`: 搜索关键词（操作详情或对象）
+- `ordering`: 排序字段
+- `page`: 页码
+- `page_size`: 每页数量
+
+**响应示例 (列表)：**
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "count": 100,
+        "page": 1,
+        "page_size": 20,
+        "results": [
+            {
+                "id": 1,
+                "operator": 1,
+                "operator_name": "管理员",
+                "action_type": "create",
+                "action_type_display": "创建",
+                "object_type": "Product",
+                "object_id": "123",
+                "detail": "创建商品: 汽车保险杠",
+                "ip_address": "192.168.1.100",
+                "status": "success",
+                "status_display": "成功",
+                "created_at": "2024-01-15T10:30:00Z"
+            }
+        ]
+    }
+}
+```
+
+#### 7.1.4 字段说明
+
+**系统配置分类 (category)：**
+- `basic`: 基础配置（网站名称、LOGO等）
+- `seo`: SEO配置（关键词、描述等）
+- `trade`: 交易配置（订单超时时间等）
+- `other`: 其他配置
+
+**消息类型 (message_type)：**
+- `announcement`: 系统公告
+- `notification`: 订单通知
+- `promotion`: 促销通知
+- `system`: 系统通知
+
+**消息状态 (status)：**
+- `draft`: 草稿
+- `sent`: 已发送
+- `read`: 已读
+
+**操作类型 (action_type)：**
+- `create`: 创建
+- `update`: 更新
+- `delete`: 删除
+- `login`: 登录
+- `logout`: 登出
+- `other`: 其他
