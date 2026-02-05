@@ -40,7 +40,7 @@ export function claimCouponApi(id) {
  * @returns {Promise<Object>}
  */
 export function getMyCouponsApi(params) {
-  return get('/marketing/my-coupons/', params)
+  return get('/marketing/user-coupons/', params)
 }
 
 // ==================== 管理员优惠券管理接口 ====================
@@ -226,4 +226,142 @@ export function deleteFaqApi(id) {
  */
 export function getMarketingStatsApi(params) {
   return get('/marketing/stats/', params)
+}
+
+// ==================== 促销活动管理接口（管理员）====================
+
+/**
+ * 获取促销活动列表（管理员）
+ * @param {Object} params - 查询参数
+ * @param {string} params.promotion_type - 活动类型
+ * @param {string} params.is_active - 是否启用
+ * @param {number} params.page - 页码
+ * @returns {Promise<Object>}
+ */
+export function getPromotionListApi(params) {
+  return get('/marketing/promotions/', params)
+}
+
+/**
+ * 获取促销活动详情
+ * @param {number} id - 活动ID
+ * @returns {Promise<Object>}
+ */
+export function getPromotionDetailApi(id) {
+  return get(`/marketing/promotions/${id}/`)
+}
+
+/**
+ * 创建促销活动
+ * @param {Object} data - 活动数据
+ * @param {string} data.name - 活动名称
+ * @param {string} data.promotion_type - 活动类型 (flash_sale/discount/full_reduce/gift)
+ * @param {string} data.description - 活动描述
+ * @param {Object} data.config - 活动配置
+ * @param {string} data.start_time - 开始时间
+ * @param {string} data.end_time - 结束时间
+ * @param {number} data.priority - 优先级
+ * @param {boolean} data.is_active - 是否启用
+ * @returns {Promise<Object>}
+ */
+export function createPromotionApi(data) {
+  return post('/marketing/promotions/', data)
+}
+
+/**
+ * 更新促销活动
+ * @param {number} id - 活动ID
+ * @param {Object} data - 活动数据
+ * @returns {Promise<Object>}
+ */
+export function updatePromotionApi(id, data) {
+  return put(`/marketing/promotions/${id}/`, data)
+}
+
+/**
+ * 部分更新促销活动
+ * @param {number} id - 活动ID
+ * @param {Object} data - 活动数据
+ * @returns {Promise<Object>}
+ */
+export function patchPromotionApi(id, data) {
+  return patch(`/marketing/promotions/${id}/`, data)
+}
+
+/**
+ * 删除促销活动
+ * @param {number} id - 活动ID
+ * @returns {Promise<void>}
+ */
+export function deletePromotionApi(id) {
+  return del(`/marketing/promotions/${id}/`)
+}
+
+// ==================== Banner管理接口（管理员）====================
+
+/**
+ * 获取Banner列表（管理员）
+ * @param {Object} params - 查询参数
+ * @param {string} params.position - 位置筛选
+ * @param {string} params.is_active - 是否启用
+ * @param {number} params.page - 页码
+ * @returns {Promise<Object>}
+ */
+export function getBannerListApi(params) {
+  return get('/marketing/banners/', params)
+}
+
+/**
+ * 获取Banner详情
+ * @param {number} id - BannerID
+ * @returns {Promise<Object>}
+ */
+export function getBannerDetailApi(id) {
+  return get(`/marketing/banners/${id}/`)
+}
+
+/**
+ * 创建Banner
+ * @param {Object} data - Banner数据
+ * @param {string} data.title - Banner标题
+ * @param {string} data.image - 图片URL
+ * @param {string} data.link - 跳转链接
+ * @param {string} data.position - 位置 (home/promotion/category)
+ * @param {number} data.sort_order - 排序权重
+ * @param {string} data.start_time - 开始时间
+ * @param {string} data.end_time - 结束时间
+ * @param {boolean} data.is_active - 是否启用
+ * @returns {Promise<Object>}
+ */
+export function createBannerApi(data) {
+  return post('/marketing/banners/', data)
+}
+
+/**
+ * 更新Banner
+ * @param {number} id - BannerID
+ * @param {Object} data - Banner数据
+ * @returns {Promise<Object>}
+ */
+export function updateBannerApi(id, data) {
+  return put(`/marketing/banners/${id}/`, data)
+}
+
+/**
+ * 部分更新Banner
+ * @param {number} id - BannerID
+ * @param {Object} data - Banner数据
+ * @returns {Promise<Object>}
+ */
+export function patchBannerApi(id, data) {
+  return patch(`/marketing/banners/${id}/`, data)
+}
+
+/**
+ * 删除Banner
+ * @param {number} id - BannerID
+ * @returns {Promise<void>}
+ */
+export function deleteBannerApi(id) {
+  return del(`/marketing/banners/${id}/`)
 }
