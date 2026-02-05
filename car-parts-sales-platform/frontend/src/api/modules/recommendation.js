@@ -18,7 +18,7 @@ import { get, post, put, patch, del } from '../request'
  * @returns {Promise<Object>} 分页数据
  */
 export function getRecommendationRules(params = {}) {
-  return get('/api/recommendations/rules/', params)
+  return get('/recommendations/rules/', params)
 }
 
 /**
@@ -27,7 +27,7 @@ export function getRecommendationRules(params = {}) {
  * @returns {Promise<Object>} 分页数据
  */
 export function getActiveRecommendationRules(params = {}) {
-  return get('/api/recommendations/rules/active/', params)
+  return get('/recommendations/rules/active/', params)
 }
 
 /**
@@ -36,7 +36,7 @@ export function getActiveRecommendationRules(params = {}) {
  * @returns {Promise<Object>} 规则详情
  */
 export function getRecommendationRuleDetail(id) {
-  return get(`/api/recommendations/rules/${id}/`)
+  return get(`/recommendations/rules/${id}/`)
 }
 
 /**
@@ -52,7 +52,7 @@ export function getRecommendationRuleDetail(id) {
  * @returns {Promise<Object>} 创建的规则
  */
 export function createRecommendationRule(data) {
-  return post('/api/recommendations/rules/', data)
+  return post('/recommendations/rules/', data)
 }
 
 /**
@@ -62,7 +62,7 @@ export function createRecommendationRule(data) {
  * @returns {Promise<Object>} 更新后的规则
  */
 export function updateRecommendationRule(id, data) {
-  return put(`/api/recommendations/rules/${id}/`, data)
+  return put(`/recommendations/rules/${id}/`, data)
 }
 
 /**
@@ -72,7 +72,7 @@ export function updateRecommendationRule(id, data) {
  * @returns {Promise<Object>} 更新后的规则
  */
 export function patchRecommendationRule(id, data) {
-  return patch(`/api/recommendations/rules/${id}/`, data)
+  return patch(`/recommendations/rules/${id}/`, data)
 }
 
 /**
@@ -81,7 +81,7 @@ export function patchRecommendationRule(id, data) {
  * @returns {Promise<void>}
  */
 export function deleteRecommendationRule(id) {
-  return del(`/api/recommendations/rules/${id}/`)
+  return del(`/recommendations/rules/${id}/`)
 }
 
 /**
@@ -106,7 +106,7 @@ export function toggleRecommendationRuleActive(id, isActive) {
  * @returns {Promise<Object>} 分页数据
  */
 export function getRecommendedProducts(params = {}) {
-  return get('/api/recommendations/products/', params)
+  return get('/recommendations/products/', params)
 }
 
 /**
@@ -115,7 +115,7 @@ export function getRecommendedProducts(params = {}) {
  * @returns {Promise<Object>} 推荐商品详情
  */
 export function getRecommendedProductDetail(id) {
-  return get(`/api/recommendations/products/${id}/`)
+  return get(`/recommendations/products/${id}/`)
 }
 
 /**
@@ -128,7 +128,7 @@ export function getRecommendedProductDetail(id) {
  * @returns {Promise<Object>} 创建的推荐商品
  */
 export function addRecommendedProduct(data) {
-  return post('/api/recommendations/products/', data)
+  return post('/recommendations/products/', data)
 }
 
 /**
@@ -138,7 +138,7 @@ export function addRecommendedProduct(data) {
  * @returns {Promise<Object>} 更新后的推荐商品
  */
 export function updateRecommendedProduct(id, data) {
-  return put(`/api/recommendations/products/${id}/`, data)
+  return put(`/recommendations/products/${id}/`, data)
 }
 
 /**
@@ -148,7 +148,7 @@ export function updateRecommendedProduct(id, data) {
  * @returns {Promise<Object>} 更新后的推荐商品
  */
 export function patchRecommendedProduct(id, data) {
-  return patch(`/api/recommendations/products/${id}/`, data)
+  return patch(`/recommendations/products/${id}/`, data)
 }
 
 /**
@@ -157,7 +157,7 @@ export function patchRecommendedProduct(id, data) {
  * @returns {Promise<void>}
  */
 export function deleteRecommendedProduct(id) {
-  return del(`/api/recommendations/products/${id}/`)
+  return del(`/recommendations/products/${id}/`)
 }
 
 /**
