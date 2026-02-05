@@ -75,7 +75,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+            return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data)
@@ -200,7 +200,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = OrderListSerializer(page, many=True)
-            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+            return self.get_paginated_response(serializer.data)
 
         serializer = OrderListSerializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data)
@@ -290,7 +290,7 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
 
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return ApiResponse.paginate(data=self.get_paginated_response(serializer.data))
+            return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data)

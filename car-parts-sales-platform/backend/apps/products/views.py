@@ -1,7 +1,8 @@
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import F
 from utils.response import ApiResponse
 from .models import Category, Product, ProductImage, ProductAttribute, Review
 from .serializers import (
@@ -24,10 +25,20 @@ class CategoryViewSet(viewsets.ModelViewSet):
     destroy: 删除分类
     """
     queryset = Category.objects.filter(is_active=True)
-    permission_classes = [AllowAny]  # 允许匿名查看分类
+    permission_classes = [AllowAny]  # 默认允许匿名查看
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = ['sort_order', 'created_at']
     ordering = ['sort_order', 'id']
+
+    def get_permissions(self):
+        """
+        获取权限配置
+        - 列表和详情：允许匿名访问
+        - 创建、更新、删除：需要管理员权限
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdminUser()]
+        return [AllowAny()]
 
     def get_serializer_class(self):
         if self.action == 'list' and self.request.query_params.get('tree') == 'true':
@@ -37,6 +48,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """获取分类列表"""
         queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data)
 
@@ -93,7 +109,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     destroy: 删除商品（管理员）
     """
     queryset = Product.objects.all()
-    permission_classes = [AllowAny]  # 允许匿名浏览商品
+    permission_classes = [AllowAny]  # 默认允许匿名浏览
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = {
         'category': ['exact', 'in'],
@@ -106,6 +122,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'price', 'sales_count', 'view_count']
     ordering = ['-created_at']
 
+    def get_permissions(self):
+        """
+        获取权限配置
+        - 列表和详情：允许匿名访问
+        - 创建、更新、删除、发布、下架：需要管理员权限
+        - 评价：需要登录（在 action 中单独处理）
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'publish', 'archive']:
+            return [IsAdminUser()]
+        return [AllowAny()]
+
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return ProductDetailSerializer
@@ -114,16 +141,20 @@ class ProductViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """获取商品列表"""
         queryset = self.filter_queryset(self.get_queryset())
-        # Temporarily disable pagination for debugging
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
         """获取商品详情"""
         instance = self.get_object()
-        # 增加浏览量
-        instance.view_count += 1
-        instance.save(update_fields=['view_count'])
+        # 增加浏览量（使用 F 表达式避免竞态条件）
+        Product.objects.filter(pk=instance.pk).update(view_count=F('view_count') + 1)
+        instance.refresh_from_db()  # 刷新获取最新数据
         serializer = self.get_serializer(instance)
         return ApiResponse.success(data=serializer.data)
 
@@ -214,12 +245,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             page = self.paginate_queryset(reviews)
             if page is not None:
                 serializer = ReviewListSerializer(page, many=True)
-                # 获取分页响应字典而不是 Response 对象
-                paginated_data = self.get_paginated_response(serializer.data)
-                # 如果是 Response 对象则获取 data 属性
-                if hasattr(paginated_data, 'data'):
-                    paginated_data = paginated_data.data
-                return ApiResponse.paginate(data=paginated_data)
+                return self.get_paginated_response(serializer.data)
 
             serializer = ReviewListSerializer(reviews, many=True)
             return ApiResponse.success(data=serializer.data)
@@ -280,10 +306,20 @@ class ProductImageViewSet(viewsets.ModelViewSet):
     商品图片管理 ViewSet
     """
     queryset = ProductImage.objects.all()
-    permission_classes = [AllowAny]  # 允许匿名查看图片
+    permission_classes = [AllowAny]  # 默认允许匿名查看
     serializer_class = ProductImageSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['product']
+
+    def get_permissions(self):
+        """
+        获取权限配置
+        - 列表：允许匿名访问
+        - 创建、删除：需要管理员权限
+        """
+        if self.action in ['create', 'destroy']:
+            return [IsAdminUser()]
+        return [AllowAny()]
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -311,10 +347,20 @@ class ProductAttributeViewSet(viewsets.ModelViewSet):
     商品属性管理 ViewSet
     """
     queryset = ProductAttribute.objects.all()
-    permission_classes = [AllowAny]  # 允许匿名查看属性
+    permission_classes = [AllowAny]  # 默认允许匿名查看
     serializer_class = ProductAttributeSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['product']
+
+    def get_permissions(self):
+        """
+        获取权限配置
+        - 列表：允许匿名访问
+        - 创建、删除：需要管理员权限
+        """
+        if self.action in ['create', 'destroy']:
+            return [IsAdminUser()]
+        return [AllowAny()]
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -348,11 +394,25 @@ class ReviewViewSet(viewsets.ModelViewSet):
     - GET /api/products/products/{product_id}/reviews/ - 获取商品评价列表
     """
     queryset = Review.objects.all()
-    permission_classes = [AllowAny]  # 允许匿名查看评价
+    permission_classes = [AllowAny]  # 默认允许匿名查看
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['product', 'rating']
     ordering_fields = ['created_at', 'rating']
     ordering = ['-created_at']
+
+    def get_permissions(self):
+        """
+        获取权限配置
+        - 列表和详情：允许匿名访问
+        - 删除：需要管理员权限
+        - 创建：需要登录（在 action 中单独处理，这里也可以加 IsAuthenticated）
+        """
+        if self.action == 'destroy':
+            return [IsAdminUser()]
+        # create 权限在 action 内部有逻辑判断，但最好也在 level 上限制
+        # 注意：由于 create 逻辑在 ReviewViewSet.create 中手动实现了登录检查，这里暂不强制 IsAuthenticated，
+        # 或者可以加上。
+        return [AllowAny()]
 
     def get_serializer_class(self):
         if self.action == 'create':
