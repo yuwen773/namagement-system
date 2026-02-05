@@ -32,7 +32,7 @@ export function registerApi(data) {
  * @returns {Promise<Object>}
  */
 export function getCurrentUserApi() {
-  return get('/auth/me/')
+  return get('/users/me/')
 }
 
 /**

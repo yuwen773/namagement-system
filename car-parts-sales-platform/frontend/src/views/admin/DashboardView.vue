@@ -127,9 +127,9 @@
               <span>销售趋势</span>
             </div>
             <el-radio-group v-model="trendPeriod" size="small" class="period-selector" @change="handleTrendPeriodChange">
-              <el-radio-button label="day">日</el-radio-button>
-              <el-radio-button label="week">周</el-radio-button>
-              <el-radio-button label="month">月</el-radio-button>
+              <el-radio-button value="day">日</el-radio-button>
+              <el-radio-button value="week">周</el-radio-button>
+              <el-radio-button value="month">月</el-radio-button>
             </el-radio-group>
           </div>
           <div ref="trendChartRef" class="chart-container"></div>
@@ -170,8 +170,8 @@
               <span>热销商品 TOP10</span>
             </div>
             <el-radio-group v-model="topProductType" size="small" class="period-selector" @change="handleTopProductTypeChange">
-              <el-radio-button label="sales">按销量</el-radio-button>
-              <el-radio-button label="amount">按金额</el-radio-button>
+              <el-radio-button value="sales">按销量</el-radio-button>
+              <el-radio-button value="amount">按金额</el-radio-button>
             </el-radio-group>
           </div>
           <div ref="topProductsChartRef" class="chart-container"></div>
@@ -206,7 +206,7 @@ import { ElMessage } from 'element-plus'
 import { Refresh, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import {
-  getOrderListApi
+  getAdminOrderStatsApi
 } from '@/api/modules/order'
 import {
   getProductListApi
@@ -232,6 +232,13 @@ const couponChartRef = ref(null)
 const dateRange = ref([])
 const trendPeriod = ref('day')
 const topProductType = ref('sales')
+
+// 统计数据（从后端获取）
+const statsData = ref({
+  sales_trend: [],
+  order_status_distribution: {},
+  top_selling_products: []
+})
 
 // 订单统计数据
 const orderStats = reactive({
@@ -266,68 +273,51 @@ const formatAmount = (amount) => {
 // 获取订单统计数据
 const fetchOrderStats = async () => {
   try {
-    let allOrders = []
-    let page = 1
-    let hasMore = true
+    // 使用后端统计接口
+    const data = await getAdminOrderStatsApi({ days: 30 })
+    statsData.value = data
 
-    while (hasMore) {
-      const response = await getOrderListApi({
-        page,
-        page_size: 100,
-        ordering: '-created_at'
-      })
+    // 更新订单统计数字
+    const statusDist = data.order_status_distribution || {}
 
-      allOrders = [...allOrders, ...response.results]
-      hasMore = response.next !== null
-      page++
-    }
+    // 计算总订单数（所有状态之和）
+    orderStats.totalOrders = Object.values(statusDist).reduce((sum, item) => sum + (item.count || 0), 0)
 
-    let filteredOrders = allOrders
-    if (dateRange.value && dateRange.value.length === 2) {
-      const [startDate, endDate] = dateRange.value
-      const start = new Date(startDate).getTime()
-      const end = new Date(endDate).setHours(23, 59, 59, 999)
-      filteredOrders = allOrders.filter(order => {
-        const orderTime = new Date(order.created_at).getTime()
-        return orderTime >= start && orderTime <= end
-      })
-    }
+    // 待处理订单（待付款 + 待发货）
+    orderStats.pendingOrders = (statusDist.pending_payment?.count || 0) + (statusDist.pending_shipment?.count || 0)
 
-    orderStats.totalOrders = filteredOrders.length
-    orderStats.pendingOrders = filteredOrders.filter(o =>
-      o.status === 'pending_payment' || o.status === 'pending_shipment'
-    ).length
-    orderStats.completedOrders = filteredOrders.filter(o =>
-      o.status === 'completed'
-    ).length
+    // 已完成订单
+    orderStats.completedOrders = statusDist.completed?.count || 0
+
+    // 完成率
     orderStats.completedRate = orderStats.totalOrders > 0
       ? Math.round((orderStats.completedOrders / orderStats.totalOrders) * 100)
       : 0
 
-    const totalAmount = filteredOrders
-      .filter(o => o.status === 'completed')
-      .reduce((sum, order) => sum + parseFloat(order.pay_amount || 0), 0)
-    orderStats.totalAmount = totalAmount.toFixed(2)
+    // 总金额（已完成订单的金额）
+    orderStats.totalAmount = (statusDist.completed?.total_amount || 0).toFixed(2)
 
-    return filteredOrders
+    return data
   } catch (error) {
     ElMessage.error('获取订单统计数据失败')
-    return []
+    return null
   }
 }
 
 // 渲染销售趋势图
-const renderTrendChart = (orders) => {
+const renderTrendChart = () => {
   if (!trendChartRef.value) return
 
   if (!trendChart) {
     trendChart = echarts.init(trendChartRef.value)
   }
 
-  const groupedData = groupOrdersByPeriod(orders, trendPeriod.value)
-  const dates = Object.keys(groupedData).sort()
-  const amounts = dates.map(date => groupedData[date].amount)
-  const counts = dates.map(date => groupedData[date].count)
+  // 使用统计接口返回的销售趋势数据
+  const salesTrend = statsData.value.sales_trend || []
+
+  const dates = salesTrend.map(item => item.date)
+  const amounts = salesTrend.map(item => item.sales_amount)
+  const counts = salesTrend.map(item => item.order_count)
 
   const option = {
     tooltip: {
@@ -469,60 +459,26 @@ const renderTrendChart = (orders) => {
   trendChart.setOption(option)
 }
 
-// 按时间段分组订单数据
-const groupOrdersByPeriod = (orders, period) => {
-  const grouped = {}
-
-  orders.forEach(order => {
-    const date = new Date(order.created_at)
-    let key = ''
-
-    if (period === 'day') {
-      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    } else if (period === 'week') {
-      const weekStart = new Date(date)
-      weekStart.setDate(date.getDate() - date.getDay())
-      key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`
-    } else if (period === 'month') {
-      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    }
-
-    if (!grouped[key]) {
-      grouped[key] = { amount: 0, count: 0 }
-    }
-
-    if (order.status === 'completed') {
-      grouped[key].amount += parseFloat(order.pay_amount || 0)
-    }
-    grouped[key].count++
-  })
-
-  return grouped
-}
-
 // 渲染订单状态分布图
-const renderStatusChart = (orders) => {
+const renderStatusChart = () => {
   if (!statusChartRef.value) return
 
   if (!statusChart) {
     statusChart = echarts.init(statusChartRef.value)
   }
 
-  const statusCount = {}
-  orders.forEach(order => {
-    if (!statusCount[order.status]) {
-      statusCount[order.status] = 0
-    }
-    statusCount[order.status]++
-  })
+  // 使用统计接口返回的订单状态分布数据
+  const statusDist = statsData.value.order_status_distribution || {}
 
-  const data = Object.entries(statusCount).map(([status, count]) => ({
-    name: orderStatusMap[status]?.label || status,
-    value: count,
-    itemStyle: {
-      color: orderStatusMap[status]?.color || '#94a3b8'
-    }
-  }))
+  const data = Object.entries(statusDist)
+    .filter(([_, item]) => item.count > 0) // 只显示有数据的项
+    .map(([status, item]) => ({
+      name: item.label || orderStatusMap[status]?.label || status,
+      value: item.count,
+      itemStyle: {
+        color: orderStatusMap[status]?.color || '#94a3b8'
+      }
+    }))
 
   const option = {
     tooltip: {
@@ -584,29 +540,24 @@ const renderStatusChart = (orders) => {
 }
 
 // 渲染热销商品排行图
-const renderTopProductsChart = async () => {
+const renderTopProductsChart = () => {
   if (!topProductsChartRef.value) return
 
   if (!topProductsChart) {
     topProductsChart = echarts.init(topProductsChartRef.value)
   }
 
-  try {
-    const ordering = topProductType.value === 'sales' ? '-sales_count' : '-price'
-    const response = await getProductListApi({
-      ordering,
-      page_size: 10,
-      status: 'published'
-    })
+  // 使用统计接口返回的热销商品数据
+  const topProducts = statsData.value.top_selling_products || []
 
-    const products = response.results || []
+  const names = topProducts.map(p =>
+    p.product_name.length > 12 ? p.product_name.substring(0, 12) + '...' : p.product_name
+  )
+  const values = topProducts.map(p =>
+    topProductType.value === 'sales' ? p.total_quantity || 0 : p.total_sales || 0
+  )
 
-    const names = products.map(p => p.name.length > 12 ? p.name.substring(0, 12) + '...' : p.name)
-    const values = products.map(p =>
-      topProductType.value === 'sales' ? p.sales_count || 0 : parseFloat(p.price || 0)
-    )
-
-    const option = {
+  const option = {
       tooltip: {
         trigger: 'axis',
         axisPointer: {
@@ -705,10 +656,7 @@ const renderTopProductsChart = async () => {
       ]
     }
 
-    topProductsChart.setOption(option)
-  } catch (error) {
-    ElMessage.error('获取热销商品数据失败')
-  }
+  topProductsChart.setOption(option)
 }
 
 // 渲染优惠券核销统计图
@@ -796,10 +744,10 @@ const renderCouponChart = async () => {
 // 获取所有统计数据
 const fetchStatistics = async () => {
   try {
-    const orders = await fetchOrderStats()
-    renderTrendChart(orders)
-    renderStatusChart(orders)
-    await renderTopProductsChart()
+    await fetchOrderStats()
+    renderTrendChart()
+    renderStatusChart()
+    renderTopProductsChart()
     await renderCouponChart()
   } catch (error) {
     ElMessage.error('获取统计数据失败')
@@ -813,9 +761,7 @@ const handleDateChange = () => {
 
 // 趋势周期变化
 const handleTrendPeriodChange = () => {
-  fetchOrderStats().then(orders => {
-    renderTrendChart(orders)
-  })
+  renderTrendChart()
 }
 
 // 热销商品类型变化

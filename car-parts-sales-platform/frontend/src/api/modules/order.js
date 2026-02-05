@@ -132,13 +132,11 @@ export function processReturnApi(id, data) {
 /**
  * 获取交易统计数据（仪表盘）
  * @param {Object} params - 查询参数
- * @param {string} params.start_date - 开始日期 (可选)
- * @param {string} params.end_date - 结束日期 (可选)
- * @param {string} params.period - 统计周期 (day/week/month)
+ * @param {number} params.days - 统计天数（默认30天）
  * @returns {Promise<Object>}
  */
-export function getOrderStatsApi(params) {
-  return get('/orders/stats/', params)
+export function getAdminOrderStatsApi(params) {
+  return get('/orders/admin/orders/stats/', params)
 }
 
 // ==================== 管理员订单管理接口 ====================
@@ -191,14 +189,4 @@ export function adminShipOrderApi(id, data) {
  */
 export function auditReturnApi(id, data) {
   return post(`/orders/returns/${id}/audit/`, data)
-}
-
-/**
- * 获取管理员交易统计数据
- * @param {Object} params - 查询参数
- * @param {number} params.days - 统计天数（默认30天）
- * @returns {Promise<Object>}
- */
-export function getAdminOrderStatsApi(params) {
-  return get('/orders/admin/orders/stats/', params)
 }
