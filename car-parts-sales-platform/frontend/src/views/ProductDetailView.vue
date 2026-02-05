@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getProductDetailApi, getProductReviewsApi, createProductReviewApi, incrementProductViewsApi } from '@/api'
+import { getProductDetailApi, getProductReviewsApi, createProductReviewApi, getProductListApi } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { useAuthStore } from '@/stores/auth'
 import { addBrowsingHistoryApi } from '@/api/modules/user'
@@ -15,6 +15,7 @@ const authStore = useAuthStore()
 
 const loading = ref(false)
 const product = ref(null)
+const notFound = ref(false)
 const reviews = ref([])
 const selectedImage = ref(0)
 const quantity = ref(1)
@@ -42,28 +43,35 @@ onMounted(async () => {
 
 async function fetchProduct() {
   loading.value = true
+  notFound.value = false
   try {
     const data = await getProductDetailApi(route.params.id)
     product.value = data
     selectedImage.value = 0
-    // Increment views
-    await incrementProductViewsApi(route.params.id)
-    // Track browsing history for logged-in users
+
+    // Track browsing history for logged-in users (静默失败，不影响主流程)
     if (authStore.isAuthenticated) {
       try {
         await addBrowsingHistoryApi({
           product_id: data.id,
           product_name: data.name,
-          product_image: data.main_image,
+          product_image: data.main_image || data.image,
           product_price: data.price
         })
       } catch (error) {
-        // Silently fail for browsing history tracking
+        // 浏览历史记录失败静默处理
         console.error('Failed to track browsing history:', error)
       }
     }
+
     // Fetch related products
     await fetchRelatedProducts()
+  } catch (error) {
+    // 错误已在拦截器中显示，这里只设置状态
+    if (error.response?.status === 404) {
+      notFound.value = true
+    }
+    product.value = null
   } finally {
     loading.value = false
   }
@@ -118,16 +126,18 @@ const averageRating = computed(() => {
 
 const stockStatus = computed(() => {
   if (!product.value) return ''
-  if (product.value.stock === 0) return 'out'
-  if (product.value.stock < 10) return 'low'
+  const stock = product.value.stock_quantity || 0
+  if (stock === 0) return 'out'
+  if (stock < 10) return 'low'
   return 'available'
 })
 
 const stockText = computed(() => {
   if (!product.value) return ''
-  if (product.value.stock === 0) return '缺货'
-  if (product.value.stock < 10) return `库存紧张 (仅剩 ${product.value.stock} 件)`
-  return `库存充足 (${product.value.stock} 件可售)`
+  const stock = product.value.stock_quantity || 0
+  if (stock === 0) return '缺货'
+  if (stock < 10) return `库存紧张 (仅剩 ${stock} 件)`
+  return `库存充足 (${stock} 件可售)`
 })
 
 const discountPercent = computed(() => {
@@ -210,7 +220,34 @@ async function fetchRelatedProducts() {
       </div>
     </div>
 
-    <div v-loading="loading" class="detail-container">
+    <!-- 商品不存在提示 -->
+    <div v-if="notFound || (!loading && !product)" class="not-found-container">
+      <div class="not-found-content">
+        <div class="not-found-icon">
+          <svg viewBox="0 0 24 24" fill="none" width="80" height="80">
+            <path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 class="not-found-title">商品不存在</h2>
+        <p class="not-found-desc">抱歉，您访问的商品可能已下架或不存在</p>
+        <div class="not-found-actions">
+          <router-link to="/products" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            浏览商品
+          </router-link>
+          <router-link to="/" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+              <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            返回首页
+          </router-link>
+        </div>
+      </div>
+    </div>
+
+    <div v-else v-loading="loading" class="detail-container">
       <!-- Product Gallery -->
       <div class="product-gallery">
         <div
@@ -319,11 +356,11 @@ async function fetchRelatedProducts() {
                 <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </button>
-            <input v-model.number="quantity" type="number" min="1" :max="product?.stock" class="qty-input" />
+            <input v-model.number="quantity" type="number" min="1" :max="product?.stock_quantity" class="qty-input" />
             <button
               class="qty-btn"
               @click="quantity++"
-              :disabled="quantity >= (product?.stock || 999)"
+              :disabled="quantity >= (product?.stock_quantity || 999)"
             >
               <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -544,6 +581,84 @@ async function fetchRelatedProducts() {
   min-height: 100vh;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   padding: 20px 0 60px;
+}
+
+/* Not Found State */
+.not-found-container {
+  max-width: 600px;
+  margin: 80px auto;
+  padding: 0 20px;
+}
+
+.not-found-content {
+  text-align: center;
+  padding: 60px 40px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.not-found-icon {
+  margin-bottom: 24px;
+  color: #64748b;
+}
+
+.not-found-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.not-found-desc {
+  font-size: 15px;
+  color: #94a3b8;
+  margin-bottom: 32px;
+}
+
+.not-found-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.not-found-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.not-found-actions .btn-primary {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+}
+
+.not-found-actions .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+}
+
+.not-found-actions .btn-secondary {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  color: #e2e8f0;
+}
+
+.not-found-actions .btn-secondary:hover {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+.not-found-actions .btn svg {
+  color: currentColor;
 }
 
 /* Breadcrumb Navigation */

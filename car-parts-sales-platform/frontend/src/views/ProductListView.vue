@@ -43,28 +43,69 @@ const sortOptions = [
 
 onMounted(async () => {
   await fetchCategories()
+  // 分类加载完成后，再处理路由参数并获取商品
+  await handleRouteQuery()
   await fetchProducts()
 })
 
 // Watch route query changes
 watch(() => route.query, async () => {
-  if (route.query.category_id) {
-    selectedCategory.value = parseInt(route.query.category_id)
+  await handleRouteQuery()
+  await fetchProducts()
+})
+
+// 处理路由查询参数
+async function handleRouteQuery() {
+  if (route.query.category) {
+    const categoryId = parseInt(route.query.category)
+    // 验证分类ID是否存在
+    const categoryExists = categories.value.some(c => c.id === categoryId)
+    if (categoryExists) {
+      selectedCategory.value = categoryId
+    } else {
+      // 分类不存在，清除无效参数
+      selectedCategory.value = null
+      // 移除URL中的无效参数
+      router.replace({ query: { ...route.query, category: undefined } })
+    }
+  } else {
+    selectedCategory.value = null
   }
   if (route.query.search) {
     searchQuery.value = route.query.search
   }
-  await fetchProducts()
-}, { immediate: true })
+}
 
 async function fetchCategories() {
   try {
-    const response = await getCategoryListApi()
-    categories.value = response?.data || []
+    // 获取所有分类（设置较大的page_size）
+    const response = await getCategoryListApi({ page: 1, page_size: 200 })
+    // 响应拦截器已返回data对象，格式为 { count, results }
+    categories.value = response?.results || []
   } catch (error) {
     console.error('Failed to fetch categories:', error)
     categories.value = []
   }
+}
+
+// 获取分类及其所有子孙分类的ID
+function getCategoryWithChildren(categoryId) {
+  const ids = [categoryId]
+  const category = categories.value.find(c => c.id === categoryId)
+
+  if (category) {
+    // 递归查找所有子分类
+    const findChildren = (parentId) => {
+      const children = categories.value.filter(c => c.parent === parentId)
+      children.forEach(child => {
+        ids.push(child.id)
+        findChildren(child.id) // 递归查找子分类的子分类
+      })
+    }
+    findChildren(categoryId)
+  }
+
+  return ids
 }
 
 async function fetchProducts() {
@@ -76,7 +117,10 @@ async function fetchProducts() {
     }
 
     if (selectedCategory.value) {
-      params.category_id = selectedCategory.value
+      // 获取分类及其所有子分类的ID
+      const categoryIds = getCategoryWithChildren(selectedCategory.value)
+      // 使用逗号分隔的ID列表查询多个分类
+      params.category = categoryIds.join(',')
     }
     if (priceRange.value[0] !== undefined) {
       params.min_price = priceRange.value[0]
@@ -100,6 +144,11 @@ async function fetchProducts() {
     const data = await getProductListApi(params)
     products.value = data.results || []
     totalCount.value = data.count || 0
+  } catch (error) {
+    // 错误消息已在拦截器中显示，这里只处理数据状态
+    console.error('Failed to fetch products:', error)
+    products.value = []
+    totalCount.value = 0
   } finally {
     loading.value = false
   }
