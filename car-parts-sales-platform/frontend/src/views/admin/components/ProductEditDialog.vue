@@ -24,11 +24,13 @@
 
               <el-form-item label="商品分类" prop="category">
                 <el-cascader
+                  :key="categoryTree.length"
                   v-model="formData.category"
                   :options="categoryTree"
-                  :props="{ value: 'id', label: 'name', children: 'children', checkStrictly: true, emitPath: false }"
+                  :props="{ value: 'id', label: 'name', children: 'children', checkStrictly: false, emitPath: false }"
                   placeholder="请选择分类"
                   style="width: 100%"
+                  clearable
                 />
               </el-form-item>
 
@@ -53,14 +55,14 @@
                 />
               </el-form-item>
 
-              <el-form-item label="详细内容">
+              <!-- <el-form-item label="详细内容">
                 <el-input
                   v-model="formData.content"
                   type="textarea"
                   :rows="8"
                   placeholder="请输入商品详细内容（支持富文本）"
                 />
-              </el-form-item>
+              </el-form-item> -->
             </el-col>
 
             <el-col :span="8">
@@ -131,7 +133,7 @@
         </el-tab-pane>
 
         <!-- SEO设置 -->
-        <el-tab-pane label="SEO设置" name="seo">
+        <!-- <el-tab-pane label="SEO设置" name="seo">
           <el-form-item label="SEO标题">
             <el-input v-model="formData.seo_title" placeholder="请输入SEO标题" maxlength="100" show-word-limit />
           </el-form-item>
@@ -148,7 +150,7 @@
               show-word-limit
             />
           </el-form-item>
-        </el-tab-pane>
+        </el-tab-pane> -->
       </el-tabs>
     </el-form>
 
@@ -254,7 +256,7 @@ const fetchProductDetail = async () => {
       stock_quantity: data.stock_quantity || 0,
       description: data.description || '',
       content: data.content || '',
-      image: data.image || '',
+      image: data.main_image || data.image || '', // 优先使用 main_image
       images: data.images?.map(img => img.image_url) || [],
       status: data.status || 'draft',
       is_featured: data.is_featured || false,
@@ -381,11 +383,15 @@ const handlePublish = async () => {
 }
 
 // 监听对话框打开
-watch(() => props.modelValue, (val) => {
+watch(() => props.modelValue, async (val) => {
   if (val) {
-    fetchCategoryTree()
+    // 优先加载分类树
+    if (categoryTree.value.length === 0) {
+      await fetchCategoryTree()
+    }
+    
     if (isEdit.value) {
-      fetchProductDetail()
+      await fetchProductDetail()
     }
   }
 })
