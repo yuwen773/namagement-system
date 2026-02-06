@@ -486,6 +486,15 @@ def create_coupons(users):
     for i in range(NUM_COUPONS):
         discount_type = random.choice(['full_reduction', 'discount'])
         is_active = random.random() < 0.8  # 80%的券可用
+        
+        # 决定是否为已过期优惠券 (20%概率)
+        is_expired_coupon = random.random() < 0.2
+        if is_expired_coupon:
+             valid_from = now - timedelta(days=random.randint(60, 90))
+             valid_until = now - timedelta(days=random.randint(1, 30))
+        else:
+             valid_from = now - timedelta(days=random.randint(0, 30))
+             valid_until = now + timedelta(days=random.randint(30, 180))
 
         coupon = Coupon.objects.create(
             name=f"{random.choice(COUPON_NAMES)}-{i+1:03d}",
@@ -494,8 +503,8 @@ def create_coupons(users):
             min_amount=Decimal(str(random.choice([0, 99, 199, 299, 499]))),
             discount_amount=Decimal(str(random.randint(5, 100))) if discount_type == 'full_reduction' else Decimal('0'),
             discount_rate=Decimal(str(round(random.uniform(0.7, 0.99), 2))) if discount_type == 'discount' else None,
-            valid_from=now - timedelta(days=random.randint(0, 30)),
-            valid_until=now + timedelta(days=random.randint(30, 180)),
+            valid_from=valid_from,
+            valid_until=valid_until,
             total_quantity=random.randint(100, 5000),
             per_user_limit=random.randint(1, 3),
             issued_quantity=random.randint(0, 500),
@@ -508,10 +517,21 @@ def create_coupons(users):
             num_users = random.randint(5, min(20, len(users)))
             selected_users = random.sample(users, num_users)
             for user in selected_users:
+                # 确定状态
+                if is_expired_coupon:
+                    status = 'expired'
+                    used_at = None
+                else:
+                    status = random.choices(['unused', 'used'], weights=[0.6, 0.4])[0]
+                    used_at = timezone.now() - timedelta(days=random.randint(0, 5)) if status == 'used' else None
+
                 UserCoupon.objects.get_or_create(
                     user=user,
                     coupon=coupon,
-                    defaults={'status': 'unused'}
+                    defaults={
+                        'status': status,
+                        'used_at': used_at
+                    }
                 )
 
     print(f"✓ 创建了 {len(coupons)} 个优惠券")
@@ -585,8 +605,14 @@ def create_carts_and_orders(users):
                     Order.Status.COMPLETED,
                     Order.Status.CANCELLED,
                 ]),
-                # 状态权重分布
             )
+            
+            # 修改订单创建时间（分散在过去3天）
+            days_ago = random.choices([0, 1, 2], weights=[0.4, 0.3, 0.3])[0]
+            fake_created_at = timezone.now() - timedelta(days=days_ago) - timedelta(hours=random.randint(1, 12), minutes=random.randint(0, 59))
+            Order.objects.filter(id=order.id).update(created_at=fake_created_at)
+            order.created_at = fake_created_at
+            
             order_count += 1
 
             # 设置订单状态权重
