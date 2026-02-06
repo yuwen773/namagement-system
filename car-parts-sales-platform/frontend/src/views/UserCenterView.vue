@@ -72,11 +72,11 @@ const addressFormRef = ref(null)
 const editingAddress = ref(null)
 const addressForm = ref({
   recipient_name: '',
-  recipient_phone: '',
+  phone: '',
   province: '',
   city: '',
   district: '',
-  detailed_address: '',
+  address: '',
   is_default: false
 })
 
@@ -225,11 +225,11 @@ function showAddAddressDialog() {
   editingAddress.value = null
   addressForm.value = {
     recipient_name: '',
-    recipient_phone: '',
+    phone: '',
     province: '',
     city: '',
     district: '',
-    detailed_address: '',
+    address: '',
     is_default: false
   }
   addressDialogVisible.value = true
@@ -239,11 +239,11 @@ function showEditAddressDialog(address) {
   editingAddress.value = address
   addressForm.value = {
     recipient_name: address.recipient_name,
-    recipient_phone: address.recipient_phone,
+    phone: address.phone,
     province: address.province,
     city: address.city,
     district: address.district,
-    detailed_address: address.detailed_address,
+    address: address.address,
     is_default: address.is_default
   }
   addressDialogVisible.value = true
@@ -769,11 +769,11 @@ async function handleLogout() {
               <div class="address-badge" v-if="address.is_default">默认</div>
               <div class="address-header">
                 <span class="address-name">{{ address.recipient_name }}</span>
-                <span class="address-phone">{{ address.recipient_phone }}</span>
+                <span class="address-phone">{{ address.phone }}</span>
               </div>
               <div class="address-body">
                 <p>{{ address.province }} {{ address.city }} {{ address.district }}</p>
-                <p>{{ address.detailed_address }}</p>
+                <p>{{ address.address }}</p>
               </div>
               <div class="address-actions">
                 <button v-if="!address.is_default" class="action-btn" @click="handleSetDefaultAddress(address.id)">设为默认</button>
@@ -1039,7 +1039,7 @@ async function handleLogout() {
           <el-input v-model="addressForm.recipient_name" placeholder="请输入收货人姓名" />
         </el-form-item>
         <el-form-item label="联系电话" required>
-          <el-input v-model="addressForm.recipient_phone" placeholder="请输入联系电话" />
+          <el-input v-model="addressForm.phone" placeholder="请输入联系电话" />
         </el-form-item>
         <el-form-item label="省份" required>
           <el-input v-model="addressForm.province" placeholder="请输入省份" />
@@ -1051,7 +1051,7 @@ async function handleLogout() {
           <el-input v-model="addressForm.district" placeholder="请输入区/县" />
         </el-form-item>
         <el-form-item label="详细地址" required>
-          <el-input v-model="addressForm.detailed_address" type="textarea" :rows="2" placeholder="请输入详细地址" />
+          <el-input v-model="addressForm.address" type="textarea" :rows="2" placeholder="请输入详细地址" />
         </el-form-item>
         <el-form-item label="设为默认">
           <el-switch v-model="addressForm.is_default" />
