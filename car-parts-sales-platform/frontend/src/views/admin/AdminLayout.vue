@@ -417,20 +417,19 @@ onMounted(() => {
   --border-color: #e2e8f0;
 
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   width: 100%;
   background: var(--bg-color);
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 /* ========================================
    侧边栏样式
    ======================================== */
 .sidebar {
-  position: sticky;
-  top: 0;
+  position: relative;
   width: var(--sidebar-width);
-  height: 100vh;
+  height: 100%;
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
@@ -614,6 +613,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: calc(100% - var(--sidebar-width));
+  height: 100%;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -799,6 +799,7 @@ onMounted(() => {
   padding: 24px;
   width: 100%;
   box-sizing: border-box;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
