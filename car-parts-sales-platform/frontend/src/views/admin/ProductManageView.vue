@@ -160,40 +160,42 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" :icon="View" @click="handleView(row)">
-              查看
-            </el-button>
-            <el-button link type="primary" :icon="Edit" @click="handleEdit(row)">
-              编辑
-            </el-button>
-            <el-dropdown @command="(cmd) => handleMoreCommand(cmd, row)">
-              <el-button link type="primary" :icon="MoreFilled">
-                更多
+            <div class="operation-buttons">
+              <el-button link type="primary" :icon="View" @click="handleView(row)">
+                查看
               </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item
-                    v-if="row.status === 'draft' || row.status === 'archived'"
-                    command="publish"
-                    :icon="CircleCheck"
-                  >
-                    发布商品
-                  </el-dropdown-item>
-                  <el-dropdown-item
-                    v-if="row.status === 'published'"
-                    command="archive"
-                    :icon="CircleClose"
-                  >
-                    下架商品
-                  </el-dropdown-item>
-                  <el-dropdown-item command="delete" :icon="Delete" style="color: #ef4444;">
-                    删除
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+              <el-button link type="primary" :icon="Edit" @click="handleEdit(row)">
+                编辑
+              </el-button>
+              <el-dropdown @command="(cmd) => handleMoreCommand(cmd, row)">
+                <el-button link type="primary" :icon="MoreFilled">
+                  更多
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item
+                      v-if="row.status === 'draft' || row.status === 'archived'"
+                      command="publish"
+                      :icon="CircleCheck"
+                    >
+                      发布商品
+                    </el-dropdown-item>
+                    <el-dropdown-item
+                      v-if="row.status === 'published'"
+                      command="archive"
+                      :icon="CircleClose"
+                    >
+                      下架商品
+                    </el-dropdown-item>
+                    <el-dropdown-item command="delete" :icon="Delete" style="color: #ef4444;">
+                      删除
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -917,6 +919,22 @@ onMounted(() => {
 
 .card-actions .el-button {
   flex: 1;
+}
+
+/* ========================================
+   操作按钮
+   ======================================== */
+.operation-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  justify-content: flex-start;
+}
+
+.operation-buttons .el-button {
+  margin-left: 0 !important;
+  padding: 4px 8px;
 }
 
 /* ========================================

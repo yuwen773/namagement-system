@@ -152,17 +152,19 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column label="操作" width="280" fixed="right">
               <template #default="{ row }">
-                <el-button link type="primary" :icon="Edit" @click="handleEditRule(row)">
-                  编辑
-                </el-button>
-                <el-button link type="primary" :icon="Plus" @click="handleAddProduct(row)">
-                  添加商品
-                </el-button>
-                <el-button link type="danger" :icon="Delete" @click="handleDeleteRule(row)">
-                  删除
-                </el-button>
+                <div class="operation-buttons">
+                  <el-button link type="primary" :icon="Edit" @click="handleEditRule(row)">
+                    编辑
+                  </el-button>
+                  <el-button link type="primary" :icon="Plus" @click="handleAddProduct(row)">
+                    添加商品
+                  </el-button>
+                  <el-button link type="danger" :icon="Delete" @click="handleDeleteRule(row)">
+                    删除
+                  </el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -1493,8 +1495,20 @@ onMounted(() => {
 }
 
 /* ========================================
-   查看商品对话框
+   操作按钮
    ======================================== */
+.operation-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  justify-content: flex-start;
+}
+
+.operation-buttons .el-button {
+  margin-left: 0 !important;
+  padding: 4px 8px;
+}
 .view-products-content {
   padding: 8px 0;
 }

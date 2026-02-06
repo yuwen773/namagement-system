@@ -151,17 +151,19 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="操作" width="180" fixed="right">
+            <el-table-column label="操作" width="280" fixed="right">
               <template #default="{ row }">
-                <el-button link type="primary" :icon="View" @click="handleViewCase(row)">
-                  查看
-                </el-button>
-                <el-button link type="primary" :icon="Edit" @click="handleEditCase(row)">
-                  编辑
-                </el-button>
-                <el-button link type="danger" :icon="Delete" @click="handleDeleteCase(row)">
-                  删除
-                </el-button>
+                <div class="operation-buttons">
+                  <el-button link type="primary" :icon="View" @click="handleViewCase(row)">
+                    查看
+                  </el-button>
+                  <el-button link type="primary" :icon="Edit" @click="handleEditCase(row)">
+                    编辑
+                  </el-button>
+                  <el-button link type="danger" :icon="Delete" @click="handleDeleteCase(row)">
+                    删除
+                  </el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -274,14 +276,16 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="操作" width="150" fixed="right">
+            <el-table-column label="操作" width="200" fixed="right">
               <template #default="{ row }">
-                <el-button link type="primary" :icon="Edit" @click="handleEditFAQ(row)">
-                  编辑
-                </el-button>
-                <el-button link type="danger" :icon="Delete" @click="handleDeleteFAQ(row)">
-                  删除
-                </el-button>
+                <div class="operation-buttons">
+                  <el-button link type="primary" :icon="Edit" @click="handleEditFAQ(row)">
+                    编辑
+                  </el-button>
+                  <el-button link type="danger" :icon="Delete" @click="handleDeleteFAQ(row)">
+                    删除
+                  </el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -1309,6 +1313,22 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   padding: 20px;
+}
+
+/* ========================================
+   操作按钮
+   ======================================== */
+.operation-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  justify-content: flex-start;
+}
+
+.operation-buttons .el-button {
+  margin-left: 0 !important;
+  padding: 4px 8px;
 }
 
 /* ========================================
