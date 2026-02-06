@@ -79,7 +79,7 @@
         <span>已选择 <strong>{{ selectedRows.length }}</strong> 项</span>
       </div>
       <div class="batch-actions">
-        <el-button :icon="Download" @click="handleBatchExport">导出</el-button>
+        <!-- <el-button :icon="Download" @click="handleBatchExport">导出</el-button> -->
         <el-button :icon="Delete" type="danger" @click="handleBatchDelete">批量删除</el-button>
       </div>
     </div>
