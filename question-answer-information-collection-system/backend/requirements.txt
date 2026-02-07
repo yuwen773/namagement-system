@@ -1,0 +1,28 @@
+# Core Dependencies
+Django>=5.0
+djangorestframework>=3.14
+mysqlclient>=2.2
+PyMySQL>=1.1
+
+# Authentication
+djangorestframework-simplejwt>=5.3
+django-cors-headers>=4.3
+
+# API Documentation
+drf-spectacular>=0.26
+
+# Celery & Redis
+celery>=5.3
+django-celery-results>=2.5
+redis>=5.0
+
+# Crawler Dependencies (Scrapy + Playwright)
+Scrapy>=2.11
+itemadapter>=0.8
+scrapy-playwright>=0.0
+playwright>=1.40
+httpx>=0.25
+scrapy-rotating-proxies>=0.6
+scrapy-useragents>=0.1.1
+lxml>=5.0
+parsel>=1.8
