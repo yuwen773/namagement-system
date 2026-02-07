@@ -34,7 +34,7 @@ SECRET_KEY = "django-insecure--^oqyrj8oz4s^nr$8rf-3oe-$c%y$$@!$+e*ufm21gr$-&t^%x
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -171,6 +171,10 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "qa_project.exceptions.custom_exception_handler",
+    "AUTHENTICATION_BACKENDS": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
 }
 
 # JWT Configuration
