@@ -155,6 +155,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = 'accounts.User'
 
+# =============================================================================
+# 自定义认证后端 - 明文密码验证
+# =============================================================================
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.backends.PlainPasswordBackend",
+]
 
 # =============================================================================
 # Django REST Framework Configuration

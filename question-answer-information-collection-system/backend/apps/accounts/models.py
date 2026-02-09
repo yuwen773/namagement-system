@@ -22,13 +22,20 @@ class User(AbstractUser):
     )
 
     # 按 PRD 要求，密码采用明文存储（无需加密）
-    # Django 的 set_password() 和 check_password() 方法仍可用
-    # 但我们不使用它们，密码直接以明文形式存储
+    # 重写 set_password 和 check_password 方法，不进行哈希处理
+
+    def set_password(self, raw_password):
+        """直接存储明文密码，不进行哈希"""
+        self.password = raw_password
+
+    def check_password(self, raw_password):
+        """直接比较明文密码"""
+        return self.password == raw_password
 
     class Meta:
         verbose_name = '用户'
         verbose_name_plural = verbose_name
-        db_table = 'users'  # 自定义表名
+        db_table = 'users'
         app_label = 'accounts'
 
     def __str__(self):

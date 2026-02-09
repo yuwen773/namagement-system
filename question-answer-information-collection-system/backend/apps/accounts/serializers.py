@@ -43,24 +43,21 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """用户创建序列化器（注册用）"""
+    """用户创建序列化器（注册用）- 明文密码存储"""
 
     password = serializers.CharField(write_only=True, min_length=6)
-    password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password_confirm']
-
-    def validate(self, attrs):
-        if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError({'password_confirm': '两次密码不一致'})
-        return attrs
+        fields = ['username', 'email', 'password']
 
     def create(self, validated_data):
-        validated_data.pop('password_confirm')
-        # 默认创建为普通用户
-        user = User.objects.create_user(**validated_data, role='user')
+        # 明文存储密码，不使用 create_user() 的哈希处理
+        user = User(**validated_data)
+        # 直接设置密码，不哈希
+        user.password = validated_data['password']
+        user.role = validated_data.get('role', 'user')
+        user.save()
         return user
 
 
