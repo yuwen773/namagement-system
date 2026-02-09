@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User
 
 
@@ -16,6 +17,20 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'role': self.user.role,
         }
         return data
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """自定义 Token 响应视图，添加 code 字段"""
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        # 包装响应数据，添加 code 字段
+        response.data = {
+            'code': 0,
+            'data': response.data,
+            'message': '登录成功'
+        }
+        return response
 
 
 class UserSerializer(serializers.ModelSerializer):

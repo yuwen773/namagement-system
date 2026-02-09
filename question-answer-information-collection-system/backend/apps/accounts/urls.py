@@ -4,9 +4,9 @@ URL configuration for accounts app.
 
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import RegisterView, UserDetailView, UserListView
-from .serializers import CustomTokenObtainPairSerializer
+from .serializers import CustomTokenObtainPairSerializer, CustomTokenObtainPairView
 
 # ViewSet 路由
 router = DefaultRouter()
@@ -15,10 +15,10 @@ router.register(r'users', UserListView, basename='users')
 router.register(r'me', UserDetailView, basename='me')
 
 urlpatterns = [
-    # JWT Token endpoints - 使用自定义序列化器返回用户信息
+    # JWT Token endpoints - 使用自定义视图返回包装响应
     path(
-        "token/",
-        TokenObtainPairView.as_view(serializer_class=CustomTokenObtainPairSerializer),
+        "login/",
+        CustomTokenObtainPairView.as_view(serializer_class=CustomTokenObtainPairSerializer),
         name="token_obtain_pair"
     ),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
