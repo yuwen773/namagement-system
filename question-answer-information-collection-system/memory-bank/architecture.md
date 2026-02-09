@@ -5,87 +5,69 @@
 | 层级 | 技术 |
 |------|------|
 | 后端 | Django 5.2 + DRF |
-| 数据库 | MySQL 8.0 (3307) |
-| 任务队列 | Celery + Redis |
-| 前端 | Vue 3 + Element Plus + ECharts |
+| 数据库 | MySQL 8.0 (端口 3307) |
+| 任务队列 | Celery + Redis (端口 6379) |
+| 前端 | Vue 3 + Pinia + Element Plus + ECharts |
 | 爬虫 | Scrapy + Playwright |
 
-## 模块结构
+## 目录结构
 
 ```
 backend/
-├── qa_project/          # Django 主项目
-│   ├── settings.py      # 配置
-│   ├── urls.py         # 路由
-│   └── celery.py        # Celery 配置
+├── qa_project/       # Django 主项目配置
 ├── apps/
-│   ├── accounts/        # 用户认证
-│   ├── crawler/         # 爬虫模块
-│   └── api/             # 数据 API
-└── crawl.py             # 爬虫启动脚本
+│   ├── accounts/     # 用户认证 (User 模型、JWT)
+│   ├── crawler/      # 爬虫模块 (Question/Tag 模型、Celery 任务)
+│   └── api/          # 数据 API (问答 CRUD、统计)
+frontend/
+├── src/
+│   ├── main.js       # 应用入口
+│   ├── router/       # 路由 + 导航守卫
+│   ├── stores/       # Pinia 状态管理
+│   ├── utils/        # 请求工具 (request.js, auth.js)
+│   ├── api/          # API 接口模块 (users.js, questions.js)
+│   └── views/        # 页面组件 (Login, Dashboard, DataCenter, Profile, UserManagement)
 ```
 
-## 数据模型
+## 核心文件
 
-### Question (问答)
-- title, description, answer_content, answer_time, answerer
-- source_url (唯一索引), tags (多对多)
-- created_at, updated_at
-
-### Tag (标签)
-- name (唯一)
+| 文件路径 | 作用 |
+|----------|------|
+| `apps/accounts/models.py` | User 模型 |
+| `apps/accounts/views.py` | 认证视图 (登录/注册/用户信息) |
+| `apps/crawler/models.py` | Question、Tag 数据模型 |
+| `apps/crawler/tasks.py` | Celery 异步采集任务 |
+| `apps/api/views.py` | 问答 CRUD、统计 API |
+| `src/stores/auth.js` | 登录状态、Token 管理 |
+| `src/views/DataCenter.vue` | 数据列表页面 |
+| `src/views/Profile.vue` | 个人中心页面 |
 
 ## API 端点
 
-### 认证模块 `/api/auth/`
-| 方法 | 端点 |
-|------|------|
-| POST | `/api/auth/token/` 获取 Token |
-| POST | `/api/auth/register/` 注册 |
-
-### 爬虫控制 `/api/crawler/`
-| 方法 | 端点 | 权限 |
-|------|------|------|
-| GET | `/api/crawler/status/` | 登录 |
-| POST | `/api/crawler/start/` | 管理员 |
-| POST | `/api/crawler/stop/` | 管理员 |
-| GET | `/api/crawler/progress/<id>/` | 登录 |
-| GET | `/api/crawler/logs/<id>/` | 登录 |
-
-### 问答数据 `/api/questions/`
-| 方法 | 端点 |
-|------|------|
-| GET | `/api/questions/` (分页+搜索) |
-| GET | `/api/questions/<id>/` |
-| DELETE | `/api/questions/<id>/` (管理员) |
-| GET | `/api/questions/tags/` |
+| 模块 | 端点 | 方法 | 说明 |
+|------|------|------|------|
+| 认证 | `/api/auth/login/` | POST | 登录 |
+| 认证 | `/api/auth/register/` | POST | 注册 |
+| 认证 | `/api/auth/me/` | GET | 当前用户 |
+| 认证 | `/api/auth/change-password/` | POST | 修改密码 |
+| 问答 | `/api/questions/` | GET/DELETE | 列表/删除 |
+| 统计 | `/api/statistics/trend/` | GET | 问答趋势 |
+| 爬虫 | `/api/crawler/start/` | POST | 启动采集 |
 
 ## 用户角色
 
 | 角色 | 权限 |
 |------|------|
-| admin | 所有权限 |
-| user | 查看、搜索 |
+| admin | 所有权限（含爬虫、用户管理、数据删除） |
+| user | 查看、搜索、数据详情 |
 
-## 数据流向
-
-```
-爬虫 → Scrapy Pipeline → DataCleaner → MySQL → API → 前端
-                    ↓
-              Celery + Redis (异步任务)
-```
-
-## 服务启动
+## 启动命令
 
 ```bash
-# 1. Redis (必须)
+# 后端
 redis-server
-
-# 2. MySQL (必须)
-
-# 3. Celery Worker (必须)
-celery -A qa_project worker -l info
-
-# 4. Django 开发服务器
 python manage.py runserver
+
+# 前端
+cd frontend && npm run dev
 ```
