@@ -15,6 +15,10 @@ from .views import (
     CrawlerResumeView,
     CrawlerOperationLogsView,
     QuestionViewSet,
+    StatisticsTrendView,
+    StatisticsTagsView,
+    StatisticsAnswerersView,
+    StatisticsOverviewView,
 )
 
 app_name = 'crawler'
@@ -44,6 +48,12 @@ urlpatterns = [
 
     # 获取操作日志
     path('crawler/operation-logs/', CrawlerOperationLogsView.as_view(), name='crawler-operation-logs'),
+
+    # 统计分析 API
+    path('statistics/overview/', StatisticsOverviewView.as_view(), name='statistics-overview'),
+    path('statistics/trend/', StatisticsTrendView.as_view(), name='statistics-trend'),
+    path('statistics/tags/', StatisticsTagsView.as_view(), name='statistics-tags'),
+    path('statistics/answerers/', StatisticsAnswerersView.as_view(), name='statistics-answerers'),
 ]
 
 # 添加 ViewSet 路由

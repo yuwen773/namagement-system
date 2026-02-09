@@ -25,10 +25,12 @@ from apps.crawler.tasks import (
     REDIS_DB,
     REDIS_KEY_PREFIX,
 )
-from apps.crawler.models import Question
+from apps.crawler.models import Question, Tag
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
+from django.db.models import Count
+from django.db.models.functions import TruncDate
 
 
 def get_redis_client():
@@ -620,3 +622,253 @@ class QuestionViewSet(viewsets.ModelViewSet):
             make_response(code=0, data=serializer.data),
             status=status.HTTP_200_OK
         )
+
+
+class StatisticsTrendView(APIView):
+    """
+    统计分析 API - 每日问答数量趋势
+
+    GET /api/statistics/trend/
+
+    返回格式（与 ECharts 兼容）：
+    {
+        "code": 0,
+        "data": [
+            {"date": "2026-02-01", "count": 120},
+            {"date": "2026-02-02", "count": 150},
+            ...
+        ]
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        获取每日问答数量趋势
+
+        可选参数：
+        - days: 返回最近天数（默认30，最大365）
+        """
+        try:
+            days = min(int(request.query_params.get('days', 30)), 365)
+
+            # 按日期分组统计问答数量
+            trend_data = (
+                Question.objects
+                .annotate(date=TruncDate('created_at'))
+                .values('date')
+                .annotate(count=Count('id'))
+                .order_by('date')
+            )
+
+            # 转换为列表格式
+            trend_list = [
+                {
+                    "date": item['date'].strftime('%Y-%m-%d'),
+                    "count": item['count']
+                }
+                for item in trend_data
+            ]
+
+            return Response(
+                make_response(code=0, data=trend_list),
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                make_response(code=-1, message=f"获取趋势数据失败: {str(e)}"),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StatisticsTagsView(APIView):
+    """
+    统计分析 API - 标签词频统计
+
+    GET /api/statistics/tags/
+
+    返回格式（与 ECharts 词云图兼容）：
+    {
+        "code": 0,
+        "data": [
+            {"name": "python", "value": 150},
+            {"name": "django", "value": 120},
+            ...
+        ]
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        获取标签词频统计（前50）
+
+        可选参数：
+        - limit: 返回数量（默认50，最大100）
+        """
+        try:
+            limit = min(int(request.query_params.get('limit', 50)), 100)
+
+            # 统计每个标签的使用次数
+            tag_stats = (
+                Tag.objects
+                .annotate(question_count=Count('questions'))
+                .order_by('-question_count')[:limit]
+            )
+
+            # 转换为 ECharts 词云格式
+            tag_list = [
+                {
+                    "name": tag.name,
+                    "value": tag.question_count
+                }
+                for tag in tag_stats
+            ]
+
+            return Response(
+                make_response(code=0, data=tag_list),
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                make_response(code=-1, message=f"获取标签统计失败: {str(e)}"),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StatisticsAnswerersView(APIView):
+    """
+    统计分析 API - 高频回答者排名
+
+    GET /api/statistics/answerers/
+
+    返回格式（与 ECharts 柱状图兼容）：
+    {
+        "code": 0,
+        "data": [
+            {"name": "user123", "count": 50},
+            {"name": "expert456", "count": 35},
+            ...
+        ]
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        获取高频回答者排名（前20）
+
+        可选参数：
+        - limit: 返回数量（默认20，最大50）
+        """
+        try:
+            limit = min(int(request.query_params.get('limit', 20)), 50)
+
+            # 统计每个回答者的回答数量（排除空值）
+            answerer_stats = (
+                Question.objects
+                .filter(answerer__isnull=False)
+                .exclude(answerer='')
+                .values('answerer')
+                .annotate(count=Count('id'))
+                .order_by('-count')[:limit]
+            )
+
+            # 转换为列表格式
+            answerer_list = [
+                {
+                    "name": item['answerer'],
+                    "count": item['count']
+                }
+                for item in answerer_stats
+            ]
+
+            return Response(
+                make_response(code=0, data=answerer_list),
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                make_response(code=-1, message=f"获取回答者统计失败: {str(e)}"),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StatisticsOverviewView(APIView):
+    """
+    统计分析 API - 数据总览
+
+    GET /api/statistics/overview/
+
+    返回格式：
+    {
+        "code": 0,
+        "data": {
+            "total_questions": 10000,
+            "total_tags": 200,
+            "total_answerers": 500,
+            "today_questions": 150,
+            "avg_daily": 100
+        }
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        获取数据总览统计
+        """
+        try:
+            from django.utils import timezone
+            from datetime import timedelta
+
+            today = timezone.now().date()
+            today_start = timezone.make_aware(
+                timezone.datetime.combine(today, timezone.datetime.min.time())
+            )
+
+            # 总问答数
+            total_questions = Question.objects.count()
+
+            # 总标签数
+            total_tags = Tag.objects.count()
+
+            # 今日问答数
+            today_questions = Question.objects.filter(created_at__gte=today_start).count()
+
+            # 高频回答者数量（至少回答过1次）
+            total_answerers = (
+                Question.objects
+                .filter(answerer__isnull=False)
+                .exclude(answerer='')
+                .values('answerer')
+                .distinct()
+                .count()
+            )
+
+            # 日均问答数（最近30天）
+            thirty_days_ago = today_start - timedelta(days=30)
+            recent_questions = Question.objects.filter(created_at__gte=thirty_days_ago).count()
+            avg_daily = round(recent_questions / 30, 1)
+
+            overview = {
+                "total_questions": total_questions,
+                "total_tags": total_tags,
+                "total_answerers": total_answerers,
+                "today_questions": today_questions,
+                "avg_daily": avg_daily
+            }
+
+            return Response(
+                make_response(code=0, data=overview),
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                make_response(code=-1, message=f"获取总览数据失败: {str(e)}"),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
