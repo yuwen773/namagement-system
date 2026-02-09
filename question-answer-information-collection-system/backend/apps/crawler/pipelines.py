@@ -13,7 +13,7 @@ from itemadapter import ItemAdapter
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Question, Tag
+from .models import Question, Answer
 from .utils import DataCleaner, DuplicateChecker
 
 logger = logging.getLogger(__name__)
@@ -181,19 +181,22 @@ class QuestionPipeline:
 
                     # 创建 Question 实例
                     question = Question(
+                        question_id=item_data.get('question_id', ''),
                         title=item_data.get('title', ''),
                         description=item_data.get('description'),
-                        answer_content=item_data.get('answer_content', ''),
-                        answer_time=item_data.get('answer_time'),
-                        answerer=item_data.get('answerer'),
+                        category=item_data.get('category'),
+                        publish_time=item_data.get('publish_time'),
+                        location=item_data.get('location'),
+                        answer_count=item_data.get('answer_count', 0),
+                        crawl_page=item_data.get('crawl_page', 1),
                         source_url=item_data['source_url'],
                     )
                     question.save()
 
-                    # 处理标签
-                    tags_data = item_data.get('tags', [])
-                    if tags_data:
-                        self._handle_tags(question, tags_data)
+                    # 处理答案列表（如果有多个答案）
+                    answer_list = item_data.get('answer_list', [])
+                    if answer_list:
+                        self._handle_answers(question, answer_list)
 
                     inserted_count += 1
 
@@ -203,32 +206,32 @@ class QuestionPipeline:
 
         return inserted_count
 
-    def _handle_tags(self, question: Question, tags_data: list):
+    def _handle_answers(self, question: Question, answer_list: list):
         """
-        处理标签关联
+        处理答案关联
 
         Args:
             question: Question 实例
-            tags_data: 标签数据列表
+            answer_list: 答案数据列表
         """
-        if isinstance(tags_data, str):
-            # 逗号分隔的标签字符串
-            tag_names = [t.strip() for t in tags_data.split(',') if t.strip()]
-        elif isinstance(tags_data, list):
-            tag_names = [str(t).strip() for t in tags_data if t]
-        else:
+        if not isinstance(answer_list, list):
             return
 
-        for tag_name in tag_names:
-            if not tag_name:
+        for idx, answer_data in enumerate(answer_list, start=1):
+            if not isinstance(answer_data, dict):
                 continue
 
-            # 获取或创建标签
-            tag, created = Tag.objects.get_or_create(
-                name=tag_name[:50],  # 限制标签长度
-                defaults={'created_at': timezone.now()}
-            )
-            question.tags.add(tag)
+            try:
+                Answer.objects.create(
+                    question=question,
+                    content=answer_data.get('content', ''),
+                    answerer=answer_data.get('answerer'),
+                    answer_time=answer_data.get('answer_time'),
+                    source_order=idx,
+                )
+            except Exception as e:
+                logger.error(f"插入答案失败: {e}")
+
 
     def get_stats(self) -> Dict[str, int]:
         """
@@ -283,7 +286,7 @@ class DataValidationPipeline:
     验证数据完整性和格式，不符合要求的数据会被丢弃。
     """
 
-    REQUIRED_FIELDS = ['title', 'answer_content', 'source_url']
+    REQUIRED_FIELDS = ['question_id', 'title', 'source_url']
 
     def process_item(self, item: Dict[str, Any], spider) -> Optional[Dict[str, Any]]:
         """
