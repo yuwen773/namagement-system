@@ -1,13 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import Login from '@/views/Login.vue'
+import Dashboard from '@/views/Dashboard.vue'
+import DataCenter from '@/views/DataCenter.vue'
+import UserManagement from '@/views/UserManagement.vue'
+import Profile from '@/views/Profile.vue'
 
-// Lazy loading for views
-const Login = () => import('@/views/Login.vue')
-const Dashboard = () => import('@/views/Dashboard.vue')
-const DataCenter = () => import('@/views/DataCenter.vue')
-const UserManagement = () => import('@/views/UserManagement.vue')
-const Profile = () => import('@/views/Profile.vue')
-
+// Routes with lazy loading
 const routes = [
   {
     path: '/login',
@@ -19,24 +18,34 @@ const routes = [
     path: '/',
     redirect: '/dashboard'
   },
+  // Dashboard - accessible to all authenticated users
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true, title: '仪表盘' }
+    meta: { requiresAuth: true, layout: 'admin', title: '仪表盘' }
   },
+  // Data Center - different titles for admin vs regular user
   {
     path: '/data',
     name: 'DataCenter',
     component: DataCenter,
-    meta: { requiresAuth: true, title: '数据中心' }
+    meta: { requiresAuth: true, layout: 'admin', title: '数据中心' }
   },
+  {
+    path: '/my-data',
+    name: 'MyData',
+    component: DataCenter,
+    meta: { requiresAuth: true, layout: 'user', title: '我的数据' }
+  },
+  // User Management - admin only
   {
     path: '/users',
     name: 'UserManagement',
     component: UserManagement,
-    meta: { requiresAuth: true, roles: ['admin'], title: '用户管理' }
+    meta: { requiresAuth: true, roles: ['admin'], layout: 'admin', title: '用户管理' }
   },
+  // Profile - accessible to all
   {
     path: '/profile',
     name: 'Profile',
@@ -69,7 +78,7 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // Check role-based access
+  // Check role-based access for admin routes
   if (requiredRoles && requiredRoles.length > 0) {
     if (!authStore.isAdmin) {
       next({ name: 'Dashboard' })

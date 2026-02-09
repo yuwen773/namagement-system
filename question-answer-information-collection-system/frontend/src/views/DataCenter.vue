@@ -10,7 +10,7 @@
             </svg>
           </div>
           <div class="header-text">
-            <h1 class="page-title">数据中心</h1>
+            <h1 class="page-title">{{ pageTitle }}</h1>
             <p class="page-subtitle">智能问答数据管理平台</p>
           </div>
         </div>
@@ -269,10 +269,12 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { getQuestions, deleteQuestion } from '@/api/questions'
 
+const route = useRoute()
 const authStore = useAuthStore()
 
 // State
@@ -288,6 +290,7 @@ const searchTimer = ref(null)
 
 // Computed
 const isAdmin = computed(() => authStore.isAdmin)
+const pageTitle = computed(() => route.meta?.title || '数据中心')
 
 // Methods
 const formatDate = (dateStr) => {
@@ -408,9 +411,9 @@ onMounted(() => {
 <style scoped>
 /* Page Layout */
 .data-center-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #0a0e17 0%, #0d1117 50%, #0a0e17 100%);
+  min-height: 100%;
   padding: 2rem;
+  background: linear-gradient(180deg, #0a0e17 0%, #0d1117 50%, #0a0e17 100%);
 }
 
 /* Header */
@@ -489,11 +492,6 @@ onMounted(() => {
   background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
   border-radius: 50%;
   animation: pulse-dot 2s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.9); }
 }
 
 .stat-value {
