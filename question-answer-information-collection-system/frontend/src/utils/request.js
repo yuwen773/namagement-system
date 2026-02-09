@@ -10,6 +10,9 @@ const request = axios.create({
   }
 })
 
+// 防止重复跳转登录页的标志
+let isRedirecting = false
+
 // Request interceptor
 request.interceptors.request.use(
   (config) => {
@@ -39,11 +42,17 @@ request.interceptors.response.use(
       const { status, data } = error.response
       switch (status) {
         case 401:
-          ElMessage.error('登录已过期，请重新登录')
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          localStorage.removeItem('user_info')
-          router.push('/login')
+          // 防止重复跳转
+          if (!isRedirecting) {
+            isRedirecting = true
+            ElMessage.warning('登录已过期，请重新登录')
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('refresh_token')
+            localStorage.removeItem('user_info')
+            router.push('/login')
+            // 1秒后重置标志，允许再次跳转
+            setTimeout(() => { isRedirecting = false }, 1000)
+          }
           break
         case 403:
           ElMessage.error('没有权限访问')
