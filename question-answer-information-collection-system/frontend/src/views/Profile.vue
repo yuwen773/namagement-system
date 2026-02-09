@@ -350,8 +350,7 @@ const handlePasswordSubmit = async () => {
 <style scoped>
 /* Page Layout */
 .profile-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #0a0e17 0%, #0d1117 50%, #0a0e17 100%);
+  min-height: 100%;
   padding: 2rem;
 }
 
@@ -458,17 +457,17 @@ const handlePasswordSubmit = async () => {
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(240, 165, 0, 0.5), transparent);
+  height: 3px;
+  background: linear-gradient(90deg, #5c7cfa, #748ffc);
 }
 
 .password-card .card-glow {
-  background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.5), transparent);
+  background: linear-gradient(90deg, #38a169, #48bb78);
 }
 
 .card-header {
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  border-bottom: 1px solid #e5e9f0;
 }
 
 .card-title {
@@ -477,7 +476,7 @@ const handlePasswordSubmit = async () => {
   gap: 0.625rem;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #2d3748;
   margin: 0;
 }
 
@@ -758,10 +757,6 @@ const handlePasswordSubmit = async () => {
   border-top-color: #0a0e17;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* Security Tips */
