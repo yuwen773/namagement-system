@@ -3,6 +3,10 @@
 import os
 import sys
 
+# 使用 PyMySQL 替代 mysqlclient
+import pymysql
+pymysql.install_as_MySQLdb()
+
 
 def main():
     """Run administrative tasks."""
