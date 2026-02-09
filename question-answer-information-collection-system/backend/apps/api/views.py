@@ -25,7 +25,7 @@ from apps.crawler.tasks import (
     REDIS_DB,
     REDIS_KEY_PREFIX,
 )
-from apps.crawler.models import Question, Tag
+from apps.crawler.models import Question, Answer
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
@@ -517,7 +517,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     GET /api/questions/<id>/     - 获取问答详情
     DELETE /api/questions/<id>/  - 删除问答（仅管理员）
     """
-    queryset = Question.objects.prefetch_related('tags').all()
+    queryset = Question.objects.select_related('answers').all()
     serializer_class = None  # 在 __init__ 中动态设置
     permission_classes = [IsAdminOrDeleteOnly]
 
@@ -594,21 +594,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    @action(detail=False, methods=['get'])
-    def tags(self, request):
-        """
-        获取所有标签列表
-
-        GET /api/questions/tags/
-        """
-        from apps.api.serializers import TagSerializer
-        tags = Tag.objects.all()
-        serializer = TagSerializer(tags, many=True)
-        return Response(
-            make_response(code=0, data=serializer.data, total=tags.count()),
-            status=status.HTTP_200_OK
-        )
-
     @action(detail=True, methods=['get'])
     def detail(self, request, pk=None):
         """
@@ -616,7 +601,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         GET /api/questions/<id>/detail/
         """
-        question = get_object_or_404(Question.objects.prefetch_related('tags'), pk=pk)
+        question = get_object_or_404(Question.objects.prefetch_related('answers'), pk=pk)
         serializer = self.get_serializer(question)
         return Response(
             make_response(code=0, data=serializer.data),
@@ -682,18 +667,18 @@ class StatisticsTrendView(APIView):
             )
 
 
-class StatisticsTagsView(APIView):
+class StatisticsCategoriesView(APIView):
     """
-    统计分析 API - 标签词频统计
+    统计分析 API - 分类统计
 
-    GET /api/statistics/tags/
+    GET /api/statistics/categories/
 
     返回格式（与 ECharts 词云图兼容）：
     {
         "code": 0,
         "data": [
-            {"name": "python", "value": 150},
-            {"name": "django", "value": 120},
+            {"name": "影视", "value": 150},
+            {"name": "烦恼", "value": 120},
             ...
         ]
     }
@@ -702,7 +687,7 @@ class StatisticsTagsView(APIView):
 
     def get(self, request):
         """
-        获取标签词频统计（前50）
+        获取分类统计（前50）
 
         可选参数：
         - limit: 返回数量（默认50，最大100）
@@ -710,30 +695,33 @@ class StatisticsTagsView(APIView):
         try:
             limit = min(int(request.query_params.get('limit', 50)), 100)
 
-            # 统计每个标签的使用次数
-            tag_stats = (
-                Tag.objects
-                .annotate(question_count=Count('questions'))
+            # 统计每个分类的问题数量
+            category_stats = (
+                Question.objects
+                .filter(category__isnull=False)
+                .exclude(category='')
+                .values('category')
+                .annotate(question_count=Count('id'))
                 .order_by('-question_count')[:limit]
             )
 
             # 转换为 ECharts 词云格式
-            tag_list = [
+            category_list = [
                 {
-                    "name": tag.name,
-                    "value": tag.question_count
+                    "name": item['category'],
+                    "value": item['question_count']
                 }
-                for tag in tag_stats
+                for item in category_stats
             ]
 
             return Response(
-                make_response(code=0, data=tag_list),
+                make_response(code=0, data=category_list),
                 status=status.HTTP_200_OK
             )
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取标签统计失败: {str(e)}"),
+                make_response(code=-1, message=f"获取分类统计失败: {str(e)}"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -766,9 +754,9 @@ class StatisticsAnswerersView(APIView):
         try:
             limit = min(int(request.query_params.get('limit', 20)), 50)
 
-            # 统计每个回答者的回答数量（排除空值）
+            # 统计每个回答者的回答数量（从Answer模型统计）
             answerer_stats = (
-                Question.objects
+                Answer.objects
                 .filter(answerer__isnull=False)
                 .exclude(answerer='')
                 .values('answerer')
@@ -808,8 +796,9 @@ class StatisticsOverviewView(APIView):
         "code": 0,
         "data": {
             "total_questions": 10000,
-            "total_tags": 200,
+            "total_categories": 200,
             "total_answerers": 500,
+            "total_answers": 15000,
             "today_questions": 150,
             "avg_daily": 100
         }
@@ -833,21 +822,31 @@ class StatisticsOverviewView(APIView):
             # 总问答数
             total_questions = Question.objects.count()
 
-            # 总标签数
-            total_tags = Tag.objects.count()
-
-            # 今日问答数
-            today_questions = Question.objects.filter(created_at__gte=today_start).count()
-
-            # 高频回答者数量（至少回答过1次）
-            total_answerers = (
+            # 总分类数（统计不同的category值）
+            total_categories = (
                 Question.objects
+                .filter(category__isnull=False)
+                .exclude(category='')
+                .values('category')
+                .distinct()
+                .count()
+            )
+
+            # 总回答数
+            total_answers = Answer.objects.count()
+
+            # 总回答者数量（从Answer模型统计）
+            total_answerers = (
+                Answer.objects
                 .filter(answerer__isnull=False)
                 .exclude(answerer='')
                 .values('answerer')
                 .distinct()
                 .count()
             )
+
+            # 今日问答数
+            today_questions = Question.objects.filter(created_at__gte=today_start).count()
 
             # 日均问答数（最近30天）
             thirty_days_ago = today_start - timedelta(days=30)
@@ -856,8 +855,9 @@ class StatisticsOverviewView(APIView):
 
             overview = {
                 "total_questions": total_questions,
-                "total_tags": total_tags,
+                "total_categories": total_categories,
                 "total_answerers": total_answerers,
+                "total_answers": total_answers,
                 "today_questions": today_questions,
                 "avg_daily": avg_daily
             }

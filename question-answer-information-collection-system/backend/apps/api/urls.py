@@ -16,7 +16,7 @@ from .views import (
     CrawlerOperationLogsView,
     QuestionViewSet,
     StatisticsTrendView,
-    StatisticsTagsView,
+    StatisticsCategoriesView,
     StatisticsAnswerersView,
     StatisticsOverviewView,
 )
@@ -52,7 +52,7 @@ urlpatterns = [
     # 统计分析 API
     path('statistics/overview/', StatisticsOverviewView.as_view(), name='statistics-overview'),
     path('statistics/trend/', StatisticsTrendView.as_view(), name='statistics-trend'),
-    path('statistics/tags/', StatisticsTagsView.as_view(), name='statistics-tags'),
+    path('statistics/categories/', StatisticsCategoriesView.as_view(), name='statistics-categories'),
     path('statistics/answerers/', StatisticsAnswerersView.as_view(), name='statistics-answerers'),
 ]
 

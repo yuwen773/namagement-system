@@ -1,49 +1,64 @@
 """
 问答数据 API 序列化器
 
-提供 Question 和 Tag 数据的序列化/反序列化支持。
+提供 Question 和 Answer 数据的序列化/反序列化支持。
 """
 
 from rest_framework import serializers
-from apps.crawler.models import Question, Tag
+from apps.crawler.models import Question, Answer
 
 
-class TagSerializer(serializers.ModelSerializer):
-    """标签序列化器"""
-    question_count = serializers.SerializerMethodField()
-
+class AnswerSerializer(serializers.ModelSerializer):
+    """答案序列化器"""
     class Meta:
-        model = Tag
-        fields = ['id', 'name', 'created_at', 'question_count']
-
-    def get_question_count(self, obj):
-        return obj.questions.count()
+        model = Answer
+        fields = [
+            'id',
+            'content',
+            'answerer',
+            'answer_time',
+            'source_order',
+            'created_at',
+        ]
+        read_only_fields = ['created_at']
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    """问答数据序列化器"""
-    tags = TagSerializer(many=True, read_only=True)
-    tags_ids = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=Tag.objects.all(),
-        source='tags',
-        write_only=True,
-        required=False
-    )
+    """问题序列化器"""
+    answers = AnswerSerializer(many=True, read_only=True)
+    answer_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Question
         fields = [
             'id',
+            'question_id',
             'title',
             'description',
-            'answer_content',
-            'answer_time',
-            'answerer',
-            'tags',
-            'tags_ids',
+            'category',
+            'publish_time',
+            'location',
+            'answer_count',
+            'crawl_page',
             'source_url',
+            'answers',
             'created_at',
             'updated_at',
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+
+class QuestionListSerializer(serializers.ModelSerializer):
+    """问题列表序列化器（简化版，不包含答案详情）"""
+    class Meta:
+        model = Question
+        fields = [
+            'id',
+            'question_id',
+            'title',
+            'category',
+            'publish_time',
+            'location',
+            'answer_count',
+            'created_at',
+        ]
