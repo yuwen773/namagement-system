@@ -1,0 +1,10 @@
+# 景点图片目录
+# 在此目录中放置景点封面图和轮播图
+#
+# 图片命名规范:
+# - 封面图: {景点拼音}.jpg (如 gugong.jpg)
+# - 轮播图: {景点拼音}_{序号}.jpg (如 gugong_1.jpg, gugong_2.jpg)
+#
+# 示例:
+# - gugong.jpg (故宫封面图)
+# - gugong_1.jpg, gugong_2.jpg (故宫轮播图)
