@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'drf_spectacular',
 
     # Local apps
     'accounts',
@@ -171,6 +172,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
     ],
     'EXCEPTION_HANDLER': 'movie_prediction.exceptions.custom_exception_handler',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # JWT settings
@@ -193,3 +195,33 @@ TIME_ZONE = 'Asia/Shanghai'
 USE_I18N = True
 
 USE_TZ = True
+
+
+# drf-spectacular settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': '电影票房预测与可视化系统 API',
+    'DESCRIPTION': '提供影片管理、影院管理、票房数据录入、预测分析、数据可视化等功能的 RESTful API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SCHEMA_PATH_PREFIX': '/api',
+    'COMPONENT_SPLIT_REQUEST': True,
+    'TAGS': [
+        {'name': '认证', 'description': '用户注册、登录、Token 刷新等认证相关接口'},
+        {'name': '影片管理', 'description': '影片和影片类型的增删改查接口'},
+        {'name': '影院管理', 'description': '影院和地域信息的增删改查接口'},
+        {'name': '票房数据', 'description': '票房记录的录入、查询和统计接口'},
+        {'name': '预测分析', 'description': '票房预测算法和预测结果接口'},
+        {'name': '数据可视化', 'description': '为前端图表提供数据的统计接口'},
+    ],
+    'SERVERS': [
+        {'url': 'http://localhost:8000', 'description': '本地开发服务器'},
+    ],
+    'AUTHENTICATION_WHITELIST': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'ENUM_NAME_OVERRIDES': {
+        'HTTPMethod': 'rest_framework.utils.mediatypes.BaseMediaType',
+    },
+    'POSTPROCESSING_HOOKS': [],
+    'PREPROCESSING_HOOKS': [],
+}
