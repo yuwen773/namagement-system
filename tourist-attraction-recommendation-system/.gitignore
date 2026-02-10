@@ -44,7 +44,7 @@ Thumbs.db
 # Frontend (Vue 3)
 node_modules/
 dist/
-dist-ssr/
+dist-srv/
 *.local
 *.log
 npm-debug.log*

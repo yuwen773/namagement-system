@@ -1,0 +1,1896 @@
+openapi: 3.0.3
+info:
+  title: 旅游景点推荐系统 API
+  version: 1.0.0
+  description: 旅游景点推荐系统后端接口文档
+paths:
+  /api/accounts/change-password/:
+    post:
+      operationId: accounts_change_password_create
+      description: 修改密码接口
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/delete-account/:
+    delete:
+      operationId: accounts_delete_account_destroy
+      description: 逻辑删除当前用户
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/login/:
+    post:
+      operationId: accounts_login_create
+      description: 用户登录接口
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/profile/:
+    get:
+      operationId: accounts_profile_retrieve
+      description: 获取当前用户信息
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    put:
+      operationId: accounts_profile_update
+      description: 更新当前用户信息
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/accounts/register/:
+    post:
+      operationId: accounts_register_create
+      description: 用户注册接口
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/accounts/token/refresh/:
+    post:
+      operationId: accounts_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/attractions/:
+    get:
+      operationId: attractions_list
+      description: 获取景点列表
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: 用于排序结果的字段。
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: 分页结果集中的页码。
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: 搜索关键词。
+        schema:
+          type: string
+      tags:
+      - attractions
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttractionListList'
+          description: ''
+    post:
+      operationId: attractions_create
+      description: 创建景点
+      tags:
+      - attractions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttractionCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AttractionCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AttractionCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttractionCreateUpdate'
+          description: ''
+  /api/attractions/{id}/:
+    get:
+      operationId: attractions_retrieve
+      description: 获取景点详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 attraction 的 唯一整数值。
+        required: true
+      tags:
+      - attractions
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttractionDetail'
+          description: ''
+    put:
+      operationId: attractions_update
+      description: 更新景点
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 attraction 的 唯一整数值。
+        required: true
+      tags:
+      - attractions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttractionCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AttractionCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AttractionCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttractionCreateUpdate'
+          description: ''
+    patch:
+      operationId: attractions_partial_update
+      description: 景点视图集
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 attraction 的 唯一整数值。
+        required: true
+      tags:
+      - attractions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAttractionCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAttractionCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAttractionCreateUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttractionCreateUpdate'
+          description: ''
+    delete:
+      operationId: attractions_destroy
+      description: 删除景点（逻辑删除）
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 attraction 的 唯一整数值。
+        required: true
+      tags:
+      - attractions
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/attractions/search/:
+    get:
+      operationId: attractions_search_retrieve
+      description: 景点搜索
+      tags:
+      - attractions
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttractionDetail'
+          description: ''
+  /api/comments/comments/:
+    get:
+      operationId: comments_comments_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: 分页结果集中的页码。
+        schema:
+          type: integer
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommentList'
+          description: ''
+    post:
+      operationId: comments_comments_create
+      description: 发表评论
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentCreate'
+          description: ''
+  /api/comments/comments/{id}/:
+    get:
+      operationId: comments_comments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 comment 的 唯一整数值。
+        required: true
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    put:
+      operationId: comments_comments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 comment 的 唯一整数值。
+        required: true
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    patch:
+      operationId: comments_comments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 comment 的 唯一整数值。
+        required: true
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedComment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedComment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedComment'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    delete:
+      operationId: comments_comments_destroy
+      description: 删除评论（只能删除自己的）
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 comment 的 唯一整数值。
+        required: true
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/comments/comments/{id}/review/:
+    put:
+      operationId: comments_comments_review_update
+      description: 审核评论（管理员）
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 标识此 comment 的 唯一整数值。
+        required: true
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/comments/comments/attraction/{attraction_id}/:
+    get:
+      operationId: comments_comments_attraction_retrieve
+      description: 指定景点的评论列表
+      parameters:
+      - in: path
+        name: attraction_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/comments/comments/my/:
+    get:
+      operationId: comments_comments_my_retrieve
+      description: 我的评论
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/comments/favorites/:
+    get:
+      operationId: comments_favorites_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: 分页结果集中的页码。
+        schema:
+          type: integer
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteList'
+          description: ''
+    post:
+      operationId: comments_favorites_create
+      description: 添加收藏
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Favorite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Favorite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Favorite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+          description: ''
+  /api/comments/favorites/{id}/:
+    get:
+      operationId: comments_favorites_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+          description: ''
+    put:
+      operationId: comments_favorites_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Favorite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Favorite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Favorite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+          description: ''
+    patch:
+      operationId: comments_favorites_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFavorite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFavorite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFavorite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+          description: ''
+    delete:
+      operationId: comments_favorites_destroy
+      description: 取消收藏
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/comments/favorites/my/:
+    get:
+      operationId: comments_favorites_my_retrieve
+      description: 我的收藏
+      tags:
+      - comments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+          description: ''
+  /api/notifications/:
+    get:
+      operationId: notifications_list
+      description: 我的通知列表
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: 分页结果集中的页码。
+        schema:
+          type: integer
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+    post:
+      operationId: notifications_create
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/{id}/:
+    get:
+      operationId: notifications_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+    put:
+      operationId: notifications_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+    patch:
+      operationId: notifications_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNotification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedNotification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedNotification'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+    delete:
+      operationId: notifications_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/notifications/announcement/:
+    post:
+      operationId: notifications_announcement_create
+      description: 发布公告（管理员）
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/mark_read/:
+    post:
+      operationId: notifications_mark_read_create
+      description: 标记已读
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/recommendations/personalized/:
+    get:
+      operationId: recommendations_personalized_list
+      description: 获取个性化推荐
+      tags:
+      - recommendations
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttractionRecommend'
+          description: ''
+  /api/recommendations/popular/:
+    get:
+      operationId: recommendations_popular_list
+      description: 获取热门景点推荐
+      tags:
+      - recommendations
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttractionRecommend'
+          description: ''
+  /api/recommendations/similar/{attraction_id}/:
+    get:
+      operationId: recommendations_similar_list
+      description: 获取相似景点推荐
+      parameters:
+      - in: path
+        name: attraction_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - recommendations
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttractionRecommend'
+          description: ''
+  /api/statistics/dashboard/:
+    get:
+      operationId: statistics_dashboard_retrieve
+      description: 获取看板数据汇总
+      tags:
+      - statistics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+  /api/statistics/hot/:
+    get:
+      operationId: statistics_hot_list
+      description: 获取热门景点排行 TOP 10
+      tags:
+      - statistics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HotAttraction'
+          description: ''
+  /api/statistics/monthly/:
+    get:
+      operationId: statistics_monthly_list
+      description: 获取月度数据报告
+      tags:
+      - statistics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlyData'
+          description: ''
+  /api/statistics/users/:
+    get:
+      operationId: statistics_users_list
+      description: 获取所有用户列表（分页）
+      tags:
+      - statistics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserManage'
+          description: ''
+  /api/statistics/users/{user_id}/status/:
+    put:
+      operationId: statistics_users_status_update
+      description: 启用/禁用用户
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - statistics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserStatus'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserManage'
+          description: ''
+components:
+  schemas:
+    AttractionCreateUpdate:
+      type: object
+      description: 景点创建/更新序列化器
+      properties:
+        name:
+          type: string
+          title: 景点名称
+          maxLength: 100
+        description:
+          type: string
+          title: 景点简介
+        address:
+          type: string
+          title: 地址
+          maxLength: 200
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: 类别
+        region:
+          type: string
+          title: 地区
+          maxLength: 50
+        opening_hours:
+          type: string
+          title: 开放时间
+          maxLength: 100
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          title: 封面图
+        images:
+          title: 轮播图
+      required:
+      - name
+    AttractionDetail:
+      type: object
+      description: 景点详情序列化器（完整字段）
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: 景点名称
+          maxLength: 100
+        description:
+          type: string
+          title: 景点简介
+        address:
+          type: string
+          title: 地址
+          maxLength: 200
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: 类别
+        region:
+          type: string
+          title: 地区
+          maxLength: 50
+        opening_hours:
+          type: string
+          title: 开放时间
+          maxLength: 100
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          title: 封面图
+        images:
+          title: 轮播图
+        view_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 浏览量
+        is_deleted:
+          type: boolean
+          title: 是否删除
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 更新时间
+      required:
+      - created_at
+      - id
+      - name
+      - updated_at
+    AttractionList:
+      type: object
+      description: 景点列表序列化器（简化字段）
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: 景点名称
+          maxLength: 100
+        description:
+          type: string
+          title: 景点简介
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: 类别
+        region:
+          type: string
+          title: 地区
+          maxLength: 50
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          title: 封面图
+        view_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 浏览量
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - created_at
+      - id
+      - name
+    AttractionRecommend:
+      type: object
+      description: 景点推荐序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: 景点名称
+          maxLength: 100
+        description:
+          type: string
+          title: 景点简介
+        address:
+          type: string
+          title: 地址
+          maxLength: 200
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: 类别
+        category_display:
+          type: string
+          readOnly: true
+        region:
+          type: string
+          title: 地区
+          maxLength: 50
+        opening_hours:
+          type: string
+          title: 开放时间
+          maxLength: 100
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          title: 封面图
+        view_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 浏览量
+        hot_score:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - category_display
+      - created_at
+      - hot_score
+      - id
+      - name
+    CategoryEnum:
+      enum:
+      - 自然风光
+      - 人文古迹
+      - 主题乐园
+      - 其他
+      type: string
+      description: |-
+        * `自然风光` - 自然风光
+        * `人文古迹` - 人文古迹
+        * `主题乐园` - 主题乐园
+        * `其他` - 其他
+    ChangePassword:
+      type: object
+      description: 修改密码序列化器
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 6
+        new_password_confirm:
+          type: string
+          writeOnly: true
+      required:
+      - new_password
+      - new_password_confirm
+      - old_password
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        attraction_name:
+          type: string
+          readOnly: true
+        content:
+          type: string
+          title: 评论内容
+        rating:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 评分
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          title: 状态
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - attraction_name
+      - content
+      - created_at
+      - id
+      - user_name
+    CommentCreate:
+      type: object
+      properties:
+        attraction:
+          type: integer
+        content:
+          type: string
+          title: 评论内容
+        rating:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 评分
+      required:
+      - attraction
+      - content
+    Dashboard:
+      type: object
+      description: 数据看板序列化器
+      properties:
+        total_users:
+          type: integer
+        total_attractions:
+          type: integer
+        total_comments:
+          type: integer
+        monthly_new_users:
+          type: integer
+        monthly_new_attractions:
+          type: integer
+        monthly_new_comments:
+          type: integer
+      required:
+      - monthly_new_attractions
+      - monthly_new_comments
+      - monthly_new_users
+      - total_attractions
+      - total_comments
+      - total_users
+    Favorite:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        attraction:
+          type: integer
+        attraction_name:
+          type: string
+          readOnly: true
+        attraction_cover:
+          type: string
+          format: uri
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - attraction
+      - attraction_cover
+      - attraction_name
+      - created_at
+      - id
+    HotAttraction:
+      type: object
+      description: 热门景点序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: 景点名称
+          maxLength: 100
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          title: 封面图
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: 类别
+        region:
+          type: string
+          title: 地区
+          maxLength: 50
+        view_count:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 浏览量
+        comment_count:
+          type: string
+          readOnly: true
+        avg_rating:
+          type: string
+          readOnly: true
+        hot_score:
+          type: string
+          readOnly: true
+      required:
+      - avg_rating
+      - comment_count
+      - hot_score
+      - id
+      - name
+    MonthlyData:
+      type: object
+      description: 月度数据序列化器
+      properties:
+        month:
+          type: string
+        new_users:
+          type: integer
+        new_attractions:
+          type: integer
+        new_comments:
+          type: integer
+      required:
+      - month
+      - new_attractions
+      - new_comments
+      - new_users
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          title: 标题
+          maxLength: 200
+        content:
+          type: string
+          title: 内容
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          title: 类型
+        is_read:
+          type: boolean
+          title: 是否已读
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - content
+      - created_at
+      - id
+      - title
+    PaginatedAttractionListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttractionList'
+    PaginatedCommentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+    PaginatedFavoriteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Favorite'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PatchedAttractionCreateUpdate:
+      type: object
+      description: 景点创建/更新序列化器
+      properties:
+        name:
+          type: string
+          title: 景点名称
+          maxLength: 100
+        description:
+          type: string
+          title: 景点简介
+        address:
+          type: string
+          title: 地址
+          maxLength: 200
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: 类别
+        region:
+          type: string
+          title: 地区
+          maxLength: 50
+        opening_hours:
+          type: string
+          title: 开放时间
+          maxLength: 100
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          title: 封面图
+        images:
+          title: 轮播图
+    PatchedComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        attraction_name:
+          type: string
+          readOnly: true
+        content:
+          type: string
+          title: 评论内容
+        rating:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: 评分
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          title: 状态
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+    PatchedFavorite:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        attraction:
+          type: integer
+        attraction_name:
+          type: string
+          readOnly: true
+        attraction_cover:
+          type: string
+          format: uri
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+    PatchedNotification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          title: 标题
+          maxLength: 200
+        content:
+          type: string
+          title: 内容
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          title: 类型
+        is_read:
+          type: boolean
+          title: 是否已读
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+    RoleEnum:
+      enum:
+      - ADMIN
+      - USER
+      type: string
+      description: |-
+        * `ADMIN` - 管理员
+        * `USER` - 普通用户
+    StatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - 待审核
+        * `APPROVED` - 已通过
+        * `REJECTED` - 已驳回
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TypeEnum:
+      enum:
+      - SYSTEM
+      - ANNOUNCEMENT
+      - COMMENT
+      type: string
+      description: |-
+        * `SYSTEM` - 系统通知
+        * `ANNOUNCEMENT` - 公告
+        * `COMMENT` - 评论通知
+    UserLogin:
+      type: object
+      description: 用户登录序列化器
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    UserManage:
+      type: object
+      description: 用户管理列表序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: 用户名
+          maxLength: 50
+        real_name:
+          type: string
+          title: 真实姓名
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          title: 邮箱
+          maxLength: 100
+        phone:
+          type: string
+          title: 手机号
+          maxLength: 20
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: 角色
+        is_active:
+          type: boolean
+          title: 是否启用
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+      required:
+      - created_at
+      - id
+      - username
+    UserProfile:
+      type: object
+      description: 用户信息序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          title: 用户名
+        real_name:
+          type: string
+          title: 真实姓名
+          maxLength: 50
+        phone:
+          type: string
+          title: 手机号
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          title: 邮箱
+          maxLength: 100
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+          title: 角色
+        is_active:
+          type: boolean
+          readOnly: true
+          title: 是否启用
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: 更新时间
+      required:
+      - created_at
+      - id
+      - is_active
+      - role
+      - updated_at
+      - username
+    UserRegister:
+      type: object
+      description: 用户注册序列化器
+      properties:
+        username:
+          type: string
+          title: 用户名
+          maxLength: 50
+        password:
+          type: string
+          writeOnly: true
+          title: 密码
+          maxLength: 255
+        password_confirm:
+          type: string
+          writeOnly: true
+        real_name:
+          type: string
+          title: 真实姓名
+          maxLength: 50
+        phone:
+          type: string
+          title: 手机号
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          title: 邮箱
+          maxLength: 100
+      required:
+      - password
+      - password_confirm
+      - username
+    UserStatus:
+      type: object
+      description: 用户状态更新序列化器
+      properties:
+        is_active:
+          type: boolean
+      required:
+      - is_active
+    UserUpdate:
+      type: object
+      description: 用户更新序列化器
+      properties:
+        real_name:
+          type: string
+          title: 真实姓名
+          maxLength: 50
+        phone:
+          type: string
+          title: 手机号
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          title: 邮箱
+          maxLength: 100
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
