@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 
 from .services import (
     get_popular_attractions,
@@ -31,6 +32,9 @@ class PopularRecommendView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        responses=AttractionRecommendSerializer(many=True)
+    )
     def get(self, request):
         """获取热门景点推荐"""
         limit = int(request.query_params.get('limit', 10))
@@ -70,6 +74,9 @@ class PersonalizedRecommendView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        responses=AttractionRecommendSerializer(many=True)
+    )
     def get(self, request):
         """获取个性化推荐"""
         limit = int(request.query_params.get('limit', 10))
@@ -131,6 +138,9 @@ class SimilarRecommendView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        responses=AttractionRecommendSerializer(many=True)
+    )
     def get(self, request, attraction_id):
         """获取相似景点推荐"""
         limit = int(request.query_params.get('limit', 6))

@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
 
 from accounts.models import UserProfile
 from attractions.models import Attraction
@@ -22,6 +23,9 @@ class AttractionHotView(APIView):
     """景点热度统计"""
     permission_classes = []
 
+    @extend_schema(
+        responses=HotAttractionSerializer(many=True)
+    )
     def get(self, request):
         """获取热门景点排行 TOP 10"""
         attractions = Attraction.objects.filter(is_deleted=False)
@@ -63,6 +67,9 @@ class MonthlyReportView(APIView):
     """月度数据统计"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
+    @extend_schema(
+        responses=MonthlyDataSerializer(many=True)
+    )
     def get(self, request):
         """获取月度数据报告"""
         # 获取最近6个月的数据
@@ -115,6 +122,9 @@ class DashboardView(APIView):
     """数据看板"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
+    @extend_schema(
+        responses=DashboardSerializer
+    )
     def get(self, request):
         """获取看板数据汇总"""
         from datetime import timedelta
@@ -157,6 +167,9 @@ class UserManageView(APIView):
     """用户管理列表"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
+    @extend_schema(
+        responses=UserManageSerializer(many=True)
+    )
     def get(self, request):
         """获取所有用户列表（分页）"""
         queryset = UserProfile.objects.filter(is_deleted=False)
@@ -205,6 +218,10 @@ class UserStatusView(APIView):
     """用户状态管理"""
     permission_classes = [IsAuthenticated, IsAdmin]
 
+    @extend_schema(
+        request=UserStatusSerializer,
+        responses=UserManageSerializer
+    )
     def put(self, request, user_id):
         """启用/禁用用户"""
         try:
