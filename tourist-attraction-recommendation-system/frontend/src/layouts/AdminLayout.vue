@@ -10,7 +10,7 @@
             <path d="M12 2C12 2 16 8 16 12C16 15.3137 13.3137 18 10 18C6.68629 18 4 15.3137 4 12C4 8 8 2 8 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <path d="M12 22V18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span class="logo-text" v-show="!sidebarCollapsed">管理后台</span>
+          <span class="logo-text">管理后台</span>
         </div>
         <button class="collapse-btn" @click="toggleSidebar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -31,19 +31,19 @@
           <div class="nav-icon">
             <component :is="item.icon" />
           </div>
-          <span class="nav-text" v-show="!sidebarCollapsed">{{ item.title }}</span>
+          <span class="nav-text">{{ item.title }}</span>
           <div class="nav-indicator" v-show="isActive(item)"></div>
         </router-link>
       </nav>
 
       <!-- User Section -->
       <div class="sidebar-footer">
-        <div class="user-info" v-show="!sidebarCollapsed">
+        <div class="user-info">
           <div class="user-avatar">
-            {{ userStore.user?.realName?.charAt(0) || 'A' }}
+            {{ userStore.user?.real_name?.charAt(0) || userStore.user?.realName?.charAt(0) || 'A' }}
           </div>
           <div class="user-details">
-            <p class="user-name">{{ userStore.user?.realName || '管理员' }}</p>
+            <p class="user-name">{{ userStore.user?.real_name || userStore.user?.realName || '管理员' }}</p>
             <p class="user-role">管理员</p>
           </div>
         </div>
@@ -175,31 +175,39 @@ function handleCommand(command) {
   display: flex;
   background: #f8fafc;
   font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
+  width: 100%;
 }
 
 /* Sidebar */
 .sidebar {
   width: 260px;
+  min-width: 260px;
   background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
   position: fixed;
   inset-y: 0;
   left: 0;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar.collapsed {
   width: 80px;
+  min-width: 80px;
 }
 
 .sidebar-header {
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .logo-wrapper {
@@ -219,10 +227,17 @@ function handleCommand(command) {
 
 .logo-text {
   font-family: 'Playfair Display', serif;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   color: white;
   white-space: nowrap;
+  letter-spacing: 0.5px;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar.collapsed .logo-text {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .collapse-btn {
@@ -231,34 +246,40 @@ function handleCommand(command) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border: none;
   border-radius: 8px;
-  color: white;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
 .collapse-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   transition: transform 0.3s ease;
 }
 
-.collapsed .collapse-btn svg {
+.sidebar.collapsed .collapse-btn svg {
   transform: rotate(180deg);
 }
 
 /* Navigation */
 .sidebar-nav {
   flex: 1;
-  padding: 16px 12px;
+  padding: 20px 12px;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .nav-item {
@@ -267,27 +288,33 @@ function handleCommand(command) {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.65);
   text-decoration: none;
   border-radius: 12px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(249, 115, 22, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%);
   color: #fbbf24;
+  font-weight: 600;
 }
 
 .nav-icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-icon svg {
@@ -296,19 +323,24 @@ function handleCommand(command) {
 }
 
 .nav-text {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 500;
-  white-space: nowrap;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar.collapsed .nav-text {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .nav-indicator {
   position: absolute;
-  right: 12px;
-  width: 8px;
-  height: 8px;
+  right: 14px;
+  width: 6px;
+  height: 6px;
   background: #fbbf24;
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
 }
 
 /* Sidebar Footer */
@@ -316,8 +348,12 @@ function handleCommand(command) {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 24px;
+  height: 80px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .user-info {
@@ -326,25 +362,34 @@ function handleCommand(command) {
   gap: 12px;
   flex: 1;
   min-width: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar.collapsed .user-info {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
   color: white;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
   border-radius: 10px;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
 .user-details {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .user-name {
@@ -354,35 +399,38 @@ function handleCommand(command) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .user-role {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
 }
 
 .user-menu-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border: none;
-  border-radius: 10px;
-  color: white;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .user-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
 .user-menu-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Main Content */
@@ -391,7 +439,10 @@ function handleCommand(command) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .main-content.expanded {
@@ -403,14 +454,16 @@ function handleCommand(command) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 32px;
+  padding: 0 32px;
+  height: 72px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .page-title {
   font-family: 'Playfair Display', serif;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: #1f2937;
 }
@@ -422,20 +475,21 @@ function handleCommand(command) {
 }
 
 .front-link {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: #f1f5f9;
   border-radius: 10px;
-  color: #6b7280;
-  transition: all 0.3s ease;
+  color: #64748b;
+  transition: all 0.2s ease;
 }
 
 .front-link:hover {
   background: #1e3a5f;
   color: white;
+  transform: translateY(-1px);
 }
 
 .front-link svg {
@@ -446,8 +500,9 @@ function handleCommand(command) {
 /* Page Content */
 .page-content {
   flex: 1;
-  padding: 32px;
+  padding: 24px 32px;
   overflow-y: auto;
+  background: #f8fafc;
 }
 
 /* Dropdown Menu Styles */
