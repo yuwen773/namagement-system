@@ -6,10 +6,11 @@ from .models import UserProfile
 class UserRegisterSerializer(serializers.ModelSerializer):
     """用户注册序列化器"""
     password_confirm = serializers.CharField(write_only=True, required=True)
+    email = serializers.EmailField(required=True)
 
     class Meta:
         model = UserProfile
-        fields = ['username', 'password', 'password_confirm', 'real_name', 'phone', 'email']
+        fields = ['username', 'password', 'password_confirm', 'email']
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -29,6 +30,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """创建用户"""
         validated_data.pop('password_confirm')
+        # 设置默认值
+        validated_data.setdefault('real_name', '')
+        validated_data.setdefault('phone', '')
         user = UserProfile.objects.create_user(**validated_data)
         return user
 
