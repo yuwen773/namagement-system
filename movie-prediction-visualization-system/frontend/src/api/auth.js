@@ -6,7 +6,7 @@ import request from '@/utils/request'
 // 登录
 export function login(data) {
   return request({
-    url: '/accounts/login/',
+    url: '/auth/login/',
     method: 'post',
     data
   })
@@ -15,7 +15,7 @@ export function login(data) {
 // 注册
 export function register(data) {
   return request({
-    url: '/accounts/register/',
+    url: '/auth/register/',
     method: 'post',
     data
   })
@@ -24,7 +24,7 @@ export function register(data) {
 // 获取当前用户信息
 export function getCurrentUser() {
   return request({
-    url: '/accounts/me/',
+    url: '/auth/profile/',
     method: 'get'
   })
 }
@@ -32,7 +32,7 @@ export function getCurrentUser() {
 // 刷新 Token
 export function refreshToken(data) {
   return request({
-    url: '/accounts/token/refresh/',
+    url: '/auth/token/refresh/',
     method: 'post',
     data
   })
@@ -41,7 +41,7 @@ export function refreshToken(data) {
 // 修改密码
 export function changePassword(data) {
   return request({
-    url: '/accounts/password/change/',
+    url: '/auth/password/change/',
     method: 'post',
     data
   })
@@ -50,7 +50,7 @@ export function changePassword(data) {
 // 更新用户个人信息
 export function updateProfile(data) {
   return request({
-    url: '/accounts/me/',
+    url: '/auth/profile/',
     method: 'put',
     data
   })
@@ -59,7 +59,7 @@ export function updateProfile(data) {
 // 登出
 export function logout() {
   return request({
-    url: '/accounts/logout/',
+    url: '/auth/logout/',
     method: 'post'
   })
 }

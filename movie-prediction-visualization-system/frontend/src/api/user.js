@@ -6,7 +6,7 @@ import request from '@/utils/request'
 // 获取用户列表
 export function getUsers(params) {
   return request({
-    url: '/accounts/users/',
+    url: '/auth/users/',
     method: 'get',
     params
   })
@@ -15,7 +15,7 @@ export function getUsers(params) {
 // 获取用户详情
 export function getUser(id) {
   return request({
-    url: `/accounts/users/${id}/`,
+    url: `/auth/users/${id}/`,
     method: 'get'
   })
 }
@@ -23,7 +23,7 @@ export function getUser(id) {
 // 创建用户
 export function createUser(data) {
   return request({
-    url: '/accounts/users/',
+    url: '/auth/users/',
     method: 'post',
     data
   })
@@ -32,7 +32,7 @@ export function createUser(data) {
 // 更新用户
 export function updateUser(id, data) {
   return request({
-    url: `/accounts/users/${id}/`,
+    url: `/auth/users/${id}/`,
     method: 'put',
     data
   })
@@ -41,7 +41,7 @@ export function updateUser(id, data) {
 // 删除用户
 export function deleteUser(id) {
   return request({
-    url: `/accounts/users/${id}/`,
+    url: `/auth/users/${id}/`,
     method: 'delete'
   })
 }
@@ -49,7 +49,7 @@ export function deleteUser(id) {
 // 更新用户角色
 export function updateUserRole(id, data) {
   return request({
-    url: `/accounts/users/${id}/role/`,
+    url: `/auth/users/${id}/role/`,
     method: 'put',
     data
   })
@@ -58,7 +58,7 @@ export function updateUserRole(id, data) {
 // 禁用用户
 export function disableUser(id) {
   return request({
-    url: `/accounts/users/${id}/disable/`,
+    url: `/auth/users/${id}/disable/`,
     method: 'post'
   })
 }
@@ -66,7 +66,7 @@ export function disableUser(id) {
 // 启用用户
 export function enableUser(id) {
   return request({
-    url: `/accounts/users/${id}/enable/`,
+    url: `/auth/users/${id}/enable/`,
     method: 'post'
   })
 }
@@ -74,7 +74,7 @@ export function enableUser(id) {
 // 重置用户密码
 export function resetUserPassword(id, data) {
   return request({
-    url: `/accounts/users/${id}/reset_password/`,
+    url: `/auth/users/${id}/reset_password/`,
     method: 'post',
     data
   })
