@@ -264,8 +264,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loginFormRef = ref(null)
 const loading = ref(false)
 
@@ -307,82 +309,52 @@ const loginRules = {
 const handleLogin = async () => {
   if (!loginFormRef.value) return
 
-  await loginFormRef.value.validate(async (valid) => {
-    if (!valid) return
+  // 验证表单
+  const valid = await loginFormRef.value.validate().catch(() => false)
+  if (!valid) return
 
-    loading.value = true
+  loading.value = true
 
-    try {
-      // TODO: 替换为实际的 API 调用
-      // const response = await login(loginForm.username, loginForm.password)
+  try {
+    const result = await userStore.doLogin({
+      username: loginForm.username,
+      password: loginForm.password
+    })
 
-      // 模拟登录成功
-      const mockResponse = {
-        code: 0,
-        data: {
-          access_token: 'mock_access_token',
-          refresh_token: 'mock_refresh_token',
-          user: {
-            id: 1,
-            username: loginForm.username,
-            role: loginForm.username === 'admin' ? 'admin' : 'user',
-            real_name: loginForm.username === 'admin' ? '管理员' : '普通用户'
-          }
+    if (result.success) {
+      ElMessage.success({
+        message: `欢迎回来，${userStore.user?.real_name || userStore.user?.username}！`,
+        type: 'success',
+        duration: 2000
+      })
+
+      // 根据角色跳转
+      setTimeout(() => {
+        if (userStore.isAdmin) {
+          router.push('/admin/dashboard')
+        } else {
+          router.push('/')
         }
-      }
-
-      if (mockResponse.code === 0) {
-        const { access_token, refresh_token, user } = mockResponse.data
-
-        // 存储 token 和用户信息
-        localStorage.setItem('access_token', access_token)
-        localStorage.setItem('refresh_token', refresh_token)
-        localStorage.setItem('user_info', JSON.stringify(user))
-
-        ElMessage.success({
-          message: `欢迎回来，${user.real_name || user.username}！`,
-          type: 'success',
-          duration: 2000
-        })
-
-        // 根据角色跳转
-        setTimeout(() => {
-          if (user.role === 'admin') {
-            router.push('/admin/dashboard')
-          } else {
-            router.push('/user/dashboard')
-          }
-        }, 500)
-      }
-    } catch (error) {
-      console.error('登录错误:', error)
-      ElMessage.error('登录失败，请稍后重试')
-    } finally {
-      loading.value = false
+      }, 500)
+    } else {
+      ElMessage.error(result.message || '登录失败，请检查用户名和密码')
     }
-  })
+  } catch (error) {
+    console.error('登录错误:', error)
+    ElMessage.error('登录失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
-  // 如果已登录，根据角色跳转
-  const token = localStorage.getItem('access_token')
-  const userInfo = localStorage.getItem('user_info')
-
-  if (token && userInfo) {
-    try {
-      const user = JSON.parse(userInfo)
-      if (user.role === 'admin') {
-        router.push('/admin/dashboard')
-      } else {
-        router.push('/user/dashboard')
-      }
-    } catch (e) {
-      // 解析失败，清除无效 token
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('user_info')
-    }
-  }
+  // 登录页面加载时，清除可能存在的旧登录状态（但不调用 API）
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('user')
+  // 清除 store 状态
+  userStore.token = ''
+  userStore.user = null
 })
 </script>
 

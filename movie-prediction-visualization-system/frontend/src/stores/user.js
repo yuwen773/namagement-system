@@ -13,8 +13,8 @@ export const useUserStore = defineStore('user', () => {
 
   // 计算属性
   const isLoggedIn = computed(() => !!token.value)
-  const isAdmin = computed(() => user.value?.role === 'ADMIN')
-  const isEmployee = computed(() => user.value?.role === 'EMPLOYEE')
+  const isAdmin = computed(() => user.value?.role === 'ADMIN' || user.value?.role === 'admin')
+  const isEmployee = computed(() => user.value?.role === 'USER' || user.value?.role === 'user')
 
   // Actions
   async function doLogin(credentials) {
