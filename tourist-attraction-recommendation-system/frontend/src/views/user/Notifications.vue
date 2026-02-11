@@ -6,9 +6,8 @@
       <div class="header-content">
         <div class="header-icon-wrapper">
           <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-9 9-9s9-2-9-9a6 6 0 0 0-6-8"/>
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            <path d="M12 2v4"/>
           </svg>
         </div>
         <h1 class="page-title">消息中心</h1>
@@ -25,9 +24,8 @@
       <div v-if="notifications.length === 0 && !loading" class="empty-state">
         <div class="empty-illustration">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-9 9-9s9-2 9-9a6 6 0 0 0-6-8"/>
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            <line x1="12" y1="2" x2="12.01" y2="2"/>
           </svg>
         </div>
         <h2>还没有任何消息</h2>
@@ -45,17 +43,16 @@
         >
           <div class="notification-icon">
             <svg v-if="item.type === 'SYSTEM'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-9 9-9s9-2 9-9a6 6 0 0 0-6-8"/>
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             <svg v-else-if="item.type === 'ANNOUNCEMENT'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 8.4V16.4"/>
+              <path d="M12 8v8"/>
               <path d="M15.5 12a3.5 3.5 0 0 0-7 0"/>
               <path d="M12 2L2 7l10 5 10-5-10-5z"/>
             </svg>
             <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              <path d="M9 10h.01M15 10h.01"/>
             </svg>
           </div>
 
