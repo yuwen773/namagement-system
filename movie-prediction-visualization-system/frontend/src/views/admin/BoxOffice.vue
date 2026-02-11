@@ -9,7 +9,7 @@ import {
   Refresh,
   Ticket,
   Film,
-  Building,
+  OfficeBuilding,
   Calendar,
   Money,
   DataLine,

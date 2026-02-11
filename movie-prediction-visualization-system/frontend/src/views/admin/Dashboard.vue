@@ -7,6 +7,7 @@ import { getCinemas } from '@/api/cinema'
 import { getBoxOfficeRecords } from '@/api/boxoffice'
 import { getUsers } from '@/api/user'
 import { ElMessage } from 'element-plus'
+import CountUp from '@/components/CountUp.vue'
 import {
   VideoCamera,
   Location,
@@ -192,6 +193,14 @@ const animateNumber = (target, duration = 1500) => {
   return { target, duration }
 }
 
+// 初始化 stats，避免 undefined
+const initialStats = {
+  movies: 0,
+  cinemas: 0,
+  totalBoxOffice: 0,
+  users: 0
+}
+
 onMounted(() => {
   loadStats()
   loadRecentRecords()
@@ -268,7 +277,7 @@ onMounted(() => {
 
               <div class="mb-1">
                 <span class="text-3xl font-bold text-white tracking-tight">
-                  <CountUp :end-value="card.format ? card.format(stats[card.key]) : stats[card.key]" />
+                  <CountUp :end-value="card.format ? card.format(stats[card.key] ?? 0) : (stats[card.key] ?? 0)" />
                 </span>
               </div>
               <div class="text-sm text-slate-400">{{ card.title }}</div>
@@ -501,68 +510,5 @@ onMounted(() => {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* 数字计数动画组件 */
- CountUp {
-  display: inline-block;
-}
+/* 数字计数动画组件已迁移至 @/components/CountUp.vue */
 </style>
-
-<!-- CountUp 组件 -->
-<script>
-export default {
-  name: 'CountUp',
-  props: {
-    endValue: {
-      type: [Number, String],
-      required: true
-    },
-    duration: {
-      type: Number,
-      default: 1500
-    }
-  },
-  setup(props) {
-    const displayValue = ref(0)
-    const numValue = computed(() => {
-      if (typeof props.endValue === 'string') {
-        return parseFloat(props.endValue) || 0
-      }
-      return props.endValue
-    })
-
-    let animationFrame
-    let startTime
-
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp
-      const progress = timestamp - startTime
-      const percentage = Math.min(progress / props.duration, 1)
-
-      // 使用缓动函数
-      const easeOut = 1 - Math.pow(1 - percentage, 3)
-      displayValue.value = numValue.value * easeOut
-
-      if (percentage < 1) {
-        animationFrame = requestAnimationFrame(animate)
-      } else {
-        displayValue.value = numValue.value
-      }
-    }
-
-    watch(() => props.endValue, (newVal) => {
-      if (animationFrame) cancelAnimationFrame(animationFrame)
-      startTime = null
-      animationFrame = requestAnimationFrame(animate)
-    }, { immediate: true })
-
-    onUnmounted(() => {
-      if (animationFrame) cancelAnimationFrame(animationFrame)
-    })
-
-    return { displayValue }
-  },
-  template: `
-    <span>{{ displayValue.toFixed(typeof endValue === 'string' && endValue.includes('.') ? 1 : 0) }}</span>
-  `
-}
-</script>
