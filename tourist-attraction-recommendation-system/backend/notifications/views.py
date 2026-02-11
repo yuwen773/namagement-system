@@ -6,6 +6,7 @@ from django.db import models
 
 from .models import Notification
 from .serializers import NotificationSerializer, NotificationCreateSerializer
+from accounts.permissions import IsAdmin
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
@@ -51,7 +52,22 @@ class NotificationViewSet(viewsets.ModelViewSet):
             queryset.filter(is_read=False).update(is_read=True)
             return Response({'code': 0, 'message': '已全部标记已读'})
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['get'], url_path='announcements')
+    def announcements(self, request):
+        """获取所有公告列表（管理员）"""
+        if request.user.role != 'ADMIN':
+            return Response({'code': -1, 'message': '无权限'}, status=status.HTTP_403_FORBIDDEN)
+        queryset = Notification.objects.filter(
+            type='ANNOUNCEMENT',
+            is_deleted=False
+        ).order_by('-created_at')
+        serializer = NotificationSerializer(queryset, many=True)
+        return Response({
+            'code': 0,
+            'data': serializer.data
+        })
+
+    @action(detail=False, methods=['post'], url_path='announcement')
     def announcement(self, request):
         """发布公告（管理员）"""
         if request.user.role != 'ADMIN':
@@ -64,3 +80,15 @@ class NotificationViewSet(viewsets.ModelViewSet):
             'data': serializer.data,
             'message': '公告发布成功'
         }, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['delete'], url_path='announcement')
+    def delete_announcement(self, request, pk=None):
+        """删除公告（管理员）"""
+        if request.user.role != 'ADMIN':
+            return Response({'code': -1, 'message': '无权限'}, status=status.HTTP_403_FORBIDDEN)
+        notification = Notification.objects.filter(id=pk, type='ANNOUNCEMENT', is_deleted=False).first()
+        if not notification:
+            return Response({'code': -1, 'message': '公告不存在'}, status=status.HTTP_404_NOT_FOUND)
+        notification.is_deleted = True
+        notification.save()
+        return Response({'code': 0, 'message': '删除成功'})
