@@ -11,7 +11,7 @@ const appStore = useAppStore()
 
 // 菜单数据
 const menuItems = [
-  { path: '/admin', name: '系统概览', icon: 'Odometer' },
+  { path: '/admin/dashboard', name: '系统概览', icon: 'Odometer' },
   { path: '/admin/movies', name: '影片管理', icon: 'VideoCamera' },
   { path: '/admin/movie-types', name: '影片类型', icon: 'CollectionTag' },
   { path: '/admin/cinemas', name: '影院管理', icon: 'Location' },

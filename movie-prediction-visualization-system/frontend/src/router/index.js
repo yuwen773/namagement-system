@@ -52,7 +52,7 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN'] },
     children: [
       {
-        path: '',
+        path: 'dashboard',
         name: 'AdminDashboard',
         component: AdminDashboard,
         meta: { title: '系统概览' }
