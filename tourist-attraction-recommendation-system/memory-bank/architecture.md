@@ -1,76 +1,85 @@
 # 系统架构
 
+> 2026-02-11
+
 ## 技术栈
 
-| 后端 | 前端 |
-|------|------|
-| Django 5.2 + DRF | Vue 3 + Element Plus |
-| MySQL + JWT | ECharts + Tailwind CSS |
+| 层 | 技术 |
+|----|------|
+| 后端 | Django 5.2 + DRF + MySQL |
+| 前端 | Vue 3 + Element Plus + Pinia |
+| 认证 | JWT (Access: 2h, Refresh: 7d) |
 
-## 目录结构
+## 项目结构
 
 ```
-backend/                    # Django 后端
-├── accounts/               # 登录/注册/用户信息
-├── attractions/            # 景点 CRUD
-├── comments/               # 评论 + 收藏
-├── notifications/          # 消息/公告
-├── statistics/             # 数据统计 (ADMIN)
-└── recommendations/        # 推荐算法
+backend/
+├── accounts/           # 账号管理 (注册/登录/JWT)
+├── attractions/        # 景点管理 (CRUD/搜索)
+├── comments/           # 评论收藏 (审核机制)
+├── notifications/      # 消息通知 (公告/私信)
+├── statistics/         # 数据统计 (看板)
+├── recommendations/   # 推荐算法 (热度/个性化)
+└── sql/init_db.sql     # 测试数据
 
-frontend/                   # Vue 3 前端
-├── src/
-│   ├── api/                # Axios 请求封装
-│   ├── components/         # 公共组件
-│   ├── layouts/            # 布局组件
-│   ├── router/             # 路由配置
-│   ├── stores/             # Pinia 状态
-│   ├── utils/              # 工具函数
-│   └── views/              # 页面组件
-│       ├── auth/           # 登录/注册
-│       ├── user/           # 用户端页面
-│       └── admin/          # 管理端页面
-└── vite.config.js          # 开发服务器配置
+frontend/src/
+├── api/                # API集成层 (axios封装)
+├── components/         # 公共组件 (AttractionCard等)
+├── layouts/            # 布局组件 (AdminLayout/UserLayout)
+├── router/             # 路由守卫 (权限控制)
+├── stores/             # Pinia状态管理 (user/auth)
+└── views/              # 页面组件 (admin/user/auth)
 ```
 
-## API 路由
+## 文件作用说明
 
-| 路由 | 用途 |
-|------|------|
-| `/api/accounts/` | 登录/注册/个人信息 |
-| `/api/attractions/` | 景点列表/详情/搜索 |
-| `/api/comments/` | 评论/收藏 |
-| `/api/notifications/` | 消息中心 |
-| `/api/statistics/` | 数据统计 (ADMIN) |
-| `/api/recommendations/` | 推荐算法 |
+### 后端 (Django Apps)
 
-## 前端组件
+| 文件/目录 | 作用 |
+|-----------|------|
+| `accounts/models.py` | UserProfile模型，角色(ADMIN/USER) |
+| `accounts/views.py` | JWT登录/注册/Token刷新 |
+| `attractions/models.py` | Attraction景点模型 |
+| `attractions/serializers.py` | 景点序列化器 |
+| `comments/models.py` | Comment/Favorite模型 |
+| `comments/permissions.py` | 评论审核权限 |
+| `statistics/views.py` | 统计数据API |
+| `recommendations/views.py` | 推荐算法接口 |
 
-### 布局组件
-| 组件 | 用途 |
-|------|------|
-| `AdminLayout.vue` | 管理端：侧边栏 + 顶部栏 + 用户信息 |
-| `UserLayout.vue` | 用户端：顶部导航 + 底部 |
+### 前端 (Vue Components)
 
-### 公共组件
-| 组件 | Props | 用途 |
-|------|-------|------|
-| `AttractionCard.vue` | `attraction: Object` | 景点卡片，点击跳转详情 |
-| `CommentItem.vue` | `comment, showDelete, currentUserId` | 评论项，支持删除 |
-| `Pagination.vue` | `v-model, pageSize, total, pageSizes` | 分页封装 |
+| 文件路径 | 作用 |
+|----------|------|
+| `api/request.js` | Axios实例，响应拦截器(展平data) |
+| `api/auth.js` | 认证API封装 |
+| `api/comments.js` | 评论/收藏API封装 |
+| `stores/user.js` | 用户状态管理(Token/角色) |
+| `router/index.js` | 路由配置+导航守卫 |
+| `views/admin/*.vue` | 管理端页面(8个) |
+| `views/user/*.vue` | 用户端页面(8个) |
+| `views/auth/*.vue` | 登录/注册页面 |
+| `components/AttractionCard.vue` | 景点卡片通用组件 |
 
-### 工具函数
-| 文件 | 导出 |
-|------|------|
-| `utils/date.js` | `formatDate()`, `formatRelativeTime()` |
+## API路由
 
-## 推荐算法
+| 基础路径 | 职责 |
+|----------|------|
+| `/api/accounts/` | 认证 (登录/注册/token刷新) |
+| `/api/attractions/` | 景点 (列表/详情/搜索) |
+| `/api/comments/` | 评论/收藏 (审核/Favorite) |
+| `/api/notifications/` | 通知 (公告/私信) |
+| `/api/statistics/` | 统计 (用户/评论/景点) |
+| `/api/recommendations/` | 推荐 (热门/个性化/相似) |
 
-| 场景 | 策略 |
-|------|------|
-| 冷启动 | 热门推荐（浏览量+评论数+评分） |
-| 个性化 | 同类景点推荐 |
-| 详情页 | 类别 + 地区相似 |
+## 数据模型
+
+| 模型 | 关键字段 | 作用 |
+|------|----------|------|
+| UserProfile | `role`, `is_active`, `is_deleted` | 用户账号，逻辑删除 |
+| Attraction | `category`, `region`, `view_count` | 景点信息，浏览量统计 |
+| Comment | `rating`, `status` | 评论，审核状态机 |
+| Favorite | `user` + `attraction` (联合唯一) | 收藏，防止重复 |
+| Notification | `type`, `is_read`, `user` | 通知，null=全员 |
 
 ## 响应格式
 
@@ -81,6 +90,24 @@ frontend/                   # Vue 3 前端
 // 错误
 { "code": -1, "message": "错误描述" }
 
-// 登录
+// 认证成功
 { "code": 0, "data": { "access_token": "...", "refresh_token": "...", "user": {...} } }
 ```
+
+## 推荐算法
+
+| 场景 | 策略 |
+|------|------|
+| 热度 | `浏览×0.2 + 评论×0.3 + 评分×浏览×0.5` |
+| 个性化 | 基于收藏/评分推荐同类景点 |
+| 相似 | 同类别+同地区优先 |
+
+## 关键设计
+
+| 设计点 | 说明 |
+|--------|------|
+| 认证 | JWT双token，Access(2h)/Refresh(7d) |
+| 删除 | 逻辑删除 (`is_deleted`) |
+| 评论 | 待审核机制 (PENDING/APPROVED/REJECTED) |
+| 权限 | 自定义 `IsAdmin` 类，角色分流 |
+| API响应 | axios拦截器展平 `{data, total}` 结构 |
