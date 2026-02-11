@@ -54,3 +54,28 @@ export function updateUserRole(id, data) {
     data
   })
 }
+
+// 禁用用户
+export function disableUser(id) {
+  return request({
+    url: `/accounts/users/${id}/disable/`,
+    method: 'post'
+  })
+}
+
+// 启用用户
+export function enableUser(id) {
+  return request({
+    url: `/accounts/users/${id}/enable/`,
+    method: 'post'
+  })
+}
+
+// 重置用户密码
+export function resetUserPassword(id, data) {
+  return request({
+    url: `/accounts/users/${id}/reset_password/`,
+    method: 'post',
+    data
+  })
+}

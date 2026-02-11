@@ -47,6 +47,15 @@ export function changePassword(data) {
   })
 }
 
+// 更新用户个人信息
+export function updateProfile(data) {
+  return request({
+    url: '/accounts/me/',
+    method: 'put',
+    data
+  })
+}
+
 // 登出
 export function logout() {
   return request({
