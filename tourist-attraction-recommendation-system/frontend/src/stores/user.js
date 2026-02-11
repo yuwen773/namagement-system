@@ -28,12 +28,11 @@ export const useUserStore = defineStore('user', () => {
     return userInfo
   }
 
-  async function register(username, password, realName, phone, email) {
+  async function register(username, password, confirmPassword, email) {
     const response = await request.post('/accounts/register/', {
       username,
       password,
-      real_name: realName,
-      phone,
+      password_confirm: confirmPassword,
       email
     })
     return response.data

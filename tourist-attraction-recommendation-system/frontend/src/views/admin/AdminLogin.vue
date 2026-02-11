@@ -72,12 +72,12 @@
             <p class="form-subtitle">请使用管理员账号登录</p>
           </div>
 
-          <el-form :model="form" :rules="rules" ref="formRef" class="login-form" @submit.prevent="handleLogin">
-            <el-form-item prop="username">
+          <el-form :model="form" :rules="rules" ref="formRef" class="login-form" @submit.prevent="handleLogin" label-position="top">
+            <el-form-item prop="username" label="用户名">
               <div class="input-wrapper">
                 <el-input
                   v-model="form.username"
-                  placeholder="用户名"
+                  placeholder="请输入用户名"
                   size="large"
                   :prefix-icon="User"
                   class="custom-input"
@@ -85,12 +85,12 @@
               </div>
             </el-form-item>
 
-            <el-form-item prop="password">
+            <el-form-item prop="password" label="密码">
               <div class="input-wrapper">
                 <el-input
                   v-model="form.password"
                   type="password"
-                  placeholder="密码"
+                  placeholder="请输入密码"
                   size="large"
                   :prefix-icon="Lock"
                   show-password
@@ -189,6 +189,10 @@ onMounted(() => {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+.custom-input {
+  width: 100%;
+}
 
 :deep(.custom-input .el-input__wrapper) {
   background: rgba(255, 255, 255, 0.9);
@@ -537,12 +541,20 @@ onMounted(() => {
   margin-bottom: 32px;
 }
 
+:deep(.el-form-item__label) {
+  padding-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 15px;
+}
+
 :deep(.el-form-item) {
   margin-bottom: 24px;
 }
 
 .input-wrapper {
   position: relative;
+  width: 100%;
 }
 
 .form-footer {

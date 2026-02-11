@@ -62,7 +62,7 @@
 
           <el-form :model="form" :rules="rules" ref="formRef" class="register-form" @submit.prevent="handleRegister">
             <el-row :gutter="16">
-              <el-col :span="24">
+              <el-col :span="12">
                 <el-form-item prop="username">
                   <div class="input-wrapper">
                     <el-input
@@ -74,6 +74,19 @@
                     />
                   </div>
                 </el-form-item>
+              </el-col>
+              <el-col  :span="12">
+            <el-form-item prop="email">
+              <div class="input-wrapper">
+                <el-input
+                  v-model="form.email"
+                  placeholder="邮箱"
+                  size="large"
+                  :prefix-icon="Message"
+                  class="custom-input"
+                />
+              </div>
+            </el-form-item>
               </el-col>
             </el-row>
 
@@ -110,46 +123,6 @@
               </el-col>
             </el-row>
 
-            <el-row :gutter="16">
-              <el-col :xs="24" :sm="12">
-                <el-form-item prop="realName">
-                  <div class="input-wrapper">
-                    <el-input
-                      v-model="form.realName"
-                      placeholder="真实姓名"
-                      size="large"
-                      :prefix-icon="Postcard"
-                      class="custom-input"
-                    />
-                  </div>
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item prop="phone">
-                  <div class="input-wrapper">
-                    <el-input
-                      v-model="form.phone"
-                      placeholder="手机号"
-                      size="large"
-                      :prefix-icon="Phone"
-                      class="custom-input"
-                    />
-                  </div>
-                </el-form-item>
-              </el-col>
-            </el-row>
-
-            <el-form-item prop="email">
-              <div class="input-wrapper">
-                <el-input
-                  v-model="form.email"
-                  placeholder="邮箱"
-                  size="large"
-                  :prefix-icon="Message"
-                  class="custom-input"
-                />
-              </div>
-            </el-form-item>
 
             <el-form-item>
               <el-button
@@ -182,7 +155,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Postcard, Phone, Message } from '@element-plus/icons-vue'
+import { User, Lock, Message } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -193,8 +166,6 @@ const form = reactive({
   username: '',
   password: '',
   confirmPassword: '',
-  realName: '',
-  phone: '',
   email: ''
 })
 
@@ -221,17 +192,6 @@ const validateConfirmPassword = (rule, value, callback) => {
   }
 }
 
-const validatePhone = (rule, value, callback) => {
-  const phoneReg = /^1[3-9]\d{9}$/
-  if (value === '') {
-    callback(new Error('请输入手机号'))
-  } else if (!phoneReg.test(value)) {
-    callback(new Error('请输入正确的手机号'))
-  } else {
-    callback()
-  }
-}
-
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -242,12 +202,6 @@ const rules = {
   ],
   confirmPassword: [
     { required: true, validator: validateConfirmPassword, trigger: 'blur' }
-  ],
-  realName: [
-    { required: true, message: '请输入真实姓名', trigger: 'blur' }
-  ],
-  phone: [
-    { required: true, validator: validatePhone, trigger: 'blur' }
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
@@ -265,8 +219,7 @@ async function handleRegister() {
     await userStore.register(
       form.username,
       form.password,
-      form.realName,
-      form.phone,
+      form.confirmPassword,
       form.email
     )
 
@@ -298,6 +251,10 @@ onMounted(() => {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+.custom-input {
+  width: 100%;
+}
 
 :deep(.custom-input .el-input__wrapper) {
   background: rgba(255, 255, 255, 0.9);
