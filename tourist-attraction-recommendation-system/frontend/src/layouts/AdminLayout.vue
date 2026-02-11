@@ -138,7 +138,10 @@ const currentPageTitle = computed(() => {
 })
 
 function isActive(item) {
-  return route.path === item.path || (route.path.startsWith(item.path) && item.path !== '/admin')
+  if (item.path === '/admin') {
+    return route.path === '/admin'
+  }
+  return route.path === item.path || route.path.startsWith(item.path + '/')
 }
 
 function toggleSidebar() {
@@ -171,7 +174,7 @@ function handleCommand(command) {
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 .admin-layout {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   background: #f8fafc;
   font-family: 'DM Sans', sans-serif;
@@ -185,8 +188,10 @@ function handleCommand(command) {
   min-width: 260px;
   background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
   position: fixed;
-  inset-y: 0;
+  top: 0;
   left: 0;
+  bottom: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -208,6 +213,10 @@ function handleCommand(command) {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 0 12px;
 }
 
 .logo-wrapper {
@@ -232,12 +241,11 @@ function handleCommand(command) {
   color: white;
   white-space: nowrap;
   letter-spacing: 0.5px;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .sidebar.collapsed .logo-text {
-  opacity: 0;
-  visibility: hidden;
+  display: none;
 }
 
 .collapse-btn {
@@ -325,12 +333,17 @@ function handleCommand(command) {
 .nav-text {
   font-size: 14.5px;
   font-weight: 500;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .sidebar.collapsed .nav-text {
-  opacity: 0;
-  visibility: hidden;
+  display: none;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .nav-indicator {
@@ -341,6 +354,12 @@ function handleCommand(command) {
   background: #fbbf24;
   border-radius: 50%;
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+}
+
+.sidebar.collapsed .nav-indicator {
+  right: 8px;
+  width: 5px;
+  height: 5px;
 }
 
 /* Sidebar Footer */
@@ -362,12 +381,16 @@ function handleCommand(command) {
   gap: 12px;
   flex: 1;
   min-width: 0;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .sidebar.collapsed .user-info {
-  opacity: 0;
-  visibility: hidden;
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  justify-content: center;
+  padding: 0;
 }
 
 .user-avatar {
