@@ -9,8 +9,8 @@ import AdminLayout from '@/views/layouts/AdminLayout.vue'
 import UserLayout from '@/views/layouts/UserLayout.vue'
 
 // 静态导入页面组件 (路由懒加载)
-const Login = () => import('@/views/auth/Login.vue')
-const Register = () => import('@/views/auth/Register.vue')
+const Login = () => import('@/views/Login.vue')
+const Register = () => import('@/views/Register.vue')
 
 // Admin Pages
 const AdminDashboard = () => import('@/views/admin/Dashboard.vue')
