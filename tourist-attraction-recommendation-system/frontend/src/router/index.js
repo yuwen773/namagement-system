@@ -145,10 +145,13 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   document.title = `${to.meta.title || '页面'} - 旅游景点推荐系统`
 
   const userStore = useUserStore()
+
+  // 初始化用户信息（刷新页面后恢复用户数据）
+  await userStore.initialize()
 
   // 公开页面直接放行
   if (to.meta.public) {
@@ -174,13 +177,9 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 管理员访问用户页面或用户访问管理员页面时跳转
+  // 普通用户访问管理员页面时跳转到首页
   if (to.path.startsWith('/admin') && userStore.user?.role !== 'ADMIN') {
     next({ name: 'Home' })
-    return
-  }
-  if (!to.path.startsWith('/admin') && userStore.user?.role === 'ADMIN') {
-    next({ name: 'Dashboard' })
     return
   }
 

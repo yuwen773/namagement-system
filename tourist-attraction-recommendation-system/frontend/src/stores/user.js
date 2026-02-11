@@ -7,6 +7,7 @@ export const useUserStore = defineStore('user', () => {
   const user = ref(null)
   const accessToken = ref(localStorage.getItem('accessToken') || null)
   const refreshToken = ref(localStorage.getItem('refreshToken') || null)
+  const initialized = ref(false)
 
   // 计算属性
   const isLoggedIn = computed(() => !!accessToken.value)
@@ -61,14 +62,29 @@ export const useUserStore = defineStore('user', () => {
     user.value = null
     accessToken.value = null
     refreshToken.value = null
+    initialized.value = false
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
+  }
+
+  async function initialize() {
+    if (initialized.value) return
+    if (accessToken.value && !user.value) {
+      try {
+        await getUserInfo()
+      } catch (error) {
+        // Token 无效，清除登录状态
+        logout()
+      }
+    }
+    initialized.value = true
   }
 
   return {
     user,
     accessToken,
     refreshToken,
+    initialized,
     isLoggedIn,
     isAdmin,
     login,
@@ -76,6 +92,7 @@ export const useUserStore = defineStore('user', () => {
     getUserInfo,
     updateProfile,
     changePassword,
-    logout
+    logout,
+    initialize
   }
 })
