@@ -176,6 +176,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'movie_prediction.pagination.CustomPageNumberPagination',
+    'PAGE_SIZE': 10,
     'EXCEPTION_HANDLER': 'movie_prediction.exceptions.custom_exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
