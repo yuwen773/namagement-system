@@ -970,7 +970,7 @@ onMounted(() => {
 
 .form-label {
   display: flex;
-  items-center;
+  align-items: center;
   gap: 0.5rem;
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.875rem;
