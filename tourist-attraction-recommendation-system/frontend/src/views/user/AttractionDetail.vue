@@ -286,6 +286,7 @@ const attraction = ref(null)
 const comments = ref([])
 const similarAttractions = ref([])
 const isFavorite = ref(false)
+const favoriteId = ref(null)
 const totalComments = ref(0)
 const loading = ref(true)
 
@@ -334,16 +335,29 @@ async function fetchDetail() {
     comments.value = commentsRes.data || []
     totalComments.value = commentsRes.total || 0
 
-    const similarRes = await request.get(`/recommendations/similar/${route.params.id}/`)
-    similarAttractions.value = similarRes.data || []
+    // Fetch similar attractions - handle 404 gracefully
+    try {
+      const similarRes = await request.get(`/recommendations/similar/${route.params.id}/`)
+      similarAttractions.value = similarRes.data || []
+    } catch (e) {
+      similarAttractions.value = []
+    }
 
     // Check if favorite
     if (userStore.isLoggedIn) {
       try {
-        await request.get('/comments/favorites/my/')
-        // Assuming we get a list, we'd need to check if this attraction is in it
-        // For now, we'll set isFavorite to false by default
-        isFavorite.value = false
+        const favRes = await request.get('/comments/favorites/my/')
+        const favorites = favRes.data || []
+        // Use loose equality to handle string/number mismatch
+        const currentFav = favorites.find(f => f.attraction == attraction.value.id)
+        console.log('Favorite check:', { attractionId: attraction.value.id, favorites, currentFav })
+        if (currentFav) {
+          isFavorite.value = true
+          favoriteId.value = currentFav.id
+        } else {
+          isFavorite.value = false
+          favoriteId.value = null
+        }
       } catch (e) {
         // Ignore error
       }
@@ -365,16 +379,52 @@ async function toggleFavorite() {
 
   try {
     if (isFavorite.value) {
-      await request.delete(`/comments/favorites/${attraction.value.id}/`)
+      console.log('Deleting favorite:', favoriteId.value, 'for attraction:', attraction.value.id)
+      await request.delete(`/comments/favorites/${favoriteId.value}/`)
       isFavorite.value = false
+      favoriteId.value = null
       ElMessage.success('已取消收藏')
     } else {
-      await request.post('/comments/favorites/', { attraction_id: attraction.value.id })
+      const res = await request.post('/comments/favorites/', { attraction: attraction.value.id })
+      console.log('Created favorite:', res.data)
       isFavorite.value = true
+      favoriteId.value = res.data.id
       ElMessage.success('收藏成功')
     }
   } catch (error) {
-    ElMessage.error('操作失败')
+    console.log('完整错误对象:', error)
+    console.log('Favorite toggle error:', error.response?.status, error.response?.data)
+
+    // 如果收藏已存在(400)或不存在(404)，与服务器同步
+    // 注意：请求拦截器已经显示了错误消息
+    if (error.response?.status === 400 || error.response?.status === 404) {
+      console.log('Syncing favorite state with server...')
+      console.log('Current attraction:', attraction.value.id, 'type:', typeof attraction.value.id)
+      try {
+        const favRes = await request.get('/comments/favorites/my/')
+        const favorites = favRes.data || []
+        console.log('Server favorites:', favorites)
+        console.log('Looking for attraction with ID:', attraction.value.id)
+        const currentFav = favorites.find(f => {
+          console.log('Comparing:', f.attraction, 'with', attraction.value.id, '==', f.attraction == attraction.value.id)
+          return f.attraction == attraction.value.id
+        })
+        console.log('Found favorite:', currentFav)
+        isFavorite.value = !!currentFav
+        favoriteId.value = currentFav?.id || null
+        console.log('After sync - isFavorite:', isFavorite.value, 'favoriteId:', favoriteId.value)
+      } catch (syncError) {
+        console.error('Failed to sync favorites:', syncError)
+        // 如果同步失败，重置为安全状态
+        isFavorite.value = false
+        favoriteId.value = null
+      }
+    } else {
+      // 其他错误，也重置状态以防止不一致
+      console.log('其他错误，重置收藏状态')
+      isFavorite.value = false
+      favoriteId.value = null
+    }
   }
 }
 
@@ -386,7 +436,7 @@ async function submitComment() {
 
   try {
     await request.post('/comments/', {
-      attraction_id: attraction.value.id,
+      attraction: attraction.value.id,
       rating: newComment.rating,
       content: newComment.content
     })

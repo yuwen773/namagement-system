@@ -30,7 +30,11 @@ request.interceptors.response.use(
       return { data, total: response.data.total }
     } else {
       ElMessage.error(message || '请求失败')
-      return Promise.reject(new Error(message || '请求失败'))
+      // 附加响应信息到错误对象，方便后续处理
+      const err = new Error(message || '请求失败')
+      err.response = response
+      err.code = code
+      return Promise.reject(err)
     }
   },
   (error) => {
