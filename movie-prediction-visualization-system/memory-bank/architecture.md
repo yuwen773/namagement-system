@@ -5,32 +5,76 @@
 ```
 movie-prediction-visualization-system/
 ├── backend/
-│   ├── movie_prediction/   # Django 配置 (settings.py, urls.py)
-│   │   └── settings.py     # REST_FRAMEWORK, JWT, SPECTACULAR_SETTINGS
-│   ├── accounts/           # 用户认证
-│   ├── movies/             # 影片管理
-│   ├── cinemas/            # 影院地域
-│   ├── boxoffice/          # 票房数据
-│   ├── prediction/         # 预测算法
-│   ├── visualization/      # 可视化接口
-│   ├── docs/
-│   │   └── api-docs.md     # API 接口文档
+│   ├── movie_prediction/       # Django配置 (settings, urls)
+│   ├── accounts/              # 用户认证 (JWT)
+│   ├── movies/                # 影片管理
+│   ├── cinemas/               # 影院地域
+│   ├── boxoffice/             # 票房数据
+│   ├── prediction/            # 预测算法
+│   ├── visualization/         # 可视化接口
 │   └── requirements.txt
-└── frontend/               # Vue 3 (待开发)
+└── frontend/
+    └── src/
+        ├── api/               # API接口封装
+        ├── router/            # 路由配置
+        ├── stores/            # Pinia状态管理
+        ├── views/
+        │   ├── layouts/       # 布局组件
+        │   ├── auth/          # 认证页面
+        │   ├── admin/         # 管理端页面
+        │   └── user/          # 用户端页面
+        ├── utils/             # 工具函数
+        └── main.js
 ```
 
-## 数据库表
+## 管理端页面 (src/views/admin/)
 
-| 表名 | 说明 |
+| 文件 | 功能 |
 |------|------|
-| users | 用户 (role: ADMIN/USER) |
-| movie_types | 影片类型 |
-| movies | 影片信息 |
-| regions | 地域 (省/市，自关联 parent) |
-| cinemas | 影院 |
-| boxoffice_records | 票房记录 (unique: movie+cinema+date) |
+| `Dashboard.vue` | 统计卡片（影片/影院/票房/用户总数）、快捷入口、最近票房记录 |
+| `Movies.vue` | 影片CRUD、搜索、分页、类型选择、编辑/删除 |
+| `MovieTypes.vue` | 类型CRUD、搜索、分页 |
+| `Cinemas.vue` | 影院CRUD、地域筛选、分页、地址/电话 |
+| `Regions.vue` | 地域CRUD、上级地域选择、编码 |
+| `BoxOffice.vue` | 票房录入/编辑/删除、批量操作、日期/影片/影院筛选 |
+| `Prediction.vue` | ECharts预测图表、算法选择、预测历史 |
+| `Users.vue` | 用户CRUD、角色管理、状态切换(禁用/启用) |
 
-## API 响应格式
+**通用功能**:
+- el-table 分页组件
+- el-dialog 表单编辑
+- el-form 表单验证
+- ElMessage 错误提示
+
+## 基础设施
+
+### 路由 (src/router/index.js)
+- `meta.requiresAuth`: 需要登录
+- `meta.roles`: ['ADMIN'] 限定管理员
+
+### 状态管理 (src/stores/)
+| 文件 | 作用 |
+|------|------|
+| `user.js` | token、user信息、登录/登出 |
+| `app.js` | 侧边栏折叠、主题 |
+
+### API封装 (src/api/)
+| 文件 | 作用 |
+|------|------|
+| `auth.js` | 登录、注册、Token管理 |
+| `movie.js` | 影片/类型 CRUD |
+| `cinema.js` | 影院/地域 CRUD |
+| `boxoffice.js` | 票房记录 CRUD |
+| `prediction.js` | 预测算法 |
+| `visualization.js` | 图表数据 |
+| `user.js` | 用户管理 |
+
+### HTTP工具 (src/utils/request.js)
+- Bearer Token 自动携带
+- 401 自动跳转登录页
+- 错误提示 ElMessage
+
+## API响应格式
 
 ```json
 // 成功
@@ -40,77 +84,21 @@ movie-prediction-visualization-system/
 { "code": -1, "message": "..." }
 ```
 
-## API 端点
+## 数据库表
 
-| 模块 | 前缀 | 说明 |
-|------|------|------|
-| accounts | /api/auth/ | 注册/登录/用户管理 |
-| movies | /api/movies/ | 影片/类型 CRUD |
-| cinemas | /api/cinemas/ | 影院/地域 CRUD |
-| boxoffice | /api/boxoffice/ | 票房记录/统计 |
-| prediction | /api/prediction/ | 预测算法 |
-| visualization | /api/visualization/ | 图表数据 |
+| 表名 | 说明 |
+|------|------|
+| users | 用户 (role: ADMIN/USER) |
+| movie_types | 影片类型 |
+| movies | 影片信息 |
+| regions | 地域 (自关联parent) |
+| cinemas | 影院 |
+| boxoffice_records | 票房记录 |
 
-## 模块职责
-
-### accounts
-- `models.py`: User(AbstractBaseUser), role字段
-- `views.py`: RegisterView, LoginView, UserViewSet
-- `permissions.py`: IsAdmin, IsUserOrAdmin
-
-### movies
-- `models.py`: MovieType, Movie (type外键)
-- `views.py`: MovieTypeViewSet, MovieViewSet (released/coming actions)
-- `filters.py`: search, type, status, release_date筛选
-
-### cinemas
-- `models.py`: Region (自关联), Cinema
-- `views.py`: RegionViewSet (provinces/cities actions), CinemaViewSet
-
-### boxoffice
-- `models.py`: BoxOfficeRecord (unique_together)
-- `views.py`: BoxOfficeRecordViewSet (batch_delete/batch_input), BoxOfficeStatsView
-- 业务逻辑: 创建/删除/更新票房记录时自动更新 movie.box_office_total
-
-### prediction
-- `services.py`: PredictionService (线性回归/移动平均算法)
-- `views.py`: MoviePredictionView, PredictionHistoryView
-
-### visualization
-- `views.py`: Top10, Today, Champion, Type, Region, TimeSeries, Dashboard
-- 数据聚合: 使用 Django ORM 的 aggregate() 和 Sum()
-
-## 配置说明
-
-### settings.py 关键配置
-```python
-# DRF
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
-
-# JWT (Access: 2h, Refresh: 7d)
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-}
-
-# drf-spectacular (API文档生成)
-SPECTACULAR_SETTINGS = {
-    'TITLE': '电影票房预测与可视化系统 API',
-    'TAGS': [
-        {'name': '认证'}, {'name': '影片管理'}, {'name': '影院管理'},
-        {'name': '票房数据'}, {'name': '预测分析'}, {'name': '数据可视化'},
-    ],
-}
-```
-
-## 文档说明
+## 文档索引
 
 | 文件 | 作用 |
 |------|------|
-| `backend/docs/api-docs.md` | 完整的 API 接口文档 |
-| `memory-bank/architecture.md` | 系统架构 |
-| `memory-bank/PRD.md` | 产品需求 |
-| `memory-bank/IMPLEMENTATION_PLAN.md` | 实施计划 |
+| `backend/docs/api-docs.md` | 完整API文档 |
+| `progress.md` | 项目进度 |
+| `IMPLEMENTATION_PLAN.md` | 实施计划 |
