@@ -19,6 +19,21 @@ class CommentViewSet(viewsets.ModelViewSet):
         attraction_id = self.kwargs.get('attraction_id')
         if attraction_id:
             queryset = queryset.filter(attraction_id=attraction_id, status='APPROVED')
+        # 管理员查看所有评论，可按状态筛选
+        elif self.action == 'list' and self.request.user.role == 'ADMIN':
+            status_filter = self.request.query_params.get('status')
+            if status_filter and status_filter != 'all':
+                queryset = queryset.filter(status=status_filter)
+        return queryset.order_by('-created_at')
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Comment.objects.filter(is_deleted=False)
+        # 景点评论列表（只显示已审核）
+        attraction_id = self.kwargs.get('attraction_id')
+        if attraction_id:
+            queryset = queryset.filter(attraction_id=attraction_id, status='APPROVED')
         return queryset
 
     def get_serializer_class(self):
@@ -87,16 +102,13 @@ class CommentViewSet(viewsets.ModelViewSet):
                 'message': '无权限'
             }, status=status.HTTP_403_FORBIDDEN)
         comment = self.get_object()
-        action_type = request.data.get('action')
-        if action_type == 'approve':
-            comment.status = 'APPROVED'
-        elif action_type == 'reject':
-            comment.status = 'REJECTED'
-        else:
+        new_status = request.data.get('status')
+        if new_status not in ['APPROVED', 'REJECTED']:
             return Response({
                 'code': -1,
-                'message': '无效操作'
+                'message': '无效的状态'
             }, status=status.HTTP_400_BAD_REQUEST)
+        comment.status = new_status
         comment.save()
         return Response({
             'code': 0,
