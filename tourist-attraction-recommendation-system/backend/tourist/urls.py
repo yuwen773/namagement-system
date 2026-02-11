@@ -26,7 +26,7 @@ urlpatterns = [
     path('api/attractions/', include('attractions.urls')),
     path('api/comments/', include('comments.urls')),
     path('api/notifications/', include('notifications.urls')),
-    path('api/statistics/', include('statistics.urls')),
+    path('api/statistics/', include('stats.urls')),
     path('api/recommendations/', include('recommendations.urls')),
     # drf-spectacular 接口文档
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
