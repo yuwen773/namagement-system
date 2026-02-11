@@ -11,7 +11,7 @@ import {
   Filter,
   Calendar,
   Film,
-  Building,
+  OfficeBuilding,
   DataLine,
   Money,
   Ticket
