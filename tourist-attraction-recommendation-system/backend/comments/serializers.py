@@ -31,7 +31,15 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 class FavoriteCreateSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     
     class Meta:
         model = Favorite
-        fields = ['id', 'attraction']
+        fields = ['id', 'attraction', 'user']
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=['user', 'attraction'],
+                message='您已收藏过该景点'
+            )
+        ]

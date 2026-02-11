@@ -1,11 +1,11 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Avg
 
 from .models import Comment, Favorite
-from .serializers import CommentSerializer, CommentCreateSerializer, FavoriteSerializer
+from .serializers import CommentSerializer, CommentCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer
 from accounts.permissions import IsAdmin
 
 
@@ -15,26 +15,14 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Comment.objects.filter(is_deleted=False)
-        # 景点评论列表（只显示已审核）
         attraction_id = self.kwargs.get('attraction_id')
         if attraction_id:
             queryset = queryset.filter(attraction_id=attraction_id, status='APPROVED')
-        # 管理员查看所有评论，可按状态筛选
         elif self.action == 'list' and self.request.user.role == 'ADMIN':
             status_filter = self.request.query_params.get('status')
             if status_filter and status_filter != 'all':
                 queryset = queryset.filter(status=status_filter)
         return queryset.order_by('-created_at')
-    serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        queryset = Comment.objects.filter(is_deleted=False)
-        # 景点评论列表（只显示已审核）
-        attraction_id = self.kwargs.get('attraction_id')
-        if attraction_id:
-            queryset = queryset.filter(attraction_id=attraction_id, status='APPROVED')
-        return queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -42,7 +30,6 @@ class CommentViewSet(viewsets.ModelViewSet):
         return CommentSerializer
 
     def create(self, request):
-        """发表评论"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user, status='PENDING')
@@ -53,7 +40,6 @@ class CommentViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, pk=None):
-        """删除评论（只能删除自己的）"""
         comment = self.get_object()
         if comment.user != request.user:
             return Response({
@@ -69,7 +55,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def my(self, request):
-        """我的评论"""
         queryset = Comment.objects.filter(user=request.user, is_deleted=False)
         serializer = CommentSerializer(queryset, many=True)
         return Response({
@@ -80,7 +65,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='attraction/(?P<attraction_id>[^/.]+)')
     def attraction_list(self, request, attraction_id=None):
-        """指定景点的评论列表"""
         queryset = Comment.objects.filter(
             attraction_id=attraction_id,
             status='APPROVED',
@@ -95,7 +79,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['put'])
     def review(self, request, pk=None):
-        """审核评论（管理员）"""
         if not request.user.role == 'ADMIN':
             return Response({
                 'code': -1,
@@ -120,38 +103,19 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return FavoriteCreateSerializer
+        return FavoriteSerializer
+
     def get_queryset(self):
         return Favorite.objects.filter(user=self.request.user)
 
-    def create(self, request):
-        """添加收藏"""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            serializer.save(user=request.user)
-        except Exception:
-            return Response({
-                'code': -1,
-                'message': '已收藏该景点'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        return Response({
-            'code': 0,
-            'data': serializer.data,
-            'message': '收藏成功'
-        }, status=status.HTTP_201_CREATED)
-
-    def destroy(self, request, pk=None):
-        """取消收藏"""
-        favorite = self.get_object()
-        favorite.delete()
-        return Response({
-            'code': 0,
-            'message': '取消成功'
-        })
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
     @action(detail=False, methods=['get'])
     def my(self, request):
-        """我的收藏"""
         queryset = self.get_queryset()
         serializer = FavoriteSerializer(queryset, many=True)
         return Response({
