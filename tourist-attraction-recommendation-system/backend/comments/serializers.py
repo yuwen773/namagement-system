@@ -12,9 +12,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    
     class Meta:
         model = Comment
-        fields = ['attraction', 'content', 'rating']
+        fields = ['id', 'attraction', 'content', 'rating', 'status']
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -27,6 +30,8 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class FavoriteCreateSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    
     class Meta:
         model = Favorite
-        fields = ['attraction']
+        fields = ['id', 'attraction']
