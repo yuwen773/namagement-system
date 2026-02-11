@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, markRaw } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import request from '@/api/request'
@@ -119,10 +119,10 @@ let chartInstance = null
 let hotChartInstance = null
 
 const stats = ref([
-  { title: '用户总数', value: '0', icon: User, colorClass: 'blue', trend: '+12%' },
-  { title: '浏览量', value: '0', icon: View, colorClass: 'green', trend: '+23%' },
-  { title: '评论数', value: '0', icon: ChatDotRound, colorClass: 'orange', trend: '+8%' },
-  { title: '景点数', value: '0', icon: Star, colorClass: 'purple' }
+  { title: '用户总数', value: '0', icon: markRaw(User), colorClass: 'blue', trend: '+12%' },
+  { title: '浏览量', value: '0', icon: markRaw(View), colorClass: 'green', trend: '+23%' },
+  { title: '评论数', value: '0', icon: markRaw(ChatDotRound), colorClass: 'orange', trend: '+8%' },
+  { title: '景点数', value: '0', icon: markRaw(Star), colorClass: 'purple' }
 ])
 
 async function fetchDashboard() {

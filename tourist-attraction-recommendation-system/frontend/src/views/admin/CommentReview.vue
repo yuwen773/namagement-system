@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import request from '@/api/request'
 import { ElMessage } from 'element-plus'
 
@@ -117,7 +117,7 @@ const comments = ref([])
 const loading = ref(false)
 const page = ref(1)
 const total = ref(0)
-const activeFilter = ref('PENDING')
+const activeFilter = ref('all')
 
 const filterTabs = [
   { key: 'all', label: '全部', count: 0 },
@@ -136,8 +136,8 @@ const filteredComments = computed(() => {
 async function fetchComments() {
   loading.value = true
   try {
-    const res = await request.get('/statistics/comments/', {
-      params: { page: page.value, page_size: 50, status: 'PENDING' }
+    const res = await request.get('/comments/', {
+      params: { page: page.value, page_size: 50, status: activeFilter.value === 'all' ? undefined : activeFilter.value }
     })
     comments.value = res.data || []
     total.value = res.total || 0
@@ -175,6 +175,11 @@ function formatDate(date) {
 }
 
 onMounted(fetchComments)
+
+watch(activeFilter, () => {
+  page.value = 1
+  fetchComments()
+})
 </script>
 
 <style scoped>
