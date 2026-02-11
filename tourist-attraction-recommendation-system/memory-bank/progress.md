@@ -19,7 +19,7 @@
 | attractions | 景点CRUD/搜索 | 8 |
 | comments | 评论/收藏/审核 | 10 |
 | notifications | 通知/公告 | 6 |
-| statistics | 看板/热度统计 | 6 |
+| stats | 看板/热度统计 | 6 |
 | recommendations | 推荐算法 | 3 |
 
 ### 前端 (Vue 3 + Element Plus)

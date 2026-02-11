@@ -19,7 +19,7 @@ backend/
 │   ├── attractions/     # 景点管理
 │   ├── comments/        # 评论收藏
 │   ├── notifications/   # 消息通知
-│   ├── statistics/     # 数据统计
+│   ├── stats/          # 数据统计
 │   └── recommendations/ # 推荐算法
 └── sql/init_db.sql      # 测试数据
 

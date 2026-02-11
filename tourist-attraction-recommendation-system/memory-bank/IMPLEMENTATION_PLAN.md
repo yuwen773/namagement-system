@@ -30,7 +30,7 @@ tourist-attraction-recommendation-system/
 │   │   ├── comments/           # 评论评分
 │   │   ├── recommendations/    # 推荐算法
 │   │   ├── notifications/      # 消息通知
-│   │   └── statistics/         # 数据统计
+│   │   └── stats/              # 数据统计
 │   ├── media/                  # 媒体文件
 │   └── sql/                    # 数据库脚本
 └── frontend/                   # Vue 3 前端
