@@ -53,6 +53,7 @@ class AttractionViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
+        # 无分页时返回全部数据
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'code': 0,
