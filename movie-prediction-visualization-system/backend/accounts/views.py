@@ -194,6 +194,66 @@ class LoginView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
+class LogoutView(APIView):
+    """
+    用户登出接口
+
+    提供用户登出功能，清除客户端的 Token。
+
+    权限要求：
+        无需认证（AllowAny）
+
+    请求方法：
+        POST
+
+    响应：
+        成功：返回成功消息（code: 0）
+
+    注意事项：
+        JWT Token 是无状态的，登出主要由客户端删除本地 Token 实现
+        此接口主要用于记录登出日志或执行其他登出相关业务逻辑
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary='用户登出',
+        description='''
+        执行用户登出操作。
+
+        **说明：**
+        - JWT Token 是无状态的，服务端无法主动失效
+        - 客户端需要删除本地存储的 access_token 和 refresh_token
+        - 此接口主要用于记录登出日志或执行其他登出相关业务逻辑
+
+        **客户端操作：**
+        - 删除 localStorage 中的 access_token
+        - 删除 localStorage 中的 refresh_token
+        - 删除 localStorage 中的 user 信息
+        - 跳转到登录页面
+        ''',
+        responses={
+            200: OpenApiTypes.OBJECT,
+        },
+        tags=['认证'],
+    )
+    def post(self, request):
+        """
+        处理用户登出请求
+
+        Args:
+            request: 请求对象
+
+        Returns:
+            Response: 返回登出成功消息
+        """
+        # JWT 是无状态的，登出主要由客户端处理
+        # 这里可以添加登出日志等业务逻辑
+        return Response({
+            'code': 0,
+            'message': '登出成功'
+        })
+
+
 class ProfileView(APIView):
     """
     获取/更新当前用户信息

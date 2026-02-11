@@ -10,16 +10,24 @@ class UserManager(BaseUserManager):
         """创建普通用户"""
         if not username:
             raise ValueError('用户名必须提供')
+        # 提取非 User 字段的参数
+        is_staff = extra_fields.pop('is_staff', False)
+        is_superuser = extra_fields.pop('is_superuser', False)
+        role = extra_fields.pop('role', 'USER')
+
         user = self.model(username=username, **extra_fields)
-        user.set_password(password)
+        user.password = password  # 明文存储
+        user.is_staff = is_staff
+        user.is_superuser = is_superuser
+        user.role = role
         user.save(using=self._db)
         return user
 
     def create_superuser(self, username, password=None, **extra_fields):
         """创建超级用户"""
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'ADMIN')
+        extra_fields['is_staff'] = True
+        extra_fields['is_superuser'] = True
+        extra_fields['role'] = 'ADMIN'
         return self.create_user(username, password, **extra_fields)
 
 

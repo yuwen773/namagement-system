@@ -157,6 +157,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 自定义用户模型
 AUTH_USER_MODEL = 'accounts.User'
 
+# 自定义认证后端（明文密码验证）
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.PlainTextBackend',
+]
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
