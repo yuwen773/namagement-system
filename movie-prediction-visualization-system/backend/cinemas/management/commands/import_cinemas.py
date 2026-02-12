@@ -147,10 +147,15 @@ class Command(BaseCommand):
         # 城市等级分配权重
         city_weights = {}
         for city in cities:
-            province = city.parent.name if city.parent else ''
-            if province in ['北京市', '上海市', '广州市', '深圳市']:
-                city_weights[city] = 5  # 一线城市权重高
-            elif province in ['浙江省', '江苏省', '四川省', '湖北省', '福建省', '山东省']:
+            province_name = city.parent.name if city.parent else ''
+            if province_name in ['北京市', '上海市']:  # 直辖市
+                city_weights[city] = 5
+            elif province_name in ['广东省', '浙江省', '江苏省', '四川省', '湖北省']:  # 省份
+                if city.name in ['广州市', '深圳市']:  # 省内的重点城市
+                    city_weights[city] = 5
+                else:
+                    city_weights[city] = 3
+            elif province_name in ['山东省', '福建省', '河南省', '陕西省', '辽宁省']:
                 city_weights[city] = 3
             else:
                 city_weights[city] = 1
@@ -177,7 +182,8 @@ class Command(BaseCommand):
             address = f"{selected_city.name}{street}{number}号"
 
             # 生成电话
-            phone = f"{random.randint(100000000, 999999999)}"
+            phone_prefix = random.choice(['010', '021', '020', '022', '023', '024', '025', '027', '028', '029', '0531', '0532', '0533', '0534', '0535', '0536', '0537', '0538', '0539', '0541', '0542', '0543', '0551', '0552', '0553', '0554', '0555', '0556', '0557', '0558', '0559', '0561', '0562', '0563', '0564', '0565', '0566', '0567', '0568', '0569', '0571', '0572', '0573', '0574', '0575', '0576', '0577', '0578', '0579', '0581', '0582', '0583', '0584', '0585', '0586', '0587', '0588', '0589', '0590', '0591', '0592', '0593', '0594', '0595', '0596', '0597', '0598'])
+            phone = f"{phone_prefix}-{random.randint(10000000, 99999999)}"
 
             # 创建影院
             Cinema.objects.create(
