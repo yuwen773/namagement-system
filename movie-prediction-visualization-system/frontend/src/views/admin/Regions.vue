@@ -213,7 +213,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden">
+  <div class="min-h-screen relative overflow-hidden regions-page">
     <!-- 动画背景 -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="grid-bg"></div>
@@ -266,6 +266,7 @@ onMounted(() => {
               clearable
               filterable
               class="filter-select"
+              popper-class="region-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -443,6 +444,7 @@ onMounted(() => {
             filterable
             loading="regionLoading"
             class="form-input"
+            popper-class="region-select-dropdown"
             style="width: 100%"
           >
             <el-option
@@ -606,31 +608,39 @@ onMounted(() => {
 }
 
 /* 筛选选择器 */
-:deep(.filter-select .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.filter-select {
+  --el-input-bg-color: rgba(255, 255, 255, 0.05);
+  --el-input-border-color: rgba(255, 255, 255, 0.1);
+  --el-input-hover-border-color: rgba(99, 102, 241, 0.5);
+  --el-input-focus-border-color: #6366f1;
+  --el-text-color-placeholder: rgba(255, 255, 255, 0.3);
+}
+
+:deep(.filter-select .el-input__wrapper),
+:deep(.filter-select .el-select__wrapper) {
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   border-radius: 12px;
 }
 
-:deep(.filter-select .el-input__wrapper:hover) {
-  border-color: rgba(99, 102, 241, 0.5);
+:deep(.filter-select .el-input__wrapper:hover),
+:deep(.filter-select .el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5) inset;
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
-:deep(.filter-select .el-input__wrapper.is-focus) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+:deep(.filter-select .el-input__wrapper.is-focus),
+:deep(.filter-select .el-select__wrapper.is-focused) {
+  background-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px #6366f1 inset !important;
 }
 
 :deep(.filter-select .el-input__inner) {
   color: #fff;
 }
 
-:deep(.filter-select .el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-:deep(.filter-select .el-select__caret) {
+:deep(.filter-select .el-select__caret),
+:deep(.filter-select .el-select__icon) {
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -790,24 +800,33 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
+.form-input {
+  --el-input-bg-color: rgba(255, 255, 255, 0.05);
+  --el-input-border-color: rgba(255, 255, 255, 0.1);
+  --el-input-hover-border-color: rgba(99, 102, 241, 0.5);
+  --el-input-focus-border-color: #6366f1;
+}
+
 .form-input :deep(.el-input__wrapper),
-.form-input :deep(.el-select .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: none;
+.form-input :deep(.el-select .el-input__wrapper),
+.form-input :deep(.el-select__wrapper) {
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   transition: all 0.3s ease;
 }
 
 .form-input :deep(.el-input__wrapper:hover),
-.form-input :deep(.el-select .el-input__wrapper:hover) {
-  border-color: rgba(99, 102, 241, 0.5);
+.form-input :deep(.el-select .el-input__wrapper:hover),
+.form-input :deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5) inset;
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 .form-input :deep(.el-input__wrapper.is-focus),
-.form-input :deep(.el-select .el-input__wrapper.is-focus) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+.form-input :deep(.el-select .el-input__wrapper.is-focus),
+.form-input :deep(.el-select__wrapper.is-focused) {
+  background-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px #6366f1 inset !important;
 }
 
 .form-input :deep(.el-input__inner),
@@ -820,7 +839,8 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.3);
 }
 
-.form-input :deep(.el-select__caret) {
+.form-input :deep(.el-select__caret),
+.form-input :deep(.el-select__icon) {
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -835,5 +855,57 @@ onMounted(() => {
 .submit-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+</style>
+
+<style>
+/* ============================================
+   地域管理 - 下拉选项面板全局样式
+   ============================================ */
+/* 筛选下拉面板 - 紫色系 */
+.region-select-dropdown.el-select-dropdown {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.region-select-dropdown .el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  transition: all 0.2s;
+}
+
+.region-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #a5b4fc !important;
+}
+
+.region-select-dropdown .el-select-dropdown__item.is-selected {
+  background: rgba(99, 102, 241, 0.25) !important;
+  color: #a5b4fc !important;
+}
+
+.region-select-dropdown .el-select-dropdown__item.is-disabled {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 滚动条样式 */
+.region-select-dropdown .el-scrollbar__bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.region-select-dropdown .el-scrollbar__thumb {
+  background: rgba(99, 102, 241, 0.5);
+  border-radius: 3px;
+}
+
+.region-select-dropdown .el-scrollbar__thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+}
+
+/* 空状态 */
+.region-select-dropdown .el-select-dropdown__empty {
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 </style>

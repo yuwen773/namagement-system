@@ -236,7 +236,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden">
+  <div class="min-h-screen relative overflow-hidden movies-page">
     <!-- 动画背景 -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="grid-bg"></div>
@@ -686,6 +686,7 @@ onMounted(() => {
 
 /* 按钮样式 */
 .action-btn {
+  margin-left: 52px;
   padding: 12px 24px;
   background: linear-gradient(135deg, #f43f5e, #fb923c);
   border: none;
@@ -921,5 +922,138 @@ onMounted(() => {
 
 :deep(.dark-datepicker .el-picker-panel__content) {
   background: #0f172a;
+}
+</style>
+
+<style>
+/* ============================================
+   影片管理 - 下拉选项面板全局样式
+   ============================================ */
+/* 筛选下拉面板 - 橙红色系 */
+.movies-page .el-select-dropdown {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.movies-page .el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  transition: all 0.2s;
+}
+
+.movies-page .el-select-dropdown__item:hover {
+  background: rgba(244, 63, 94, 0.15) !important;
+  color: #fb7185 !important;
+}
+
+.movies-page .el-select-dropdown__item.is-selected {
+  background: rgba(244, 63, 94, 0.25) !important;
+  color: #fb7185 !important;
+}
+
+.movies-page .el-select-dropdown__item.is-disabled {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 日期选择器下拉面板 - 橙红色系 */
+.movies-page .el-picker__popper {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.movies-page .el-picker-panel {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: none !important;
+}
+
+.movies-page .el-picker-panel__body {
+  background: transparent !important;
+}
+
+.movies-page .el-date-picker__header {
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.movies-page .el-date-picker__header-label {
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.movies-page .el-date-picker__header-label:hover {
+  color: #fb7185 !important;
+}
+
+.movies-page .el-picker-panel__icon-btn {
+  color: rgba(255, 255, 255, 0.5) !important;
+  transition: color 0.2s;
+}
+
+.movies-page .el-picker-panel__icon-btn:hover {
+  color: #fb7185 !important;
+}
+
+.movies-page .el-date-table th {
+  color: rgba(255, 255, 255, 0.5) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.movies-page .el-date-table td {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.movies-page .el-date-table td.today span {
+  color: #fb7185 !important;
+  font-weight: 500;
+}
+
+.movies-page .el-date-table td.current:not(.disabled) span {
+  background: linear-gradient(135deg, #f43f5e, #fb923c) !important;
+  color: #fff !important;
+}
+
+.movies-page .el-date-table td.available:hover {
+  background: rgba(244, 63, 94, 0.2) !important;
+}
+
+.movies-page .el-date-table td.in-range {
+  background: rgba(244, 63, 94, 0.15) !important;
+}
+
+.movies-page .el-date-table td.start-date span,
+.movies-page .el-date-table td.end-date span {
+  background: linear-gradient(135deg, #f43f5e, #fb923c) !important;
+  color: #fff !important;
+}
+
+.movies-page .el-date-table td.next-month,
+.movies-page .el-date-table td.prev-month {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.movies-page .el-date-table td.disabled {
+  color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 滚动条样式 */
+.movies-page .el-select-dropdown .el-scrollbar__bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.movies-page .el-select-dropdown .el-scrollbar__thumb {
+  background: rgba(244, 63, 94, 0.5);
+  border-radius: 3px;
+}
+
+.movies-page .el-select-dropdown .el-scrollbar__thumb:hover {
+  background: rgba(244, 63, 94, 0.7);
+}
+
+.movies-page .el-select-dropdown__empty {
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 </style>

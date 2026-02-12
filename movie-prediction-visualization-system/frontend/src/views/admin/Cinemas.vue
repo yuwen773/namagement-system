@@ -442,7 +442,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen relative overflow-hidden">
+  <div class="min-h-screen relative overflow-hidden cinemas-page">
     <!-- 动画背景 -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="grid-bg"></div>
@@ -576,6 +576,7 @@ onMounted(() => {
                 clearable
                 filterable
                 class="filter-select"
+                popper-class="cinema-select-dropdown"
                 style="width: 100%"
                 @change="handleSearch"
               >
@@ -795,6 +796,7 @@ onMounted(() => {
             clearable
             filterable
             class="form-input"
+            popper-class="cinema-select-dropdown"
             style="width: 100%"
           >
             <el-option
@@ -856,6 +858,7 @@ onMounted(() => {
             clearable
             filterable
             class="form-input"
+            popper-class="cinema-select-dropdown"
             style="width: 100%"
             :disabled="regionDialogMode === 'add-child'"
           >
@@ -1130,28 +1133,36 @@ onMounted(() => {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-/* 筛选选择器 */
+/* ============================================
+   筛选区域样式
+   ============================================ */
 .filter-select {
   --el-input-bg-color: rgba(255, 255, 255, 0.05);
   --el-input-border-color: rgba(255, 255, 255, 0.1);
   --el-input-hover-border-color: rgba(16, 185, 129, 0.5);
   --el-input-focus-border-color: #10b981;
   --el-text-color-placeholder: rgba(255, 255, 255, 0.3);
+  --el-fill-color-blank: rgba(255, 255, 255, 0.05);
+  --el-bg-color: rgba(15, 23, 42, 0.95);
+  --el-text-color-regular: rgba(255, 255, 255, 0.85);
+  --el-text-color-secondary: rgba(255, 255, 255, 0.65);
+  --el-border-color: rgba(255, 255, 255, 0.1);
 }
 
 :deep(.filter-select .el-input__wrapper) {
-  background-color: var(--el-input-bg-color);
-  box-shadow: 0 0 0 1px var(--el-input-border-color) inset;
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 :deep(.filter-select .el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-input-hover-border-color) inset;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5) inset;
 }
 
 :deep(.filter-select .el-input__wrapper.is-focus) {
   background-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 1px var(--el-input-focus-border-color) inset !important;
+  box-shadow: 0 0 0 1px #10b981 inset !important;
 }
 
 :deep(.filter-select .el-input__inner) {
@@ -1160,6 +1171,29 @@ onMounted(() => {
 
 :deep(.filter-select .el-select__caret) {
   color: rgba(255, 255, 255, 0.5);
+}
+
+/* 筛选下拉面板样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+:deep(.el-select-dropdown__item) {
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  transition: all 0.2s;
+}
+
+:deep(.el-select-dropdown__item:hover) {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+:deep(.el-select-dropdown__item.is-selected) {
+  background: rgba(16, 185, 129, 0.25);
+  color: #10b981;
 }
 
 /* 已选地域标签 */
@@ -1374,5 +1408,57 @@ onMounted(() => {
 .submit-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+</style>
+
+<style>
+/* ============================================
+   影院管理 - 下拉选项面板全局样式
+   ============================================ */
+/* 筛选下拉面板 - 绿色系 */
+.cinema-select-dropdown.el-select-dropdown {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cinema-select-dropdown .el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  transition: all 0.2s;
+}
+
+.cinema-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.cinema-select-dropdown .el-select-dropdown__item.is-selected {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #34d399 !important;
+}
+
+.cinema-select-dropdown .el-select-dropdown__item.is-disabled {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 滚动条样式 */
+.cinema-select-dropdown .el-scrollbar__bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cinema-select-dropdown .el-scrollbar__thumb {
+  background: rgba(16, 185, 129, 0.5);
+  border-radius: 3px;
+}
+
+.cinema-select-dropdown .el-scrollbar__thumb:hover {
+  background: rgba(16, 185, 129, 0.7);
+}
+
+/* 空状态 */
+.cinema-select-dropdown .el-select-dropdown__empty {
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 </style>

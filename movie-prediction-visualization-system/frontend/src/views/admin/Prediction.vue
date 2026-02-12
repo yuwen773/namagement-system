@@ -476,6 +476,7 @@ onUnmounted(() => {
               filterable
               :loading="movieLoading"
               class="filter-input"
+              popper-class="prediction-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -496,6 +497,7 @@ onUnmounted(() => {
             <el-select
               v-model="queryParams.algorithm"
               class="filter-input"
+              popper-class="prediction-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -724,55 +726,91 @@ onUnmounted(() => {
 }
 
 /* 筛选输入框样式 */
-:deep(.filter-input .el-input__wrapper) {
+:deep(.filter-input .el-input__wrapper),
+:deep(.filter-input .el-select__wrapper) {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: none;
   transition: all 0.3s ease;
 }
 
-:deep(.filter-input .el-input__wrapper:hover) {
+:deep(.filter-input .el-input__wrapper:hover),
+:deep(.filter-input .el-select__wrapper:hover) {
   border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-:deep(.filter-input .el-input__wrapper.is-focus) {
+:deep(.filter-input .el-input__wrapper.is-focus),
+:deep(.filter-input .el-select__wrapper.is-focused) {
   background: rgba(255, 255, 255, 0.08);
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 0 1px #8b5cf6 inset !important;
 }
 
-:deep(.filter-input .el-input__inner) {
-  color: #fff;
-}
-
-:deep(.filter-input .el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-:deep(.filter-input .el-select__placeholder) {
-  color: rgba(255, 255, 255, 0.3);
-}
-
+:deep(.filter-input .el-input__inner),
 :deep(.filter-input .el-select__selected-item) {
   color: #fff;
 }
 
-:deep(.filter-input .el-select__caret) {
+:deep(.filter-input .el-input__inner::placeholder),
+:deep(.filter-input .el-select__placeholder) {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+:deep(.filter-input .el-select__caret),
+:deep(.filter-input .el-select__icon) {
   color: rgba(255, 255, 255, 0.5);
 }
+</style>
 
-/* 下拉选项样式 */
-:deep(.el-select-dropdown__item) {
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
+<style>
+/* ============================================
+   预测分析 - 下拉选项面板全局样式
+   ============================================ */
+/* 筛选下拉面板 - 紫色系 */
+.prediction-select-dropdown.el-select-dropdown {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-:deep(.el-select-dropdown__item:hover) {
-  background: rgba(139, 92, 246, 0.2);
+.prediction-select-dropdown .el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  transition: all 0.2s;
 }
 
-:deep(.el-select-dropdown__item.is-selected) {
-  background: rgba(139, 92, 246, 0.3);
-  color: #fff;
+.prediction-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(139, 92, 246, 0.15) !important;
+  color: #a78bfa !important;
+}
+
+.prediction-select-dropdown .el-select-dropdown__item.is-selected {
+  background: rgba(139, 92, 246, 0.25) !important;
+  color: #a78bfa !important;
+}
+
+.prediction-select-dropdown .el-select-dropdown__item.is-disabled {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 滚动条样式 */
+.prediction-select-dropdown .el-scrollbar__bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.prediction-select-dropdown .el-scrollbar__thumb {
+  background: rgba(139, 92, 246, 0.5);
+  border-radius: 3px;
+}
+
+.prediction-select-dropdown .el-scrollbar__thumb:hover {
+  background: rgba(139, 92, 246, 0.7);
+}
+
+/* 空状态 */
+.prediction-select-dropdown .el-select-dropdown__empty {
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 </style>
