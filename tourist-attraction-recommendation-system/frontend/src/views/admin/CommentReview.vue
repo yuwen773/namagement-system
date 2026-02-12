@@ -21,8 +21,9 @@
       </div>
     </div>
 
-    <!-- Filter Tabs -->
+    <!-- Filter Tabs with View Toggle -->
     <div class="filter-tabs">
+      <ViewToggle v-model="viewMode" />
       <button
         v-for="tab in filterTabs"
         :key="tab.key"
@@ -37,8 +38,66 @@
       </button>
     </div>
 
-    <!-- Comments List -->
-    <div v-loading="loading" class="comments-list">
+    <!-- List View -->
+    <div v-if="viewMode === 'list'" v-loading="loading" class="list-view-container">
+      <el-table :data="filteredComments" class="comments-table">
+        <el-table-column label="用户" width="150">
+          <template #default="{ row }">
+            <div class="table-user-cell">
+              <div class="table-avatar">
+                {{ row.user?.realName?.charAt(0) || row.user?.username?.charAt(0) || 'U' }}
+              </div>
+              <span>{{ row.user?.realName || row.user?.username || '未知用户' }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="景点名称" width="180">
+          <template #default="{ row }">
+            <router-link :to="`/admin/attractions/${row.attraction?.id}/edit`" class="table-link">
+              {{ row.attraction?.name || '未知景点' }}
+            </router-link>
+          </template>
+        </el-table-column>
+        <el-table-column label="评分" width="120">
+          <template #default="{ row }">
+            <div class="table-rating">
+              <svg v-for="i in 5" :key="i" viewBox="0 0 20 20" :class="{ filled: i <= (row.rating || 0) }">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="content" label="评论内容" width="300">
+          <template #default="{ row }">
+            <span class="table-content">{{ truncateContent(row.content) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="120">
+          <template #default="{ row }">
+            <span :class="['status-tag', row.status]">
+              {{ getStatusLabel(row.status) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180">
+          <template #default="{ row }">
+            <el-button link type="success" @click="review(row, 'APPROVED')">通过</el-button>
+            <el-button link type="danger" @click="review(row, 'REJECTED')">驳回</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- Empty State for List -->
+      <div v-if="filteredComments.length === 0" class="empty-state-list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <p>暂无待审核评论</p>
+      </div>
+    </div>
+
+    <!-- Card View -->
+    <div v-else v-loading="loading" class="comments-list">
       <div v-for="comment in filteredComments" :key="comment.id" class="comment-card">
         <div class="card-header">
           <div class="user-info">
@@ -73,7 +132,7 @@
         <div class="card-footer">
           <button @click="review(comment, 'APPROVED')" class="action-button approve">
             <svg viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 101.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
             </svg>
             通过
           </button>
@@ -112,12 +171,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import request from '@/api/request'
 import { ElMessage } from 'element-plus'
+import ViewToggle from '@/components/ViewToggle.vue'
 
 const comments = ref([])
 const loading = ref(false)
 const page = ref(1)
 const total = ref(0)
 const activeFilter = ref('all')
+const viewMode = ref('list') // 默认列表视图
 
 const filterTabs = [
   { key: 'all', label: '全部', count: 0 },
@@ -162,6 +223,20 @@ async function review(comment, status) {
   } catch (error) {
     ElMessage.error('操作失败')
   }
+}
+
+function truncateContent(content) {
+  if (!content) return ''
+  return content.length > 100 ? content.substring(0, 100) + '...' : content
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    'PENDING': '待审核',
+    'APPROVED': '已通过',
+    'REJECTED': '已驳回'
+  }
+  return labels[status] || status
 }
 
 function formatDate(date) {
@@ -324,7 +399,128 @@ watch(activeFilter, () => {
   color: #6b7280;
 }
 
-/* Comments List */
+/* List View */
+.list-view-container {
+  margin-bottom: 32px;
+}
+
+:deep(.comments-table) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: 'DM Sans', sans-serif;
+}
+
+:deep(.comments-table th) {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+:deep(.comments-table tr:hover) {
+  background: #fffbeb;
+}
+
+:deep(.comments-table td) {
+  border-color: #f3f4f6;
+}
+
+.table-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-avatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.table-link {
+  color: #1e3a5f;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.table-link:hover {
+  color: #f97316;
+}
+
+.table-rating {
+  display: flex;
+  gap: 2px;
+}
+
+.table-rating svg {
+  width: 14px;
+  height: 14px;
+  color: #e5e7eb;
+}
+
+.table-rating svg.filled {
+  color: #fbbf24;
+}
+
+.table-content {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.status-tag {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-tag.PENDING {
+  background: rgba(251, 191, 36, 0.15);
+  color: #f59e0b;
+}
+
+.status-tag.APPROVED {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-tag.REJECTED {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.empty-state-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e5e7eb;
+}
+
+.empty-state-list svg {
+  width: 64px;
+  height: 64px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.empty-state-list p {
+  font-size: 16px;
+  color: #9ca3af;
+}
+
+/* Card View */
 .comments-list {
   display: flex;
   flex-direction: column;

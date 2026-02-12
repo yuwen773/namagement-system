@@ -33,6 +33,7 @@
         </svg>
         <input v-model="searchQuery" placeholder="搜索景点名称、地区..." class="search-input" />
       </div>
+      <ViewToggle v-model="viewMode" />
       <div class="category-filter">
         <el-select v-model="selectedCategory" placeholder="全部分类" clearable>
           <el-option label="全部分类" value="" />
@@ -44,8 +45,64 @@
       </div>
     </div>
 
-    <!-- Attractions Grid -->
-    <div v-loading="loading" class="attractions-grid">
+    <!-- List View -->
+    <div v-if="viewMode === 'list'" v-loading="loading" class="list-view-container">
+      <el-table :data="filteredAttractions" class="attractions-table">
+        <el-table-column label="封面" width="100">
+          <template #default="{ row }">
+            <img :src="row.cover_image || row.coverImage || '/placeholder.jpg'" class="table-cover" />
+          </template>
+        </el-table-column>
+        <el-table-column prop="name" label="景点名称" width="200" />
+        <el-table-column prop="category" label="分类" width="120">
+          <template #default="{ row }">
+            <span :class="['category-tag', row.category]">
+              {{ getCategoryLabel(row.category) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="region" label="地区" width="150" />
+        <el-table-column prop="rating" label="评分" width="100">
+          <template #default="{ row }">
+            <span v-if="row.rating" class="rating-cell">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              {{ row.rating.toFixed(1) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="viewCount" label="浏览量" width="120">
+          <template #default="{ row }">
+            {{ formatNumber(row.view_count || row.viewCount || 0) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="commentCount" label="评论数" width="100">
+          <template #default="{ row }">
+            {{ row.commentCount || 0 }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="$router.push(`/admin/attractions/${row.id}/edit`)">编辑</el-button>
+            <el-button link type="danger" @click="deleteAttraction(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- Empty State for List -->
+      <div v-if="filteredAttractions.length === 0" class="empty-state-list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <p>暂无景点数据</p>
+      </div>
+    </div>
+
+    <!-- Card View -->
+    <div v-else v-loading="loading" class="attractions-grid">
       <div v-for="attraction in filteredAttractions" :key="attraction.id" class="attraction-card">
         <div class="card-image">
           <img :src="attraction.cover_image || attraction.coverImage || '/placeholder.jpg'" :alt="attraction.name" />
@@ -138,6 +195,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import ViewToggle from '@/components/ViewToggle.vue'
 
 const router = useRouter()
 const attractions = ref([])
@@ -146,6 +204,7 @@ const page = ref(1)
 const total = ref(0)
 const searchQuery = ref('')
 const selectedCategory = ref('')
+const viewMode = ref('list') // 默认列表视图
 
 const filteredAttractions = computed(() => {
   let result = attractions.value
@@ -302,6 +361,7 @@ onMounted(fetchAttractions)
   gap: 16px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .search-box {
@@ -344,8 +404,10 @@ onMounted(fetchAttractions)
 :deep(.category-filter .el-select__wrapper) {
   border-radius: 12px;
   border: 2px solid #e5e7eb;
-  padding: 8px 12px;
+  padding: 4px 12px;
   transition: all 0.3s ease;
+  box-shadow: none !important;
+  min-height: 50px;
 }
 
 :deep(.category-filter .el-select__wrapper:hover) {
@@ -354,10 +416,107 @@ onMounted(fetchAttractions)
 
 :deep(.category-filter .el-select__wrapper.is-focused) {
   border-color: #fbbf24;
-  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1);
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.1) !important;
 }
 
-/* Attractions Grid */
+/* List View */
+.list-view-container {
+  margin-bottom: 32px;
+}
+
+:deep(.attractions-table) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: 'DM Sans', sans-serif;
+}
+
+:deep(.attractions-table th) {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+:deep(.attractions-table tr:hover) {
+  background: #fffbeb;
+}
+
+:deep(.attractions-table td) {
+  border-color: #f3f4f6;
+}
+
+.table-cover {
+  width: 60px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.category-tag {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.category-tag.NATURE {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.category-tag.HISTORY {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.category-tag.THEME {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
+.category-tag.OTHER {
+  background: rgba(107, 114, 128, 0.15);
+  color: #6b7280;
+}
+
+.rating-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.rating-cell svg {
+  width: 14px;
+  height: 14px;
+}
+
+.empty-state-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e5e7eb;
+}
+
+.empty-state-list svg {
+  width: 64px;
+  height: 64px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.empty-state-list p {
+  font-size: 16px;
+  color: #9ca3af;
+}
+
+/* Card View */
 .attractions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

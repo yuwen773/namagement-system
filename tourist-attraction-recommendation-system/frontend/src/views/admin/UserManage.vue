@@ -33,6 +33,7 @@
         </svg>
         <input v-model="searchQuery" placeholder="搜索用户名、姓名、手机号..." class="search-input" />
       </div>
+      <ViewToggle v-model="viewMode" />
       <div class="filter-tabs">
         <button
           v-for="tab in filterTabs"
@@ -49,8 +50,53 @@
       </div>
     </div>
 
-    <!-- Users Grid -->
-    <div v-loading="loading" class="users-grid">
+    <!-- List View -->
+    <div v-if="viewMode === 'list'" v-loading="loading" class="list-view-container">
+      <el-table :data="filteredUsers" class="users-table">
+        <el-table-column label="头像" width="80">
+          <template #default="{ row }">
+            <div class="table-avatar">
+              {{ row.realName?.charAt(0) || row.username?.charAt(0) || 'U' }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="username" label="用户名" width="150" />
+        <el-table-column prop="realName" label="真实姓名" width="150">
+          <template #default="{ row }">
+            {{ row.realName || '未设置' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="role" label="角色" width="120">
+          <template #default="{ row }">
+            <span :class="['role-tag', row.role]">
+              {{ row.role === 'ADMIN' ? '管理员' : '用户' }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="isActive" label="状态" width="100">
+          <template #default="{ row }">
+            <el-switch v-model="row.isActive" @change="updateStatus(row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="editUser(row)">编辑</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- Empty State for List -->
+      <div v-if="filteredUsers.length === 0" class="empty-state-list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <p>没有找到用户</p>
+      </div>
+    </div>
+
+    <!-- Card View -->
+    <div v-else v-loading="loading" class="users-grid">
       <div v-for="user in filteredUsers" :key="user.id" class="user-card">
         <div class="card-header">
           <div class="user-avatar">
@@ -129,6 +175,7 @@
 import { ref, computed, onMounted } from 'vue'
 import request from '@/api/request'
 import { ElMessage } from 'element-plus'
+import ViewToggle from '@/components/ViewToggle.vue'
 
 const users = ref([])
 const loading = ref(false)
@@ -136,6 +183,7 @@ const page = ref(1)
 const total = ref(0)
 const searchQuery = ref('')
 const activeFilter = ref('all')
+const viewMode = ref('list') // 默认列表视图
 
 const filterTabs = [
   { key: 'all', label: '全部', count: 0 },
@@ -168,7 +216,6 @@ async function fetchUsers() {
   loading.value = true
   try {
     const res = await request.get('/statistics/users/', { params: { page: page.value, page_size: 50 } })
-    // request拦截器已展平响应，res直接是 {data, total} 结构
     users.value = res.data || []
     total.value = res.total || 0
 
@@ -192,6 +239,11 @@ async function updateStatus(user) {
     ElMessage.error('更新失败')
     user.isActive = !user.isActive
   }
+}
+
+function editUser(user) {
+  // TODO: 实现用户编辑功能
+  ElMessage.info('用户编辑功能待实现')
 }
 
 function formatDate(date) {
@@ -289,6 +341,7 @@ onMounted(fetchUsers)
   gap: 20px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .search-box {
@@ -383,7 +436,87 @@ onMounted(fetchUsers)
   color: #6b7280;
 }
 
-/* Users Grid */
+/* List View */
+.list-view-container {
+  margin-bottom: 32px;
+}
+
+:deep(.users-table) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: 'DM Sans', sans-serif;
+}
+
+:deep(.users-table th) {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+:deep(.users-table tr:hover) {
+  background: #fffbeb;
+}
+
+:deep(.users-table td) {
+  border-color: #f3f4f6;
+}
+
+.table-avatar {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
+.role-tag {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-tag.ADMIN {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.role-tag.USER {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.empty-state-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e5e7eb;
+}
+
+.empty-state-list svg {
+  width: 64px;
+  height: 64px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.empty-state-list p {
+  font-size: 16px;
+  color: #9ca3af;
+}
+
+/* Card View */
 .users-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -509,7 +642,6 @@ onMounted(fetchUsers)
   font-weight: 500;
 }
 
-/* Empty State */
 .empty-state {
   grid-column: 1 / -1;
   display: flex;

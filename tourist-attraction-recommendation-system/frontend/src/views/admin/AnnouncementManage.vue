@@ -5,7 +5,7 @@
       <div class="header-content">
         <div class="header-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9-9-9 0 0 0-3 3.87"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
         </div>
@@ -14,22 +14,61 @@
           <p class="page-subtitle">发布和管理系统公告</p>
         </div>
       </div>
-      <button @click="openDialog" class="add-button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        <span>发布公告</span>
-      </button>
+      <div class="header-actions">
+        <ViewToggle v-model="viewMode" />
+        <button @click="openDialog" class="add-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>发布公告</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Announcements List -->
-    <div v-loading="loading" class="announcements-list">
+    <!-- List View -->
+    <div v-if="viewMode === 'list'" v-loading="loading" class="list-view-container">
+      <el-table :data="announcements" class="announcements-table">
+        <el-table-column prop="title" label="标题" width="250" />
+        <el-table-column prop="content" label="内容预览" width="350">
+          <template #default="{ row }">
+            <span class="table-content">{{ truncateContent(row.content) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="发布时间" width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="发布人" width="150">
+          <template #default>
+            <span>管理员</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">
+            <el-button link type="danger" @click="deleteAnnouncement(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- Empty State for List -->
+      <div v-if="announcements.length === 0" class="empty-state-list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9-9-9 0 0 0-3 3.87"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <p>暂无公告</p>
+      </div>
+    </div>
+
+    <!-- Card View -->
+    <div v-else v-loading="loading" class="announcements-list">
       <div v-for="announcement in announcements" :key="announcement.id" class="announcement-card">
         <div class="card-header">
           <div class="announcement-icon">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5-10-5"/>
             </svg>
           </div>
           <div class="announcement-info">
@@ -50,7 +89,7 @@
       <!-- Empty State -->
       <div v-if="announcements.length === 0" class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9-9-9 0 0 0-3 3.87"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
         <p>暂无公告</p>
@@ -90,12 +129,14 @@
 import { ref, reactive, onMounted } from 'vue'
 import request from '@/api/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import ViewToggle from '@/components/ViewToggle.vue'
 
 const announcements = ref([])
 const loading = ref(false)
 const showDialog = ref(false)
 const publishing = ref(false)
 const formRef = ref(null)
+const viewMode = ref('list') // 默认列表视图
 
 const form = reactive({
   title: '',
@@ -163,6 +204,11 @@ async function deleteAnnouncement(row) {
       ElMessage.error('删除失败')
     }
   }
+}
+
+function truncateContent(content) {
+  if (!content) return ''
+  return content.length > 80 ? content.substring(0, 80) + '...' : content
 }
 
 function formatDate(date) {
@@ -233,6 +279,12 @@ onMounted(fetchAnnouncements)
   color: #6b7280;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .add-button {
   display: flex;
   align-items: center;
@@ -259,7 +311,62 @@ onMounted(fetchAnnouncements)
   box-shadow: 0 6px 16px rgba(30, 58, 95, 0.4);
 }
 
-/* Announcements List */
+/* List View */
+.list-view-container {
+  margin-bottom: 32px;
+}
+
+:deep(.announcements-table) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: 'DM Sans', sans-serif;
+}
+
+:deep(.announcements-table th) {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+:deep(.announcements-table tr:hover) {
+  background: #fffbeb;
+}
+
+:deep(.announcements-table td) {
+  border-color: #f3f4f6;
+}
+
+.table-content {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.empty-state-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e5e7eb;
+}
+
+.empty-state-list svg {
+  width: 64px;
+  height: 64px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.empty-state-list p {
+  font-size: 16px;
+  color: #9ca3af;
+}
+
+/* Card View */
 .announcements-list {
   display: flex;
   flex-direction: column;
@@ -502,6 +609,11 @@ onMounted(fetchAnnouncements)
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
   }
 
   .add-button {
