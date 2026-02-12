@@ -133,15 +133,15 @@ class ChangePasswordView(APIView):
             old_password = serializer.validated_data['old_password']
             new_password = serializer.validated_data['new_password']
 
-            # 验证旧密码
-            if not request.user.check_password(old_password):
+            # 验证旧密码（明文比对）
+            if request.user.password != old_password:
                 return Response({
                     'code': -1,
                     'message': '原密码错误'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # 更新密码
-            request.user.set_password(new_password)
+            # 更新密码（明文存储）
+            request.user.password = new_password
             request.user.save()
 
             return Response({

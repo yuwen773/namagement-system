@@ -28,12 +28,14 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        """创建用户"""
+        """创建用户（明文存储密码）"""
         validated_data.pop('password_confirm')
         # 设置默认值
         validated_data.setdefault('real_name', '')
         validated_data.setdefault('phone', '')
-        user = UserProfile.objects.create_user(**validated_data)
+        # 明文存储密码
+        user = UserProfile(**validated_data)
+        user.save()
         return user
 
 
@@ -60,8 +62,8 @@ class UserLoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError('用户已被禁用')
 
-        # 验证密码
-        if not user.check_password(password):
+        # 验证密码（明文比对）
+        if user.password != password:
             raise serializers.ValidationError('用户名或密码错误')
 
         attrs['user'] = user
