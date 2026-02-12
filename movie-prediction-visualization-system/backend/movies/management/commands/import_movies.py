@@ -54,11 +54,20 @@ class Command(BaseCommand):
         except FileNotFoundError as e:
             self.stdout.write(self.style.ERROR(f"文件未找到: {e}"))
             return
+        except pd.errors.EmptyDataError:
+            self.stdout.write(self.style.ERROR("文件为空或格式错误"))
+            return
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"读取文件时发生错误: {e}"))
+            return
 
         metadata_df = None
-        if options['metadata_file'] and os.path.exists(options['metadata_file']):
-            metadata_df = pd.read_csv(options['metadata_file'])
-            self.stdout.write(f"读取 metadata: {len(metadata_df)} 条")
+        try:
+            if options['metadata_file'] and os.path.exists(options['metadata_file']):
+                metadata_df = pd.read_csv(options['metadata_file'])
+                self.stdout.write(f"读取 metadata: {len(metadata_df)} 条")
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f"读取 metadata 文件失败: {e}，将跳过元数据增强"))
 
         self.stdout.write(f"读取到 {len(movies_df)} 条电影记录")
 
@@ -96,6 +105,10 @@ class Command(BaseCommand):
         """导入影片数据"""
         from movies.models import Movie, MovieType
 
+        # 预加载所有已存在的电影标题和类型映射（性能优化：避免 N+1 查询）
+        existing_titles = set(Movie.objects.values_list('title', flat=True))
+        genre_map = {g.name: g for g in MovieType.objects.all()}
+
         # 合并 credits
         merged = movies_df.merge(credits_df, left_on='id', right_on='movie_id', how='left')
 
@@ -121,31 +134,42 @@ class Command(BaseCommand):
                 continue
 
             try:
-                # 检查是否已存在
-                existing = Movie.objects.filter(title=str(row['title'])).first()
-                if existing:
+                # 使用集合检查而非数据库查询（性能优化）
+                title = str(row['title']).strip()
+                if title in existing_titles:
                     stats.add_skipped()
                     continue
 
-                # 获取类型
+                # 使用字典查找而非数据库查询（性能优化）
                 genre_names = extract_genres(row.get('genres', '[]'))
-                genre_obj = None
-                if genre_names:
-                    genre_obj = MovieType.objects.filter(name=genre_names[0]).first()
+                genre_obj = genre_map.get(genre_names[0]) if genre_names else None
+
+                # 安全处理 duration 字段（修复 NaN 值处理）
+                runtime = row.get('runtime')
+                if pd.notna(runtime) and str(runtime).strip():
+                    try:
+                        duration = int(runtime)
+                    except (ValueError, TypeError):
+                        duration = 90
+                else:
+                    duration = 90
 
                 # 创建电影
                 movie = Movie.objects.create(
-                    title=str(row['title']),
+                    title=title,
                     director=extract_director(row.get('crew', '[]')),
                     actors=extract_actors(row.get('cast', '[]')),
                     release_date=parse_release_date(row.get('release_date')),
-                    duration=int(row['runtime']) if pd.notna(row['runtime']) else 90,
+                    duration=duration,
                     type=genre_obj,
                     poster_url=get_poster_url(row.get('poster_path')),
                     description=build_enhanced_description(row),
                     box_office_total=convert_revenue_to_rmb(row.get('revenue', 0)),
                     status=map_status(str(row.get('status', 'Released'))),
                 )
+
+                # 添加到已存在集合，防止后续重复导入
+                existing_titles.add(title)
                 stats.add_success()
 
                 if stats.success % 100 == 0:
