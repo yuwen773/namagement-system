@@ -29,8 +29,8 @@
     <!-- List View -->
     <div v-if="viewMode === 'list'" v-loading="loading" class="list-view-container">
       <el-table :data="announcements" class="announcements-table">
-        <el-table-column prop="title" label="标题" width="250" />
-        <el-table-column prop="content" label="内容预览" width="350">
+        <el-table-column prop="title" label="标题" min-width="250" />
+        <el-table-column prop="content" label="内容预览" min-width="350">
           <template #default="{ row }">
             <span class="table-content">{{ truncateContent(row.content) }}</span>
           </template>
