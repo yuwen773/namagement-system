@@ -8,7 +8,10 @@ class AttractionListSerializer(serializers.ModelSerializer):
         model = Attraction
         fields = [
             'id', 'name', 'description', 'category', 'region',
-            'cover_image', 'view_count', 'created_at'
+            'cover_image', 'view_count', 'created_at',
+            # 新增字段
+            'latitude', 'longitude', 'rating_percentage',
+            'guide_count', 'ranking', 'level'
         ]
 
 
@@ -19,7 +22,10 @@ class AttractionDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'address', 'category', 'region',
             'opening_hours', 'cover_image', 'images', 'view_count',
-            'is_deleted', 'created_at', 'updated_at'
+            'is_deleted', 'created_at', 'updated_at',
+            # 新增字段
+            'latitude', 'longitude', 'rating_percentage',
+            'guide_count', 'ranking', 'level'
         ]
 
 
@@ -29,5 +35,8 @@ class AttractionCreateUpdateSerializer(serializers.ModelSerializer):
         model = Attraction
         fields = [
             'name', 'description', 'address', 'category', 'region',
-            'opening_hours', 'cover_image', 'images'
+            'opening_hours', 'cover_image', 'images',
+            # 新增字段
+            'latitude', 'longitude', 'rating_percentage',
+            'guide_count', 'ranking', 'level'
         ]
