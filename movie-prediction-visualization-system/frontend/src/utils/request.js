@@ -39,6 +39,8 @@ request.interceptors.response.use(
     if (res.code === 0) {
       return res
     }
+    console.log(response);
+    
     // 其他业务错误码
     ElMessage.error(res.message || '请求失败')
     return Promise.reject(new Error(res.message || '请求失败'))

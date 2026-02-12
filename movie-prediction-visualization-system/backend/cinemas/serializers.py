@@ -228,8 +228,9 @@ class CinemaSerializer(serializers.ModelSerializer):
             float: 累计票房（万元），保留两位小数
         """
         from boxoffice.models import BoxOfficeRecord
+        from django.db.models import Sum
         total = BoxOfficeRecord.objects.filter(cinema=obj).aggregate(
-            total=serializers.Sum('daily_box_office')
+            total=Sum('daily_box_office')
         )['total'] or 0
         return total / 10000  # 转换为万元
 

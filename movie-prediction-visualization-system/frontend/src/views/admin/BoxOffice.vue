@@ -406,7 +406,7 @@ onMounted(() => {
           <!-- 影院选择 -->
           <div class="space-y-1.5">
             <label class="text-xs text-slate-400 flex items-center gap-1.5">
-              <Building class="w-3.5 h-3.5" />
+              <OfficeBuilding class="w-3.5 h-3.5" />
               影院
             </label>
             <el-select
@@ -617,7 +617,7 @@ onMounted(() => {
         <!-- 影院选择 -->
         <div class="form-group">
           <label class="form-label">
-            <Building class="w-4 h-4" />
+            <OfficeBuilding class="w-4 h-4" />
             影院 <span class="text-red-400">*</span>
           </label>
           <el-select

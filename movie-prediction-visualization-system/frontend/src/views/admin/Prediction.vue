@@ -474,7 +474,7 @@ onUnmounted(() => {
               placeholder="请选择影片"
               clearable
               filterable
-              loading="movieLoading"
+              :loading="movieLoading"
               class="filter-input"
               style="width: 100%"
             >
