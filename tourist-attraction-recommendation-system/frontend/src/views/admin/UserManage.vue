@@ -56,14 +56,24 @@
         <el-table-column label="头像" width="80">
           <template #default="{ row }">
             <div class="table-avatar">
-              {{ row.realName?.charAt(0) || row.username?.charAt(0) || 'U' }}
+              {{ row.real_name?.charAt(0) || row.username?.charAt(0) || 'U' }}
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="username" label="用户名" width="150" />
-        <el-table-column prop="realName" label="真实姓名" width="150">
+        <el-table-column prop="username" label="用户名" min-width="150" />
+        <el-table-column prop="real_name" label="真实姓名" min-width="150">
           <template #default="{ row }">
-            {{ row.realName || '未设置' }}
+            {{ row.real_name || '未设置' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="phone" label="手机号" width="150">
+          <template #default="{ row }">
+            {{ row.phone || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_at" label="注册时间" width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
         <el-table-column prop="role" label="角色" width="120">
@@ -73,9 +83,9 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="isActive" label="状态" width="100">
+        <el-table-column prop="is_active" label="状态" width="100">
           <template #default="{ row }">
-            <el-switch v-model="row.isActive" @change="updateStatus(row)" />
+            <el-switch v-model="row.is_active" @change="updateStatus(row)" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120">
@@ -100,7 +110,7 @@
       <div v-for="user in filteredUsers" :key="user.id" class="user-card">
         <div class="card-header">
           <div class="user-avatar">
-            {{ user.realName?.charAt(0) || user.username?.charAt(0) || 'U' }}
+            {{ user.real_name?.charAt(0) || user.username?.charAt(0) || 'U' }}
           </div>
           <div class="role-badge" :class="user.role">
             <svg v-if="user.role === 'ADMIN'" viewBox="0 0 20 20" fill="currentColor">
@@ -114,7 +124,7 @@
         </div>
 
         <div class="card-body">
-          <h3 class="user-name">{{ user.realName || '未设置' }}</h3>
+          <h3 class="user-name">{{ user.real_name || '未设置' }}</h3>
           <p class="user-username">@{{ user.username }}</p>
 
           <div class="user-details">
@@ -135,7 +145,7 @@
               <svg viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
               </svg>
-              <span>注册于 {{ formatDate(user.createdAt) }}</span>
+              <span>注册于 {{ formatDate(user.created_at) }}</span>
             </div>
           </div>
         </div>
@@ -143,7 +153,7 @@
         <div class="card-footer">
           <div class="status-toggle">
             <span class="status-label">账号状态</span>
-            <el-switch v-model="user.isActive" @change="updateStatus(user)" />
+            <el-switch v-model="user.is_active" @change="updateStatus(user)" />
           </div>
         </div>
       </div>
@@ -168,6 +178,45 @@
         @current-change="fetchUsers"
       />
     </div>
+
+    <!-- 编辑用户对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      title="编辑用户"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="formRef" :model="editForm" :rules="rules" label-width="100px">
+        <el-form-item label="用户名">
+          <el-input v-model="editForm.username" disabled />
+        </el-form-item>
+        <el-form-item label="真实姓名">
+          <el-input v-model="editForm.real_name" placeholder="请输入真实姓名" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="editForm.phone" placeholder="请输入手机号" />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="editForm.role" placeholder="请选择角色" :disabled="editForm.id === 1">
+            <el-option label="管理员" value="ADMIN" />
+            <el-option label="普通用户" value="USER" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="账号状态">
+          <el-switch v-model="editForm.is_active" />
+          <span class="status-hint">{{ editForm.is_active ? '已激活' : '已禁用' }}</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitEdit">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -184,6 +233,31 @@ const total = ref(0)
 const searchQuery = ref('')
 const activeFilter = ref('all')
 const viewMode = ref('list') // 默认列表视图
+
+// 编辑对话框相关
+const dialogVisible = ref(false)
+const submitting = ref(false)
+const formRef = ref(null)
+const currentUser = ref(null)
+
+const editForm = ref({
+  id: null,
+  username: '',
+  real_name: '',
+  email: '',
+  phone: '',
+  role: 'USER',
+  is_active: true
+})
+
+const rules = {
+  email: [
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号', trigger: 'blur' }
+  ]
+}
 
 const filterTabs = [
   { key: 'all', label: '全部', count: 0 },
@@ -204,7 +278,7 @@ const filteredUsers = computed(() => {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(u =>
       u.username?.toLowerCase().includes(query) ||
-      u.realName?.toLowerCase().includes(query) ||
+      u.real_name?.toLowerCase().includes(query) ||
       u.phone?.includes(query)
     )
   }
@@ -233,17 +307,59 @@ async function fetchUsers() {
 
 async function updateStatus(user) {
   try {
-    await request.put(`/statistics/users/${user.id}/status/`, { is_active: user.isActive })
-    ElMessage.success(user.isActive ? '账号已激活' : '账号已禁用')
+    await request.put(`/statistics/users/${user.id}/status/`, { is_active: user.is_active })
+    ElMessage.success(user.is_active ? '账号已激活' : '账号已禁用')
   } catch (error) {
     ElMessage.error('更新失败')
-    user.isActive = !user.isActive
+    user.is_active = !user.is_active
   }
 }
 
 function editUser(user) {
-  // TODO: 实现用户编辑功能
-  ElMessage.info('用户编辑功能待实现')
+  currentUser.value = user
+  editForm.value = {
+    id: user.id,
+    username: user.username,
+    real_name: user.real_name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    role: user.role,
+    is_active: user.is_active
+  }
+  dialogVisible.value = true
+}
+
+async function submitEdit() {
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
+  submitting.value = true
+  try {
+    await request.put(`/statistics/users/${editForm.value.id}/`, {
+      real_name: editForm.value.real_name,
+      email: editForm.value.email,
+      phone: editForm.value.phone,
+      role: editForm.value.role,
+      is_active: editForm.value.is_active
+    })
+
+    // 更新本地数据
+    const index = users.value.findIndex(u => u.id === editForm.value.id)
+    if (index !== -1) {
+      users.value[index] = { ...users.value[index], ...editForm.value }
+    }
+
+    dialogVisible.value = false
+    ElMessage.success('用户信息已更新')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('更新失败')
+  } finally {
+    submitting.value = false
+  }
 }
 
 function formatDate(date) {
@@ -664,6 +780,37 @@ onMounted(fetchUsers)
 .empty-state p {
   font-size: 16px;
   color: #9ca3af;
+}
+
+/* Status hint in edit dialog */
+.status-hint {
+  margin-left: 12px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Dialog form styles */
+:deep(.el-dialog) {
+  border-radius: 16px;
+}
+
+:deep(.el-dialog__header) {
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 16px;
+}
+
+:deep(.el-dialog__footer) {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 16px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #374151;
+}
+
+:deep(.el-input.is-disabled .el-input__wrapper) {
+  background-color: #f9fafb;
 }
 
 /* Pagination */
