@@ -136,16 +136,29 @@ async function fetchDashboard() {
       stats.value[2].value = data.total_comments?.toLocaleString() || '0'
       stats.value[3].value = data.total_attractions?.toLocaleString() || '0'
     }
-    // 获取图表数据
+
+    // 并行获取两个图表数据
     try {
-      const chartsRes = await request.get('/statistics/monthly/')
-      // 拦截器已提取 data: chartsRes.data = [{month, new_users, ...}, ...]
-      if (chartsRes.data && Array.isArray(chartsRes.data)) {
-        initCharts(chartsRes.data)
+      const [monthlyRes, hotRes] = await Promise.all([
+        request.get('/statistics/monthly/'),
+        request.get('/statistics/hot/')
+      ])
+
+      // 处理月度数据
+      const monthlyData = monthlyRes.data || []
+      initCharts(monthlyData)
+
+      // 处理热门景点数据
+      if (hotRes.data && Array.isArray(hotRes.data)) {
+        const hotData = hotRes.data
+        const hotNames = hotData.map(item => item.name) || []
+        const hotValues = hotData.map(item => item.view_count) || []
+        initHotChart(hotNames, hotValues)
       }
     } catch (chartsError) {
       console.warn('获取图表数据失败', chartsError)
       initCharts([])
+      initHotChart([], [])
     }
   } catch (error) {
     console.error('获取看板数据失败', error)
@@ -232,26 +245,6 @@ function initCharts(data) {
       }
     ]
   })
-
-  // 尝试获取热门景点数据
-  fetchHotAttractions()
-}
-
-// 获取热门景点数据
-async function fetchHotAttractions() {
-  try {
-    const res = await request.get('/statistics/hot/')
-    if (res.data?.code === 0 && res.data?.data) {
-      const hotData = res.data.data
-      const hotNames = hotData.map(item => item.name) || []
-      const hotValues = hotData.map(item => item.view_count) || []
-      initHotChart(hotNames, hotValues)
-    }
-  } catch (error) {
-    console.warn('获取热门景点数据失败', error)
-    // 使用空数据初始化
-    initHotChart([], [])
-  }
 }
 
 function initHotChart(hotNames, hotValues) {
