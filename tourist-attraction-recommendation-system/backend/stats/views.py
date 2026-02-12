@@ -14,7 +14,8 @@ from .serializers import (
     DashboardSerializer,
     MonthlyDataSerializer,
     UserManageSerializer,
-    UserStatusSerializer
+    UserStatusSerializer,
+    UserUpdateSerializer
 )
 from accounts.permissions import IsAdmin
 
@@ -246,5 +247,48 @@ class UserStatusView(APIView):
         return Response({
             'code': 0,
             'message': '用户状态更新成功',
+            'data': UserManageSerializer(user).data
+        })
+
+
+class UserUpdateView(APIView):
+    """用户信息更新"""
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    @extend_schema(
+        request=UserUpdateSerializer,
+        responses=UserManageSerializer
+    )
+    def put(self, request, user_id):
+        """更新用户信息"""
+        try:
+            user = UserProfile.objects.get(id=user_id, is_deleted=False)
+        except UserProfile.DoesNotExist:
+            return Response({
+                'code': -1,
+                'message': '用户不存在'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # 不能修改管理员角色（防止越权）
+        if user.role == 'ADMIN' and request.user.id != user.id:
+            return Response({
+                'code': -1,
+                'message': '不能修改其他管理员的权限'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = UserUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 更新用户信息
+        user.real_name = serializer.validated_data.get('real_name', user.real_name)
+        user.email = serializer.validated_data.get('email', user.email)
+        user.phone = serializer.validated_data.get('phone', user.phone)
+        user.role = serializer.validated_data.get('role', user.role)
+        user.is_active = serializer.validated_data.get('is_active', user.is_active)
+        user.save()
+
+        return Response({
+            'code': 0,
+            'message': '用户信息更新成功',
             'data': UserManageSerializer(user).data
         })

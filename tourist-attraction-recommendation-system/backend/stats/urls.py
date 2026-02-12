@@ -4,7 +4,8 @@ from .views import (
     MonthlyReportView,
     DashboardView,
     UserManageView,
-    UserStatusView
+    UserStatusView,
+    UserUpdateView
 )
 
 urlpatterns = [
@@ -22,4 +23,7 @@ urlpatterns = [
 
     # 用户状态管理
     path('users/<int:user_id>/status/', UserStatusView.as_view(), name='statistics-user-status'),
+
+    # 用户信息更新
+    path('users/<int:user_id>/', UserUpdateView.as_view(), name='statistics-user-update'),
 ]

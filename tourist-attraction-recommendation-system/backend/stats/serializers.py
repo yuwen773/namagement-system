@@ -64,3 +64,11 @@ class UserManageSerializer(serializers.ModelSerializer):
 class UserStatusSerializer(serializers.Serializer):
     """用户状态更新序列化器"""
     is_active = serializers.BooleanField(required=True)
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """用户更新序列化器"""
+
+    class Meta:
+        model = UserProfile
+        fields = ['real_name', 'email', 'phone', 'role', 'is_active']
