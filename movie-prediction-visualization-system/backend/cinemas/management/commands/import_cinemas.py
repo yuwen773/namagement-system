@@ -160,44 +160,57 @@ class Command(BaseCommand):
             else:
                 city_weights[city] = 1
 
+        # 初始化跳过计数器
+        stats['skipped'] = 0
+
         for i in range(target_count):
-            # 加权随机选择城市
-            selected_city = random.choices(
-                cities,
-                weights=[city_weights.get(c, 1) for c in cities],
-                k=1
-            )[0]
+            try:
+                # 加权随机选择城市
+                selected_city = random.choices(
+                    cities,
+                    weights=[city_weights.get(c, 1) for c in cities],
+                    k=1
+                )[0]
 
-            # 随机选择品牌
-            brand = random.choice(list(self.CINEMA_CHAINS.keys()))
-            brand_info = self.CINEMA_CHAINS[brand]
+                # 随机选择品牌
+                brand = random.choice(list(self.CINEMA_CHAINS.keys()))
+                brand_info = self.CINEMA_CHAINS[brand]
 
-            # 生成影院名称
-            suffix = random.choice(['广场店', '购物中心店', '凯德店', '店', f'{selected_city.name}店'])
-            cinema_name = f"{brand_info['prefix']}({selected_city.name}{suffix})"
+                # 生成影院名称
+                suffix = random.choice(['广场店', '购物中心店', '凯德店', '店', f'{selected_city.name}店'])
+                cinema_name = f"{brand_info['prefix']}({selected_city.name}{suffix})"
 
-            # 生成地址
-            street = random.choice(['建设路', '人民路', '中山路', '解放路', '文化路', '商业街', '步行街', '广场路'])
-            number = random.randint(1, 999)
-            address = f"{selected_city.name}{street}{number}号"
+                # 生成地址
+                street = random.choice(['建设路', '人民路', '中山路', '解放路', '文化路', '商业街', '步行街', '广场路'])
+                number = random.randint(1, 999)
+                address = f"{selected_city.name}{street}{number}号"
 
-            # 生成电话
-            phone_prefix = random.choice(['010', '021', '020', '022', '023', '024', '025', '027', '028', '029', '0531', '0532', '0533', '0534', '0535', '0536', '0537', '0538', '0539', '0541', '0542', '0543', '0551', '0552', '0553', '0554', '0555', '0556', '0557', '0558', '0559', '0561', '0562', '0563', '0564', '0565', '0566', '0567', '0568', '0569', '0571', '0572', '0573', '0574', '0575', '0576', '0577', '0578', '0579', '0581', '0582', '0583', '0584', '0585', '0586', '0587', '0588', '0589', '0590', '0591', '0592', '0593', '0594', '0595', '0596', '0597', '0598'])
-            phone = f"{phone_prefix}-{random.randint(10000000, 99999999)}"
+                # 生成电话
+                phone_prefix = random.choice(['010', '021', '020', '022', '023', '024', '025', '027', '028', '029', '0531', '0532', '0533', '0534', '0535', '0536', '0537', '0538', '0539', '0541', '0542', '0543', '0551', '0552', '0553', '0554', '0555', '0556', '0557', '0558', '0559', '0561', '0562', '0563', '0564', '0565', '0566', '0567', '0568', '0569', '0571', '0572', '0573', '0574', '0575', '0576', '0577', '0578', '0579', '0581', '0582', '0583', '0584', '0585', '0586', '0587', '0588', '0589', '0590', '0591', '0592', '0593', '0594', '0595', '0596', '0597', '0598'])
+                phone = f"{phone_prefix}-{random.randint(10000000, 99999999)}"
 
-            # 创建影院
-            Cinema.objects.create(
-                name=cinema_name,
-                address=address,
-                phone=phone,
-                region=selected_city,
-                screen_count=random.randint(*brand_info['screen']),
-                seats_count=random.randint(*brand_info['seat']),
-                is_active=True
-            )
-            stats['cinemas'] += 1
+                # 创建影院（使用 get_or_create 避免重复）
+                cinema, created = Cinema.objects.get_or_create(
+                    name=cinema_name,
+                    defaults={
+                        'address': address,
+                        'phone': phone,
+                        'region': selected_city,
+                        'screen_count': random.randint(*brand_info['screen']),
+                        'seats_count': random.randint(*brand_info['seat']),
+                        'is_active': True
+                    }
+                )
 
-            if stats['cinemas'] % 50 == 0:
-                self.stdout.write(f"已生成 {stats['cinemas']} 家影院...")
+                if created:
+                    stats['cinemas'] += 1
+                else:
+                    stats['skipped'] += 1
 
-        self.stdout.write(self.style.SUCCESS(f"影院生成完成：{stats['cinemas']} 家"))
+                if stats['cinemas'] % 50 == 0:
+                    self.stdout.write(f"已生成 {stats['cinemas']} 家影院...")
+
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f"创建影院失败: {e}"))
+
+        self.stdout.write(self.style.SUCCESS(f"影院生成完成：{stats['cinemas']} 家，跳过 {stats['skipped']} 家重复"))
