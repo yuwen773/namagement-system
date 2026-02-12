@@ -47,7 +47,8 @@ const loading = ref({
 const timeRange = ref('week')
 const timeRangeOptions = [
   { label: '最近7天', value: 'week' },
-  { label: '最近30天', value: 'month' }
+  { label: '最近30天', value: 'month' },
+  { label: '全年', value: 'year' }
 ]
 
 // ============ 地域分布图 ============
@@ -216,7 +217,16 @@ const initTypeChart = () => {
 const loadTrendData = async () => {
   loading.value.trend = true
   try {
-    const res = await getTimeSeries({ range: timeRange.value })
+    let params = {}
+    if (timeRange.value === 'week') {
+      params = { period: 'day', days: 7 }
+    } else if (timeRange.value === 'month') {
+      params = { period: 'day', days: 30 }
+    } else if (timeRange.value === 'year') {
+      params = { period: 'month', days: 365 }
+    }
+
+    const res = await getTimeSeries(params)
     trendData.value = res.data || []
     nextTick(() => initTrendChart())
   } catch (error) {
@@ -347,18 +357,8 @@ watch(activeTab, (newTab) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-    <!-- 动画背景 -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="grid-bg"></div>
-      <div class="gradient-orbs">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-      </div>
-    </div>
-
-    <div class="relative z-10 p-6 lg:p-8">
+  <div class="page-container">
+    <div class="content-wrapper">
       <!-- 页面标题 -->
       <div class="mb-6 animate-fade-in">
         <div class="flex items-center gap-4 mb-2">
@@ -496,75 +496,60 @@ watch(activeTab, (newTab) => {
 </template>
 
 <style scoped>
-/* 玻璃态卡片 */
+/* ========================================
+   Page Container
+   ======================================== */
+.page-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+.animate-slide-up {
+  opacity: 0;
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+/* ========================================
+   Glass Card
+   ======================================== */
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
 }
 
-/* 网格背景 */
-.grid-bg {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 50px 50px;
-  mask-image: radial-gradient(ellipse at center, black 40%, transparent 70%);
+.glass-card:hover {
+  border-color: rgba(6, 182, 212, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-/* 渐变光球 */
-.gradient-orbs {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  animation: float 20s ease-in-out infinite;
-}
-
-.orb-1 {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
-  top: -100px;
-  right: -100px;
-  animation-delay: 0s;
-}
-
-.orb-2 {
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  bottom: -50px;
-  left: -50px;
-  animation-delay: -7s;
-}
-
-.orb-3 {
-  width: 350px;
-  height: 350px;
-  background: linear-gradient(135deg, #a855f7, #ec4899);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation-delay: -14s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(20px, -20px) scale(1.05); }
-  50% { transform: translate(-10px, 20px) scale(0.95); }
-  75% { transform: translate(-20px, -10px) scale(1.02); }
-}
-
-/* Tab 样式 */
+/* ========================================
+   Tab Buttons
+   ======================================== */
 .tab-btn {
   flex: 1;
   display: flex;
@@ -587,26 +572,14 @@ watch(activeTab, (newTab) => {
 }
 
 .tab-active {
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
   color: #fff;
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4);
 }
 
-/* 动画 */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
-.animate-slide-up { opacity: 0; animation: slide-up 0.6s ease-out forwards; }
-
-/* 图表容器 */
+/* ========================================
+   Chart Containers
+   ======================================== */
 .chart-container {
   height: 400px;
 }
@@ -624,7 +597,9 @@ watch(activeTab, (newTab) => {
   justify-content: center;
 }
 
-/* 选择器样式 */
+/* ========================================
+   Select Styling
+   ======================================== */
 :deep(.time-select .el-input__wrapper) {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -632,12 +607,12 @@ watch(activeTab, (newTab) => {
 }
 
 :deep(.time-select .el-input__wrapper:hover) {
-  border-color: rgba(139, 92, 246, 0.5);
+  border-color: rgba(6, 182, 212, 0.3);
 }
 
 :deep(.time-select .el-input__wrapper.is-focus) {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
 }
 
 :deep(.time-select .el-input__inner) {
@@ -646,5 +621,14 @@ watch(activeTab, (newTab) => {
 
 :deep(.time-select .el-select__caret) {
   color: rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
 }
 </style>

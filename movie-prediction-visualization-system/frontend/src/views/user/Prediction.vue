@@ -87,8 +87,8 @@ const initChart = () => {
 const updateChart = () => {
   if (!chart || !predictionResult.value) return
 
-  const historical = predictionResult.value.historical || []
-  const forecast = predictionResult.value.forecast || []
+  const historical = predictionResult.value.history || []
+  const forecast = predictionResult.value.predictions || []
 
   const dates = [
     ...historical.map(item => item.date),
@@ -152,12 +152,12 @@ const updateChart = () => {
         type: 'line',
         smooth: true,
         data: historicalData,
-        lineStyle: { color: '#3b82f6', width: 3 },
-        itemStyle: { color: '#3b82f6' },
+        lineStyle: { color: '#f59e0b', width: 3 },
+        itemStyle: { color: '#f59e0b' },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
-            { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+            { offset: 0, color: 'rgba(245, 158, 11, 0.3)' },
+            { offset: 1, color: 'rgba(245, 158, 11, 0.05)' }
           ])
         }
       },
@@ -244,120 +244,114 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 lg:p-8">
-    <!-- Animated background -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-      <div class="grid-bg"></div>
-      <div class="gradient-orbs">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-      </div>
-    </div>
-
-    <!-- Header -->
-    <div class="mb-8 animate-fade-in">
-      <div class="glass-card rounded-2xl p-6 border border-white/10">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-            <MagicStick class="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold text-white">未来票房预测</h1>
-            <p class="text-slate-400 mt-1">基于历史数据与算法模型</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Prediction configuration -->
-    <div class="mb-6 animate-slide-up">
-      <div class="glass-card rounded-2xl p-6 border border-white/10">
-        <el-form :inline="true" :model="{ selectedMovie, selectedAlgorithm, predictionDays }">
-          <el-form-item label="选择影片">
-            <el-select
-              v-model="selectedMovie"
-              placeholder="请选择影片"
-              clearable
-              filterable
-              style="width: 240px"
-            >
-              <el-option
-                v-for="movie in movies"
-                :key="movie.id"
-                :label="movie.title"
-                :value="movie.id"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="预测算法">
-            <el-select
-              v-model="selectedAlgorithm"
-              placeholder="请选择算法"
-              style="width: 200px"
-            >
-              <el-option
-                v-for="algo in algorithms"
-                :key="algo.value"
-                :label="algo.label"
-                :value="algo.value"
-              >
-                <div class="flex flex-col">
-                  <span>{{ algo.label }}</span>
-                  <span class="text-xs text-slate-500">{{ algo.description }}</span>
-                </div>
-              </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="预测天数">
-            <el-input-number
-              v-model="predictionDays"
-              :min="3"
-              :max="30"
-              :step="1"
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item>
-            <el-button
-              type="primary"
-              :loading="predicting"
-              :disabled="!selectedMovie"
-              @click="executePrediction"
-            >
-              执行预测
-            </el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-    </div>
-
-    <!-- Prediction result -->
-    <div class="animate-slide-up" style="animation-delay: 0.2s">
-      <div class="glass-card rounded-2xl border border-white/10 p-6">
-        <!-- Chart -->
-        <div v-if="predictionResult" class="mb-6">
-          <div ref="chartRef" class="chart-container-large"></div>
-        </div>
-        <div v-else class="chart-placeholder">
-          <div class="text-center text-slate-500 py-20">
-            <VideoCamera class="w-20 h-20 mx-auto mb-4 opacity-30" />
-            <p class="text-lg">请选择影片并执行预测</p>
-            <p class="text-sm mt-2">预测结果将在此处显示</p>
-          </div>
-        </div>
-
-        <!-- Prediction conclusion -->
-        <div v-if="predictionResult" class="prediction-conclusion">
-          <div class="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20">
-            <TrendCharts class="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1" />
+  <div class="page-container">
+    <div class="content-wrapper">
+      <!-- Header -->
+      <div class="section-header animate-fade-in">
+        <div class="glass-card header-card">
+          <div class="flex items-center gap-4">
+            <div class="icon-box icon-red">
+              <MagicStick class="w-7 h-7" />
+            </div>
             <div>
-              <h4 class="text-emerald-400 font-semibold mb-2">预测结论</h4>
-              <p class="text-slate-300 text-sm leading-relaxed">
-                {{ getPredictionConclusion() }}
-              </p>
-              <div v-if="predictionResult.forecast && predictionResult.forecast.length > 0" class="mt-3 text-xs text-slate-400">
-                预测未来 {{ predictionDays }} 天票房走势，基于{{ selectedAlgorithm === 'linear_regression' ? '线性回归' : '移动平均' }}算法
+              <h1 class="page-title">未来票房预测</h1>
+              <p class="page-subtitle">基于历史数据与算法模型</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prediction configuration -->
+      <div class="animate-slide-up">
+        <div class="glass-card config-card">
+          <el-form :inline="true" :model="{ selectedMovie, selectedAlgorithm, predictionDays }">
+            <el-form-item label="选择影片">
+              <el-select
+                v-model="selectedMovie"
+                placeholder="请选择影片"
+                clearable
+                filterable
+                popper-class="dark-select-dropdown"
+                style="width: 240px"
+              >
+                <el-option
+                  v-for="movie in movies"
+                  :key="movie.id"
+                  :label="movie.title"
+                  :value="movie.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="预测算法">
+              <el-select
+                v-model="selectedAlgorithm"
+                placeholder="请选择算法"
+                popper-class="dark-select-dropdown"
+                style="width: 200px"
+              >
+                <el-option
+                  v-for="algo in algorithms"
+                  :key="algo.value"
+                  :label="algo.label"
+                  :value="algo.value"
+                >
+                  <div class="flex flex-col">
+                    <span>{{ algo.label }}</span>
+                    <span class="text-xs text-slate-500">{{ algo.description }}</span>
+                  </div>
+                </el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="预测天数">
+              <el-input-number
+                v-model="predictionDays"
+                :min="3"
+                :max="30"
+                :step="1"
+                style="width: 150px"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button
+                type="primary"
+                :loading="predicting"
+                :disabled="!selectedMovie"
+                @click="executePrediction"
+              >
+                执行预测
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+
+      <!-- Prediction result -->
+      <div class="animate-slide-up" style="animation-delay: 0.2s">
+        <div class="glass-card result-card">
+          <!-- Chart -->
+          <div v-if="predictionResult" class="chart-section">
+            <div ref="chartRef" class="chart-container-large"></div>
+          </div>
+          <div v-else class="chart-placeholder">
+            <div class="text-center text-slate-500 py-20">
+              <VideoCamera class="w-20 h-20 mx-auto mb-4 opacity-30" />
+              <p class="text-lg">请选择影片并执行预测</p>
+              <p class="text-sm mt-2">预测结果将在此处显示</p>
+            </div>
+          </div>
+
+          <!-- Prediction conclusion -->
+          <div v-if="predictionResult" class="conclusion-section">
+            <div class="conclusion-box">
+              <TrendCharts class="conclusion-icon" />
+              <div class="conclusion-content">
+                <h4 class="conclusion-title">预测结论</h4>
+                <p class="conclusion-text">
+                  {{ getPredictionConclusion() }}
+                </p>
+                <div v-if="predictionResult.forecast && predictionResult.forecast.length > 0" class="conclusion-meta">
+                  预测未来 {{ predictionDays }} 天票房走势，基于{{ selectedAlgorithm === 'linear_regression' ? '线性回归' : '移动平均' }}算法
+                </div>
               </div>
             </div>
           </div>
@@ -368,89 +362,110 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Glass card */
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+/* ========================================
+   Page Container
+   ======================================== */
+.page-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* Grid background */
-.grid-bg {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 50px 50px;
-  mask-image: radial-gradient(ellipse at center, black 40%, transparent 70%);
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* Gradient orbs */
-.gradient-orbs {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  animation: float 20s ease-in-out infinite;
-}
-
-.orb-1 {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  top: -100px;
-  right: -100px;
-  animation-delay: 0s;
-}
-
-.orb-2 {
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
-  bottom: -50px;
-  left: -50px;
-  animation-delay: -7s;
-}
-
-.orb-3 {
-  width: 350px;
-  height: 350px;
-  background: linear-gradient(135deg, #10b981, #3b82f6);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation-delay: -14s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(20px, -20px) scale(1.05); }
-  50% { transform: translate(-10px, 20px) scale(0.95); }
-  75% { transform: translate(-20px, -10px) scale(1.02); }
-}
-
+/* ========================================
+   Animations
+   ======================================== */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
 
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+.animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
 .animate-slide-up {
   opacity: 0;
   animation: slide-up 0.6s ease-out forwards;
+}
+
+/* ========================================
+   Glass Card
+   ======================================== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(220, 38, 38, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   Header Section
+   ======================================== */
+.section-header {
+  margin-bottom: 0;
+}
+
+.header-card {
+  padding: 1.5rem;
+}
+
+.icon-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-red {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.page-subtitle {
+  color: #94a3b8;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+}
+
+/* ========================================
+   Config Card
+   ======================================== */
+.config-card {
+  padding: 1.5rem;
+}
+
+/* ========================================
+   Result Card
+   ======================================== */
+.result-card {
+  padding: 1.5rem;
+}
+
+.chart-section {
+  margin-bottom: 1.5rem;
 }
 
 .chart-container-large {
@@ -461,37 +476,142 @@ onUnmounted(() => {
   min-height: 400px;
 }
 
-/* Form styling */
+/* ========================================
+   Conclusion Section
+   ======================================== */
+.conclusion-section {
+  margin-top: 1.5rem;
+}
+
+.conclusion-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(to right, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.conclusion-icon {
+  width: 24px;
+  height: 24px;
+  color: #10b981;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.conclusion-content {
+  flex: 1;
+}
+
+.conclusion-title {
+  color: #10b981;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.conclusion-text {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.conclusion-meta {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* ========================================
+   Form Styling
+   ======================================== */
 :deep(.el-form-item__label) {
-  color: #9ca3af;
+  color: #94a3b8;
 }
 
 :deep(.el-input__wrapper),
-:deep(.el-select .el-input__wrapper),
-:deep(.el-input-number .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: none;
+:deep(.el-select__wrapper),
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+  color: #fff !important;
+}
+
+:deep(.el-input__wrapper:hover),
+:deep(.el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.5) inset !important;
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #dc2626 inset !important;
 }
 
 :deep(.el-input__inner) {
-  color: #fff;
+  color: #fff !important;
+  background: transparent !important;
 }
 
-:deep(.el-select__placeholder),
-:deep(.el-input__placeholder) {
-  color: #6b7280;
+:deep(.el-select__placeholder) {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-select__caret) {
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
 :deep(.el-input-number .el-input-number__decrease),
 :deep(.el-input-number .el-input-number__increase) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
 }
 
 :deep(.el-input-number .el-input-number__decrease:hover),
 :deep(.el-input-number .el-input-number__increase:hover) {
+  color: #fff !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+}
+</style>
+
+<style>
+/* ========================================
+   Global Overrides (Poppers)
+   ======================================== */
+
+/* Select Dropdown */
+.dark-select-dropdown.el-popper {
+  background: #12121f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-select-dropdown .el-popper__arrow::before {
+  background: #12121f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-select-dropdown .el-select-dropdown__item {
+  color: #94a3b8;
+}
+
+.dark-select-dropdown .el-select-dropdown__item.hover,
+.dark-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(220, 38, 38, 0.1);
   color: #fff;
+}
+
+.dark-select-dropdown .el-select-dropdown__item.selected {
+  color: #dc2626;
+  font-weight: bold;
 }
 </style>

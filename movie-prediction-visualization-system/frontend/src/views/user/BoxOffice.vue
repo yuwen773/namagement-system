@@ -96,8 +96,9 @@ const loadData = async () => {
     const params = {
       page: queryParams.page,
       pageSize: queryParams.pageSize,
-      order_by: queryParams.order_by
+      ordering: queryParams.order_by
     }
+
     if (queryParams.start_date) params.start_date = queryParams.start_date
     if (queryParams.end_date) params.end_date = queryParams.end_date
     if (queryParams.movie_id) params.movie_id = queryParams.movie_id
@@ -179,18 +180,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-    <!-- 动画背景 -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="grid-bg"></div>
-      <div class="gradient-orbs">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-      </div>
-    </div>
-
-    <div class="relative z-10 p-6 lg:p-8">
+  <div class="page-container">
+    <div class="content-wrapper">
       <!-- 页面标题 -->
       <div class="mb-6 animate-fade-in">
         <div class="flex items-center gap-4 mb-2">
@@ -248,6 +239,7 @@ onMounted(() => {
               filterable
               @change="handleSearch"
               class="filter-input"
+              popper-class="dark-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -262,7 +254,7 @@ onMounted(() => {
           <!-- 影院选择 -->
           <div class="space-y-1.5">
             <label class="text-xs text-slate-400 flex items-center gap-1.5">
-              <Building class="w-3.5 h-3.5" />
+              <OfficeBuilding class="w-3.5 h-3.5" />
               影院
             </label>
             <el-select
@@ -272,6 +264,7 @@ onMounted(() => {
               filterable
               @change="handleSearch"
               class="filter-input"
+              popper-class="dark-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -293,6 +286,7 @@ onMounted(() => {
               v-model="queryParams.order_by"
               @change="handleSearch"
               class="filter-input"
+              popper-class="dark-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -420,164 +414,122 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 玻璃态卡片 */
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+/* ========================================
+   Page Container
+   ======================================== */
+.page-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* 网格背景 */
-.grid-bg {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 50px 50px;
-  mask-image: radial-gradient(ellipse at center, black 40%, transparent 70%);
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* 渐变光球 */
-.gradient-orbs {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  animation: float 20s ease-in-out infinite;
-}
-
-.orb-1 {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  top: -100px;
-  right: -100px;
-  animation-delay: 0s;
-}
-
-.orb-2 {
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
-  bottom: -50px;
-  left: -50px;
-  animation-delay: -7s;
-}
-
-.orb-3 {
-  width: 350px;
-  height: 350px;
-  background: linear-gradient(135deg, #0ea5e9, #6366f1);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation-delay: -14s;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  25% {
-    transform: translate(20px, -20px) scale(1.05);
-  }
-  50% {
-    transform: translate(-10px, 20px) scale(0.95);
-  }
-  75% {
-    transform: translate(-20px, -10px) scale(1.02);
-  }
-}
-
-/* 淡入动画 */
+/* ========================================
+   Animations
+   ======================================== */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out forwards;
-}
-
-/* 滑入动画 */
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
+.animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
 .animate-slide-up {
   opacity: 0;
   animation: slide-up 0.6s ease-out forwards;
 }
 
-/* 筛选输入框样式 */
-:deep(.filter-input .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
+/* ========================================
+   Glass Card
+   ======================================== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: none;
+  border-radius: 1rem;
   transition: all 0.3s ease;
 }
 
-:deep(.filter-input .el-input__wrapper:hover) {
-  border-color: rgba(59, 130, 246, 0.5);
+.glass-card:hover {
+  border-color: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-:deep(.filter-input .el-input__wrapper.is-focus) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+/* ========================================
+   Filter Inputs
+   ======================================== */
+.filter-input {
+  width: 100%;
 }
 
-:deep(.filter-input .el-input__inner) {
-  color: #fff;
+:deep(.filter-input .el-input__wrapper),
+:deep(.filter-input.el-range-editor.el-input__wrapper),
+:deep(.filter-input .el-select__wrapper) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+  transition: all 0.3s ease;
 }
 
-:deep(.filter-input .el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.3);
+:deep(.filter-input .el-input__wrapper:hover),
+:deep(.filter-input.el-range-editor.el-input__wrapper:hover),
+:deep(.filter-input .el-select__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.5) inset !important;
 }
 
-:deep(.filter-input .el-select__placeholder) {
-  color: rgba(255, 255, 255, 0.3);
+:deep(.filter-input .el-input__wrapper.is-focus),
+:deep(.filter-input.el-range-editor.el-input__wrapper.is-active),
+:deep(.filter-input .el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px #f59e0b inset !important;
 }
 
-:deep(.filter-input .el-select__selected-item) {
-  color: #fff;
+:deep(.filter-input .el-input__inner),
+:deep(.filter-input .el-range-input) {
+  color: #fff !important;
+  background-color: transparent !important;
+  font-family: inherit;
+}
+
+:deep(.filter-input .el-input__inner::placeholder),
+:deep(.filter-input .el-range-input::placeholder) {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.filter-input .el-range-separator) {
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
 :deep(.filter-input .el-select__caret) {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* 按钮样式 */
+:deep(.filter-input .el-range__icon),
+:deep(.filter-input .el-range__close-icon) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
 .action-btn {
-  background: linear-gradient(135deg, #3b82f6, #0ea5e9);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   border: none;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
   transition: all 0.3s ease;
 }
 
 .action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
 }
 
 .action-btn-secondary {
@@ -589,7 +541,7 @@ onMounted(() => {
 
 .action-btn-secondary:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .export-btn {
@@ -601,10 +553,12 @@ onMounted(() => {
 
 .export-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
-/* 分页样式 - 深色主题 */
+/* ========================================
+   Pagination
+   ======================================== */
 :deep(.dark-pagination .el-pagination__total),
 :deep(.dark-pagination .el-pager li),
 :deep(.dark-pagination .btn-prev),
@@ -615,7 +569,7 @@ onMounted(() => {
 }
 
 :deep(.dark-pagination .el-pager li.is-active) {
-  background: linear-gradient(135deg, #3b82f6, #0ea5e9);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #fff;
 }
 
@@ -631,42 +585,112 @@ onMounted(() => {
 }
 
 :deep(.dark-pagination .el-select .el-input__wrapper:hover) {
-  border-color: rgba(59, 130, 246, 0.5);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
-/* 深色日期选择器下拉 */
-:deep(.dark-datepicker.el-picker__popper) {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+}
+</style>
+
+<style>
+/* ========================================
+   Global Overrides (Poppers)
+   ======================================== */
+
+/* Select Dropdown */
+.dark-select-dropdown.el-popper {
+  background: #12121f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-:deep(.dark-datepicker .el-date-picker__header-label) {
+.dark-select-dropdown .el-popper__arrow::before {
+  background: #12121f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-select-dropdown .el-select-dropdown__item {
+  color: #94a3b8;
+}
+
+.dark-select-dropdown .el-select-dropdown__item.hover,
+.dark-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(245, 158, 11, 0.1);
   color: #fff;
 }
 
-:deep(.dark-datepicker .el-picker-panel__icon-btn) {
-  color: rgba(255, 255, 255, 0.5);
+.dark-select-dropdown .el-select-dropdown__item.selected {
+  color: #f59e0b;
+  font-weight: bold;
 }
 
-:deep(.dark-datepicker .el-date-table th) {
-  color: rgba(255, 255, 255, 0.5);
+/* Datepicker */
+.dark-datepicker.el-picker__popper {
+  background: #12121f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #fff;
+}
+
+.dark-datepicker .el-picker-panel {
+  background: #12121f;
+  color: #fff;
+}
+
+.dark-datepicker .el-picker-panel__content {
+  background: #0a0a12;
+}
+
+.dark-datepicker .el-date-picker__header-label,
+.dark-datepicker .el-picker-panel__icon-btn {
+  color: #fff !important;
+}
+
+.dark-datepicker .el-date-table th {
+  color: #94a3b8;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-:deep(.dark-datepicker .el-date-table td.current:not(.disabled)) {
-  background: linear-gradient(135deg, #3b82f6, #0ea5e9);
+.dark-datepicker .el-date-table td.current:not(.disabled) .el-date-table-cell__text {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #fff;
 }
 
-:deep(.dark-datepicker .el-date-table td.today) {
-  color: #3b82f6;
+.dark-datepicker .el-date-table td.today .el-date-table-cell__text {
+  color: #f59e0b;
+  font-weight: bold;
 }
 
-:deep(.dark-datepicker .el-date-table td.available:hover) {
-  background: rgba(59, 130, 246, 0.2);
+.dark-datepicker .el-date-table td.available:hover {
+  color: #f59e0b;
 }
 
-:deep(.dark-datepicker .el-picker-panel__content) {
-  background: #0f172a;
+.dark-datepicker .el-picker-panel__footer {
+  background-color: #12121f;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-datepicker .el-button--text {
+  color: #94a3b8;
+}
+
+.dark-datepicker .el-button--plain {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.dark-datepicker .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.dark-datepicker .el-input__inner {
+  color: #fff;
 }
 </style>
