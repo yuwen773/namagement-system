@@ -41,7 +41,7 @@ export function refreshToken(data) {
 // 修改密码
 export function changePassword(data) {
   return request({
-    url: '/auth/password/change/',
+    url: '/auth/change-password/',
     method: 'post',
     data
   })

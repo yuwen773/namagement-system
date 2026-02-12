@@ -49,7 +49,7 @@ export function deleteBoxOfficeRecord(id) {
 // 批量创建票房记录
 export function batchCreateBoxOfficeRecords(data) {
   return request({
-    url: '/boxoffice/batch/',
+    url: '/boxoffice/batch_input/',
     method: 'post',
     data
   })
