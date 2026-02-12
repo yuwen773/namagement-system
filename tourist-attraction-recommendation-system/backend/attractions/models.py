@@ -20,6 +20,15 @@ class Attraction(models.Model):
     images = models.JSONField('轮播图', default=list, blank=True)
     view_count = models.IntegerField('浏览量', default=0)
     is_deleted = models.BooleanField('是否删除', default=False)
+
+    # ========== 新增字段（用于数据集导入）==========
+    latitude = models.FloatField('纬度', null=True, blank=True)
+    longitude = models.FloatField('经度', null=True, blank=True)
+    rating_percentage = models.FloatField('好评率', default=0.0)
+    guide_count = models.IntegerField('攻略数量', default=0)
+    ranking = models.IntegerField('城市排名', null=True, blank=True)
+    level = models.CharField('景区等级', max_length=10, blank=True)
+
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
     updated_at = models.DateTimeField('更新时间', auto_now=True)
 
