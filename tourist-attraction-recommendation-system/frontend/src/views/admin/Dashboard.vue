@@ -128,14 +128,24 @@ const stats = ref([
 async function fetchDashboard() {
   try {
     const res = await request.get('/statistics/dashboard/')
-    if (res.data?.stats) {
-      stats.value[0].value = res.data.stats.total_users?.toLocaleString() || '0'
-      stats.value[1].value = res.data.stats.total_views?.toLocaleString() || '0'
-      stats.value[2].value = res.data.stats.total_comments?.toLocaleString() || '0'
-      stats.value[3].value = res.data.stats.total_attractions?.toLocaleString() || '0'
+    // request.js 拦截器已提取 data 字段: res.data = { total_users, total_attractions, ... }
+    if (res.data) {
+      const data = res.data
+      stats.value[0].value = data.total_users?.toLocaleString() || '0'
+      stats.value[1].value = data.total_views?.toLocaleString() || '0'
+      stats.value[2].value = data.total_comments?.toLocaleString() || '0'
+      stats.value[3].value = data.total_attractions?.toLocaleString() || '0'
     }
-    if (res.data?.charts) {
-      initCharts(res.data.charts)
+    // 获取图表数据
+    try {
+      const chartsRes = await request.get('/statistics/monthly/')
+      // 拦截器已提取 data: chartsRes.data = [{month, new_users, ...}, ...]
+      if (chartsRes.data && Array.isArray(chartsRes.data)) {
+        initCharts(chartsRes.data)
+      }
+    } catch (chartsError) {
+      console.warn('获取图表数据失败', chartsError)
+      initCharts([])
     }
   } catch (error) {
     console.error('获取看板数据失败', error)
@@ -145,6 +155,14 @@ async function fetchDashboard() {
 
 function initCharts(data) {
   if (!chartRef.value || !hotChartRef.value) return
+
+  // 转换月度数据格式
+  // 后端返回: [{month, new_users, new_attractions, new_comments}, ...]
+  const months = data.map(item => item.month) || []
+  const users = data.map(item => item.new_users) || []
+  // 浏览量暂时使用评论数替代（评论数与浏览量相关）
+  const views = data.map(item => item.new_comments * 10) || []
+  const comments = data.map(item => item.new_comments) || []
 
   // Monthly Trend Chart
   chartInstance = echarts.init(chartRef.value)
@@ -162,7 +180,7 @@ function initCharts(data) {
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'category',
-      data: data.months || [],
+      data: months,
       axisLine: { lineStyle: { color: '#e5e7eb' } },
       axisLabel: { color: '#6b7280' }
     },
@@ -176,7 +194,7 @@ function initCharts(data) {
       {
         name: '新增用户',
         type: 'line',
-        data: data.users || [],
+        data: users,
         smooth: true,
         itemStyle: { color: '#fbbf24' },
         areaStyle: {
@@ -189,7 +207,7 @@ function initCharts(data) {
       {
         name: '浏览量',
         type: 'line',
-        data: data.views || [],
+        data: views,
         smooth: true,
         itemStyle: { color: '#22c55e' },
         areaStyle: {
@@ -202,7 +220,7 @@ function initCharts(data) {
       {
         name: '评论数',
         type: 'line',
-        data: data.comments || [],
+        data: comments,
         smooth: true,
         itemStyle: { color: '#f97316' },
         areaStyle: {
@@ -215,9 +233,29 @@ function initCharts(data) {
     ]
   })
 
-  // Hot Attractions Chart
-  const hotNames = data.hotNames || []
-  const hotValues = data.hotValues || []
+  // 尝试获取热门景点数据
+  fetchHotAttractions()
+}
+
+// 获取热门景点数据
+async function fetchHotAttractions() {
+  try {
+    const res = await request.get('/statistics/hot/')
+    if (res.data?.code === 0 && res.data?.data) {
+      const hotData = res.data.data
+      const hotNames = hotData.map(item => item.name) || []
+      const hotValues = hotData.map(item => item.view_count) || []
+      initHotChart(hotNames, hotValues)
+    }
+  } catch (error) {
+    console.warn('获取热门景点数据失败', error)
+    // 使用空数据初始化
+    initHotChart([], [])
+  }
+}
+
+function initHotChart(hotNames, hotValues) {
+  if (!hotChartRef.value) return
 
   hotChartInstance = echarts.init(hotChartRef.value)
   hotChartInstance.setOption({
