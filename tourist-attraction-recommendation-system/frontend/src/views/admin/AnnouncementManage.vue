@@ -52,6 +52,17 @@
         </el-table-column>
       </el-table>
 
+      <!-- Pagination -->
+      <div v-if="total > 10" class="pagination-section">
+        <el-pagination
+          v-model:current-page="page"
+          :page-size="10"
+          layout="prev, pager, next"
+          :total="total"
+          @current-change="fetchAnnouncements"
+        />
+      </div>
+
       <!-- Empty State for List -->
       <div v-if="announcements.length === 0" class="empty-state-list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -138,6 +149,10 @@ const publishing = ref(false)
 const formRef = ref(null)
 const viewMode = ref('list') // 默认列表视图
 
+// 分页相关
+const page = ref(1)
+const total = ref(0)
+
 const form = reactive({
   title: '',
   content: ''
@@ -151,8 +166,11 @@ const rules = {
 async function fetchAnnouncements() {
   loading.value = true
   try {
-    const res = await request.get('/notifications/announcements/')
+    const res = await request.get('/notifications/announcements/', {
+      params: { page: page.value, size: 10 }
+    })
     announcements.value = res.data || []
+    total.value = res.total || 0
   } catch (error) {
     console.error(error)
     ElMessage.error('获取公告列表失败')
@@ -601,6 +619,44 @@ onMounted(fetchAnnouncements)
 .dialog-button.confirm:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Pagination */
+.pagination-section {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+  margin-top: 16px;
+}
+
+:deep(.el-pagination) {
+  gap: 8px;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next),
+:deep(.el-pagination .el-pager li) {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-width: 36px;
+  height: 36px;
+  line-height: 34px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-pagination .btn-prev:hover),
+:deep(.el-pagination .btn-next:hover),
+:deep(.el-pagination .el-pager li:hover) {
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+:deep(.el-pagination .el-pager li.active) {
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  border-color: transparent;
+  color: white;
 }
 
 /* Responsive */

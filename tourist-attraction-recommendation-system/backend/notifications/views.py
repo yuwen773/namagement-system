@@ -7,6 +7,7 @@ from django.db import models
 from .models import Notification
 from .serializers import NotificationSerializer, NotificationCreateSerializer
 from accounts.permissions import IsAdmin
+from utils.pagination import CustomPagination
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
@@ -61,10 +62,19 @@ class NotificationViewSet(viewsets.ModelViewSet):
             type='ANNOUNCEMENT',
             is_deleted=False
         ).order_by('-created_at')
+
+        # 分页支持
+        paginator = CustomPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        if page is not None:
+            serializer = NotificationSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         serializer = NotificationSerializer(queryset, many=True)
         return Response({
             'code': 0,
-            'data': serializer.data
+            'data': serializer.data,
+            'total': queryset.count()
         })
 
     @action(detail=False, methods=['post'], url_path='announcement')
