@@ -691,7 +691,7 @@ const navigateTo = (path) => {
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
-  z-index: 10;
+  z-index: 99;
 }
 
 /* 左侧区域 */
