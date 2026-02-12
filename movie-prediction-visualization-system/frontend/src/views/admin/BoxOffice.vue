@@ -326,7 +326,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden boxoffice-page">
     <!-- 动画背景 -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="grid-bg"></div>
@@ -392,6 +392,7 @@ onMounted(() => {
               filterable
               @change="handleSearch"
               class="filter-input"
+              popper-class="dark-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -416,6 +417,7 @@ onMounted(() => {
               filterable
               @change="handleSearch"
               class="filter-input"
+              popper-class="dark-select-dropdown"
               style="width: 100%"
             >
               <el-option
@@ -437,6 +439,7 @@ onMounted(() => {
               v-model="queryParams.order_by"
               @change="handleSearch"
               class="filter-input"
+              popper-class="dark-select-dropdown"
               style="width: 100%"
             >
               <el-option label="按日期降序" value="-record_date" />
@@ -603,6 +606,7 @@ onMounted(() => {
             placeholder="请选择影片"
             filterable
             class="form-input"
+            popper-class="dark-select-dropdown"
             style="width: 100%"
           >
             <el-option
@@ -625,6 +629,7 @@ onMounted(() => {
             placeholder="请选择影院"
             filterable
             class="form-input"
+            popper-class="dark-select-dropdown"
             style="width: 100%"
           >
             <el-option
@@ -831,30 +836,57 @@ onMounted(() => {
   animation: slide-up 0.6s ease-out forwards;
 }
 
-/* 筛选输入框样式 */
-:deep(.filter-input .el-input__wrapper) {
+/* ============================================
+   筛选区域样式
+   ============================================ */
+.filter-input {
+  --el-input-bg-color: rgba(255, 255, 255, 0.05);
+  --el-input-border-color: rgba(255, 255, 255, 0.1);
+  --el-input-hover-border-color: rgba(16, 185, 129, 0.5);
+  --el-input-focus-border-color: #10b981;
+  --el-text-color-placeholder: rgba(255, 255, 255, 0.3);
+  --el-fill-color-blank: rgba(255, 255, 255, 0.05);
+  --el-bg-color: rgba(15, 23, 42, 0.95);
+  --el-text-color-regular: rgba(255, 255, 255, 0.85);
+  --el-text-color-secondary: rgba(255, 255, 255, 0.65);
+  --el-border-color: rgba(255, 255, 255, 0.1);
+}
+
+:deep(.filter-input .el-input__wrapper),
+:deep(.filter-input.el-range-editor) {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: none;
   transition: all 0.3s ease;
 }
 
-:deep(.filter-input .el-input__wrapper:hover) {
+:deep(.filter-input .el-input__wrapper:hover),
+:deep(.filter-input.el-range-editor:hover) {
   border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-:deep(.filter-input .el-input__wrapper.is-focus) {
+:deep(.filter-input .el-input__wrapper.is-focus),
+:deep(.filter-input.el-range-editor.is-active),
+:deep(.filter-input.el-range-editor.is-focus) {
   background: rgba(255, 255, 255, 0.08);
   border-color: #10b981;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-:deep(.filter-input .el-input__inner) {
+:deep(.filter-input .el-input__inner),
+:deep(.filter-input .el-range-input) {
   color: #fff;
+  background: transparent;
 }
 
-:deep(.filter-input .el-input__inner::placeholder) {
+:deep(.filter-input .el-input__inner::placeholder),
+:deep(.filter-input .el-range-input::placeholder) {
   color: rgba(255, 255, 255, 0.3);
+}
+
+:deep(.filter-input .el-range-separator) {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 :deep(.filter-input .el-select__placeholder) {
@@ -865,7 +897,40 @@ onMounted(() => {
   color: #fff;
 }
 
-:deep(.filter-input .el-select__caret) {
+:deep(.filter-input .el-select__caret),
+:deep(.filter-input .el-input__icon) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* 筛选下拉面板样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+:deep(.el-select-dropdown__item) {
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  transition: all 0.2s;
+}
+
+:deep(.el-select-dropdown__item:hover) {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+:deep(.el-select-dropdown__item.is-selected) {
+  background: rgba(16, 185, 129, 0.25);
+  color: #10b981;
+}
+
+/* 日期范围选择器图标颜色 */
+:deep(.filter-input .el-input__prefix) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+:deep(.filter-input .el-input__suffix) {
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -1068,5 +1133,219 @@ onMounted(() => {
 
 :deep(.dark-datepicker .el-picker-panel__content) {
   background: #0f172a;
+}
+</style>
+
+<style>
+/* ============================================
+   票房数据 - 下拉选项面板全局样式
+   ============================================ */
+/* 筛选下拉面板 - 绿色系 */
+.dark-select-dropdown.el-select-dropdown {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.dark-select-dropdown .el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  transition: all 0.2s;
+}
+
+.dark-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.dark-select-dropdown .el-select-dropdown__item.is-selected {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #34d399 !important;
+}
+
+.dark-select-dropdown .el-select-dropdown__item.is-disabled {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 日期选择器下拉面板 - 绿色系 */
+.dark-datepicker.el-picker__popper {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.dark-datepicker .el-date-picker {
+  background: transparent;
+}
+
+.dark-datepicker .el-picker-panel {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: none !important;
+}
+
+.dark-datepicker .el-picker-panel__body {
+  background: transparent !important;
+}
+
+/* 日期选择器头部 */
+.dark-datepicker .el-date-picker__header {
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-datepicker .el-date-picker__header-label {
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.dark-datepicker .el-date-picker__header-label:hover {
+  color: #34d399 !important;
+}
+
+.dark-datepicker .el-picker-panel__icon-btn {
+  color: rgba(255, 255, 255, 0.5) !important;
+  transition: color 0.2s;
+}
+
+.dark-datepicker .el-picker-panel__icon-btn:hover {
+  color: #34d399 !important;
+}
+
+/* 日期表格 */
+.dark-datepicker .el-date-table th {
+  color: rgba(255, 255, 255, 0.5) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-datepicker .el-date-table td {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark-datepicker .el-date-table td.today span {
+  color: #34d399 !important;
+  font-weight: 500;
+}
+
+.dark-datepicker .el-date-table td.current:not(.disabled) span {
+  background: linear-gradient(135deg, #10b981, #14b8a6) !important;
+  color: #fff !important;
+}
+
+.dark-datepicker .el-date-table td.available:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+
+.dark-datepicker .el-date-table td.in-range {
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+
+.dark-datepicker .el-date-table td.start-date span,
+.dark-datepicker .el-date-table td.end-date span {
+  background: linear-gradient(135deg, #10b981, #14b8a6) !important;
+  color: #fff !important;
+}
+
+.dark-datepicker .el-date-table td.next-month,
+.dark-datepicker .el-date-table td.prev-month {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark-datepicker .el-date-table td.disabled {
+  color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 月份选择器 */
+.dark-datepicker .el-month-table td {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark-datepicker .el-month-table td.today .cell {
+  color: #34d399 !important;
+}
+
+.dark-datepicker .el-month-table td .cell:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+
+.dark-datepicker .el-month-table td.current:not(.disabled) .cell {
+  background: linear-gradient(135deg, #10b981, #14b8a6) !important;
+  color: #fff !important;
+}
+
+/* 年份选择器 */
+.dark-datepicker .el-year-table td {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark-datepicker .el-year-table td.today .cell {
+  color: #34d399 !important;
+}
+
+.dark-datepicker .el-year-table td .cell:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+
+.dark-datepicker .el-year-table td.current:not(.disabled) .cell {
+  background: linear-gradient(135deg, #10b981, #14b8a6) !important;
+  color: #fff !important;
+}
+
+/* 滚动条样式 */
+.dark-select-dropdown .el-scrollbar__bar,
+.dark-datepicker .el-scrollbar__bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark-select-dropdown .el-scrollbar__thumb,
+.dark-datepicker .el-scrollbar__thumb {
+  background: rgba(16, 185, 129, 0.5);
+  border-radius: 3px;
+}
+
+.dark-select-dropdown .el-scrollbar__thumb:hover,
+.dark-datepicker .el-scrollbar__thumb:hover {
+  background: rgba(16, 185, 129, 0.7);
+}
+
+/* 空状态 */
+.dark-select-dropdown .el-select-dropdown__empty,
+.dark-datepicker .el-picker-panel__empty {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 时间选择器（如果有） */
+.dark-datepicker .el-time-panel {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-datepicker .el-time-panel__content {
+  background: transparent !important;
+}
+
+.dark-datepicker .el-time-spinner__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark-datepicker .el-time-spinner__item:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+
+.dark-datepicker .el-time-spinner__item.active:not(.disabled) {
+  color: #34d399 !important;
+}
+
+.dark-datepicker .el-time-panel__btn {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.dark-datepicker .el-time-panel__btn:hover {
+  color: #34d399 !important;
+}
+
+.dark-datepicker .el-time-panel__btn.confirm {
+  color: #34d399 !important;
 }
 </style>
