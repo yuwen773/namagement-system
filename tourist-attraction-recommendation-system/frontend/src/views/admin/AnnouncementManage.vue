@@ -5,7 +5,7 @@
       <div class="header-content">
         <div class="header-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9-9-9 0 0 0-3 3.87"/>
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
         </div>
@@ -53,7 +53,7 @@
       </el-table>
 
       <!-- Pagination -->
-      <div v-if="total > 10" class="pagination-section">
+      <div v-if="total > 0" class="pagination-section">
         <el-pagination
           v-model:current-page="page"
           :page-size="10"
@@ -66,7 +66,7 @@
       <!-- Empty State for List -->
       <div v-if="announcements.length === 0" class="empty-state-list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9-9-9 0 0 0-3 3.87"/>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
         <p>暂无公告</p>
@@ -100,7 +100,7 @@
       <!-- Empty State -->
       <div v-if="announcements.length === 0" class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9-9-9 0 0 0-3 3.87"/>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
         <p>暂无公告</p>
@@ -169,8 +169,9 @@ async function fetchAnnouncements() {
     const res = await request.get('/notifications/announcements/', {
       params: { page: page.value, size: 10 }
     })
-    announcements.value = res.data || []
-    total.value = res.total || 0
+    // API 返回格式: { code: 0, data: [...], total: n, page: n, size: n, total_pages: n }
+    announcements.value = res.data?.data || res.data || []
+    total.value = res.data?.total || res.total || 0
   } catch (error) {
     console.error(error)
     ElMessage.error('获取公告列表失败')
