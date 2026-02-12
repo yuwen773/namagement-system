@@ -37,10 +37,10 @@
       <div class="category-filter">
         <el-select v-model="selectedCategory" placeholder="全部分类" clearable>
           <el-option label="全部分类" value="" />
-          <el-option label="自然风光" value="NATURE" />
-          <el-option label="人文古迹" value="HISTORY" />
-          <el-option label="主题乐园" value="THEME" />
-          <el-option label="其他" value="OTHER" />
+          <el-option label="自然风光" value="自然风光" />
+          <el-option label="人文古迹" value="人文古迹" />
+          <el-option label="主题乐园" value="主题乐园" />
+          <el-option label="其他" value="其他" />
         </el-select>
       </div>
     </div>
@@ -53,7 +53,7 @@
             <img :src="row.cover_image || row.coverImage || '/placeholder.jpg'" class="table-cover" />
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="景点名称" width="200" />
+        <el-table-column prop="name" label="景点名称" min-width="200" />
         <el-table-column prop="category" label="分类" width="120">
           <template #default="{ row }">
             <span :class="['category-tag', row.category]">
@@ -61,25 +61,38 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="region" label="地区" width="150" />
-        <el-table-column prop="rating" label="评分" width="100">
+        <el-table-column prop="region" label="地区" min-width="150" />
+        <el-table-column prop="level" label="景区等级" width="100">
           <template #default="{ row }">
-            <span v-if="row.rating" class="rating-cell">
+            <span v-if="row.level" class="level-badge">{{ row.level }}</span>
+            <span v-else class="text-gray">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="ranking" label="城市排名" width="100">
+          <template #default="{ row }">
+            <span v-if="row.ranking">#{{ row.ranking }}</span>
+            <span v-else class="text-gray">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="rating_percentage" label="好评率" width="100">
+          <template #default="{ row }">
+            <span v-if="row.rating_percentage" class="rating-cell">
               <svg viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
               </svg>
-              {{ row.rating.toFixed(1) }}
+              {{ (row.rating_percentage * 100).toFixed(0) }}%
             </span>
+            <span v-else class="text-gray">-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="viewCount" label="浏览量" width="120">
+        <el-table-column prop="view_count" label="浏览量" width="100">
           <template #default="{ row }">
             {{ formatNumber(row.view_count || row.viewCount || 0) }}
           </template>
         </el-table-column>
-        <el-table-column prop="commentCount" label="评论数" width="100">
+        <el-table-column prop="guide_count" label="攻略数" width="100">
           <template #default="{ row }">
-            {{ row.commentCount || 0 }}
+            {{ row.guide_count || 0 }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150">
@@ -107,11 +120,11 @@
         <div class="card-image">
           <img :src="attraction.cover_image || attraction.coverImage || '/placeholder.jpg'" :alt="attraction.name" />
           <div class="image-overlay">
-            <div class="overlay-rating" v-if="attraction.rating">
+            <div class="overlay-rating" v-if="attraction.rating_percentage">
               <svg viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
               </svg>
-              <span>{{ attraction.rating.toFixed(1) }}</span>
+              <span>{{ (attraction.rating_percentage * 100).toFixed(0) }}%</span>
             </div>
             <div class="category-badge">{{ getCategoryLabel(attraction.category) }}</div>
           </div>
@@ -138,7 +151,13 @@
               <svg viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"/>
               </svg>
-              <span>{{ attraction.commentCount || 0 }}</span>
+              <span>{{ attraction.guide_count || 0 }} 攻略</span>
+            </div>
+            <div class="stat-item" v-if="attraction.level">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span>{{ attraction.level }}</span>
             </div>
           </div>
         </div>
@@ -256,13 +275,8 @@ async function deleteAttraction(row) {
 }
 
 function getCategoryLabel(category) {
-  const labels = {
-    'NATURE': '自然风光',
-    'HISTORY': '人文古迹',
-    'THEME': '主题乐园',
-    'OTHER': '其他'
-  }
-  return labels[category] || category
+  // 后端返回中文值，直接返回
+  return category
 }
 
 function formatNumber(num) {
@@ -460,24 +474,37 @@ onMounted(fetchAttractions)
   font-weight: 600;
 }
 
-.category-tag.NATURE {
+.category-tag.自然风光 {
   background: rgba(34, 197, 94, 0.15);
   color: #22c55e;
 }
 
-.category-tag.HISTORY {
+.category-tag.人文古迹 {
   background: rgba(168, 85, 247, 0.15);
   color: #a855f7;
 }
 
-.category-tag.THEME {
+.category-tag.主题乐园 {
   background: rgba(249, 115, 22, 0.15);
   color: #f97316;
 }
 
-.category-tag.OTHER {
+.category-tag.其他 {
   background: rgba(107, 114, 128, 0.15);
   color: #6b7280;
+}
+
+.level-badge {
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+  color: #9a3412;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.text-gray {
+  color: #9ca3af;
 }
 
 .rating-cell {
