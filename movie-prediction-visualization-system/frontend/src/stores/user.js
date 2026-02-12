@@ -80,6 +80,11 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('access_token', newToken)
   }
 
+  function setUser(userData) {
+    user.value = userData
+    localStorage.setItem('user', JSON.stringify(userData))
+  }
+
   return {
     // 状态
     token,
@@ -93,6 +98,7 @@ export const useUserStore = defineStore('user', () => {
     doLogin,
     doLogout,
     fetchCurrentUser,
-    setToken
+    setToken,
+    setUser
   }
 })
