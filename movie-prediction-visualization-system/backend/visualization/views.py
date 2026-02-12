@@ -4,8 +4,10 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from django.db.models import Sum, Count, Avg
 from django.db.models.functions import Coalesce
+from django.db.models import DecimalField, Value
 from django.utils import timezone
 from datetime import timedelta
+from decimal import Decimal
 
 from boxoffice.models import BoxOfficeRecord
 from movies.models import Movie
@@ -112,7 +114,7 @@ class TodayBoxOfficeView(APIView):
         stats = BoxOfficeRecord.objects.filter(
             record_date=today
         ).aggregate(
-            total_box_office=Coalesce(Sum('daily_box_office'), 0),
+            total_box_office=Coalesce(Sum('daily_box_office'), Value(Decimal('0'), output_field=DecimalField())),
             total_screening_count=Coalesce(Sum('screening_count'), 0),
             total_audience_count=Coalesce(Sum('audience_count'), 0)
         )
@@ -236,8 +238,8 @@ class TypeBoxOfficeView(APIView):
         """获取各类型票房占比"""
         # 计算总票房
         total = BoxOfficeRecord.objects.aggregate(
-            total=Coalesce(Sum('daily_box_office'), 0)
-        )['total'] or 1
+            total=Coalesce(Sum('daily_box_office'), Value(Decimal('0'), output_field=DecimalField()))
+        )['total'] or Decimal('1')
 
         # 按类型聚合
         type_stats = BoxOfficeRecord.objects.filter(
@@ -316,7 +318,7 @@ class RegionBoxOfficeView(APIView):
             box_office = BoxOfficeRecord.objects.filter(
                 cinema__region=province
             ).aggregate(
-                total=Coalesce(Sum('daily_box_office'), 0)
+                total=Coalesce(Sum('daily_box_office'), Value(Decimal('0'), output_field=DecimalField()))
             )['total']
 
             result.append({
@@ -431,9 +433,9 @@ class TimeSeriesView(APIView):
 
         elif period == 'week':
             # 按周聚合
-            from django.db.models import Week
+            from django.db.models.functions import ExtractWeek
             weekly_stats = queryset.annotate(
-                week=Week('record_date')
+                week=ExtractWeek('record_date')
             ).values('week').annotate(
                 total_box_office=Sum('daily_box_office'),
                 total_screening_count=Sum('screening_count'),
@@ -541,7 +543,7 @@ class DashboardView(APIView):
         today_stats = BoxOfficeRecord.objects.filter(
             record_date=today
         ).aggregate(
-            total=Coalesce(Sum('daily_box_office'), 0)
+            total=Coalesce(Sum('daily_box_office'), Value(Decimal('0'), output_field=DecimalField()))
         )
 
         # 本周冠军

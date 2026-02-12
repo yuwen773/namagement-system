@@ -22,7 +22,10 @@ class RegionViewSet(viewsets.ModelViewSet):
     地域管理视图集
 
     提供地域（省份/城市）的完整 CRUD 操作，支持省/市两级层级管理。
-    默认仅管理员可访问，用于管理系统中所有地域信息。
+
+    **权限说明：**
+    - 查询（list/retrieve/provinces/cities）：所有登录用户可访问
+    - 修改（create/update/partial_update/destroy）：仅管理员可访问
 
     功能包括：
     - 地域列表查询（支持按层级、父级筛选，支持树形结构返回）
@@ -34,7 +37,17 @@ class RegionViewSet(viewsets.ModelViewSet):
     - 获取指定省份下的所有城市
     """
     queryset = Region.objects.prefetch_related('children').all()
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        """
+        根据操作类型返回不同的权限要求：
+        - list/retrieve/provinces/cities: 所有登录用户可访问
+        - create/update/partial_update/destroy: 仅管理员可访问
+        """
+        if self.action in ['list', 'retrieve', 'provinces', 'cities']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAdmin()]
 
     def get_serializer_class(self):
         """根据操作类型返回不同的序列化器"""
@@ -497,7 +510,10 @@ class CinemaViewSet(viewsets.ModelViewSet):
     影院管理视图集
 
     提供影院的完整 CRUD 操作，支持按地域、省份、城市等多种方式筛选影院。
-    默认仅管理员可访问，用于管理系统中所有影院信息。
+
+    **权限说明：**
+    - 查询（list/retrieve/active/by_region）：所有登录用户可访问
+    - 修改（create/update/partial_update/destroy）：仅管理员可访问
 
     功能包括：
     - 影院列表查询（支持多维度筛选和排序）
@@ -509,7 +525,17 @@ class CinemaViewSet(viewsets.ModelViewSet):
     - 按地域统计影院数量
     """
     queryset = Cinema.objects.select_related('region', 'region__parent').all()
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        """
+        根据操作类型返回不同的权限要求：
+        - list/retrieve/active/by_region: 所有登录用户可访问
+        - create/update/partial_update/destroy: 仅管理员可访问
+        """
+        if self.action in ['list', 'retrieve', 'active', 'by_region']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAdmin()]
 
     def get_serializer_class(self):
         """根据操作类型返回不同的序列化器"""

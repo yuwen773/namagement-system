@@ -24,7 +24,11 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
     """
     票房记录视图集
 
-    提供完整的 CRUD 操作和批量操作功能，仅限管理员访问。
+    提供完整的 CRUD 操作和批量操作功能。
+
+    **权限说明：**
+    - 查询（list/retrieve）：所有登录用户可访问
+    - 修改（create/update/partial_update/destroy/batch_delete/batch_input）：仅管理员可访问
 
     **操作列表：**
     - `list`: 获取票房记录列表（支持日期/影片/影院/地域筛选）
@@ -36,8 +40,6 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
     - `batch_delete`: 批量删除票房记录
     - `batch_input`: 批量录入票房记录（每次最多100条）
 
-    **权限要求：** 需要登录且具有管理员权限
-
     **筛选字段：**
     - movie: 影片ID
     - cinema: 影院ID
@@ -48,8 +50,18 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
     - max_daily_box_office: 最高日票房
     """
     queryset = BoxOfficeRecord.objects.select_related('movie', 'cinema', 'cinema__region').all()
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated]
     filterset_class = BoxOfficeRecordFilter
+
+    def get_permissions(self):
+        """
+        根据操作类型返回不同的权限要求：
+        - list/retrieve: 所有登录用户可访问
+        - create/update/partial_update/destroy/batch_delete/batch_input: 仅管理员可访问
+        """
+        if self.action in ['list', 'retrieve']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAdmin()]
     ordering_fields = ['record_date', 'daily_box_office', 'screening_count', 'audience_count']
     ordering = ['-record_date', '-created_at']
 
