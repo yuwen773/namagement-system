@@ -94,7 +94,11 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            return Response({
+                'code': 0,
+                'data': serializer.data,
+                'total': self.paginator.page.paginator.count
+            })
 
         serializer = self.get_serializer(queryset, many=True)
         return Response({

@@ -562,7 +562,11 @@ class UserViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            return Response({
+                'code': 0,
+                'data': serializer.data,
+                'total': self.paginator.page.paginator.count
+            })
 
         serializer = self.get_serializer(queryset, many=True)
         return Response({
@@ -675,6 +679,87 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     @action(detail=True, methods=['post'])
     def reset_password(self, request, pk=None):
+        """
+        重置用户密码
+
+        Args:
+            request: 包含新密码的请求对象
+            pk: 用户ID
+
+        Returns:
+            Response: 返回操作结果
+        """
+        user = self.get_object()
+        new_password = request.data.get('new_password', '123456')
+        user.set_password(new_password)
+        user.save()
+        return Response({
+            'code': 0,
+            'message': f'用户 {user.username} 密码已重置为: {new_password}'
+        })
+
+    @extend_schema(
+        summary='更新用户角色',
+        description='''
+        更新指定用户的角色。
+
+        **请求参数：**
+        - role: 新角色（ADMIN-管理员, USER-普通用户）
+
+        **影响：**
+        - 用户的权限会立即改变
+        - 角色变更后需要重新登录
+
+        **权限要求：**
+        需要管理员权限
+        ''',
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+        },
+        tags=['用户管理'],
+        examples=[
+            OpenApiExample(
+                '更新角色',
+                value={'role': 'ADMIN'}
+            ),
+        ]
+    )
+    @action(detail=True, methods=['put'])
+    def role(self, request, pk=None):
+        """
+        更新用户角色
+
+        Args:
+            request: 包含新角色的请求对象
+            pk: 用户ID
+
+        Returns:
+            Response: 返回操作结果
+        """
+        user = self.get_object()
+        new_role = request.data.get('role')
+
+        if not new_role:
+            return Response({
+                'code': -1,
+                'message': '角色不能为空'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_role not in ['ADMIN', 'USER']:
+            return Response({
+                'code': -1,
+                'message': '角色必须是 ADMIN 或 USER'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user.role = new_role
+        user.save()
+        return Response({
+            'code': 0,
+            'message': f'用户 {user.username} 角色已更新为 {new_role}',
+            'data': UserSerializer(user).data
+        })
         """
         重置用户密码
 
