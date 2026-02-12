@@ -1,4 +1,4 @@
-from django.db.models import Count, Avg, Q, Sum
+from django.db.models import Count, Avg, Q, Sum, Prefetch
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -29,31 +29,52 @@ class AttractionHotView(APIView):
     )
     def get(self, request):
         """获取热门景点排行 TOP 10"""
-        attractions = Attraction.objects.filter(is_deleted=False)
+        # 只获取必要的字段，按浏览量排序取前10
+        attractions = Attraction.objects.filter(
+            is_deleted=False
+        ).values(
+            'id', 'name', 'cover_image', 'category', 'region', 'view_count'
+        ).order_by('-view_count')[:50]
 
-        # 计算热度值并排序
+        # 获取这50个景点的评论统计
+        attraction_ids = [a['id'] for a in attractions]
+
+        # 批量查询评论数和平均评分
+        from django.db.models import F
+        comment_stats = Comment.objects.filter(
+            attraction_id__in=attraction_ids,
+            status='APPROVED',
+            is_deleted=False
+        ).values('attraction_id').annotate(
+            comment_count=Count('id'),
+            avg_rating=Avg('rating')
+        )
+
+        # 转换为字典方便查找
+        comment_dict = {item['attraction_id']: item for item in comment_stats}
+
         result = []
         for attr in attractions:
-            view_count = attr.view_count
-            comment_count = attr.comments.filter(status='APPROVED', is_deleted=False).count()
-            comments = attr.comments.filter(status='APPROVED', is_deleted=False)
-            avg_rating = comments.aggregate(avg=Avg('rating'))['avg'] or 0
+            view_count = attr['view_count'] or 0
+            stats = comment_dict.get(attr['id'], {})
+            comment_count = stats.get('comment_count', 0)
+            avg_rating = float(stats.get('avg_rating') or 0)
 
             hot_score = (view_count * 0.2) + (comment_count * 0.3) + (avg_rating * view_count * 0.5)
 
             result.append({
-                'id': attr.id,
-                'name': attr.name,
-                'cover_image': attr.cover_image.url if attr.cover_image else None,
-                'category': attr.category,
-                'region': attr.region,
+                'id': attr['id'],
+                'name': attr['name'],
+                'cover_image': attr['cover_image'].url if attr['cover_image'] else None,
+                'category': attr['category'],
+                'region': attr['region'],
                 'view_count': view_count,
                 'comment_count': comment_count,
                 'avg_rating': round(avg_rating, 1),
                 'hot_score': round(hot_score, 1)
             })
 
-        # 按热度值降序排序，取前10
+        # 按热度值排序取前10
         result.sort(key=lambda x: x['hot_score'], reverse=True)
         result = result[:10]
 
@@ -73,7 +94,6 @@ class MonthlyReportView(APIView):
     )
     def get(self, request):
         """获取月度数据报告"""
-        # 获取最近6个月的数据
         from datetime import timedelta
 
         now = timezone.now()
@@ -82,27 +102,29 @@ class MonthlyReportView(APIView):
         for i in range(5, -1, -1):
             month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             if i > 0:
-                month_start = month_start - timedelta(days=1)
+                month_start = month_start - timedelta(days=month_start.day)
                 month_start = month_start.replace(day=1)
 
-            month_end = month_start + timedelta(days=32)
-            month_end = month_end.replace(day=1)
+            month_end = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
 
             month_name = month_start.strftime('%Y-%m')
 
             new_users = UserProfile.objects.filter(
                 created_at__gte=month_start,
-                created_at__lt=month_end
+                created_at__lt=month_end,
+                is_deleted=False
             ).count()
 
             new_attractions = Attraction.objects.filter(
                 created_at__gte=month_start,
-                created_at__lt=month_end
+                created_at__lt=month_end,
+                is_deleted=False
             ).count()
 
             new_comments = Comment.objects.filter(
                 created_at__gte=month_start,
-                created_at__lt=month_end
+                created_at__lt=month_end,
+                is_deleted=False
             ).count()
 
             months_data.append({
