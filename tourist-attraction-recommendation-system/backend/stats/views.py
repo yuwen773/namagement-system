@@ -1,4 +1,4 @@
-from django.db.models import Count, Avg, Q
+from django.db.models import Count, Avg, Q, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -136,6 +136,10 @@ class DashboardView(APIView):
         total_users = UserProfile.objects.filter(is_deleted=False).count()
         total_attractions = Attraction.objects.filter(is_deleted=False).count()
         total_comments = Comment.objects.filter(is_deleted=False).count()
+        # 总浏览量（所有景点的浏览次数之和）
+        total_views = Attraction.objects.filter(is_deleted=False).aggregate(
+            total=Sum('view_count')
+        )['total'] or 0
 
         # 本月新增
         monthly_new_users = UserProfile.objects.filter(
@@ -152,6 +156,7 @@ class DashboardView(APIView):
             'total_users': total_users,
             'total_attractions': total_attractions,
             'total_comments': total_comments,
+            'total_views': total_views,
             'monthly_new_users': monthly_new_users,
             'monthly_new_attractions': monthly_new_attractions,
             'monthly_new_comments': monthly_new_comments
