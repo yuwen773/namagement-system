@@ -14,7 +14,8 @@ def parse_json_safe(json_str):
     if not json_str or json_str == 'NaN':
         return []
     try:
-        return json.loads(json_str)
+        result = json.loads(json_str)
+        return result if result is not None else []  # 处理 null 返回 None 的情况
     except (json.JSONDecodeError, TypeError):
         return []
 
@@ -23,7 +24,7 @@ def parse_json_safe(json_str):
 def is_valid_movie(row):
     """验证电影数据是否有效"""
     # 过滤成人电影
-    if row.get('adult') == True:
+    if row.get('adult'):
         return False, "成人电影"
 
     # 过滤已取消电影
@@ -73,8 +74,13 @@ def convert_revenue_to_rmb(usd_revenue):
     票房单位转换：美元 -> 人民币万元
     汇率：1美元 = 7人民币
     """
-    if usd_revenue and float(usd_revenue) > 0:
-        return round(Decimal(str(usd_revenue)) / Decimal('7') / Decimal('10000'), 2)
+    if usd_revenue:
+        try:
+            amount = float(usd_revenue)
+            if amount > 0:
+                return round(Decimal(str(amount)) / Decimal('7') / Decimal('10000'), 2)
+        except (ValueError, TypeError):
+            pass
     return Decimal('0.00')
 
 
