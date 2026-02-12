@@ -97,6 +97,10 @@
               还没有账号？
               <router-link to="/register" class="register-link">立即注册</router-link>
             </p>
+            <div class="admin-entry">
+              <span class="divider">|</span>
+              <router-link to="/admin-login" class="admin-link">管理员入口</router-link>
+            </div>
           </div>
         </div>
       </div>
@@ -527,6 +531,30 @@ onMounted(() => {
 .register-link:hover {
   color: #ea580c;
   text-decoration: underline;
+}
+
+.admin-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.divider {
+  color: #d1d5db;
+  margin: 0 12px;
+}
+
+.admin-link {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.admin-link:hover {
+  color: #1e3a5f;
 }
 
 /* Responsive */
