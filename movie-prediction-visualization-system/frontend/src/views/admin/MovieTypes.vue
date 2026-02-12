@@ -539,6 +539,7 @@ onMounted(() => {
 
 /* 按钮样式 */
 .action-btn {
+   margin-left: 52px;
   padding: 12px 24px;
   background: linear-gradient(135deg, #f59e0b, #eab308);
   border: none;
