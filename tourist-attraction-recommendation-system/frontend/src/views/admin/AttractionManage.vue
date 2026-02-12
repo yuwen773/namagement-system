@@ -381,7 +381,7 @@ onMounted(fetchAttractions)
 }
 
 .search-input {
-  width: 100%;
+  width: 80%;
   padding: 14px 16px 14px 48px;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
