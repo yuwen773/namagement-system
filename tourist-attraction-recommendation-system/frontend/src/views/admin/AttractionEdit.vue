@@ -48,25 +48,25 @@
 
             <el-form-item label="景点类别" prop="category">
               <el-select v-model="form.category" placeholder="选择类别" size="large" class="full-width">
-                <el-option label="自然风光" value="NATURE">
+                <el-option label="自然风光" value="自然风光">
                   <div class="option-item">
                     <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
                     <span>自然风光</span>
                   </div>
                 </el-option>
-                <el-option label="人文古迹" value="HISTORY">
+                <el-option label="人文古迹" value="人文古迹">
                   <div class="option-item">
                     <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"/></svg>
                     <span>人文古迹</span>
                   </div>
                 </el-option>
-                <el-option label="主题乐园" value="THEME">
+                <el-option label="主题乐园" value="主题乐园">
                   <div class="option-item">
                     <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.699-3.181a1 1 0 011.827 1.035L17.13 7.84l3.928.786a1 1 0 01.17 1.933l-3.486 1.243 1.037 3.877a1 1 0 01-1.558 1.075l-3.073-2.384L11.582 15.5a1 1 0 01-1.164 0l-2.436-1.8-3.073 2.384a1 1 0 01-1.558-1.075l1.037-3.877-3.486-1.243a1 1 0 01.17-1.933l3.928-.786 1.094-4.081a1 1 0 011.827-1.035L8.046 4.323V3a1 1 0 011-1z" clip-rule="evenodd"/></svg>
                     <span>主题乐园</span>
                   </div>
                 </el-option>
-                <el-option label="其他" value="OTHER">
+                <el-option label="其他" value="其他">
                   <div class="option-item">
                     <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 4.5A2.5 2.5 0 014.5 2h11a2.5 2.5 0 010 5h-11A2.5 2.5 0 012 4.5zM2.5 9.5A1.5 1.5 0 014 8h12a1.5 1.5 0 010 3H4a1.5 1.5 0 01-1.5-1.5zm0 5A1.5 1.5 0 014 13h12a1.5 1.5 0 010 3H4a1.5 1.5 0 01-1.5-1.5z"/></svg>
                     <span>其他</span>
@@ -83,12 +83,56 @@
               <el-input v-model="form.address" placeholder="请输入详细地址" size="large" />
             </el-form-item>
 
-            <el-form-item label="开放时间" prop="openingHours">
-              <el-input v-model="form.openingHours" placeholder="如: 9:00-18:00" size="large" />
+            <el-form-item label="开放时间" prop="opening_hours">
+              <el-input v-model="form.opening_hours" placeholder="如: 9:00-18:00" size="large" />
             </el-form-item>
 
-            <el-form-item label="门票价格" prop="price">
-              <el-input-number v-model="form.price" :min="0" :precision="2" size="large" class="full-width" />
+            <el-form-item label="景区等级" prop="level">
+              <el-select v-model="form.level" placeholder="选择景区等级" size="large" class="full-width" clearable>
+                <el-option label="5A" value="5A" />
+                <el-option label="4A" value="4A" />
+                <el-option label="3A" value="3A" />
+                <el-option label="2A" value="2A" />
+                <el-option label="1A" value="1A" />
+              </el-select>
+            </el-form-item>
+          </div>
+        </div>
+
+        <!-- Location & Data Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="section-title">位置与数据</h3>
+              <p class="section-subtitle">填写景点地理位置和评分数据</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <el-form-item label="经度" prop="longitude">
+              <el-input-number v-model="form.longitude" :precision="6" :step="0.0001" :min="-180" :max="180" size="large" class="full-width" placeholder="如: 116.4074" />
+            </el-form-item>
+
+            <el-form-item label="纬度" prop="latitude">
+              <el-input-number v-model="form.latitude" :precision="6" :step="0.0001" :min="-90" :max="90" size="large" class="full-width" placeholder="如: 39.9042" />
+            </el-form-item>
+
+            <el-form-item label="城市排名" prop="ranking">
+              <el-input-number v-model="form.ranking" :min="1" size="large" class="full-width" placeholder="在城市的排名" />
+            </el-form-item>
+
+            <el-form-item label="好评率" prop="rating_percentage">
+              <el-input-number v-model="form.rating_percentage" :min="0" :max="1" :step="0.01" :precision="2" size="large" class="full-width" placeholder="0-1 之间的小数" />
+            </el-form-item>
+
+            <el-form-item label="攻略数量" prop="guide_count">
+              <el-input-number v-model="form.guide_count" :min="0" size="large" class="full-width" />
             </el-form-item>
           </div>
         </div>
@@ -139,7 +183,7 @@
             </div>
           </div>
 
-          <el-form-item label="封面图片" prop="coverImage">
+          <el-form-item label="封面图片" prop="cover_image">
             <div class="upload-wrapper">
               <el-upload
                 action="/api/attractions/upload/"
@@ -149,8 +193,8 @@
                 drag
                 class="cover-upload"
               >
-                <div v-if="form.coverImage" class="preview-image">
-                  <img :src="form.coverImage" alt="封面预览" />
+                <div v-if="form.cover_image" class="preview-image">
+                  <img :src="form.cover_image" alt="封面预览" />
                   <div class="preview-overlay">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -217,9 +261,14 @@ const form = reactive({
   category: '',
   region: '',
   address: '',
-  openingHours: '',
-  price: 0,
-  coverImage: '',
+  opening_hours: '',
+  level: '',
+  longitude: null,
+  latitude: null,
+  ranking: null,
+  rating_percentage: null,
+  guide_count: 0,
+  cover_image: '',
   description: ''
 })
 
@@ -256,7 +305,7 @@ function beforeUpload(file) {
 }
 
 function handleCoverSuccess(res) {
-  form.coverImage = res.data?.url || res.data
+  form.cover_image = res.data?.url || res.data
 }
 
 async function saveAttraction() {
