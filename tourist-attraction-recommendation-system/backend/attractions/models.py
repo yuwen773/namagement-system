@@ -35,6 +35,12 @@ class Attraction(models.Model):
     class Meta:
         db_table = 'attractions'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['category', 'is_deleted']),  # 推荐查询优化
+            models.Index(fields=['region', 'category']),  # 相似推荐优化
+            models.Index(fields=['view_count']),  # 热度排序优化
+            models.Index(fields=['is_deleted']),  # 过滤已删除
+        ]
 
     def __str__(self):
         return self.name

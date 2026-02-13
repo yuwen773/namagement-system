@@ -22,6 +22,11 @@ class Comment(models.Model):
     class Meta:
         db_table = 'comments'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['attraction', 'status', 'is_deleted']),  # 评论统计优化
+            models.Index(fields=['user', 'attraction', 'status']),  # 个性化推荐优化
+            models.Index(fields=['status', 'is_deleted']),  # 过滤已删除评论
+        ]
 
     def __str__(self):
         return f'{self.user.username}@{self.attraction.name}'
@@ -36,6 +41,9 @@ class Favorite(models.Model):
         db_table = 'favorites'
         unique_together = ['user', 'attraction']
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'attraction']),  # 个性化推荐优化
+        ]
 
     def __str__(self):
         return f'{self.user.username} favorite {self.attraction.name}'
