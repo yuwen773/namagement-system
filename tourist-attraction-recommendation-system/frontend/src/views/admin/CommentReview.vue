@@ -21,9 +21,8 @@
       </div>
     </div>
 
-    <!-- Filter Tabs with View Toggle -->
+    <!-- Filter Tabs -->
     <div class="filter-tabs">
-      <ViewToggle v-model="viewMode" />
       <button
         v-for="tab in filterTabs.value"
         :key="tab.key"
@@ -36,6 +35,7 @@
         <span>{{ tab.label }}</span>
         <span class="tab-count">{{ tab.count }}</span>
       </button>
+      <ViewToggle v-model="viewMode" class="view-toggle-wrapper" />
     </div>
 
     <!-- List View -->
@@ -358,6 +358,11 @@ watch(activeFilter, () => {
   gap: 8px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.view-toggle-wrapper {
+  margin-left: auto;
 }
 
 .filter-tab {
