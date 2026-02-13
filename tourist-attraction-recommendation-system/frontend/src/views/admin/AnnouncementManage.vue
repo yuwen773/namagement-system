@@ -56,9 +56,11 @@
       <div v-if="total > 0" class="pagination-section">
         <el-pagination
           v-model:current-page="page"
-          :page-size="10"
-          layout="prev, pager, next"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
           :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
           @current-change="fetchAnnouncements"
         />
       </div>
@@ -178,6 +180,12 @@ async function fetchAnnouncements() {
   } finally {
     loading.value = false
   }
+}
+
+function handleSizeChange(val) {
+  pageSize.value = val
+  page.value = 1
+  fetchAnnouncements()
 }
 
 function openDialog() {

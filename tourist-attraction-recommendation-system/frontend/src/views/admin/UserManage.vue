@@ -305,6 +305,12 @@ async function fetchUsers() {
   }
 }
 
+function handleSizeChange(val) {
+  pageSize.value = val
+  page.value = 1
+  fetchUsers()
+}
+
 async function updateStatus(user) {
   try {
     await request.put(`/statistics/users/${user.id}/status/`, { is_active: user.is_active })

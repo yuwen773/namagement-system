@@ -197,12 +197,14 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="total > 10" class="pagination-section">
+    <div v-if="total > 0" class="pagination-section">
       <el-pagination
         v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
         :total="total"
-        :page-size="10"
-        layout="prev, pager, next"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
         @current-change="fetchAttractions"
       />
     </div>
@@ -255,6 +257,12 @@ async function fetchAttractions() {
   } finally {
     loading.value = false
   }
+}
+
+function handleSizeChange(val) {
+  pageSize.value = val
+  page.value = 1
+  fetchAttractions()
 }
 
 async function deleteAttraction(row) {

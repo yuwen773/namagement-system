@@ -24,7 +24,7 @@
     <!-- Filter Tabs -->
     <div class="filter-tabs">
       <button
-        v-for="tab in filterTabs.value"
+        v-for="tab in filterTabs"
         :key="tab.key"
         :class="['filter-tab', { active: activeFilter === tab.key }]"
         @click="activeFilter = tab.key"
@@ -41,7 +41,7 @@
     <!-- List View -->
     <div v-if="viewMode === 'list'" v-loading="loading" class="list-view-container">
       <el-table :data="filteredComments" class="comments-table">
-        <el-table-column label="用户" width="150">
+        <el-table-column label="用户" min-width="150">
           <template #default="{ row }">
             <div class="table-user-cell">
               <div class="table-avatar">
@@ -51,7 +51,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="景点名称" width="180">
+        <el-table-column label="景点名称" min-width="180">
           <template #default="{ row }">
             <router-link :to="`/admin/attractions/${row.attraction_id}/edit`" class="table-link">
               {{ row.attraction_name || '未知景点' }}
@@ -67,7 +67,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="content" label="评论内容" width="300">
+        <el-table-column prop="content" label="评论内容" min-width="300">
           <template #default="{ row }">
             <span class="table-content">{{ truncateContent(row.content) }}</span>
           </template>
@@ -155,12 +155,14 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="total > 10" class="pagination-section">
+    <div v-if="total > 0" class="pagination-section">
       <el-pagination
         v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
         :total="total"
-        :page-size="10"
-        layout="prev, pager, next"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
         @current-change="fetchComments"
       />
     </div>
@@ -176,6 +178,7 @@ import ViewToggle from '@/components/ViewToggle.vue'
 const comments = ref([])
 const loading = ref(false)
 const page = ref(1)
+const pageSize = ref(10)
 const total = ref(0)
 const activeFilter = ref('PENDING') // 默认显示待审核
 const viewMode = ref('list') // 默认列表视图
@@ -198,7 +201,7 @@ async function fetchComments() {
   loading.value = true
   try {
     const res = await request.get('/comments/', {
-      params: { page: page.value, page_size: 50, status: activeFilter.value === 'all' ? undefined : activeFilter.value }
+      params: { page: page.value, page_size: pageSize.value, status: activeFilter.value === 'all' ? undefined : activeFilter.value }
     })
     comments.value = res.data || []
     total.value = res.total || 0
@@ -218,6 +221,12 @@ async function fetchComments() {
   } finally {
     loading.value = false
   }
+}
+
+function handleSizeChange(val) {
+  pageSize.value = val
+  page.value = 1
+  fetchComments()
 }
 
 async function review(comment, status) {
