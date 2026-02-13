@@ -65,7 +65,7 @@ class AttractionHotView(APIView):
             result.append({
                 'id': attr['id'],
                 'name': attr['name'],
-                'cover_image': attr['cover_image'].url if attr['cover_image'] else None,
+                'cover_image': attr['cover_image'] if attr['cover_image'] else None,
                 'category': attr['category'],
                 'region': attr['region'],
                 'view_count': view_count,

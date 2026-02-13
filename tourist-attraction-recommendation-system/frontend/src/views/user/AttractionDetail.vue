@@ -378,53 +378,24 @@ async function toggleFavorite() {
   }
 
   try {
-    if (isFavorite.value) {
-      console.log('Deleting favorite:', favoriteId.value, 'for attraction:', attraction.value.id)
-      await request.delete(`/comments/favorites/${favoriteId.value}/`)
+    const res = await request.post('/comments/favorites/', { attraction: attraction.value.id })
+    console.log('Toggle favorite response:', res.data)
+
+    // 根据后端返回的 action 字段更新状态
+    if (res.data.action === 'removed') {
+      // 取消收藏
       isFavorite.value = false
       favoriteId.value = null
       ElMessage.success('已取消收藏')
     } else {
-      const res = await request.post('/comments/favorites/', { attraction: attraction.value.id })
-      console.log('Created favorite:', res.data)
+      // 收藏成功
       isFavorite.value = true
       favoriteId.value = res.data.id
       ElMessage.success('收藏成功')
     }
   } catch (error) {
-    console.log('完整错误对象:', error)
     console.log('Favorite toggle error:', error.response?.status, error.response?.data)
-
-    // 如果收藏已存在(400)或不存在(404)，与服务器同步
-    // 注意：请求拦截器已经显示了错误消息
-    if (error.response?.status === 400 || error.response?.status === 404) {
-      console.log('Syncing favorite state with server...')
-      console.log('Current attraction:', attraction.value.id, 'type:', typeof attraction.value.id)
-      try {
-        const favRes = await request.get('/comments/favorites/my/')
-        const favorites = favRes.data || []
-        console.log('Server favorites:', favorites)
-        console.log('Looking for attraction with ID:', attraction.value.id)
-        const currentFav = favorites.find(f => {
-          console.log('Comparing:', f.attraction, 'with', attraction.value.id, '==', f.attraction == attraction.value.id)
-          return f.attraction == attraction.value.id
-        })
-        console.log('Found favorite:', currentFav)
-        isFavorite.value = !!currentFav
-        favoriteId.value = currentFav?.id || null
-        console.log('After sync - isFavorite:', isFavorite.value, 'favoriteId:', favoriteId.value)
-      } catch (syncError) {
-        console.error('Failed to sync favorites:', syncError)
-        // 如果同步失败，重置为安全状态
-        isFavorite.value = false
-        favoriteId.value = null
-      }
-    } else {
-      // 其他错误，也重置状态以防止不一致
-      console.log('其他错误，重置收藏状态')
-      isFavorite.value = false
-      favoriteId.value = null
-    }
+    ElMessage.error('操作失败')
   }
 }
 

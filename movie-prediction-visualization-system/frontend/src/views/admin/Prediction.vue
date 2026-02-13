@@ -123,7 +123,13 @@ const handleExecutePrediction = async () => {
     const historyRes = await getMovieHistory(queryParams.movieId, queryParams.historyDays)
 
     predictionData.value = predictionRes.data
-    historyData.value = historyRes.data?.history || []
+    // 适配后端返回的字段名：date -> record_date, box_office -> daily_box_office
+    historyData.value = (historyRes.data?.history || []).map(item => ({
+      record_date: item.date,
+      daily_box_office: item.box_office,
+      screening_count: item.screening_count,
+      audience_count: item.audience_count
+    }))
 
     // 计算统计数据
     calculateStats()
@@ -150,7 +156,7 @@ const calculateStats = () => {
   const historySum = historyData.value.reduce((sum, item) => sum + (item.daily_box_office || 0), 0)
   const avgDaily = historySum / historyData.value.length
 
-  // 计算预测总票房
+  // 计算预测总票房 - 适配后端返回格式 [{ day: 1, predicted_box_office: 225.14 }]
   let predictedTotal = 0
   let predictions = []
 
@@ -158,11 +164,15 @@ const calculateStats = () => {
     // 综合预测 - 取两种算法的平均值
     const lrPredictions = data.linear_regression?.predictions || []
     const maPredictions = data.moving_average?.predictions || []
-    predictions = lrPredictions.map((val, i) => (val + (maPredictions[i] || 0)) / 2)
+    // 适配后端返回格式
+    const lrValues = lrPredictions.map(p => typeof p === 'object' ? p.predicted_box_office : p)
+    const maValues = maPredictions.map(p => typeof p === 'object' ? p.predicted_box_office : p)
+    predictions = lrValues.map((val, i) => (val + (maValues[i] || 0)) / 2)
   } else if (data.algorithm === 'linear_regression') {
-    predictions = data.predictions || []
+    // 适配后端返回格式 [{ day: 1, predicted_box_office: 225.14 }]
+    predictions = (data.predictions || []).map(p => typeof p === 'object' ? p.predicted_box_office : p)
   } else {
-    predictions = data.predictions || []
+    predictions = (data.predictions || []).map(p => typeof p === 'object' ? p.predicted_box_office : p)
   }
 
   predictedTotal = predictions.reduce((sum, val) => sum + (val || 0), 0)
@@ -213,31 +223,36 @@ const renderChart = () => {
     historySeries.push((item.daily_box_office || 0) / 10000)
   })
 
-  // 预测数据
+  // 预测数据 - 适配后端返回格式 [{ day: 1, predicted_box_office: 225.14 }]
   const data = predictionData.value
   const predictDays = queryParams.predictDays
 
   if (data.algorithm === 'combined') {
     const lrPred = data.linear_regression?.predictions || []
     const maPred = data.moving_average?.predictions || []
+    // 适配后端返回格式
+    const lrValues = lrPred.map(p => typeof p === 'object' ? p.predicted_box_office : p)
+    const maValues = maPred.map(p => typeof p === 'object' ? p.predicted_box_office : p)
 
     for (let i = 0; i < predictDays; i++) {
       const date = new Date()
       date.setDate(date.getDate() + i + 1)
       dates.push(formatDateShort(date))
       historySeries.push(null)
-      lrPredictions.push((lrPred[i] || 0) / 10000)
-      maPredictions.push((maPred[i] || 0) / 10000)
+      lrPredictions.push((lrValues[i] || 0) / 10000)
+      maPredictions.push((maValues[i] || 0) / 10000)
     }
   } else {
     const predictions = data.predictions || []
+    // 适配后端返回格式 [{ day: 1, predicted_box_office: 225.14 }]
+    const predValues = predictions.map(p => typeof p === 'object' ? p.predicted_box_office : p)
 
     for (let i = 0; i < predictDays; i++) {
       const date = new Date()
       date.setDate(date.getDate() + i + 1)
       dates.push(formatDateShort(date))
       historySeries.push(null)
-      lrPredictions.push((predictions[i] || 0) / 10000)
+      lrPredictions.push((predValues[i] || 0) / 10000)
     }
   }
 

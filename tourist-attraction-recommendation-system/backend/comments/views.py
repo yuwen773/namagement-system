@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -143,6 +143,34 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        # 检查是否已经收藏过，如果是则取消收藏
+        attraction_id = request.data.get('attraction')
+        existing_favorite = Favorite.objects.filter(
+            user=request.user,
+            attraction_id=attraction_id
+        ).first()
+
+        if existing_favorite:
+            # 已收藏，执行取消收藏
+            existing_favorite.delete()
+            # 返回取消收藏后的响应
+            return Response({
+                'code': 0,
+                'data': {'action': 'removed', 'attraction': attraction_id},
+                'message': '已取消收藏'
+            })
+
+        # 未收藏，执行收藏
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'message': '收藏成功'
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def my(self, request):
