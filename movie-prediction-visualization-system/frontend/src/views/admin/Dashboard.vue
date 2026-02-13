@@ -2,10 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { getMovies } from '@/api/movie'
-import { getCinemas } from '@/api/cinema'
-import { getBoxOfficeRecords } from '@/api/boxoffice'
-import { getUsers } from '@/api/user'
+import { getOverviewStats } from '@/api/visualization'
 import { ElMessage } from 'element-plus'
 import CountUp from '@/components/CountUp.vue'
 import {
@@ -119,41 +116,22 @@ const statCards = [
 const loadStats = async () => {
   try {
     loading.value = true
-    const [moviesRes, cinemasRes, boxofficeRes, usersRes] = await Promise.all([
-      getMovies({ pageSize: 1 }),
-      getCinemas({ pageSize: 1 }),
-      getBoxOfficeRecords({ pageSize: 1 }),
-      getUsers({ pageSize: 1 })
-    ])
+    const res = await getOverviewStats()
 
-    // 计算累计票房
-    let totalBoxOffice = 0
-    if (boxofficeRes.total > 0) {
-      const allRecords = await getBoxOfficeRecords({ pageSize: 1000 })
-      totalBoxOffice = allRecords.data?.reduce((sum, record) => sum + (record.box_office || 0), 0) || 0
-    }
-
-    stats.value = {
-      movies: moviesRes.total || 0,
-      cinemas: cinemasRes.total || 0,
-      totalBoxOffice,
-      users: usersRes.total || 0
+    if (res.code === 0) {
+      stats.value = {
+        movies: res.data.total_movies || 0,
+        cinemas: res.data.total_cinemas || 0,
+        totalBoxOffice: res.data.total_box_office || 0,
+        users: res.data.total_users || 0
+      }
+      recentRecords.value = res.data.recent_records || []
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)
     ElMessage.error('加载统计数据失败')
   } finally {
     loading.value = false
-  }
-}
-
-// 加载最近票房记录
-const loadRecentRecords = async () => {
-  try {
-    const res = await getBoxOfficeRecords({ pageSize: 5, ordering: '-date' })
-    recentRecords.value = res.data || []
-  } catch (error) {
-    console.error('加载最近记录失败:', error)
   }
 }
 
@@ -203,7 +181,6 @@ const initialStats = {
 
 onMounted(() => {
   loadStats()
-  loadRecentRecords()
   updateTime()
   setInterval(updateTime, 1000)
 })
