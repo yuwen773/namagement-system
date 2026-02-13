@@ -17,18 +17,15 @@ class AttractionRecommendSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'address', 'category',
             'category_display', 'region', 'opening_hours', 'cover_image',
-            'view_count', 'hot_score', 'created_at'
+            'view_count', 'hot_score', 'created_at',
+            'rating_percentage', 'guide_count', 'ranking', 'level'
         ]
 
     def get_hot_score(self, obj):
         """获取热度分数"""
-        # 从上下文中获取已计算的 hot_score
-        hot_score = self.context.get('hot_score')
-        if hot_score is not None:
-            return hot_score
-        # 如果没有，动态计算
-        from .services import calculate_hot_score
-        return calculate_hot_score(obj)
+        # 从上下文中的 hot_scores 字典获取已计算的 hot_score
+        hot_scores = self.context.get('hot_scores', {})
+        return hot_scores.get(obj.id, 0.0)
 
     def to_representation(self, instance):
         """自定义输出"""
