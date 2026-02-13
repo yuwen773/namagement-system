@@ -65,3 +65,12 @@ export function getDashboardData(params) {
     params
   })
 }
+
+// 获取管理端概览统计数据
+export function getOverviewStats(params) {
+  return request({
+    url: '/visualization/stats/overview/',
+    method: 'get',
+    params
+  })
+}
