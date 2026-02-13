@@ -2,7 +2,7 @@
   <div v-if="attraction" class="attraction-detail-page">
     <!-- Hero Section -->
     <div class="hero-section">
-      <el-image :src="attraction.coverImage" fit="cover" class="hero-image" />
+      <el-image :src="attraction.cover_image" fit="cover" class="hero-image" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <div class="hero-badges">
@@ -11,7 +11,7 @@
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
-            <span>{{ attraction.rating || 4.5 }}</span>
+            <span>{{ attraction.rating_percentage ? (attraction.rating_percentage * 100).toFixed(0) + '%' : '暂无评分' }}</span>
           </div>
         </div>
         <button :class="['favorite-btn', { active: isFavorite }]" @click="toggleFavorite">
@@ -47,16 +47,9 @@
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
               </svg>
-              <span>{{ formatNumber(attraction.viewCount || 0) }} 浏览</span>
+              <span>{{ formatNumber(attraction.view_count || 0) }} 浏览</span>
             </div>
-            <div class="meta-item price-tag">
-              <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
-                <path d="M12 18V6"/>
-              </svg>
-              <span>{{ attraction.price ? `¥${attraction.price}` : '免费' }}</span>
-            </div>
+            <!-- Removed price tag as it is not in the model -->
           </div>
         </div>
 
@@ -71,7 +64,7 @@
             </div>
             <div class="info-content">
               <h3>开放时间</h3>
-              <p>{{ attraction.openingHours || '请以景区公告为准' }}</p>
+              <p>{{ attraction.opening_hours || '请以景区公告为准' }}</p>
             </div>
           </div>
 
@@ -83,7 +76,7 @@
             </div>
             <div class="info-content">
               <h3>咨询电话</h3>
-              <p>{{ attraction.phone || '暂无' }}</p>
+              <p>暂无</p>
             </div>
           </div>
 
@@ -249,12 +242,11 @@
               class="recommendation-item"
               @click="$router.push(`/attractions/${item.id}`)"
             >
-              <el-image :src="item.coverImage" fit="cover" class="recommendation-image" />
+              <el-image :src="item.cover_image" fit="cover" class="recommendation-image" />
               <div class="recommendation-info">
                 <h4>{{ item.name }}</h4>
                 <div class="recommendation-meta">
-                  <el-rate v-model="item.rating" disabled size="small" show-score />
-                  <span class="recommendation-price">{{ item.price ? `¥${item.price}` : '免费' }}</span>
+                  <el-rate :model-value="(item.rating_percentage || 0) * 5" disabled size="small" show-score text-color="#ff9900" score-template="{value}" />
                 </div>
               </div>
             </div>

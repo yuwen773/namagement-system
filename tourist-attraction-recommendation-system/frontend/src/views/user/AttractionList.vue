@@ -129,17 +129,25 @@
         @click="goToDetail(item.id)"
       >
         <div class="card-image-wrapper">
-          <el-image :src="item.coverImage" fit="cover" class="card-image" />
+          <el-image :src="item.cover_image" fit="cover" class="card-image" lazy>
+            <template #error>
+              <div class="image-slot">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </div>
+            </template>
+          </el-image>
           <div class="card-overlay">
             <div class="card-badge">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
-              {{ item.rating || 4.5 }}
+              {{ item.rating_percentage ? (item.rating_percentage * 100).toFixed(0) + '%' : '4.5' }}
             </div>
-            <div class="card-price">
-              {{ item.price ? `¥${item.price}` : '免费' }}
-            </div>
+            <!-- Removed price display as it's not in the data model -->
           </div>
           <div class="card-category-tag">
             {{ getCategoryLabel(item.category) }}
@@ -154,7 +162,7 @@
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
               <circle cx="12" cy="10" r="3"/>
             </svg>
-            <span>{{ item.address }}</span>
+            <span>{{ item.address || item.region }}</span>
           </div>
 
           <div class="card-meta">
@@ -163,13 +171,13 @@
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
               </svg>
-              {{ formatNumber(item.viewCount || 0) }}
+              {{ formatNumber(item.view_count || 0) }}
             </div>
             <div class="meta-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
-              {{ item.commentCount || 0 }}
+              {{ item.comment_count || 0 }}
             </div>
           </div>
 
