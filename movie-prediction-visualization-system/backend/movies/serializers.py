@@ -21,7 +21,7 @@ class MovieTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MovieType
-        fields = ['id', 'name', 'movie_count', 'created_at']
+        fields = ['id', 'name', 'description', 'movie_count', 'created_at']
         read_only_fields = ['id', 'created_at']
 
     def get_movie_count(self, obj):
@@ -101,12 +101,15 @@ class MovieListSerializer(serializers.ModelSerializer):
     - id: 影片ID
     - title: 影片标题
     - director: 导演
+    - actors: 主演
+    - type: 类型ID
     - type_name: 类型名称（从关联对象获取）
     - release_date: 上映日期
-    - status: 状态（RELEASED-已上映, COMING-即将上映）
+    - duration: 片长（分钟）
     - box_office_total: 累计票房
+    - status: 状态（RELEASED-已上映, COMING-即将上映）
 
-    用于影片列表展示，仅包含核心字段，减少数据传输量。
+    用于影片列表展示，包含核心字段，支持编辑功能。
     """
     type_name = serializers.CharField(
         source='type.name',
@@ -118,7 +121,8 @@ class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = [
-            'id', 'title', 'director', 'type_name', 'release_date', 'status', 'box_office_total'
+            'id', 'title', 'director', 'actors', 'type', 'type_name',
+            'release_date', 'duration', 'box_office_total', 'status'
         ]
 
 

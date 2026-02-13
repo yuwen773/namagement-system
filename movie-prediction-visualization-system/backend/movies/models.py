@@ -6,6 +6,7 @@ class MovieType(models.Model):
     """影片类型模型"""
 
     name = models.CharField('类型名称', max_length=50, unique=True)
+    description = models.TextField('类型描述', blank=True, null=True)
     created_at = models.DateTimeField('创建时间', default=timezone.now)
 
     class Meta:
