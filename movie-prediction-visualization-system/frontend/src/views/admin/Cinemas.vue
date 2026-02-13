@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus,
@@ -62,7 +62,9 @@ const form = reactive({
   name: '',
   address: '',
   phone: '',
-  region: null
+  region: null,
+  region_name: '',
+  parent_region_name: ''
 })
 
 const rules = {
@@ -280,7 +282,7 @@ const submitRegionForm = async () => {
 const loadData = async () => {
   tableLoading.value = true
   try {
-    const res = await getCinemas(queryParams)
+    const res = await getCinemas(queryParams, flatRegionList.value)
     tableData.value = res.data || []
     total.value = res.total || 0
   } catch (error) {
@@ -323,12 +325,16 @@ const handleAdd = () => {
 
 const handleEdit = async (row) => {
   dialogTitle.value = '编辑影院'
+  // region 可能是数字ID或对象，统一处理
+  const regionId = typeof row.region === 'number' ? row.region : (row.region?.id || row.region)
   Object.assign(form, {
     id: row.id,
     name: row.name,
     address: row.address,
     phone: row.phone || '',
-    region: row.region?.id || row.region
+    region: regionId,
+    region_name: row.region_name || '',
+    parent_region_name: row.parent_region_name || ''
   })
   dialogVisible.value = true
 }
@@ -363,6 +369,8 @@ const resetForm = () => {
   form.address = ''
   form.phone = ''
   form.region = null
+  form.region_name = ''
+  form.parent_region_name = ''
   if (formRef.value) {
     formRef.value.clearValidate()
   }
@@ -423,6 +431,16 @@ const getRegionPath = (region) => {
   }
   return path.join(' / ')
 }
+
+// 获取选中地域的显示名称
+const selectedRegionName = computed(() => {
+  if (!form.region) return ''
+  const region = flatRegionList.value.find(r => r.id === form.region)
+  if (region) {
+    return getRegionPath(region)
+  }
+  return ''
+})
 
 const getCinemaColor = (index) => {
   const colors = [
@@ -691,7 +709,7 @@ onMounted(() => {
                   <td class="py-4 px-6">
                     <span class="region-badge" :class="getCinemaColor(record.id || index)">
                       <Location class="w-3.5 h-3.5 mr-1" />
-                      {{ getRegionPath(record.region) }}
+                      {{ record.parent_region_name ? record.parent_region_name + ' / ' : '' }}{{ record.region_name || '-' }}
                     </span>
                   </td>
                   <td class="py-4 px-6 text-center">
@@ -798,6 +816,7 @@ onMounted(() => {
             class="form-input"
             popper-class="cinema-select-dropdown"
             style="width: 100%"
+            :filter-method="(val) => val"
           >
             <el-option
               v-for="region in flatRegionList"
@@ -805,6 +824,14 @@ onMounted(() => {
               :label="getRegionPath(region)"
               :value="region.id"
             />
+            <!-- 编辑时如果地域列表未加载，显示后端返回的地域信息 -->
+            <el-option
+              v-if="form.id && !flatRegionList.find(r => r.id === form.region) && form.region"
+              :label="form.region_name ? (form.parent_region_name ? form.parent_region_name + ' / ' + form.region_name : form.region_name) : '地域 ID: ' + form.region"
+              :value="form.region"
+            >
+              <span class="text-slate-400">{{ form.parent_region_name ? form.parent_region_name + ' / ' : '' }}{{ form.region_name || '地域 ID: ' + form.region }}</span>
+            </el-option>
           </el-select>
         </div>
       </div>
