@@ -641,10 +641,10 @@ class OverviewStatsView(APIView):
         # 2. 影院总数
         total_cinemas = Cinema.objects.count()
 
-        # 3. 累计票房（后端直接计算，避免传输大量数据）
-        total_box_office = BoxOfficeRecord.objects.aggregate(
-            total=Coalesce(Sum('daily_box_office'), Value(Decimal('0'), output_field=DecimalField()))
-        )['total']
+        # 3. 累计票房（从Movie表获取，比聚合580万条记录快很多）
+        total_box_office = Movie.objects.aggregate(
+            total=Coalesce(Sum('box_office_total'), Value(Decimal('0'), output_field=DecimalField()))
+        )['total'] * 10000  # 转换万元到元
 
         # 4. 用户总数
         total_users = User.objects.count()
