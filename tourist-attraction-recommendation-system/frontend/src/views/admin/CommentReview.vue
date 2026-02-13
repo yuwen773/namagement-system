@@ -45,16 +45,16 @@
           <template #default="{ row }">
             <div class="table-user-cell">
               <div class="table-avatar">
-                {{ row.user?.realName?.charAt(0) || row.user?.username?.charAt(0) || 'U' }}
+                {{ row.user_name?.charAt(0) || 'U' }}
               </div>
-              <span>{{ row.user?.realName || row.user?.username || '未知用户' }}</span>
+              <span>{{ row.user_name || '未知用户' }}</span>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="景点名称" width="180">
           <template #default="{ row }">
-            <router-link :to="`/admin/attractions/${row.attraction?.id}/edit`" class="table-link">
-              {{ row.attraction?.name || '未知景点' }}
+            <router-link :to="`/admin/attractions/${row.attraction_id}/edit`" class="table-link">
+              {{ row.attraction_name || '未知景点' }}
             </router-link>
           </template>
         </el-table-column>
@@ -102,11 +102,11 @@
         <div class="card-header">
           <div class="user-info">
             <div class="user-avatar">
-              {{ comment.user?.realName?.charAt(0) || comment.user?.username?.charAt(0) || 'U' }}
+              {{ comment.user_name?.charAt(0) || 'U' }}
             </div>
             <div class="user-details">
-              <p class="user-name">{{ comment.user?.realName || comment.user?.username || '未知用户' }}</p>
-              <p class="comment-date">{{ formatDate(comment.createdAt) }}</p>
+              <p class="user-name">{{ comment.user_name || '未知用户' }}</p>
+              <p class="comment-date">{{ formatDate(comment.created_at) }}</p>
             </div>
           </div>
           <div class="comment-rating">
@@ -120,8 +120,8 @@
           <svg viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
           </svg>
-          <router-link :to="`/admin/attractions/${comment.attraction?.id}/edit`" class="attraction-link">
-            {{ comment.attraction?.name || '未知景点' }}
+          <router-link :to="`/admin/attractions/${comment.attraction_id}/edit`" class="attraction-link">
+            {{ comment.attraction_name || '未知景点' }}
           </router-link>
         </div>
 

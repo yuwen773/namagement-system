@@ -5,10 +5,11 @@ from .models import Comment, Favorite
 class CommentSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
     attraction_name = serializers.CharField(source='attraction.name', read_only=True)
+    attraction_id = serializers.IntegerField(source='attraction.id', read_only=True)
 
     class Meta:
         model = Comment
-        fields = ['id', 'user_name', 'attraction_name', 'content', 'rating', 'status', 'created_at']
+        fields = ['id', 'user_name', 'attraction_name', 'attraction_id', 'content', 'rating', 'status', 'created_at']
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
