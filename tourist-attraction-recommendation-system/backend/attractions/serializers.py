@@ -32,7 +32,7 @@ class AttractionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attraction
         fields = [
-            'id', 'name', 'description', 'category', 'region',
+            'id', 'name', 'description', 'address', 'category', 'region',
             'cover_image', 'view_count', 'created_at',
             # 新增字段
             'latitude', 'longitude', 'rating_percentage',
