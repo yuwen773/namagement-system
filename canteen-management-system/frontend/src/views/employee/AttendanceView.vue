@@ -94,11 +94,11 @@
           :row-class-name="getRowClassName"
           class="attendance-table"
         >
-          <el-table-column prop="date" label="日期" width="120" align="center">
+          <el-table-column label="日期" width="120" align="center">
             <template #default="{ row }">
               <div class="date-cell">
-                <div class="date-day">{{ getDay(row.date) }}</div>
-                <div class="date-month">{{ getMonth(row.date) }}</div>
+                <div class="date-day">{{ getDay(row.work_date || row.clock_in_time) }}</div>
+                <div class="date-month">{{ getMonth(row.work_date || row.clock_in_time) }}</div>
               </div>
             </template>
           </el-table-column>
@@ -180,7 +180,7 @@
     >
       <el-form :model="appealForm" :rules="appealRules" ref="appealFormRef" label-width="100px">
         <el-form-item label="异常日期">
-          <el-input :value="formatDate(currentAppealRecord?.date)" disabled />
+          <el-input :value="formatDate(currentAppealRecord?.work_date || currentAppealRecord?.clock_in_time)" disabled />
         </el-form-item>
 
         <el-form-item label="当前状态">

@@ -402,6 +402,29 @@ const approvalRules = {
   approval_remark: [{ required: true, message: '请输入审批意见', trigger: 'blur' }]
 }
 
+// ==================== 工具函数 ====================
+// 格式化日期时间
+function formatDateTime(dateTimeStr) {
+  if (!dateTimeStr) return '-'
+  const date = new Date(dateTimeStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
+// 格式化日期
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // ==================== Ref 引用 ====================
 const batchFormRef = ref(null)
 const editFormRef = ref(null)

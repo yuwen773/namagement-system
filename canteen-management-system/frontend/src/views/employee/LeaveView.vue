@@ -75,7 +75,7 @@
 
           <div class="leave-duration">
             <el-icon><Timer /></el-icon>
-            <span>共 {{ leave.days }} 天</span>
+            <span>共 {{ leave.leave_duration_days }} 天</span>
           </div>
 
           <div class="leave-reason">
@@ -146,7 +146,7 @@
         <div class="detail-item"><span class="detail-label">请假类型：</span><el-tag :type="getLeaveTypeTagType(currentLeave.leave_type)">{{ getLeaveTypeLabel(currentLeave.leave_type) }}</el-tag></div>
         <div class="detail-item"><span class="detail-label">开始时间：</span><span>{{ formatDateTime(currentLeave.start_time) }}</span></div>
         <div class="detail-item"><span class="detail-label">结束时间：</span><span>{{ formatDateTime(currentLeave.end_time) }}</span></div>
-        <div class="detail-item"><span class="detail-label">请假天数：</span><span class="detail-value">{{ currentLeave.days }} 天</span></div>
+        <div class="detail-item"><span class="detail-label">请假天数：</span><span class="detail-value">{{ currentLeave.leave_duration_days }} 天</span></div>
         <div class="detail-item"><span class="detail-label">请假原因：</span><p class="detail-reason">{{ currentLeave.reason || '无' }}</p></div>
         <div class="detail-item"><span class="detail-label">申请状态：</span><el-tag :type="getStatusTagType(currentLeave.status)">{{ getStatusLabel(currentLeave.status) }}</el-tag></div>
         <div v-if="currentLeave.status === 'REJECTED' && currentLeave.approval_remark" class="detail-item"><span class="detail-label">审批意见：</span><p class="detail-remark">{{ currentLeave.approval_remark }}</p></div>

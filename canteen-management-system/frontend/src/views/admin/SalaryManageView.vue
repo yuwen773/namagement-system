@@ -786,12 +786,8 @@ const confirmAppeal = async () => {
 
 // ==================== 生命周期 ====================
 onMounted(() => {
-  // 默认选择当前月份
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  selectedMonth.value = `${year}-${month}`
-
+  // 不默认选择月份，显示所有薪资记录
+  selectedMonth.value = ''
   loadSalaryList()
 })
 </script>

@@ -115,8 +115,16 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="clock_in_time" label="签到时间" min-width="150" />
-      <el-table-column prop="clock_out_time" label="签退时间" min-width="150" />
+      <el-table-column prop="clock_in_time" label="签到时间" min-width="150">
+        <template #default="{ row }">
+          {{ formatDateTime(row.clock_in_time) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="clock_out_time" label="签退时间" min-width="150">
+        <template #default="{ row }">
+          {{ formatDateTime(row.clock_out_time) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="status_display" label="状态" width="90" align="center">
         <template #default="{ row }">
           <el-tag :type="getStatusTagType(row.status)" size="small">

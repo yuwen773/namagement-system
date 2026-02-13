@@ -130,7 +130,8 @@ CREATE TABLE `leave_requests` (
 
 -- ----------------------------
 -- 8. 薪资记录表
--- ----------------------------
+-- 注意：status 状态值必须与 Django 模型 SalaryRecord.Status 保持一致
+-- DRAFT=草稿, PUBLISHED=已发布, APPEALED=申诉中, ADJUSTED=已调整
 DROP TABLE IF EXISTS `salary_records`;
 CREATE TABLE `salary_records` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '薪资记录ID',
@@ -141,9 +142,12 @@ CREATE TABLE `salary_records` (
     `overtime_pay` DECIMAL(10, 2) DEFAULT 0.00 COMMENT '加班费',
     `deductions` DECIMAL(10, 2) DEFAULT 0.00 COMMENT '扣款(迟到/缺卡等)',
     `total_salary` DECIMAL(10, 2) NOT NULL COMMENT '实发工资',
-    `status` ENUM('GENERATED', 'PAID', 'DISPUTE') DEFAULT 'GENERATED' COMMENT '状态: 已生成/已发放/有异议',
+    `status` ENUM('DRAFT', 'PUBLISHED', 'APPEALED', 'ADJUSTED') DEFAULT 'DRAFT' COMMENT '状态: 草稿/已发布/申诉中/已调整',
+    `remark` TEXT COMMENT '备注',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`employee_id`) REFERENCES `employee_profiles`(`id`)
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`employee_id`) REFERENCES `employee_profiles`(`id`),
+    UNIQUE KEY `unique_employee_month` (`employee_id`, `year_month`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='薪资记录表';
 
 -- ----------------------------
@@ -253,17 +257,18 @@ INSERT INTO `leave_requests` (`employee_id`, `leave_type`, `start_time`, `end_ti
 (10, 'SICK', '2026-02-05 08:00:00', '2026-02-05 18:00:00', '请假测试5', 'APPROVED');
 
 -- 8. 薪资记录
+-- 注意：status 值必须与 Django 模型一致：PUBLISHED 对应已发放，DRAFT 对应草稿，APPEALED 对应申诉中
 INSERT INTO `salary_records` (`employee_id`, `year_month`, `base_salary`, `position_allowance`, `overtime_pay`, `deductions`, `total_salary`, `status`) VALUES
-(1, '2025-12', 6000.00, 1000.00, 500.00, 50.00, 7450.00, 'PAID'),
-(2, '2025-12', 5500.00, 800.00, 300.00, 0.00, 6600.00, 'PAID'),
-(3, '2025-12', 3500.00, 200.00, 200.00, 20.00, 3880.00, 'PAID'),
-(4, '2025-12', 4500.00, 500.00, 400.00, 100.00, 5300.00, 'DISPUTE'),
-(5, '2025-12', 4000.00, 300.00, 100.00, 0.00, 4400.00, 'PAID'),
-(6, '2025-12', 8000.00, 2000.00, 0.00, 0.00, 10000.00, 'PAID'),
-(7, '2025-12', 5000.00, 600.00, 200.00, 30.00, 5770.00, 'GENERATED'),
-(8, '2025-12', 3500.00, 200.00, 150.00, 0.00, 3850.00, 'GENERATED'),
-(9, '2025-12', 4500.00, 500.00, 300.00, 50.00, 5250.00, 'GENERATED'),
-(10, '2025-12', 5500.00, 800.00, 400.00, 0.00, 6700.00, 'GENERATED');
+(1, '2025-12', 6000.00, 1000.00, 500.00, 50.00, 7450.00, 'PUBLISHED'),
+(2, '2025-12', 5500.00, 800.00, 300.00, 0.00, 6600.00, 'PUBLISHED'),
+(3, '2025-12', 3500.00, 200.00, 200.00, 20.00, 3880.00, 'PUBLISHED'),
+(4, '2025-12', 4500.00, 500.00, 400.00, 100.00, 5300.00, 'APPEALED'),
+(5, '2025-12', 4000.00, 300.00, 100.00, 0.00, 4400.00, 'PUBLISHED'),
+(6, '2025-12', 8000.00, 2000.00, 0.00, 0.00, 10000.00, 'PUBLISHED'),
+(7, '2025-12', 5000.00, 600.00, 200.00, 30.00, 5770.00, 'DRAFT'),
+(8, '2025-12', 3500.00, 200.00, 150.00, 0.00, 3850.00, 'DRAFT'),
+(9, '2025-12', 4500.00, 500.00, 300.00, 50.00, 5250.00, 'DRAFT'),
+(10, '2025-12', 5500.00, 800.00, 400.00, 0.00, 6700.00, 'DRAFT');
 
 -- 9. 异常申诉
 INSERT INTO `appeals` (`type`, `employee_id`, `target_id`, `reason`, `status`) VALUES
