@@ -49,27 +49,27 @@ class Command(BaseCommand):
             # ============ 阶段1: 导入地域和影院 ============
             self.stdout.write(self.style.HTTP_INFO("\n【1/4】导入地域和影院数据..."))
             management.call_command('import_cinemas', '--cinema-count', str(options['cinema_count']))
-            self.stdout.write(self.style.SUCCESS("✓ 地域和影院数据导入完成"))
+            self.stdout.write(self.style.SUCCESS("[OK] 地域和影院数据导入完成"))
 
             # ============ 阶段2: 导入电影 ============
             if not options['skip_movies']:
                 self.stdout.write(self.style.HTTP_INFO("\n【2/4】导入电影数据..."))
                 management.call_command('import_movies')
-                self.stdout.write(self.style.SUCCESS("✓ 电影数据导入完成"))
+                self.stdout.write(self.style.SUCCESS("[OK] 电影数据导入完成"))
             else:
-                self.stdout.write(self.style.WARNING("⊘ 跳过电影导入"))
+                self.stdout.write(self.style.WARNING("[SKIP] 跳过电影导入"))
 
             # ============ 阶段3: 生成票房 ============
             if not options['skip_boxoffice']:
                 self.stdout.write(self.style.HTTP_INFO("\n【3/4】生成票房记录..."))
                 management.call_command(
                     'generate_boxoffice',
-                    '--start-date', options['start-date'],
-                    '--end-date', options['end-date']
+                    '--start-date', options['start_date'],
+                    '--end-date', options['end_date']
                 )
-                self.stdout.write(self.style.SUCCESS("✓ 票房记录生成完成"))
+                self.stdout.write(self.style.SUCCESS("[OK] 票房记录生成完成"))
             else:
-                self.stdout.write(self.style.WARNING("⊘ 跳过票房生成"))
+                self.stdout.write(self.style.WARNING("[SKIP] 跳过票房生成"))
 
             # ============ 阶段4: 数据统计 ============
             self.stdout.write(self.style.HTTP_INFO("\n【4/4】数据统计..."))

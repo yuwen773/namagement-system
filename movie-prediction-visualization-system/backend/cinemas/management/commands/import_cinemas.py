@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from cinemas.models import Region, Cinema
 import random
 
 class Command(BaseCommand):
@@ -13,8 +14,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        from cinemas.models import Region, Cinema
-
         stats = {'regions': 0, 'cinemas': 0}
 
         self.stdout.write(self.style.HTTP_INFO("开始导入地域和影院数据..."))

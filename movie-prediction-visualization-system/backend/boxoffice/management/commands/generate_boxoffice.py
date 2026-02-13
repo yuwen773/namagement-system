@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
+from boxoffice.models import BoxOfficeRecord
 
 class Command(BaseCommand):
     help = '生成票房记录数据'
@@ -31,9 +32,9 @@ class Command(BaseCommand):
         from cinemas.models import Cinema
         from boxoffice.models import BoxOfficeRecord
 
-        start_date = datetime.strptime(options['start-date'], '%Y-%m-%d').date()
-        end_date = datetime.strptime(options['end-date'], '%Y-%m-%d').date()
-        batch_size = options['batch-size']
+        start_date = datetime.strptime(options['start_date'], '%Y-%m-%d').date()
+        end_date = datetime.strptime(options['end_date'], '%Y-%m-%d').date()
+        batch_size = options['batch_size']
 
         stats = {'records': 0, 'movies_processed': 0}
 

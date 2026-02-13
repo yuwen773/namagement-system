@@ -11,6 +11,8 @@ import os
 # backend = dirname(movies)
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 scripts_dir = os.path.join(backend_dir, 'scripts')
+# 数据文件目录（项目根目录下的 data 文件夹）
+data_dir = os.path.join(os.path.dirname(backend_dir), 'data')
 if scripts_dir not in sys.path:
     sys.path.insert(0, scripts_dir)
 
@@ -24,19 +26,19 @@ class Command(BaseCommand):
         parser.add_argument(
             '--movies-file',
             type=str,
-            default='data/tmdb_5000_movies.csv',
+            default=os.path.join(data_dir, 'tmdb_5000_movies.csv'),
             help='电影数据文件路径'
         )
         parser.add_argument(
             '--credits-file',
             type=str,
-            default='data/tmdb_5000_credits-1.csv',
+            default=os.path.join(data_dir, 'tmdb_5000_credits-1.csv'),
             help='演职员数据文件路径'
         )
         parser.add_argument(
             '--metadata-file',
             type=str,
-            default='data/movies_metadata.csv',
+            default=os.path.join(data_dir, 'movies_metadata.csv'),
             help='元数据文件路径（可选，用于增强）'
         )
 
@@ -109,22 +111,20 @@ class Command(BaseCommand):
         existing_titles = set(Movie.objects.values_list('title', flat=True))
         genre_map = {g.name: g for g in MovieType.objects.all()}
 
-        # 合并 credits
-        merged = movies_df.merge(credits_df, left_on='id', right_on='movie_id', how='left')
+        # 合并 credits（将 tmdb_5000 作为主数据源）
+        # 修复：明确指定 suffixes 避免列名冲突
+        merged = movies_df.merge(
+            credits_df,
+            left_on='id',
+            right_on='movie_id',
+            how='left',
+            suffixes=('', '_credit')
+        )
 
-        # 合并 metadata（如果存在）
-        if metadata_df is not None:
-            # 只合并 metadata 中有 poster_path 的记录以增强数据
-            merged = merged.merge(
-                metadata_df[['id', 'poster_path', 'imdb_id', 'popularity',
-                             'vote_average', 'vote_count', 'tagline',
-                             'production_companies', 'production_countries',
-                             'spoken_languages', 'homepage', 'belongs_to_collection',
-                             'original_language', 'original_title']],
-                on='id',
-                how='left',
-                suffixes=('', '_meta')
-            )
+        # 注意：由于 tmdb_5000_movies.csv 和 movies_metadata.csv 的 ID 不一致，
+        # 我们直接使用 tmdb_5000 中的字段，它已包含所需的 popularity、vote_average、vote_count 等
+        # metadata 文件中的 poster_path 无法通过 ID 匹配，故跳过此步骤
+        # 如需海报，可通过后续接口从 TMDb API 获取
 
         for idx, row in merged.iterrows():
             # 验证数据

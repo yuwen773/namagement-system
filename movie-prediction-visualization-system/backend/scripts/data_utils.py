@@ -24,18 +24,20 @@ def parse_json_safe(json_str):
 def is_valid_movie(row):
     """验证电影数据是否有效"""
     # 过滤成人电影
-    if row.get('adult'):
+    if 'adult' in row and row['adult']:
         return False, "成人电影"
 
     # 过滤已取消电影
-    if str(row.get('status', '')) == 'Canceled':
+    status_val = row.get('status') if hasattr(row, 'get') else row.get('status', '')
+    if str(status_val) == 'Canceled':
         return False, "已取消"
 
-    # 必填字段验证
-    if not row.get('title') or not str(row.get('title', '')).strip():
+    # 必填字段验证 - 直接访问列避免 pandas Series .get() 问题
+    title_val = row.get('title') if hasattr(row, 'get') else row.get('title', '')
+    if 'title' not in row or not title_val or not str(title_val).strip():
         return False, "缺少标题"
 
-    if not row.get('release_date'):
+    if 'release_date' not in row or not row.get('release_date'):
         return False, "缺少上映日期"
 
     return True, ""
