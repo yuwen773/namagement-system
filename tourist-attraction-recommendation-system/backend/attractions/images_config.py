@@ -9,7 +9,7 @@
 所有图片均来自 Unsplash 公开资源，符合使用条款。
 """
 
-# 景点图片配置
+# 景点图片配置 - 使用确实有效的 Unsplash 图片
 # 格式: { "景点名称": { "pinyin": "拼音", "cover": "封面图URL", "gallery": [轮播图列表] } }
 ATTRACTION_IMAGES = {
     "故宫": {
@@ -68,8 +68,8 @@ ATTRACTION_IMAGES = {
         "gallery": [
             "https://images.unsplash.com/photo-1562690868-60bbe7621e3c?w=1200&q=80",
             "https://images.unsplash.com/photo-1562792675-69df99300028?w=1200&q=80",
-            "https://images.unsplash.com/photo-1562792675-69df99300028?w=1200&q=80",
             "https://images.unsplash.com/photo-1562690868-60bbe7621e3c?w=1200&q=80",
+            "https://images.unsplash.com/photo-1562792675-69df99300028?w=1200&q=80",
         ],
     },
     "上海迪士尼乐园": {
@@ -129,12 +129,12 @@ ATTRACTION_IMAGES = {
             "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
             "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&q=80",
             "https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=1200&q=80",
-            "https://images.unsplash.com/photo-1473116763241-2e4a44daa1fa?w=1200&q=80",
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
         ],
     },
 }
 
-# 类别默认图片配置
+# 类别默认图片配置 - 使用确实有效的 Unsplash 图片
 CATEGORY_DEFAULT_IMAGES = {
     "自然风光": {
         "cover": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
@@ -169,16 +169,16 @@ CATEGORY_DEFAULT_IMAGES = {
             "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
             "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&q=80",
             "https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=1200&q=80",
-            "https://images.unsplash.com/photo-1473116763241-2e4a44daa1fa?w=1200&q=80",
+            "https://images.unsplash.com/photo-1518173946687-a4c036bc1e3e?w=1200&q=80",
         ],
     },
     "其他": {
-        "cover": "https://images.unsplash.com/photo-1473116763241-2e4a44daa1fa?w=800&q=80",
+        "cover": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
         "gallery": [
-            "https://images.unsplash.com/photo-1473116763241-2e4a44daa1fa?w=1200&q=80",
             "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80",
             "https://images.unsplash.com/photo-1518173946687-a4c036bc1e3e?w=1200&q=80",
             "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&q=80",
+            "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&q=80",
         ],
     },
 }

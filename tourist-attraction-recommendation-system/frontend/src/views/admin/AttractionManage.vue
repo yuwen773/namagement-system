@@ -118,7 +118,7 @@
     <div v-else v-loading="loading" class="attractions-grid">
       <div v-for="attraction in filteredAttractions" :key="attraction.id" class="attraction-card">
         <div class="card-image">
-          <img :src="attraction.cover_image || attraction.coverImage || '/placeholder.jpg'" :alt="attraction.name" />
+          <img :src="attraction.cover_image || attraction.cover_image || '/placeholder.jpg'" :alt="attraction.name" />
           <div class="image-overlay">
             <div class="overlay-rating" v-if="attraction.rating_percentage">
               <svg viewBox="0 0 20 20" fill="currentColor">
