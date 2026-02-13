@@ -649,10 +649,9 @@ class OverviewStatsView(APIView):
         # 4. 用户总数
         total_users = User.objects.count()
 
-        # 5. 最近5条票房记录
-        recent_records = BoxOfficeRecord.objects.select_related(
-            'movie', 'cinema'
-        ).order_by('-record_date')[:5]
+        # 5. 最近5条票房记录（优化：先获取ID列表，再查询详情）
+        recent_ids = list(BoxOfficeRecord.objects.values_list('id', flat=True).order_by('-record_date')[:5])
+        recent_records = BoxOfficeRecord.objects.filter(id__in=recent_ids).select_related('movie', 'cinema')
 
         recent_data = []
         for record in recent_records:
