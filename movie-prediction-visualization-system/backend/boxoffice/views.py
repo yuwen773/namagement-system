@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import filters
+from django_filters import rest_framework as django_filters
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
@@ -51,6 +53,7 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
     """
     queryset = BoxOfficeRecord.objects.select_related('movie', 'cinema', 'cinema__region').all()
     permission_classes = [IsAuthenticated]
+    filter_backends = [django_filters.DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = BoxOfficeRecordFilter
 
     def get_permissions(self):

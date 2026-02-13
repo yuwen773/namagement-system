@@ -556,7 +556,7 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(role=role)
         # 支持按状态筛选
         is_active = request.query_params.get('is_active')
-        if is_active is not None:
+        if is_active and is_active.strip():
             queryset = queryset.filter(is_active=is_active.lower() == 'true')
 
         page = self.paginate_queryset(queryset)
