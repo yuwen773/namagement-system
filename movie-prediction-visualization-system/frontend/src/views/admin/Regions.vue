@@ -255,6 +255,7 @@ onMounted(() => {
                 placeholder="搜索地域名称..."
                 class="search-input"
                 @keyup.enter="handleSearch"
+                style="width: 80%"
               />
             </div>
           </div>

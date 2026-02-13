@@ -133,7 +133,7 @@ const loadData = async () => {
     const params = {
       page: queryParams.page,
       pageSize: queryParams.pageSize,
-      order_by: queryParams.order_by
+      ordering: queryParams.order_by
     }
     if (queryParams.start_date) params.start_date = queryParams.start_date
     if (queryParams.end_date) params.end_date = queryParams.end_date
@@ -375,7 +375,7 @@ onMounted(() => {
               @change="handleSearch"
               class="filter-input"
               popper-class="dark-datepicker"
-              style="width: 100%"
+              style="width: 90%"
             />
           </div>
 
@@ -1043,47 +1043,72 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
+.form-input {
+  --el-input-bg-color: rgba(255, 255, 255, 0.05);
+  --el-input-border-color: rgba(255, 255, 255, 0.1);
+  --el-input-hover-border-color: rgba(16, 185, 129, 0.5);
+  --el-input-focus-border-color: #10b981;
+  --el-text-color-placeholder: rgba(255, 255, 255, 0.3);
+  --el-text-color-regular: #fff;
+  --el-fill-color-blank: transparent;
+}
+
 .form-input :deep(.el-input__wrapper),
 .form-input :deep(.el-select .el-input__wrapper),
 .form-input :deep(.el-date-editor .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: none;
+  background: var(--el-input-bg-color) !important;
+  box-shadow: 0 0 0 1px var(--el-input-border-color) inset !important;
   transition: all 0.3s ease;
 }
 
+/* 专门修复日期选择器背景问题 - 已移至全局样式 */
 .form-input :deep(.el-input__wrapper:hover),
 .form-input :deep(.el-select .el-input__wrapper:hover) {
-  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 0 1px var(--el-input-hover-border-color) inset !important;
 }
 
 .form-input :deep(.el-input__wrapper.is-focus),
 .form-input :deep(.el-select .el-input__wrapper.is-focus) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 1px var(--el-input-focus-border-color) inset !important;
 }
 
 .form-input :deep(.el-input__inner),
 .form-input :deep(.el-select__selected-item) {
-  color: #fff;
+  color: var(--el-text-color-regular) !important;
 }
 
 .form-input :deep(.el-input__inner::placeholder),
 .form-input :deep(.el-select__placeholder) {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--el-text-color-placeholder) !important;
 }
 
 .form-input :deep(.el-input-number__decrease),
 .form-input :deep(.el-input-number__increase) {
-  background: rgba(255, 255, 255, 0.05);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.5);
+  background: var(--el-input-bg-color) !important;
+  border-left: 1px solid var(--el-input-border-color) !important;
+  border-right: 1px solid var(--el-input-border-color) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .form-input :deep(.el-input-number__decrease:hover),
 .form-input :deep(.el-input-number__increase:hover) {
-  color: #10b981;
+  color: var(--el-input-focus-border-color) !important;
+  border-color: var(--el-input-hover-border-color) !important;
+}
+
+.form-input :deep(.el-input__prefix),
+.form-input :deep(.el-input__suffix),
+.form-input :deep(.el-input__icon),
+.form-input :deep(.el-select__caret) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.form-input :deep(.el-input__prefix:hover),
+.form-input :deep(.el-input__suffix:hover),
+.form-input :deep(.el-input__icon:hover),
+.form-input :deep(.el-select__caret:hover) {
+  color: #10b981 !important;
 }
 
 /* 提交按钮 */
@@ -1347,5 +1372,30 @@ onMounted(() => {
 
 .dark-datepicker .el-time-panel__btn.confirm {
   color: #34d399 !important;
+}
+
+/* ============================================
+   表单输入框强制样式 (非 Scoped)
+   解决 scoped 样式无法穿透或 specificity 问题
+   ============================================ */
+.form-input .el-input__wrapper,
+.form-input.el-date-editor .el-input__wrapper {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+.form-input .el-input__wrapper:hover,
+.form-input.el-date-editor .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5) inset !important;
+}
+
+.form-input .el-input__wrapper.is-focus,
+.form-input.el-date-editor .el-input__wrapper.is-focus {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 1px #10b981 inset !important;
+}
+
+.form-input .el-input__inner {
+  color: #fff !important;
 }
 </style>

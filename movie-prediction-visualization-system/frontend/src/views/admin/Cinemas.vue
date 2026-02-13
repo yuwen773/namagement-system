@@ -583,6 +583,7 @@ onMounted(() => {
                   placeholder="搜索影院名称、地址..."
                   class="search-input"
                   @keyup.enter="handleSearch"
+                  style="width: 80%"
                 />
               </div>
             </div>
@@ -808,31 +809,18 @@ onMounted(() => {
             <Location class="w-4 h-4" />
             所属地域 <span class="text-red-400">*</span>
           </label>
-          <el-select
+          <el-tree-select
             v-model="form.region"
+            :data="regionTreeData"
+            :props="{ label: 'name', children: 'children' }"
             placeholder="请选择所属地域"
-            clearable
+            check-strictly
             filterable
+            clearable
             class="form-input"
             popper-class="cinema-select-dropdown"
             style="width: 100%"
-            :filter-method="(val) => val"
-          >
-            <el-option
-              v-for="region in flatRegionList"
-              :key="region.id"
-              :label="getRegionPath(region)"
-              :value="region.id"
-            />
-            <!-- 编辑时如果地域列表未加载，显示后端返回的地域信息 -->
-            <el-option
-              v-if="form.id && !flatRegionList.find(r => r.id === form.region) && form.region"
-              :label="form.region_name ? (form.parent_region_name ? form.parent_region_name + ' / ' + form.region_name : form.region_name) : '地域 ID: ' + form.region"
-              :value="form.region"
-            >
-              <span class="text-slate-400">{{ form.parent_region_name ? form.parent_region_name + ' / ' : '' }}{{ form.region_name || '地域 ID: ' + form.region }}</span>
-            </el-option>
-          </el-select>
+          />
         </div>
       </div>
 
@@ -1387,10 +1375,19 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
+.form-input {
+  --el-input-bg-color: rgba(255, 255, 255, 0.05);
+  --el-input-border-color: rgba(255, 255, 255, 0.1);
+  --el-fill-color-blank: rgba(255, 255, 255, 0.05);
+  --el-text-color-regular: #fff;
+  --el-text-color-placeholder: rgba(255, 255, 255, 0.3);
+}
+
 .form-input :deep(.el-input__wrapper),
-.form-input :deep(.el-select .el-input__wrapper) {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.form-input :deep(.el-select .el-input__wrapper),
+.form-input :deep(.el-tree-select .el-input__wrapper) {
+  background-color: var(--el-input-bg-color);
+  border: 1px solid var(--el-input-border-color);
   box-shadow: none;
   transition: all 0.3s ease;
 }
@@ -1487,5 +1484,37 @@ onMounted(() => {
 /* 空状态 */
 .cinema-select-dropdown .el-select-dropdown__empty {
   color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 树形选择器样式适配 */
+.cinema-select-dropdown .el-tree {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cinema-select-dropdown .el-tree-node__content {
+  height: 34px;
+  border-radius: 4px;
+  margin: 2px 4px;
+}
+
+.cinema-select-dropdown .el-tree-node__content:hover,
+.cinema-select-dropdown .el-tree-node:focus > .el-tree-node__content {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.cinema-select-dropdown .el-tree-node.is-current > .el-tree-node__content {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  font-weight: 500;
+}
+
+.cinema-select-dropdown .el-tree-node__expand-icon {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.cinema-select-dropdown .el-tree-node__expand-icon.is-leaf {
+  color: transparent;
 }
 </style>

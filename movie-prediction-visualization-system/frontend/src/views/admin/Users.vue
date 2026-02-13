@@ -411,8 +411,8 @@ onMounted(() => {
           <span class="text-sm font-medium text-slate-300">筛选搜索</span>
         </div>
 
-        <div class="flex items-center gap-4 flex-wrap">
-          <div class="flex-1 min-w-[200px] relative">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               v-model="queryParams.username"
@@ -423,7 +423,7 @@ onMounted(() => {
             />
           </div>
 
-          <div class="min-w-[140px]">
+          <div>
             <el-select
               v-model="queryParams.role"
               placeholder="选择角色"
@@ -461,7 +461,9 @@ onMounted(() => {
               />
             </el-select>
           </div>
+        </div>
 
+        <div class="flex items-center gap-3 mt-4">
           <button @click="handleSearch" class="action-btn">
             <Search class="w-4 h-4 mr-1.5" />
             搜索
@@ -932,7 +934,7 @@ onMounted(() => {
 
 /* 搜索输入框 */
 .search-input {
-  width: 100%;
+  width: 80%;
   padding: 12px 16px 12px 40px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1348,5 +1350,36 @@ onMounted(() => {
 /* 空状态 */
 .user-select-dropdown .el-select-dropdown__empty {
   color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* ============================================
+   表单输入框强制样式 (非 Scoped)
+   解决 scoped 样式无法穿透或 specificity 问题
+   ============================================ */
+.form-input .el-input__wrapper,
+.form-input .el-select__wrapper {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+.form-input .el-input__wrapper:hover,
+.form-input .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.5) inset !important;
+}
+
+.form-input .el-input__wrapper.is-focus,
+.form-input.el-select .el-input__wrapper.is-focus,
+.form-input .el-select__wrapper.is-focused {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 1px #8b5cf6 inset !important;
+}
+
+.form-input .el-input__inner,
+.form-input .el-select__wrapper .el-select__selected-item {
+  color: #fff !important;
+}
+
+.form-input .el-select__wrapper .el-select__placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
 }
 </style>
