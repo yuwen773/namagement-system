@@ -99,7 +99,7 @@
             </p>
             <div class="admin-entry">
               <span class="divider">|</span>
-              <router-link to="/admin-login" class="admin-link">管理员入口</router-link>
+              <router-link to="/admin/login" class="admin-link">管理员入口</router-link>
             </div>
           </div>
         </div>
