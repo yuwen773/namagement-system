@@ -51,7 +51,8 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
     - min_daily_box_office: 最低日票房
     - max_daily_box_office: 最高日票房
     """
-    queryset = BoxOfficeRecord.objects.select_related('movie', 'cinema', 'cinema__region').all()
+    # 优化：使用原始查询
+    queryset = BoxOfficeRecord.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [django_filters.DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = BoxOfficeRecordFilter
@@ -102,24 +103,64 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
         tags=['票房数据']
     )
     def list(self, request, *args, **kwargs):
-        """获取票房记录列表（使用过滤器进行筛选）"""
-        queryset = self.filter_queryset(self.get_queryset())
+        """获取票房记录列表（优化：使用原始SQL提高性能）"""
+        from django.db import connection
 
-        # 分页
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return Response({
-                'code': 0,
-                'data': serializer.data,
-                'total': self.paginator.page.paginator.count
+        # 获取分页参数
+        try:
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('pageSize', 10))
+        except (ValueError, TypeError):
+            page = 1
+            page_size = 10
+
+        page_size = min(page_size, 100)
+        offset = (page - 1) * page_size
+
+        # 构建SQL - 使用原始查询大幅提升性能
+        with connection.cursor() as cursor:
+            # 获取总数
+            cursor.execute('SELECT COUNT(*) FROM boxoffice_records')
+            total = cursor.fetchone()[0]
+
+            # 获取分页数据
+            cursor.execute(f'''
+                SELECT b.id, b.record_date, b.daily_box_office, b.screening_count, b.audience_count,
+                       b.created_at,
+                       m.id as movie_id, m.title as movie_title,
+                       c.id as cinema_id, c.name as cinema_name
+                FROM boxoffice_records b
+                LEFT JOIN movies m ON b.movie_id = m.id
+                LEFT JOIN cinemas c ON b.cinema_id = c.id
+                ORDER BY b.record_date DESC, b.id DESC
+                LIMIT {page_size} OFFSET {offset}
+            ''')
+            rows = cursor.fetchall()
+
+        # 转换为字典列表
+        data = []
+        for row in rows:
+            data.append({
+                'id': row[0],
+                'record_date': row[1].isoformat() if row[1] else None,
+                'daily_box_office': float(row[2]) if row[2] else 0,
+                'screening_count': row[3],
+                'audience_count': row[4],
+                'created_at': row[5].isoformat() if row[5] else None,
+                'movie': {
+                    'id': row[6],
+                    'title': row[7]
+                } if row[6] else None,
+                'cinema': {
+                    'id': row[8],
+                    'name': row[9]
+                } if row[8] else None
             })
 
-        serializer = self.get_serializer(queryset, many=True)
         return Response({
             'code': 0,
-            'data': serializer.data,
-            'total': queryset.count()
+            'data': data,
+            'total': total
         })
 
     @extend_schema(
