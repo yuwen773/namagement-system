@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Avg
+from django.db.models import Avg, Count
 
 from .models import Comment, Favorite
 from .serializers import CommentSerializer, CommentCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer
@@ -23,6 +23,36 @@ class CommentViewSet(viewsets.ModelViewSet):
             if status_filter and status_filter != 'all':
                 queryset = queryset.filter(status=status_filter)
         return queryset.order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        # 获取分页参数
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        # 分页
+        paginated_data = queryset[start:end]
+        serializer = self.get_serializer(paginated_data, many=True)
+
+        # 获取各状态统计
+        status_counts = Comment.objects.filter(is_deleted=False).values('status').annotate(count=Count('id'))
+        counts = {item['status']: item['count'] for item in status_counts}
+        all_count = sum(counts.values())
+
+        return Response({
+            'code': 0,
+            'data': serializer.data,
+            'total': queryset.count(),
+            'counts': {
+                'all': all_count,
+                'PENDING': counts.get('PENDING', 0),
+                'APPROVED': counts.get('APPROVED', 0),
+                'REJECTED': counts.get('REJECTED', 0)
+            }
+        })
 
     def get_serializer_class(self):
         if self.action == 'create':

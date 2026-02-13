@@ -25,7 +25,7 @@
     <div class="filter-tabs">
       <ViewToggle v-model="viewMode" />
       <button
-        v-for="tab in filterTabs"
+        v-for="tab in filterTabs.value"
         :key="tab.key"
         :class="['filter-tab', { active: activeFilter === tab.key }]"
         @click="activeFilter = tab.key"
@@ -180,12 +180,12 @@ const total = ref(0)
 const activeFilter = ref('all')
 const viewMode = ref('list') // 默认列表视图
 
-const filterTabs = [
+const filterTabs = ref([
   { key: 'all', label: '全部', count: 0 },
   { key: 'PENDING', label: '待审核', count: 0 },
   { key: 'APPROVED', label: '已通过', count: 0 },
   { key: 'REJECTED', label: '已驳回', count: 0 }
-]
+])
 
 const filteredComments = computed(() => {
   if (activeFilter.value === 'all') {
@@ -202,6 +202,16 @@ async function fetchComments() {
     })
     comments.value = res.data || []
     total.value = res.total || 0
+
+    // 更新 filterTabs 的 count
+    if (res.counts) {
+      filterTabs.value = [
+        { key: 'all', label: '全部', count: res.counts.all || 0 },
+        { key: 'PENDING', label: '待审核', count: res.counts.PENDING || 0 },
+        { key: 'APPROVED', label: '已通过', count: res.counts.APPROVED || 0 },
+        { key: 'REJECTED', label: '已驳回', count: res.counts.REJECTED || 0 }
+      ]
+    }
   } catch (error) {
     console.error(error)
     ElMessage.error('获取评论列表失败')
