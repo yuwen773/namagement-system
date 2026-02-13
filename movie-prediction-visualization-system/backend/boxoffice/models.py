@@ -34,6 +34,10 @@ class BoxOfficeRecord(models.Model):
         verbose_name_plural = '票房管理'
         unique_together = ('movie', 'cinema', 'record_date')
         ordering = ['-record_date', '-created_at']
+        indexes = [
+            models.Index(fields=['-record_date'], name='boxoffice_record_date_idx'),
+            models.Index(fields=['record_date'], name='boxoffice_date_idx'),
+        ]
 
     def __str__(self):
         return f"{self.movie.title} - {self.cinema.name} - {self.record_date}"
