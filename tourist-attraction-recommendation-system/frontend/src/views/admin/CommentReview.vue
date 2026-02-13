@@ -177,7 +177,7 @@ const comments = ref([])
 const loading = ref(false)
 const page = ref(1)
 const total = ref(0)
-const activeFilter = ref('all')
+const activeFilter = ref('PENDING') // 默认显示待审核
 const viewMode = ref('list') // 默认列表视图
 
 const filterTabs = ref([
