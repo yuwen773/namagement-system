@@ -25,9 +25,9 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response) => {
-    const { code, data, message } = response.data
+    const { code, data, message, ...rest } = response.data
     if (code === 0) {
-      return { data, total: response.data.total }
+      return { data, ...rest }
     } else {
       ElMessage.error(message || '请求失败')
       // 附加响应信息到错误对象，方便后续处理
