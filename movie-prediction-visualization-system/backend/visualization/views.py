@@ -574,3 +574,105 @@ class DashboardView(APIView):
                 'total_cinemas': total_cinemas
             }
         })
+
+
+class OverviewStatsView(APIView):
+    """
+    管理端概览统计数据视图
+
+    提供 Dashboard 所需的综合统计数据，包括：
+    - 影片总数
+    - 影院总数
+    - 历史累计票房
+    - 注册用户数
+    - 最近5条票房记录
+
+    一次请求获取全部数据，优化前端性能。
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary='获取管理端概览统计',
+        description=(
+            '获取管理端 Dashboard 所需的综合统计数据，包括：'
+            '影片总数、影院总数、累计票房、用户总数、最近5条票房记录。'
+            '一次请求获取全部数据，避免多次接口调用。'
+        ),
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'code': {'type': 'integer', 'example': 0},
+                    'data': {
+                        'type': 'object',
+                        'properties': {
+                            'total_movies': {'type': 'integer', 'description': '影片总数'},
+                            'total_cinemas': {'type': 'integer', 'description': '影院总数'},
+                            'total_box_office': {'type': 'number', 'description': '累计票房（元）'},
+                            'total_users': {'type': 'integer', 'description': '用户总数'},
+                            'recent_records': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'id': {'type': 'integer'},
+                                        'date': {'type': 'string', 'format': 'date'},
+                                        'movie_title': {'type': 'string'},
+                                        'cinema_name': {'type': 'string'},
+                                        'box_office': {'type': 'number'},
+                                        'show_times': {'type': 'integer'},
+                                        'viewer_count': {'type': 'integer'}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        tags=['数据可视化']
+    )
+    def get(self, request):
+        from accounts.models import User
+
+        # 1. 影片总数
+        total_movies = Movie.objects.count()
+
+        # 2. 影院总数
+        total_cinemas = Cinema.objects.count()
+
+        # 3. 累计票房（后端直接计算，避免传输大量数据）
+        total_box_office = BoxOfficeRecord.objects.aggregate(
+            total=Coalesce(Sum('daily_box_office'), Value(Decimal('0'), output_field=DecimalField()))
+        )['total']
+
+        # 4. 用户总数
+        total_users = User.objects.count()
+
+        # 5. 最近5条票房记录
+        recent_records = BoxOfficeRecord.objects.select_related(
+            'movie', 'cinema'
+        ).order_by('-record_date')[:5]
+
+        recent_data = []
+        for record in recent_records:
+            recent_data.append({
+                'id': record.id,
+                'date': record.record_date,
+                'movie_title': record.movie.title if record.movie else None,
+                'cinema_name': record.cinema.name if record.cinema else None,
+                'box_office': record.daily_box_office,
+                'show_times': record.screening_count,
+                'viewer_count': record.audience_count
+            })
+
+        return Response({
+            'code': 0,
+            'data': {
+                'total_movies': total_movies,
+                'total_cinemas': total_cinemas,
+                'total_box_office': total_box_office,
+                'total_users': total_users,
+                'recent_records': recent_data
+            }
+        })

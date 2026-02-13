@@ -7,6 +7,7 @@ from .views import (
     RegionBoxOfficeView,
     TimeSeriesView,
     DashboardView,
+    OverviewStatsView,
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path('stats/region/', RegionBoxOfficeView.as_view(), name='stats-region'),
     path('stats/timeseries/', TimeSeriesView.as_view(), name='stats-timeseries'),
     path('stats/dashboard/', DashboardView.as_view(), name='stats-dashboard'),
+    path('stats/overview/', OverviewStatsView.as_view(), name='overview-stats'),
 ]
