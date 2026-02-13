@@ -103,7 +103,7 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
         tags=['票房数据']
     )
     def list(self, request, *args, **kwargs):
-        """获取票房记录列表（优化：使用原始SQL提高性能）"""
+        """获取票房记录列表（优化：使用游标分页提高性能）"""
         from django.db import connection
 
         # 获取分页参数
@@ -115,27 +115,67 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
             page_size = 10
 
         page_size = min(page_size, 100)
-        offset = (page - 1) * page_size
 
-        # 构建SQL - 使用原始查询大幅提升性能
         with connection.cursor() as cursor:
-            # 获取总数
-            cursor.execute('SELECT COUNT(*) FROM boxoffice_records')
-            total = cursor.fetchone()[0]
-
-            # 获取分页数据
-            cursor.execute(f'''
-                SELECT b.id, b.record_date, b.daily_box_office, b.screening_count, b.audience_count,
-                       b.created_at,
-                       m.id as movie_id, m.title as movie_title,
-                       c.id as cinema_id, c.name as cinema_name
-                FROM boxoffice_records b
-                LEFT JOIN movies m ON b.movie_id = m.id
-                LEFT JOIN cinemas c ON b.cinema_id = c.id
-                ORDER BY b.record_date DESC, b.id DESC
-                LIMIT {page_size} OFFSET {offset}
+            # 返回近似总数（使用表统计信息，比COUNT快很多）
+            cursor.execute('''
+                SELECT TABLE_ROWS FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'boxoffice_records'
             ''')
-            rows = cursor.fetchall()
+            row = cursor.fetchone()
+            total = row[0] if row else 0
+
+            # 游标分页：基于ID的高效分页
+            # 第一页：从最新开始
+            if page == 1:
+                cursor.execute('''
+                    SELECT b.id, b.record_date, b.daily_box_office, b.screening_count, b.audience_count,
+                           b.created_at,
+                           m.id as movie_id, m.title as movie_title,
+                           c.id as cinema_id, c.name as cinema_name
+                    FROM boxoffice_records b
+                    LEFT JOIN movies m ON b.movie_id = m.id
+                    LEFT JOIN cinemas c ON b.cinema_id = c.id
+                    ORDER BY b.id DESC
+                    LIMIT %s
+                ''', [page_size])
+                rows = cursor.fetchall()
+            else:
+                # 后续页：使用last_id游标
+                last_id = request.query_params.get('last_id')
+                if last_id:
+                    try:
+                        last_id = int(last_id)
+                        cursor.execute('''
+                            SELECT b.id, b.record_date, b.daily_box_office, b.screening_count, b.audience_count,
+                                   b.created_at,
+                                   m.id as movie_id, m.title as movie_title,
+                                   c.id as cinema_id, c.name as cinema_name
+                            FROM boxoffice_records b
+                            LEFT JOIN movies m ON b.movie_id = m.id
+                            LEFT JOIN cinemas c ON b.cinema_id = c.id
+                            WHERE b.id < %s
+                            ORDER BY b.id DESC
+                            LIMIT %s
+                        ''', [last_id, page_size])
+                        rows = cursor.fetchall()
+                    except (ValueError, TypeError):
+                        rows = []
+                else:
+                    # fallback用offset
+                    offset = (page - 1) * page_size
+                    cursor.execute('''
+                        SELECT b.id, b.record_date, b.daily_box_office, b.screening_count, b.audience_count,
+                               b.created_at,
+                               m.id as movie_id, m.title as movie_title,
+                               c.id as cinema_id, c.name as cinema_name
+                        FROM boxoffice_records b
+                        LEFT JOIN movies m ON b.movie_id = m.id
+                        LEFT JOIN cinemas c ON b.cinema_id = c.id
+                        ORDER BY b.id DESC
+                        LIMIT %s OFFSET %s
+                    ''', [page_size, offset])
+                    rows = cursor.fetchall()
 
         # 转换为字典列表
         data = []
@@ -160,7 +200,7 @@ class BoxOfficeRecordViewSet(viewsets.ModelViewSet):
         return Response({
             'code': 0,
             'data': data,
-            'total': total
+            'total': total if total is not None else 0
         })
 
     @extend_schema(
