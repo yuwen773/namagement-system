@@ -53,6 +53,37 @@ request.interceptors.response.use(
         case 404:
           ElMessage.error('请求的资源不存在')
           break
+        case 400:
+          // 处理字段验证错误，提取友好的错误信息
+          let errorMsg = ''
+          if (typeof data === 'object' && data !== null) {
+            const fieldErrors = []
+            const fieldNameMap = {
+              cover_image: '封面图片',
+              rating_percentage: '好评率',
+              opening_hours: '开放时间',
+              region: '所属地区',
+              name: '景点名称',
+              category: '景点类别',
+              address: '详细地址',
+              description: '景点描述',
+              level: '景区等级',
+              ranking: '城市排名',
+              latitude: '纬度',
+              longitude: '经度',
+              guide_count: '攻略数量',
+              images: '展示图片'
+            }
+            for (const [key, value] of Object.entries(data)) {
+              if (Array.isArray(value)) {
+                const fieldName = fieldNameMap[key] || key
+                fieldErrors.push(`${fieldName}: ${value.join('; ')}`)
+              }
+            }
+            errorMsg = fieldErrors.join('; ')
+          }
+          ElMessage.error(errorMsg || data.detail || '请求参数错误')
+          break
         case 500:
           ElMessage.error('服务器错误')
           break

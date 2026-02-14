@@ -2,38 +2,8 @@ from rest_framework import serializers
 from .models import Attraction
 
 
-def get_cover_image_url(obj):
-    """获取封面图 URL，处理外部 URL 和本地文件"""
-    # 使用原始查询来获取数据库中的原始值，绕过 ImageField 的处理
-    from django.db import connection
-
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT cover_image FROM attractions WHERE id = %s",
-                [obj.id]
-            )
-            row = cursor.fetchone()
-            if row and row[0]:
-                raw_value = row[0]
-                # 如果是外部 URL，直接返回
-                if isinstance(raw_value, str) and (raw_value.startswith('http://') or raw_value.startswith('https://')):
-                    return raw_value
-                # 否则尝试作为本地文件处理
-                if raw_value:
-                    try:
-                        return obj.cover_image.url
-                    except:
-                        return None
-    except Exception:
-        pass
-
-    return None
-
-
 class AttractionListSerializer(serializers.ModelSerializer):
     """景点列表序列化器（简化字段）"""
-    cover_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Attraction
@@ -45,13 +15,9 @@ class AttractionListSerializer(serializers.ModelSerializer):
             'guide_count', 'ranking', 'level'
         ]
 
-    def get_cover_image(self, obj):
-        return get_cover_image_url(obj)
-
 
 class AttractionDetailSerializer(serializers.ModelSerializer):
     """景点详情序列化器（完整字段）"""
-    cover_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Attraction
@@ -64,12 +30,10 @@ class AttractionDetailSerializer(serializers.ModelSerializer):
             'guide_count', 'ranking', 'level'
         ]
 
-    def get_cover_image(self, obj):
-        return get_cover_image_url(obj)
-
 
 class AttractionCreateUpdateSerializer(serializers.ModelSerializer):
     """景点创建/更新序列化器"""
+
     class Meta:
         model = Attraction
         fields = [
@@ -79,3 +43,39 @@ class AttractionCreateUpdateSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'rating_percentage',
             'guide_count', 'ranking', 'level'
         ]
+        # 设置字段为可选
+        extra_kwargs = {
+            'region': {'required': False, 'allow_blank': True, 'default': ''},
+            'opening_hours': {'required': False, 'allow_blank': True, 'default': ''},
+            'cover_image': {'required': False},
+            'images': {'required': False},
+            'rating_percentage': {'required': False, 'default': 0.0},
+            'latitude': {'required': False},
+            'longitude': {'required': False},
+            'guide_count': {'required': False, 'default': 0},
+            'ranking': {'required': False},
+            'level': {'required': False, 'allow_blank': True},
+            'description': {'required': False, 'allow_blank': True},
+        }
+
+    def validate(self, attrs):
+        # 确保必填字段有默认值
+        attrs.setdefault('region', '')
+        attrs.setdefault('opening_hours', '')
+        attrs.setdefault('rating_percentage', 0.0)
+        attrs.setdefault('guide_count', 0)
+        attrs.setdefault('level', '')
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        # 确保有默认值
+        validated_data.setdefault('region', '')
+        validated_data.setdefault('opening_hours', '')
+        validated_data.setdefault('rating_percentage', 0.0)
+        validated_data.setdefault('guide_count', 0)
+        validated_data.setdefault('level', '')
+        validated_data.setdefault('latitude', None)
+        validated_data.setdefault('longitude', None)
+        validated_data.setdefault('ranking', None)
+
+        return super().create(validated_data)

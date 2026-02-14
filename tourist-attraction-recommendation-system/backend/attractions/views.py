@@ -11,6 +11,9 @@ from .serializers import (
     AttractionCreateUpdateSerializer
 )
 from accounts.permissions import IsAdmin
+import os
+import uuid
+from django.conf import settings
 
 
 class AttractionViewSet(viewsets.ModelViewSet):
@@ -166,4 +169,54 @@ class AttractionViewSet(viewsets.ModelViewSet):
             'code': 0,
             'data': serializer.data,
             'total': queryset.count()
+        })
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin])
+    def upload(self, request):
+        """上传景点图片"""
+        file = request.FILES.get('file')
+        if not file:
+            return Response({
+                'code': -1,
+                'message': '请选择要上传的图片'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 检查文件类型
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if file.content_type not in allowed_types:
+            return Response({
+                'code': -1,
+                'message': '仅支持 JPG、PNG、GIF、WebP 格式的图片'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 检查文件大小 (最大 5MB)
+        if file.size > 5 * 1024 * 1024:
+            return Response({
+                'code': -1,
+                'message': '图片大小不能超过 5MB'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 生成唯一文件名
+        ext = os.path.splitext(file.name)[1]
+        filename = f"{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join('attractions', filename)
+
+        # 保存文件
+        from django.core.files.storage import default_storage
+        saved_path = default_storage.save(filepath, file)
+
+        # 返回文件 URL（添加域名）
+        file_url = default_storage.url(saved_path)
+        # 获取请求的域名
+        host = request.get_host() if request.get_host() else 'localhost:8123'
+        if file_url.startswith('/'):
+            file_url = f"{request.scheme}://{host}{file_url}"
+
+        return Response({
+            'code': 0,
+            'data': {
+                'url': file_url,
+                'filename': filename
+            },
+            'message': '上传成功'
         })

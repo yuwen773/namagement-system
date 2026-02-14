@@ -42,11 +42,11 @@
           </div>
 
           <div class="form-grid">
-            <el-form-item label="景点名称" prop="name">
+            <el-form-item label="景点名称" prop="name" required>
               <el-input v-model="form.name" placeholder="请输入景点名称" size="large" />
             </el-form-item>
 
-            <el-form-item label="景点类别" prop="category">
+            <el-form-item label="景点类别" prop="category" required>
               <el-select v-model="form.category" placeholder="选择类别" size="large" class="full-width">
                 <el-option label="自然风光" value="自然风光">
                   <div class="option-item">
@@ -76,19 +76,19 @@
             </el-form-item>
 
             <el-form-item label="所属地区" prop="region">
-              <el-input v-model="form.region" placeholder="如: 北京" size="large" />
+              <el-input v-model="form.region" placeholder="选填，如: 北京" size="large" />
             </el-form-item>
 
-            <el-form-item label="详细地址" prop="address">
+            <el-form-item label="详细地址" prop="address" required>
               <el-input v-model="form.address" placeholder="请输入详细地址" size="large" />
             </el-form-item>
 
             <el-form-item label="开放时间" prop="opening_hours">
-              <el-input v-model="form.opening_hours" placeholder="如: 9:00-18:00" size="large" />
+              <el-input v-model="form.opening_hours" placeholder="选填，如: 9:00-18:00" size="large" />
             </el-form-item>
 
             <el-form-item label="景区等级" prop="level">
-              <el-select v-model="form.level" placeholder="选择景区等级" size="large" class="full-width" clearable>
+              <el-select v-model="form.level" placeholder="选填" size="large" class="full-width" clearable>
                 <el-option label="5A" value="5A" />
                 <el-option label="4A" value="4A" />
                 <el-option label="3A" value="3A" />
@@ -186,10 +186,9 @@
           <el-form-item label="封面图片" prop="cover_image">
             <div class="upload-wrapper">
               <el-upload
-                action="/api/attractions/upload/"
-                :show-file-list="false"
-                :on-success="handleCoverSuccess"
+                :http-request="customUpload"
                 :before-upload="beforeUpload"
+                :show-file-list="false"
                 drag
                 class="cover-upload"
               >
@@ -248,7 +247,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import request from '@/api/request'
+import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+
+const userStore = useUserStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -304,8 +306,28 @@ function beforeUpload(file) {
   return true
 }
 
-function handleCoverSuccess(res) {
-  form.cover_image = res.data?.url || res.data
+async function customUpload(options) {
+  const { file, onSuccess, onError } = options
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const res = await request.post('/attractions/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    // 直接在这里处理成功后的逻辑
+    let url = res.data?.url || res.data
+    if (url && !url.startsWith('http')) {
+      url = `http://localhost:8123${url}`
+    }
+    form.cover_image = url
+    ElMessage.success('图片上传成功')
+  } catch (err) {
+    console.error('上传失败', err)
+    ElMessage.error(err?.response?.data?.message || '图片上传失败')
+  }
 }
 
 async function saveAttraction() {
@@ -315,18 +337,42 @@ async function saveAttraction() {
     await formRef.value.validate()
     loading.value = true
 
+    // 复制表单数据，避免修改原始数据
+    const submitData = {
+      name: form.name,
+      category: form.category,
+      address: form.address,
+      description: form.description || '',
+      region: form.region || '',
+      opening_hours: form.opening_hours || '',
+      level: form.level || '',
+      ranking: form.ranking || null,
+      rating_percentage: form.rating_percentage ?? 0,
+      guide_count: form.guide_count || 0,
+      latitude: form.latitude || null,
+      longitude: form.longitude || null,
+    }
+
+    // 如果有上传新图片才传 cover_image，否则不传
+    if (form.cover_image) {
+      submitData.cover_image = form.cover_image
+    }
+
     if (isEdit.value) {
-      await request.put(`/attractions/${route.params.id}/`, form)
+      await request.put(`/attractions/${route.params.id}/`, submitData)
     } else {
-      await request.post('/attractions/', form)
+      await request.post('/attractions/', submitData)
     }
 
     ElMessage.success('保存成功')
     router.push('/admin/attractions')
   } catch (error) {
-    if (error !== false) { // Not a validation error
+    // error === false 表示 el-form 验证失败
+    if (error === false) {
+      ElMessage.warning('请检查表单中的红色标记项，填写完整后再提交')
+    } else {
+      // 后端错误已在 request.js 中处理
       console.error(error)
-      ElMessage.error('保存失败')
     }
   } finally {
     loading.value = false

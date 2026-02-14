@@ -16,7 +16,7 @@ class Attraction(models.Model):
     category = models.CharField('类别', max_length=20, choices=CATEGORY_CHOICES, default='其他')
     region = models.CharField('地区', max_length=50, default='')
     opening_hours = models.CharField('开放时间', max_length=100, default='')
-    cover_image = models.ImageField('封面图', upload_to='attractions/', blank=True, null=True)
+    cover_image = models.CharField('封面图', max_length=500, blank=True, null=True)
     images = models.JSONField('轮播图', default=list, blank=True)
     view_count = models.IntegerField('浏览量', default=0)
     is_deleted = models.BooleanField('是否删除', default=False)
