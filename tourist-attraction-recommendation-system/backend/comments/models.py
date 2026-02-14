@@ -26,6 +26,7 @@ class Comment(models.Model):
             models.Index(fields=['attraction', 'status', 'is_deleted']),  # 评论统计优化
             models.Index(fields=['user', 'attraction', 'status']),  # 个性化推荐优化
             models.Index(fields=['status', 'is_deleted']),  # 过滤已删除评论
+            models.Index(fields=['user', 'is_deleted', '-created_at']),  # 我的评论优化
         ]
 
     def __str__(self):

@@ -137,7 +137,78 @@
             {{ item.label }}
           </router-link>
         </nav>
-        <div class="mobile-actions" v-if="!userStore.isLoggedIn">
+
+        <!-- Logged in user mobile menu -->
+        <template v-if="userStore.isLoggedIn">
+          <div class="mobile-user-links">
+            <router-link
+              to="/usercenter"
+              class="mobile-nav__link"
+              @click="mobileMenuOpen = false"
+            >
+              <svg class="mobile-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              个人中心
+            </router-link>
+            <router-link
+              to="/favorites"
+              class="mobile-nav__link"
+              @click="mobileMenuOpen = false"
+            >
+              <svg class="mobile-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              我的收藏
+            </router-link>
+            <router-link
+              to="/comments"
+              class="mobile-nav__link"
+              @click="mobileMenuOpen = false"
+            >
+              <svg class="mobile-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              我的评论
+            </router-link>
+            <router-link
+              to="/notifications"
+              class="mobile-nav__link"
+              @click="mobileMenuOpen = false"
+            >
+              <svg class="mobile-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              消息中心
+            </router-link>
+            <router-link
+              v-if="userStore.isAdmin"
+              to="/admin"
+              class="mobile-nav__link"
+              @click="mobileMenuOpen = false"
+            >
+              <svg class="mobile-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              管理后台
+            </router-link>
+            <button class="mobile-nav__link mobile-logout-btn" @click="handleLogout">
+              <svg class="mobile-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              退出登录
+            </button>
+          </div>
+        </template>
+
+        <div class="mobile-actions" v-else>
           <router-link to="/login" class="action-btn action-btn--ghost" @click="mobileMenuOpen = false">登录</router-link>
           <router-link to="/register" class="action-btn action-btn--primary" @click="mobileMenuOpen = false">注册</router-link>
         </div>
@@ -317,6 +388,18 @@ function handleCommand(command) {
       })
       break
   }
+}
+
+function handleLogout() {
+  mobileMenuOpen.value = false
+  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    userStore.logout()
+    router.push('/')
+  })
 }
 
 onMounted(() => {
@@ -617,6 +700,7 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   cursor: pointer;
+  z-index: 1001;
 }
 
 .mobile-toggle span,
@@ -670,6 +754,8 @@ onUnmounted(() => {
   top: 80px;
   left: 0;
   right: 0;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   padding: 1.5rem;
@@ -677,6 +763,7 @@ onUnmounted(() => {
   opacity: 0;
   transition: all 0.3s ease;
   box-shadow: var(--shadow-lg);
+  z-index: 999;
 }
 
 .mobile-menu--open {
@@ -704,6 +791,36 @@ onUnmounted(() => {
 .mobile-nav__link:hover {
   background: rgba(13, 148, 136, 0.08);
   color: var(--color-primary);
+}
+
+.mobile-user-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  margin-top: 0.5rem;
+}
+
+.mobile-link-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.mobile-logout-btn {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: #ef4444;
+}
+
+.mobile-logout-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .mobile-actions {
@@ -1004,6 +1121,7 @@ onUnmounted(() => {
 
   .mobile-menu {
     top: 70px;
+    max-height: calc(100vh - 70px);
   }
 
   .footer__container {

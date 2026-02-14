@@ -85,7 +85,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def my(self, request):
-        queryset = Comment.objects.filter(user=request.user, is_deleted=False)
+        queryset = Comment.objects.filter(user=request.user, is_deleted=False).select_related('attraction', 'user')
         serializer = CommentSerializer(queryset, many=True)
         return Response({
             'code': 0,
@@ -99,7 +99,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             attraction_id=attraction_id,
             status='APPROVED',
             is_deleted=False
-        )
+        ).select_related('user')
         serializer = CommentSerializer(queryset, many=True)
         return Response({
             'code': 0,
@@ -174,7 +174,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def my(self, request):
-        queryset = self.get_queryset()
+        queryset = self.get_queryset().select_related('attraction')
         serializer = FavoriteSerializer(queryset, many=True)
         return Response({
             'code': 0,

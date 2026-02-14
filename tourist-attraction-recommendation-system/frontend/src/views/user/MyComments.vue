@@ -46,10 +46,10 @@
           :style="{ animationDelay: `${index * 0.1}s` }"
         >
           <div class="card-header">
-            <div class="attraction-info" @click="goToDetail(item.attraction.id)">
-              <el-image :src="item.attraction.coverImage" fit="cover" class="attraction-thumb" />
+            <div class="attraction-info" @click="goToDetail(item.attraction_id)">
+              <el-image :src="item.cover_image || getDefaultImage()" fit="cover" class="attraction-thumb" />
               <div class="attraction-details">
-                <h3 class="attraction-name">{{ item.attraction.name }}</h3>
+                <h3 class="attraction-name">{{ item.attraction_name }}</h3>
                 <p class="comment-date">
                   <svg class="date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -57,7 +57,7 @@
                     <line x1="8" y1="2" x2="8" y2="6"/>
                     <line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
-                  {{ formatDate(item.createdAt) }}
+                  {{ formatDate(item.created_at) }}
                 </p>
               </div>
             </div>
@@ -162,6 +162,10 @@ function formatDate(date) {
 
 function goToDetail(id) {
   router.push(`/attractions/${id}`)
+}
+
+function getDefaultImage() {
+  return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=200&fit=crop'
 }
 
 async function fetchComments() {

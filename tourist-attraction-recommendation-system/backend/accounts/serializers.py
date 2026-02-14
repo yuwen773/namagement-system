@@ -54,17 +54,21 @@ class UserLoginSerializer(serializers.Serializer):
 
         # 检查用户是否存在且未删除
         try:
-            user = UserProfile.objects.get(username=username, is_deleted=False)
+            user = UserProfile.objects.get(username=username)
         except UserProfile.DoesNotExist:
-            raise serializers.ValidationError('用户名或密码错误')
+            raise serializers.ValidationError({'username': '用户不存在'})
+
+        # 检查用户是否已删除
+        if user.is_deleted:
+            raise serializers.ValidationError({'username': '用户账号已注销'})
 
         # 检查用户是否被禁用
         if not user.is_active:
-            raise serializers.ValidationError('用户已被禁用')
+            raise serializers.ValidationError({'username': '用户已被禁用，请联系管理员'})
 
         # 验证密码（明文比对）
         if user.password != password:
-            raise serializers.ValidationError('用户名或密码错误')
+            raise serializers.ValidationError({'password': '密码错误'})
 
         attrs['user'] = user
         return attrs
