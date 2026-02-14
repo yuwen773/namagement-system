@@ -122,9 +122,11 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         # 检查是否已有今日签到记录
         today = timezone.now().date()
         existing_attendance = AttendanceRecord.objects.filter(
-            employee=employee,
-            schedule__work_date=today
-        ).first()
+            employee=employee
+        ).filter(
+            Q(schedule__work_date=today) |
+            Q(schedule__isnull=True, clock_in_time__date=today)
+        ).order_by('-clock_in_time').first()
 
         if existing_attendance and existing_attendance.clock_in_time:
             return ApiResponse.error(
@@ -182,13 +184,13 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         # 查找今日考勤记录
         today = timezone.now().date()
-        try:
-            attendance = AttendanceRecord.objects.filter(
-                employee=employee,
-                schedule__work_date=today
-            ).first()
-        except AttendanceRecord.DoesNotExist:
-            attendance = None
+        # 支持有排班和无排班的记录
+        attendance = AttendanceRecord.objects.filter(
+            employee=employee
+        ).filter(
+            Q(schedule__work_date=today) |
+            Q(schedule__isnull=True, clock_in_time__date=today)
+        ).order_by('-clock_in_time').first()
 
         if not attendance:
             return ApiResponse.error(message='未找到今日签到记录，请先签到')
@@ -241,9 +243,10 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         end_date = data['end_date']
         employee_id = data.get('employee_id')
 
-        # 构建查询条件
+        # 构建查询条件 - 支持有排班和无排班的记录
         queryset = AttendanceRecord.objects.filter(
-            schedule__work_date__range=[start_date, end_date]
+            Q(schedule__work_date__range=[start_date, end_date]) |
+            Q(schedule__isnull=True, clock_in_time__date__range=[start_date, end_date])
         )
 
         if employee_id:
@@ -314,6 +317,8 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         - start_date: 开始日期（可选）
         - end_date: 结束日期（可选）
         """
+        from django.db.models import Q
+
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
             return ApiResponse.error(message='缺少员工ID')
@@ -325,10 +330,14 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
         if start_date and end_date:
-            queryset = queryset.filter(schedule__work_date__range=[start_date, end_date])
+            # 需要同时满足：有排班的按排班日期过滤，没有排班的按签到时间过滤
+            queryset = queryset.filter(
+                Q(schedule__work_date__range=[start_date, end_date]) |
+                Q(schedule__isnull=True, clock_in_time__date__range=[start_date, end_date])
+            )
 
         # 排序
-        queryset = queryset.order_by('-schedule__work_date')
+        queryset = queryset.order_by('-clock_in_time')
 
         # 分页
         page = self.paginate_queryset(queryset)

@@ -1,0 +1,271 @@
+{
+  "timestamp": "2026-02-04 14:16:14",
+  "duration": "completed",
+  "summary": {
+    "total": 37,
+    "passed": 26,
+    "failed": 11,
+    "pass_rate": "70.3%"
+  },
+  "tests": [
+    {
+      "name": "管理员登录",
+      "method": "POST",
+      "endpoint": "/users/auth/login/",
+      "status": 400,
+      "passed": false
+    },
+    {
+      "name": "创建分类-发动机",
+      "method": "POST",
+      "endpoint": "/products/categories/",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "name": "创建分类-悬挂",
+      "method": "POST",
+      "endpoint": "/products/categories/",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "name": "分类列表",
+      "method": "GET",
+      "endpoint": "/products/categories/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "树形结构",
+      "method": "GET",
+      "endpoint": "/products/categories/tree/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "分类详情",
+      "method": "GET",
+      "endpoint": "/products/categories/5/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "更新分类",
+      "method": "PATCH",
+      "endpoint": "/products/categories/5/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "删除分类",
+      "method": "DELETE",
+      "endpoint": "/products/categories/6/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "创建商品-涡轮",
+      "method": "POST",
+      "endpoint": "/products/products/",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "name": "创建商品-弹簧",
+      "method": "POST",
+      "endpoint": "/products/products/",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "name": "创建商品-刹车",
+      "method": "POST",
+      "endpoint": "/products/products/",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "name": "商品列表",
+      "method": "GET",
+      "endpoint": "/products/products/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "分类过滤",
+      "method": "GET",
+      "endpoint": "/products/products/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "价格过滤",
+      "method": "GET",
+      "endpoint": "/products/products/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "状态过滤",
+      "method": "GET",
+      "endpoint": "/products/products/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "推荐商品",
+      "method": "GET",
+      "endpoint": "/products/products/featured/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "新品",
+      "method": "GET",
+      "endpoint": "/products/products/new_arrivals/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "商品搜索",
+      "method": "GET",
+      "endpoint": "/products/products/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "价格排序",
+      "method": "GET",
+      "endpoint": "/products/products/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "销量排序",
+      "method": "GET",
+      "endpoint": "/products/products/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "商品详情",
+      "method": "GET",
+      "endpoint": "/products/products/1/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "更新商品",
+      "method": "PATCH",
+      "endpoint": "/products/products/1/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "发布商品",
+      "method": "POST",
+      "endpoint": "/products/products/2/publish/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "下架商品",
+      "method": "POST",
+      "endpoint": "/products/products/2/archive/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "删除商品",
+      "method": "DELETE",
+      "endpoint": "/products/products/1/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "删除商品2",
+      "method": "DELETE",
+      "endpoint": "/products/products/3/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "创建测试商品",
+      "method": "POST",
+      "endpoint": "/products/products/",
+      "status": 201,
+      "passed": true
+    },
+    {
+      "name": "添加图片",
+      "method": "POST",
+      "endpoint": "/products/images/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "图片列表",
+      "method": "GET",
+      "endpoint": "/products/images/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "添加属性",
+      "method": "POST",
+      "endpoint": "/products/attributes/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "添加属性2",
+      "method": "POST",
+      "endpoint": "/products/attributes/",
+      "status": 500,
+      "passed": false
+    },
+    {
+      "name": "属性列表",
+      "method": "GET",
+      "endpoint": "/products/attributes/",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "未授权创建商品",
+      "method": "POST",
+      "endpoint": "/products/products/",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "name": "无效Token访问",
+      "method": "GET",
+      "endpoint": "/products/categories/",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "name": "缺少必填字段",
+      "method": "POST",
+      "endpoint": "/products/categories/",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "name": "不存在资源",
+      "method": "GET",
+      "endpoint": "/products/products/999999/",
+      "status": 404,
+      "passed": true
+    },
+    {
+      "name": "无效商品ID",
+      "method": "GET",
+      "endpoint": "/products/products/abc/",
+      "status": 404,
+      "passed": true
+    }
+  ]
+}

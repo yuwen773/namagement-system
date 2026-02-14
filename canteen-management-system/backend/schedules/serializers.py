@@ -43,15 +43,20 @@ class ScheduleListSerializer(serializers.ModelSerializer):
     """排班列表序列化器（简化版）"""
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     shift_name = serializers.CharField(source='shift.name', read_only=True)
+    shift_time = serializers.SerializerMethodField(read_only=True)
     position_display = serializers.CharField(source='employee.get_position_display', read_only=True)
-    start_time = serializers.TimeField(source='shift.start_time', read_only=True)
-    end_time = serializers.TimeField(source='shift.end_time', read_only=True)
+
+    def get_shift_time(self, obj):
+        """获取班次时间字符串"""
+        if obj.shift:
+            return f"{obj.shift.start_time.strftime('%H:%M')} - {obj.shift.end_time.strftime('%H:%M')}"
+        return ''
 
     class Meta:
         model = Schedule
         fields = [
-            'id', 'employee_name', 'shift_name', 'position_display',
-            'start_time', 'end_time', 'work_date', 'is_swapped'
+            'id', 'employee', 'shift', 'employee_name', 'shift_name', 'shift_time',
+            'position_display', 'work_date', 'is_swapped'
         ]
 
 
@@ -141,18 +146,24 @@ class ShiftSwapRequestSerializer(serializers.ModelSerializer):
 
     def get_original_schedule_info(self, obj):
         """获取原班次信息"""
-        return f"{obj.original_schedule_date} {obj.original_shift_name}"
+        if obj.original_schedule:
+            return f"{obj.original_schedule.work_date} {obj.original_schedule.shift.name}"
+        return ''
 
     def get_target_schedule_info(self, obj):
         """获取目标班次信息"""
-        return f"{obj.target_date} {obj.target_shift_name}"
+        if obj.target_shift:
+            return f"{obj.target_date} {obj.target_shift.name}"
+        return ''
 
     class Meta:
         model = ShiftSwapRequest
         fields = [
             'id', 'requester', 'requester_name', 'original_schedule',
             'original_schedule_date', 'original_shift_name', 'original_shift_time',
+            'original_schedule_info',
             'target_date', 'target_shift', 'target_shift_name', 'target_shift_time',
+            'target_schedule_info',
             'reason', 'status', 'status_display', 'approver', 'approver_name',
             'approval_remark', 'approval_time', 'created_at'
         ]

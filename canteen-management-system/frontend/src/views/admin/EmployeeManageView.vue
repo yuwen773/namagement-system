@@ -244,7 +244,7 @@
               {{ currentEmployee.status_display }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ currentEmployee.created_at }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDateTime(currentEmployee.created_at) }}</el-descriptions-item>
           <el-descriptions-item label="健康证号">{{ currentEmployee.health_certificate_no || '-' }}</el-descriptions-item>
           <el-descriptions-item label="健康证有效期">
             {{ currentEmployee.health_certificate_expiry || '-' }}
@@ -252,7 +252,7 @@
           <el-descriptions-item label="厨师等级证">
             {{ currentEmployee.chef_certificate_level || '-' }}
           </el-descriptions-item>
-          <el-descriptions-item label="更新时间">{{ currentEmployee.updated_at }}</el-descriptions-item>
+          <el-descriptions-item label="更新时间">{{ formatDateTime(currentEmployee.updated_at) }}</el-descriptions-item>
         </el-descriptions>
       </div>
       <template #footer>
@@ -574,6 +574,18 @@ const getStatusTagType = (status) => {
     LEAVE_WITHOUT_PAY: 'warning'   // 停薪留职 - 橙色
   }
   return typeMap[status] || ''
+}
+
+// 格式化日期时间
+const formatDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return '-'
+  const date = new Date(dateTimeStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
 // 初始化

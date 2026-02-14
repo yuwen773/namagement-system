@@ -361,7 +361,7 @@ const loadSwapList = async () => {
 
 // 加载我的排班
 const loadMySchedules = async () => {
-  const employeeId = userStore.userInfo?.employee
+  const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
   if (!employeeId) return
 
   try {
@@ -376,17 +376,13 @@ const loadMySchedules = async () => {
     )
 
     if (res.code === 200) {
-      // 处理排班数据
-      mySchedules.value = await Promise.all((res.data.results || res.data || []).map(async schedule => {
-        // 获取班次详情
-        const shiftRes = await getShiftDetail(schedule.shift)
-        return {
-          id: schedule.id,
-          work_date: schedule.work_date,
-          shift_id: schedule.shift,
-          shift_name: shiftRes.data?.name || '',
-          shift_time: shiftRes.data ? `${shiftRes.data.start_time} - ${shiftRes.data.end_time}` : ''
-        }
+      // 处理排班数据，直接使用返回的 shift_time
+      mySchedules.value = (res.data.results || res.data || []).map(schedule => ({
+        id: schedule.id,
+        work_date: schedule.work_date,
+        shift_id: schedule.shift,
+        shift_name: schedule.shift_name || '',
+        shift_time: schedule.shift_time || ''
       }))
     }
   } catch (error) {
@@ -453,7 +449,7 @@ const handleSubmit = async () => {
   const valid = await createFormRef.value?.validate()
   if (!valid) return
 
-  const employeeId = userStore.userInfo?.employee
+  const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
   if (!employeeId) {
     ElMessage.warning('未关联员工档案，无法提交申请')
     return
