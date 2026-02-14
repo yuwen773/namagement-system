@@ -45,18 +45,18 @@
           :style="{ animationDelay: `${index * 0.08}s` }"
           :class="{ removing: item.removing }"
         >
-          <div class="card-inner" @click="goToDetail(item.attraction.id)">
+          <div class="card-inner" @click="goToDetail(item.attraction)">
             <div class="card-image-wrapper">
-              <el-image :src="item.attraction.coverImage" fit="cover" class="card-image" />
+              <el-image :src="item.attraction_cover || getDefaultImage()" fit="cover" class="card-image" />
               <div class="card-overlay">
                 <div class="card-rating">
                   <svg class="star-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
-                  <span>{{ item.attraction.rating || 4.5 }}</span>
+                  <span>{{ item.attraction_rating || 4.5 }}</span>
                 </div>
                 <div class="card-category">
-                  {{ getCategoryLabel(item.attraction.category) }}
+                  {{ getCategoryLabel(item.attraction_category) }}
                 </div>
               </div>
               <button class="favorite-indicator" @click.stop="toggleFavorite(item)">
@@ -67,7 +67,7 @@
             </div>
 
             <div class="card-content">
-              <h3 class="card-title">{{ item.attraction.name }}</h3>
+              <h3 class="card-title">{{ item.attraction_name }}</h3>
 
               <div class="card-meta">
                 <div class="meta-item">
@@ -75,15 +75,7 @@
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                     <circle cx="12" cy="10" r="3"/>
                   </svg>
-                  <span>{{ item.attraction.address }}</span>
-                </div>
-                <div class="meta-item price">
-                  <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
-                    <path d="M12 18V6"/>
-                  </svg>
-                  <span>{{ item.attraction.price ? `¥${item.attraction.price}` : '免费' }}</span>
+                  <span>{{ item.attraction_address || '暂无地址信息' }}</span>
                 </div>
               </div>
 
@@ -139,6 +131,10 @@ function goToDetail(id) {
   router.push(`/attractions/${id}`)
 }
 
+function getDefaultImage() {
+  return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop'
+}
+
 async function fetchFavorites() {
   loading.value = true
   try {
@@ -155,7 +151,7 @@ async function fetchFavorites() {
 async function confirmRemove(item) {
   try {
     await ElMessageBox.confirm(
-      `确定要取消收藏 "${item.attraction.name}" 吗？`,
+      `确定要取消收藏 "${item.attraction_name}" 吗？`,
       '取消收藏',
       {
         confirmButtonText: '确定',
@@ -174,7 +170,7 @@ async function toggleFavorite(item) {
     // Add removing animation
     item.removing = true
 
-    await request.delete(`/comments/favorites/${item.attraction.id}/`)
+    await request.delete(`/comments/favorites/${item.attraction}/`)
 
     // Wait for animation
     await new Promise(resolve => setTimeout(resolve, 300))
