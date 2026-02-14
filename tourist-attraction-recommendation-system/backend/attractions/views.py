@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -33,15 +34,45 @@ class AttractionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Attraction.objects.filter(is_deleted=False)
 
-        # 类别筛选
+        # 类别筛选 - 支持英文值和中文值
         category = self.request.query_params.get('category')
         if category:
+            # 英文到中文的映射
+            category_map = {
+                'NATURE': '自然风光',
+                'HISTORY': '人文古迹',
+                'THEME': '主题乐园',
+                'OTHER': '其他',
+                'MODERN': '现代建筑',
+            }
+            # 如果是英文值，转换为中文
+            if category in category_map:
+                category = category_map[category]
             queryset = queryset.filter(category=category)
 
         # 地区筛选
         region = self.request.query_params.get('region')
         if region:
-            queryset = queryset.filter(region=region)
+            # 地区也需要转换（如果有映射的话）
+            region_map = {
+                'beijing': '北京',
+                'shanghai': '上海',
+                'hangzhou': '杭州',
+                'chengdu': '成都',
+                'xian': '西安',
+            }
+            if region.lower() in region_map:
+                region = region_map[region.lower()]
+            queryset = queryset.filter(region__icontains=region)
+
+        # 关键词搜索
+        keyword = self.request.query_params.get('keyword')
+        if keyword:
+            queryset = queryset.filter(
+                models.Q(name__icontains=keyword) |
+                models.Q(description__icontains=keyword) |
+                models.Q(address__icontains=keyword)
+            )
 
         return queryset
 

@@ -45,10 +45,16 @@
               地区
             </label>
             <el-select v-model="filters.region" placeholder="选择地区" clearable class="filter-select">
-              <el-option label="朝阳区" value="chaoyang" />
-              <el-option label="海淀区" value="haidian" />
-              <el-option label="东城区" value="dongcheng" />
-              <el-option label="西城区" value="xicheng" />
+              <el-option label="北京" value="北京" />
+              <el-option label="上海" value="上海" />
+              <el-option label="杭州" value="杭州" />
+              <el-option label="成都" value="成都" />
+              <el-option label="西安" value="西安" />
+              <el-option label="广州" value="广州" />
+              <el-option label="深圳" value="深圳" />
+              <el-option label="重庆" value="重庆" />
+              <el-option label="武汉" value="武汉" />
+              <el-option label="南京" value="南京" />
             </el-select>
           </div>
 
