@@ -28,18 +28,18 @@ VALUES
 -- =============================================
 INSERT INTO attractions (name, description, address, category, region, opening_hours, cover_image, images, view_count, is_deleted, created_at, updated_at)
 VALUES
-('故宫', '中国明清两代的皇家宫殿，世界上最大的古代宫殿之一', '北京市东城区景山前街4号', '人文古迹', '华北', '8:30-17:00', 'gugong.jpg', '["gugong_1.jpg", "gugong_2.jpg", "gugong_3.jpg"]', 1500, 0, NOW(), NOW()),
-('长城', '世界文化遗产，世界上最著名的古代防御工程', '北京市延庆区G6京藏高速58号出口', '人文古迹', '华北', '7:00-18:00', 'changcheng.jpg', '["changcheng_1.jpg", "changcheng_2.jpg"]', 2000, 0, NOW(), NOW()),
-('西湖', '中国首批国家重点风景名胜区和国家5A级旅游景区', '浙江省杭州市西湖区', '自然风光', '华东', '全天开放', 'xihu.jpg', '["xihu_1.jpg", "xihu_2.jpg", "xihu_3.jpg"]', 1800, 0, NOW(), NOW()),
-('黄山', '五岳归来不看山，黄山归来不看岳', '安徽省黄山市黄山区', '自然风光', '华东', '6:00-17:30', 'huangshan.jpg', '["huangshan_1.jpg", "huangshan_2.jpg"]', 1200, 0, NOW(), NOW()),
-('九寨沟', '童话世界，天然翡翠', '四川省阿坝藏族羌族自治州九寨沟县', '自然风光', '西南', '7:00-18:00', 'jiuzhaigou.jpg', '["jiuzhaigou_1.jpg", "jiuzhaigou_2.jpg"]', 1100, 0, NOW(), NOW()),
-('鼓浪屿', '万国建筑博览，音乐之岛', '福建省厦门市思明区', '人文古迹', '华东', '全天开放', 'gulangyu.jpg', '["gulangyu_1.jpg", "gulangyu_2.jpg"]', 900, 0, NOW(), NOW()),
-('上海迪士尼乐园', '中国内地首座迪士尼主题乐园', '上海市浦东新区川沙新镇', '主题乐园', '华东', '9:00-21:00', 'disney.jpg', '["disney_1.jpg", "disney_2.jpg", "disney_3.jpg"]', 2500, 0, NOW(), NOW()),
-('张家界国家森林公园', '世界自然遗产，世界地质公园', '湖南省张家界市武陵源区', '自然风光', '华中', '7:00-18:00', 'zhangjiajie.jpg', '["zhangjiajie_1.jpg", "zhangjiajie_2.jpg"]', 1300, 0, NOW(), NOW()),
-('兵马俑', '世界第八大奇迹', '陕西省西安市临潼区秦陵北路', '人文古迹', '西北', '8:30-18:00', 'bengmanyong.jpg', '["bengmanyong_1.jpg", "bengmanyong_2.jpg"]', 1600, 0, NOW(), NOW()),
-('桂林山水', '桂林山水甲天下', '广西壮族自治区桂林市', '自然风光', '华南', '全天开放', 'guilin.jpg', '["guilin_1.jpg", "guilin_2.jpg"]', 1400, 0, NOW(), NOW()),
-('丽江古城', '世界文化遗产，纳西族文化的活化石', '云南省丽江市古城区', '人文古迹', '西南', '全天开放', 'lijiang.jpg', '["lijiang_1.jpg", "lijiang_2.jpg"]', 1000, 0, NOW(), NOW()),
-('三亚湾', '热带海滨风光度假胜地', '海南省三亚市三亚湾路', '自然风光', '华南', '全天开放', 'sanyawan.jpg', '["sanyawan_1.jpg", "sanyawan_2.jpg"]', 1700, 0, NOW(), NOW());
+('故宫', '中国明清两代的皇家宫殿，世界上最大的古代宫殿之一', '北京市东城区景山前街4号', '人文古迹', '华北', '8:30-17:00', 'https://images.unsplash.com/photo-1599571234909-29ed5d1321d6?w=800', '["https://images.unsplash.com/photo-1599571234909-29ed5d1321d6?w=800", "https://images.unsplash.com/photo-1576633066407-5c5c6c5e9b7e?w=800", "https://images.unsplash.com/photo-1569183091675-4a28d43161de?w=800"]', 1500, 0, NOW(), NOW()),
+('长城', '世界文化遗产，世界上最著名的古代防御工程', '北京市延庆区G6京藏高速58号出口', '人文古迹', '华北', '7:00-18:00', 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800', '["https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800", "https://images.unsplash.com/photo-1529921879218-f99e50a72d3f?w=800"]', 2000, 0, NOW(), NOW()),
+('西湖', '中国首批国家重点风景名胜区和国家5A级旅游景区', '浙江省杭州市西湖区', '自然风光', '华东', '全天开放', 'https://images.unsplash.com/photo-1581591524425-c7e0978865fc?w=800', '["https://images.unsplash.com/photo-1581591524425-c7e0978865fc?w=800", "https://images.unsplash.com/photo-1598256980100-fc4f9a5e2f4b?w=800", "https://images.unsplash.com/photo-1607167697192-a232202d3d2e?w=800"]', 1800, 0, NOW(), NOW()),
+('黄山', '五岳归来不看山，黄山归来不看岳', '安徽省黄山市黄山区', '自然风光', '华东', '6:00-17:30', 'https://images.unsplash.com/photo-1551981327-152924333a66?w=800', '["https://images.unsplash.com/photo-1551981327-152924333a66?w=800", "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=800"]', 1200, 0, NOW(), NOW()),
+('九寨沟', '童话世界，天然翡翠', '四川省阿坝藏族羌族自治州九寨沟县', '自然风光', '西南', '7:00-18:00', 'https://images.unsplash.com/photo-1583067570494-b771f28d88e7?w=800', '["https://images.unsplash.com/photo-1583067570494-b771f28d88e7?w=800", "https://images.unsplash.com/photo-1573047347894-aa4d9627c5b5?w=800"]', 1100, 0, NOW(), NOW()),
+('鼓浪屿', '万国建筑博览，音乐之岛', '福建省厦门市思明区', '人文古迹', '华东', '全天开放', 'https://images.unsplash.com/photo-1518458028785-8fbcd101ebb9?w=800', '["https://images.unsplash.com/photo-1518458028785-8fbcd101ebb9?w=800", "https://images.unsplash.com/photo-1548565322-153d471e2bdc?w=800"]', 900, 0, NOW(), NOW()),
+('上海迪士尼乐园', '中国内地首座迪士尼主题乐园', '上海市浦东新区川沙新镇', '主题乐园', '华东', '9:00-21:00', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800', '["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800", "https://images.unsplash.com/photo-1514533450685-4493e01d1fdc?w=800", "https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=800"]', 2500, 0, NOW(), NOW()),
+('张家界国家森林公园', '世界自然遗产，世界地质公园', '湖南省张家界市武陵源区', '自然风光', '华中', '7:00-18:00', 'https://images.unsplash.com/photo-1580834341589-8c17a3a630ca?w=800', '["https://images.unsplash.com/photo-1580834341589-8c17a3a630ca?w=800", "https://images.unsplash.com/photo-1560869713-bf57afe34fe7?w=800"]', 1300, 0, NOW(), NOW()),
+('兵马俑', '世界第八大奇迹', '陕西省西安市临潼区秦陵北路', '人文古迹', '西北', '8:30-18:00', 'https://images.unsplash.com/photo-1591123120675-6f7f1aae0e5b?w=800', '["https://images.unsplash.com/photo-1591123120675-6f7f1aae0e5b?w=800", "https://images.unsplash.com/photo-1591122947157-26bad3a117d2?w=800"]', 1600, 0, NOW(), NOW()),
+('桂林山水', '桂林山水甲天下', '广西壮族自治区桂林市', '自然风光', '华南', '全天开放', 'https://images.unsplash.com/photo-1537531383496-f4749a4b8590?w=800', '["https://images.unsplash.com/photo-1537531383496-f4749a4b8590?w=800", "https://images.unsplash.com/photo-1516216628259-9474d32d1870?w=800"]', 1400, 0, NOW(), NOW()),
+('丽江古城', '世界文化遗产，纳西族文化的活化石', '云南省丽江市古城区', '人文古迹', '西南', '全天开放', 'https://images.unsplash.com/photo-1527838832700-5059252407fa?w=800', '["https://images.unsplash.com/photo-1527838832700-5059252407fa?w=800", "https://images.unsplash.com/photo-1526716173434-a1b1c64f6bd2?w=800"]', 1000, 0, NOW(), NOW()),
+('三亚湾', '热带海滨风光度假胜地', '海南省三亚市三亚湾路', '自然风光', '华南', '全天开放', 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800', '["https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800", "https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=800"]', 1700, 0, NOW(), NOW());
 
 -- =============================================
 -- 4. 插入示例评论数据

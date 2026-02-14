@@ -4,23 +4,29 @@ from .models import Attraction
 
 def get_cover_image_url(obj):
     """获取封面图 URL，处理外部 URL 和本地文件"""
-    # 直接从 __dict__ 获取原始值，避免 ImageField 的自动处理
-    raw_value = obj.__dict__.get('cover_image')
+    # 使用原始查询来获取数据库中的原始值，绕过 ImageField 的处理
+    from django.db import connection
 
-    if not raw_value:
-        return None
-
-    # 如果是外部 URL，直接返回
-    if isinstance(raw_value, str) and raw_value.startswith('http'):
-        return raw_value
-
-    # 如果是本地文件路径，使用 ImageField 的 url 方法
-    cover = obj.cover_image
-    if cover:
-        try:
-            return cover.url
-        except (ValueError, FileNotFoundError):
-            return None
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT cover_image FROM attractions WHERE id = %s",
+                [obj.id]
+            )
+            row = cursor.fetchone()
+            if row and row[0]:
+                raw_value = row[0]
+                # 如果是外部 URL，直接返回
+                if isinstance(raw_value, str) and (raw_value.startswith('http://') or raw_value.startswith('https://')):
+                    return raw_value
+                # 否则尝试作为本地文件处理
+                if raw_value:
+                    try:
+                        return obj.cover_image.url
+                    except:
+                        return None
+    except Exception:
+        pass
 
     return None
 

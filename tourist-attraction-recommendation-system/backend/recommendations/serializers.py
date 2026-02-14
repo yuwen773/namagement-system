@@ -29,12 +29,23 @@ class AttractionRecommendSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """自定义输出"""
+        # 优先处理图片URL - 在调用 super() 之前处理
+        raw_value = instance.__dict__.get('cover_image')
+
+        # 先调用 super() 获取默认数据
         data = super().to_representation(instance)
-        # 处理图片URL
-        if instance.cover_image:
-            request = self.context.get('request')
-            if request:
-                data['cover_image'] = request.build_absolute_uri(instance.cover_image.url)
-            else:
-                data['cover_image'] = instance.cover_image.url
+
+        # 如果是外部URL，直接覆盖
+        if raw_value and isinstance(raw_value, str) and (raw_value.startswith('http://') or raw_value.startswith('https://')):
+            data['cover_image'] = raw_value
+        else:
+            # 本地文件使用 Django 的 url 方法
+            try:
+                request = self.context.get('request')
+                if request:
+                    data['cover_image'] = request.build_absolute_uri(instance.cover_image.url)
+                else:
+                    data['cover_image'] = instance.cover_image.url
+            except:
+                data['cover_image'] = None
         return data
