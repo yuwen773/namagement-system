@@ -34,7 +34,8 @@ export const useUserStore = defineStore('user', () => {
 
       return { success: true }
     } catch (error) {
-      return { success: false, message: error.message }
+      // 错误已由 request.js 的拦截器处理，这里只返回失败状态
+      return { success: false }
     } finally {
       loading.value = false
     }

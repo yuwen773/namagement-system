@@ -7,6 +7,7 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import router from '@/router'
 import { useUserStore } from '@/stores/user'
+import { showError, parseErrorMessage } from './errorHandler'
 
 // 创建 axios 实例
 const request = axios.create({
@@ -40,61 +41,25 @@ request.interceptors.response.use(
     if (res.code === 0) {
       return res
     }
-    console.log(response);
-    
-    // 其他业务错误码
-    ElMessage.error(res.message || '请求失败')
-    return Promise.reject(new Error(res.message || '请求失败'))
+
+    // 业务错误码（code: -1 等）- 使用统一错误处理
+    // 构造错误对象供 parseErrorMessage 使用
+    const businessError = {
+      response: {
+        status: response.status || 400,
+        data: res
+      }
+    }
+
+    // 显示错误提示
+    showError(businessError)
+
+    // 返回拒绝的 Promise
+    return Promise.reject(businessError)
   },
   (error) => {
-    // HTTP 错误处理
-    if (error.response) {
-      const { status, data } = error.response
-      switch (status) {
-        case 401:
-          // Token 过期或无效
-          // 防止多个请求同时弹出确认框
-          if (!window.isShowing401Dialog) {
-            window.isShowing401Dialog = true
-            ElMessageBox.confirm('登录已过期，请重新登录', '提示', {
-              confirmButtonText: '重新登录',
-              cancelButtonText: '取消',
-              type: 'warning'
-            }).then(() => {
-              // 清除 Pinia store 状态
-              const userStore = useUserStore()
-              userStore.token = ''
-              userStore.user = null
-
-              // 清除本地存储
-              localStorage.removeItem('access_token')
-              localStorage.removeItem('refresh_token')
-              localStorage.removeItem('user')
-
-              // 跳转到登录页
-              router.push('/login')
-            }).finally(() => {
-              window.isShowing401Dialog = false
-            })
-          }
-          break
-        case 403:
-          ElMessage.error('没有权限访问')
-          break
-        case 404:
-          ElMessage.error('请求的资源不存在')
-          break
-        case 500:
-          ElMessage.error(data.message || data.detail || '服务器错误')
-          break
-        default:
-          ElMessage.error(data.message || data.detail || '请求失败')
-      }
-    } else if (error.request) {
-      ElMessage.error('网络请求失败，请检查网络连接')
-    } else {
-      ElMessage.error('请求配置错误')
-    }
+    // HTTP 错误处理 - 使用统一错误处理
+    showError(error)
     return Promise.reject(error)
   }
 )
