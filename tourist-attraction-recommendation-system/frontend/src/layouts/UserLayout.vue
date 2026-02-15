@@ -24,7 +24,7 @@
         <!-- Navigation -->
         <nav class="header__nav">
           <router-link
-            v-for="item in navItems"
+            v-for="item in displayedNavItems"
             :key="item.path"
             :to="item.path"
             class="nav-link"
@@ -339,7 +339,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
@@ -354,6 +354,20 @@ const navItems = [
   { path: '/', label: '首页' },
   { path: '/attractions', label: '景点探索' }
 ]
+
+const userNavItems = [
+  { path: '/favorites', label: '我的收藏' },
+  { path: '/comments', label: '我的评论' },
+  { path: '/notifications', label: '消息中心' },
+  { path: '/usercenter', label: '个人中心' }
+]
+
+const displayedNavItems = computed(() => {
+  if (userStore.isLoggedIn) {
+    return [...navItems, ...userNavItems]
+  }
+  return navItems
+})
 
 function handleScroll() {
   isScrolled.value = window.scrollY > 20
