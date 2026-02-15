@@ -43,6 +43,13 @@ const loading = ref({
   trend: false
 })
 
+// 数据加载状态跟踪
+const dataLoaded = ref({
+  region: false,
+  type: false,
+  trend: false
+})
+
 // 时间维度（用于走势图）
 const timeRange = ref('week')
 const timeRangeOptions = [
@@ -53,10 +60,16 @@ const timeRangeOptions = [
 
 // ============ 地域分布图 ============
 const loadRegionData = async () => {
+  // 如果已经加载过，不再重复加载
+  if (dataLoaded.value.region) {
+    return
+  }
+
   loading.value.region = true
   try {
     const res = await getRegionDistribution()
     regionData.value = res.data || []
+    dataLoaded.value.region = true
     nextTick(() => initRegionChart())
   } catch (error) {
     console.error('加载地域数据失败:', error)
@@ -134,10 +147,16 @@ const initRegionChart = () => {
 
 // ============ 类型偏好图 ============
 const loadTypeData = async () => {
+  // 如果已经加载过，不再重复加载
+  if (dataLoaded.value.type) {
+    return
+  }
+
   loading.value.type = true
   try {
     const res = await getTypeDistribution()
     typeData.value = res.data || []
+    dataLoaded.value.type = true
     nextTick(() => initTypeChart())
   } catch (error) {
     console.error('加载类型数据失败:', error)
@@ -215,6 +234,11 @@ const initTypeChart = () => {
 
 // ============ 时间走势图 ============
 const loadTrendData = async () => {
+  // 如果已经加载过，不再重复加载
+  if (dataLoaded.value.trend) {
+    return
+  }
+
   loading.value.trend = true
   try {
     let params = {}
@@ -228,6 +252,7 @@ const loadTrendData = async () => {
 
     const res = await getTimeSeries(params)
     trendData.value = res.data || []
+    dataLoaded.value.trend = true
     nextTick(() => initTrendChart())
   } catch (error) {
     console.error('加载趋势数据失败:', error)
@@ -309,13 +334,30 @@ const initTrendChart = () => {
 const handleTabChange = (tab) => {
   activeTab.value = tab
   nextTick(() => {
-    if (tab === 'region' && regionData.value.length > 0) initRegionChart()
-    if (tab === 'type' && typeData.value.length > 0) initTypeChart()
-    if (tab === 'trend' && trendData.value.length > 0) initTrendChart()
+    // 懒加载：切换到某个 tab 时才加载该图表的数据
+    if (tab === 'region' && !dataLoaded.value.region) {
+      loadRegionData()
+    } else if (tab === 'region' && regionData.value.length > 0) {
+      initRegionChart()
+    }
+
+    if (tab === 'type' && !dataLoaded.value.type) {
+      loadTypeData()
+    } else if (tab === 'type' && typeData.value.length > 0) {
+      initTypeChart()
+    }
+
+    if (tab === 'trend' && !dataLoaded.value.trend) {
+      loadTrendData()
+    } else if (tab === 'trend' && trendData.value.length > 0) {
+      initTrendChart()
+    }
   })
 }
 
 const handleTimeRangeChange = () => {
+  // 时间范围改变时，重新加载趋势数据
+  dataLoaded.value.trend = false  // 重置加载状态
   loadTrendData()
 }
 
@@ -326,16 +368,11 @@ const handleResize = () => {
 }
 
 // ============ 生命周期 ============
-const loadAllData = async () => {
-  await Promise.all([
-    loadRegionData(),
-    loadTypeData(),
-    loadTrendData()
-  ])
-}
-
 onMounted(() => {
-  loadAllData()
+  // 只加载默认激活的 tab，并在 DOM 渲染后执行
+  nextTick(() => {
+    loadRegionData()
+  })
   window.addEventListener('resize', handleResize)
 })
 
