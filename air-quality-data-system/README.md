@@ -49,8 +49,13 @@
 | 技术 | 版本 | 说明 |
 |------|------|------|
 | Vue.js | 3.5 | 前端框架 |
-| Element Plus | - | UI 组件库 |
-| ECharts | - | 数据可视化 |
+| Vite | 6.x | 构建工具 |
+| Vue Router | 4.5 | 路由管理 |
+| Pinia | 2.3 | 状态管理 |
+| Element Plus | 2.9 | UI 组件库 |
+| ECharts | 5.6 | 数据可视化 |
+| Tailwind CSS | 3.4 | 样式框架 |
+| Axios | 1.7 | HTTP 客户端 |
 
 ---
 
@@ -72,6 +77,24 @@ air-quality-data-system/
 │   ├── utils/                 # 工具函数目录
 │   ├── manage.py              # Django 管理脚本
 │   └── requirements.txt       # Python 依赖
+├── frontend/                   # Vue 3 前端项目
+│   ├── src/                   # 源代码目录
+│   │   ├── api/               # API 接口封装
+│   │   ├── components/        # 公共组件
+│   │   ├── layouts/           # 布局组件
+│   │   ├── router/            # 路由配置
+│   │   ├── stores/            # Pinia 状态管理
+│   │   ├── utils/             # 工具函数
+│   │   ├── views/             # 页面组件
+│   │   │   ├── auth/          # 认证页面
+│   │   │   ├── user/          # 用户端页面
+│   │   │   └── admin/         # 管理端页面
+│   │   ├── App.vue            # 根组件
+│   │   └── main.js            # 入口文件
+│   ├── index.html             # HTML 模板
+│   ├── vite.config.js         # Vite 配置
+│   ├── tailwind.config.js     # Tailwind CSS 配置
+│   └── package.json           # NPM 依赖
 ├── dataSource/                # 数据源文件
 ├── memory-bank/               # 项目文档库
 │   ├── PRD.md                 # 产品需求文档

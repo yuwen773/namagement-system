@@ -1,13 +1,13 @@
-﻿# 架构文档（阶段一 `1.7` 完成版）
+﻿# 架构文档（阶段二 `2.2` 完成版）
 
 更新时间：2026-02-15
 
 ## 1. 当前架构状态
-- 当前里程碑：阶段一 `1.1` ~ `1.7` 已完成并通过测试。
-- 当前边界：阶段二 `2.1` 未开始（冻结，等待新指令）。
+- 当前里程碑：阶段一 `1.1` ~ `1.7` 已完成并通过测试，阶段二 `2.1`、`2.2` 已完成并通过测试。
+- 当前边界：阶段二 `2.3` 未开始（待用户确认）。
 - 架构形态：B/S 前后端分离。
-  - 后端：Django + DRF + MySQL
-  - 前端：Vue 3（待实现）
+  - 后端：Django + DRF + MySQL（端口 8000）
+  - 前端：Vue 3 + Vite + Element Plus（端口 5173）
 
 ## 2. 分层与主数据流
 1. 路由层：`air_quality_system/urls.py` 聚合所有 app 路由，并暴露文档路由。
@@ -118,6 +118,110 @@
 ### 3.9 app 聚合
 - `backend/apps/__init__.py`：apps 包标记。
 
+### 3.10 前端工程入口与配置
+- `frontend/package.json`：前端依赖清单（Vue 3.5、Vue Router 4.5、Pinia 2.3、Element Plus 2.9、ECharts 5.6、Tailwind CSS 3.4）。
+- `frontend/vite.config.js`：Vite 构建配置（路径别名、Element Plus 按需引入、API 代理到后端 8000 端口）。
+- `frontend/tailwind.config.js`：Tailwind CSS 配置（内容扫描路径）。
+- `frontend/postcss.config.js`：PostCSS 配置（Tailwind 与 Autoprefixer 插件）。
+- `frontend/index.html`：HTML 入口模板。
+- `frontend/.gitignore`：Git 忽略规则（node_modules、dist、本地配置）。
+
+### 3.11 前端核心层
+- `frontend/src/main.js`：应用入口，注册 Vue Router、Pinia、Element Plus、全局图标。
+- `frontend/src/App.vue`：根组件，渲染 router-view。
+- `frontend/src/style.css`：全局样式（Tailwind 引入、基础 CSS 变量）。
+
+### 3.12 前端工具层
+- `frontend/src/utils/request.js`：Axios 实例封装。
+  - 请求拦截器：自动添加 `Authorization: Token {token}` 头。
+  - 响应拦截器：处理 `{ code, data, message }` 格式，401 自动跳转登录，统一错误提示。
+
+### 3.13 前端路由层
+- `frontend/src/router/index.js`：Vue Router 配置。
+  - 用户端路由：`/` 前缀，8 个子路由（overview、city、station、historical、analysis、protection、knowledge、article）。
+  - 管理端路由：`/admin` 前缀，7 个子路由（dashboard、data-import、air-quality、rules、users、articles、logs）。
+  - 认证路由：`/login`、`/register`。
+  - 导航守卫：校验 `requiresAuth`、`requiresAdmin`，自动处理登录态跳转。
+
+### 3.14 前端状态层（Pinia）
+- `frontend/src/stores/user.js`：用户状态管理。
+  - 状态：token、userInfo、isLoggedIn、isAdmin、userId、username。
+  - 操作：setUser（登录后保存）、clearUser（登出清除）、updateUser（更新用户信息）。
+  - 持久化：localStorage 读写 token 与 user。
+- `frontend/src/stores/city.js`：城市选择状态。
+  - 状态：selectedCity、selectedCityCode、selectedStation、selectedStationCode。
+  - 操作：setCity、setStation、clearSelection。
+- `frontend/src/stores/admin.js`：管理端 UI 状态。
+  - 状态：activeMenu（当前激活菜单）、isCollapsed（侧边栏收起状态）、importTaskStatus（导入任务状态）。
+  - 操作：setActiveMenu、toggleSidebar、setImportTaskStatus。
+
+### 3.15 前端 API 层
+- `frontend/src/api/auth.js`：认证接口封装。
+  - `login(username, password)`：登录，返回 token 与用户信息。
+  - `register(data)`：注册，创建用户。
+  - `logout()`：登出，清除本地存储。
+- `frontend/src/api/airquality.js`：用户端空气质量接口（15 个）。
+  - 概览：getOverview、getTopCities。
+  - 详情：getCityDetail、getCityTrend、getStationDetail、getStationTrend。
+  - 历史：getHistoricalData、exportHistoricalData。
+  - 分析：compareCities、getCorrelationAnalysis、getAQIDistribution。
+  - 防护：getProtectionGuide。
+  - 文章：getArticles、getArticleDetail、getCategories、getAnnouncements。
+- `frontend/src/api/admin.js`：管理端接口（20 个）。
+  - 仪表盘：getDashboardData。
+  - 导入：uploadDataFile、getImportTasks、getImportTaskDetail、getImportTaskLogs。
+  - 数据：getAirQualityDataList、updateAirQualityData、deleteAirQualityData。
+  - 规则：getRulesList、createRule、updateRule、deleteRule、batchUpdateRules。
+  - 用户：getUsersList、updateUser、deleteUser。
+  - 文章：getAdminArticles、createArticle、updateArticle、deleteArticle、getAdminCategories、createCategory、updateCategory、deleteCategory。
+  - 日志：getOperationLogs、getErrorLogs。
+
+### 3.16 前端布局层
+- `frontend/src/layouts/UserLayout.vue`：用户端布局。
+  - 顶部导航栏：Logo、菜单（首页/历史/分析/防护/科普）、用户下拉菜单（登录后显示管理员入口与退出）。
+  - 内容区域：router-view 渲染子路由。
+  - 页脚：版权信息。
+- `frontend/src/layouts/AdminLayout.vue`：管理端布局。
+  - 侧边栏：可折叠，7 个菜单项，使用 Element Plus Menu 组件。
+  - 顶部栏：折叠按钮、面包屑、用户端入口按钮、用户下拉菜单。
+  - 内容区域：router-view 渲染子路由。
+
+### 3.17 前端视图层
+#### 认证视图（`frontend/src/views/auth/`）
+- `Login.vue`：登录页。
+  - 表单：用户名、密码。
+  - 验证：用户名 3-20 字符，密码 6-20 字符。
+  - 逻辑：调用 `login` API，成功后保存用户信息与 token，根据角色跳转（管理员→/admin，普通用户→/）。
+- `Register.vue`：注册页。
+  - 表单：用户名、邮箱（必填）、手机号（选填）、密码、确认密码。
+  - 验证：邮箱格式、手机号格式、密码一致性。
+  - 逻辑：调用 `register` API，成功后跳转登录页。
+
+#### 用户端视图（`frontend/src/views/user/`）
+- `Overview.vue`：全国概览页占位。
+- `CityDetail.vue`：城市详情页占位。
+- `StationDetail.vue`：站点详情页占位。
+- `HistoricalData.vue`：历史数据查询页占位。
+- `Analysis.vue`：数据分析页占位。
+- `ProtectionGuide.vue`：防护指南页占位。
+- `KnowledgeBase.vue`：科普知识库页占位。
+- `ArticleDetail.vue`：文章详情页占位。
+
+#### 管理端视图（`frontend/src/views/admin/`）
+- `Dashboard.vue`：仪表盘页占位。
+- `DataImport.vue`：数据导入管理页占位。
+- `AirQualityManage.vue`：空气质量数据管理页占位。
+- `RulesManage.vue`：防护规则管理页占位。
+- `UsersManage.vue`：用户管理页占位。
+- `ArticlesManage.vue`：文章管理页占位。
+- `SystemLogs.vue`：系统日志页占位。
+
+### 3.18 前端静态资源
+- `frontend/src/assets/`：静态资源目录（待开发，图片、字体等）。
+
+### 3.19 前端公共组件
+- `frontend/src/components/`：公共组件目录（待开发，ECharts 封装、数据表格等）。
+
 ## 4. 已交付 API（阶段一）
 ### 4.1 文档与契约（`1.7`）
 - `GET /api/schema/`：OpenAPI JSON
@@ -160,12 +264,25 @@
 - `GET /api/admin/logs/operations/`
 - `GET /api/admin/logs/errors/`
 
-## 5. 架构见解（`1.7` 后）
-1. 文档生产链已工程化：接口文档不再依赖手写，统一由 OpenAPI 生成，降低前后端契约漂移风险。
-2. 文档路由与业务路由同仓维护：`/api/schema/` 与 `/api/docs/` 随后端版本同步，联调成本更低。
-3. 管理端与用户端接口在导出文档中自动分组，降低前端阅读噪音。
-4. 现有 API 仍以 `APIView` 为主，Schema 可用但部分 request/response 细粒度仍可进一步增强（后续优化项）。
-5. 阶段边界清晰：阶段二前端未启动，避免并行开发造成契约变更冲突。
+## 5. 架构见解（`2.2` 后）
+
+### 5.1 前端路由设计原则
+1. **路由按端分层**：用户端（`/`）与管理端（`/admin`）使用不同布局组件，通过路由嵌套实现。
+2. **路由守卫前置**：`beforeEach` 钩子统一处理权限校验与登录态跳转，组件内无需重复判断。
+3. **懒加载路由**：所有页面组件使用动态 `import()`，减少初始加载体积。
+4. **meta 扩展性**：路由 `meta` 字段预留 `title`、`requiresAuth`、`requiresAdmin` 等配置，便于统一处理。
+
+### 5.2 状态管理设计原则
+1. **按域拆分 store**：user/city/admin 三个 store 各司其职，避免单一臃肿 store。
+2. **Composition API 风格**：使用 `defineStore` + `setup` 语法，类型推导更友好。
+3. **计算属性派生**：`isLoggedIn`、`isAdmin` 等通过 `computed` 派生，减少冗余状态。
+4. **localStorage 持久化**：用户状态自动同步到本地存储，刷新后保持登录态。
+
+### 5.3 前后端协同架构
+1. **文档生产链工程化**：接口文档由 OpenAPI 自动生成，降低前后端契约漂移风险。
+2. **API 请求层统一封装**：`request.js` 集中处理 token、错误码、401 跳转。
+3. **占位页面先行**：先建立完整路由与目录结构，后续并行开发业务页面时互不阻塞。
+4. **代理配置解耦**：开发环境通过 Vite proxy 转发 `/api` 到后端，避免跨域配置。
 
 ## 6. 数据库 Schema（完整）
 
@@ -363,5 +480,5 @@
 - `task_id` bigint FK -> `logs_importtask.id`
 
 ## 7. 下一步边界
-- 当前已完成阶段一 `1.7`。
-- 在新的明确指令前，不进入阶段二 `2.1`。
+- 当前已完成阶段一 `1.7` 与阶段二 `2.1`、`2.2`。
+- 在新的用户确认前，不进入阶段二 `2.3`（公共组件开发）。
