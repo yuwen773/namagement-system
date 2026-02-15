@@ -70,3 +70,36 @@
 
 ### 验证记录（本次）
 - 用户反馈：测试通过
+
+## 2026-02-15 - 阶段一 `1.4` 用户端 API 开发（已完成，测试通过）
+
+### 本次完成范围（`1.4.*`）
+- `1.4.1` 首页数据 API：全国概览、地图数据、Top 城市（最佳/最差）
+- `1.4.2` 城市/站点详情与 24 小时趋势 API
+- `1.4.3` 历史数据查询 API：过滤、分页、排序、CSV/XLSX 导出
+- `1.4.4` 数据分析 API：城市对比、污染物相关性、AQI 分布
+- `1.4.5` 防护指南 API：规则匹配、一般/敏感人群建议、未来 6/12 小时简易预警
+- `1.4.6` 科普文章与公告 API：文章列表/详情、分类列表、公告列表
+
+### 具体变更（关键文件）
+- `backend/apps/airquality/views.py`：在保留 `1.3` 导入接口的同时，新增并实现用户端 `1.4.1~1.4.4` 全部 API。
+- `backend/apps/airquality/urls.py`：补齐用户端 API 路由（overview、cities、stations、historical-data、analysis）。
+- `backend/apps/airquality/services.py`：新增空气质量服务层（最新快照、小时聚合趋势、最新站点数据子查询）。
+- `backend/apps/airquality/serializers.py`：新增地图数据与历史数据序列化器。
+- `backend/apps/airquality/filters.py`：新增历史数据过滤器（城市、站点、日期范围）。
+- `backend/apps/rules/views.py`：新增 `ProtectionGuideView`（防护建议 + 趋势预警）。
+- `backend/apps/rules/services.py`：新增规则匹配服务 `RuleMatcherService`。
+- `backend/apps/rules/urls.py`：新增 `/api/protection-guide/` 路由。
+- `backend/apps/articles/views.py`：新增用户端文章、分类、公告查询 API。
+- `backend/apps/articles/serializers.py`：新增文章/分类序列化器。
+- `backend/apps/articles/urls.py`：新增 `/api/articles/`、`/api/categories/`、`/api/announcements/` 路由。
+- `backend/air_quality_system/urls.py`：新增挂载 `apps.rules.urls`、`apps.articles.urls`。
+- `backend/air_quality_system/settings.py`：新增 `REST_FRAMEWORK.URL_FORMAT_OVERRIDE = None`，避免 `format` 查询参数与 DRF 格式后缀冲突（历史导出接口已验证）。
+
+### 验证记录（本次）
+- 本地静态检查通过：`python manage.py check --settings=air_quality_system.settings_migrations`
+- 新增接口测试通过：`python manage.py test apps.airquality.tests apps.rules.tests apps.articles.tests --settings=air_quality_system.settings_migrations`
+- 用户验收反馈：测试通过
+
+### 边界确认
+- 未开始阶段二 `2.1`。

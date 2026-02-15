@@ -1,84 +1,152 @@
-# 架构文档（阶段一 `1.3` 完成后）
+# 架构文档（阶段一 `1.4` 完成后）
 
 更新时间：2026-02-15  
-当前里程碑：阶段一 `1.3`（数据导入功能）已完成；在确认后未继续实施 `1.4`。
+当前里程碑：阶段一 `1.4`（用户端 API）已完成并通过测试。  
+边界状态：阶段二 `2.1` 尚未开始。
 
-## 1. 架构现状概览
+## 1. 当前架构状态（文档本质版）
 
-- 架构形态：B/S 前后端分离；当前仓库已落地后端 Django 项目骨架与数据库模型，前端尚未开始。
-- 后端技术：Django 5.2 + Django REST Framework；MySQL 作为主库。
-- 关键约束（来自实施计划）：鉴权使用简单 Token（后续实现）；密码按课题要求“明文存储与明文校验”（已在自定义用户模型中落地，禁止用于生产）。
+- 架构形态：B/S 前后端分离。
+- 已落地范围：后端 Django + DRF、核心业务模型、数据导入能力、用户端 API（概览/详情/历史/分析/防护/文章公告）。
+- 未落地范围：前端开发（阶段二）、部署优化（阶段三）。
+- 统一约束：
+  - 统一响应结构：`code` / `data` / `message`（分页附带 `total` / `page` / `page_size`）。
+  - 全局异常处理：DRF 统一错误出口。
+  - 项目要求保留明文密码逻辑（仅课题演示，禁止生产使用）。
 
-## 2. 目录与文件职责（以关键文件为主）
+## 2. 分层与主数据流
 
-### 2.1 工程入口层
+1. 请求入口：`urls.py` 分发到各 app 视图。
+2. 业务编排：`views.py` 做参数校验、权限控制、响应包装。
+3. 领域逻辑：`services.py` 处理聚合、趋势、规则匹配等可复用逻辑。
+4. 数据访问：`models.py` + ORM 查询（含聚合、子查询、过滤、分页）。
+5. 输出标准化：`utils/response.py` 与 `utils/exception_handler.py`。
 
-| 路径 | 作用 |
+## 3. 关键文件职责（按文件说明）
+
+### 3.1 工程与全局配置
+
+| 文件 | 作用 |
 |---|---|
-| `backend/manage.py` | Django 命令入口（`runserver`/`migrate`/`check`/`createsuperuser` 等）。 |
-| `backend/requirements.txt` | 后端依赖版本锁定（Django/DRF/CORS/filter/spectacular/PyMySQL/pandas/openpyxl/xlrd）。 |
-
-### 2.2 项目配置层（`backend/air_quality_system/`）
-
-| 路径 | 作用 |
-|---|---|
-| `backend/air_quality_system/__init__.py` | 安装 `PyMySQL` 兼容层（将 `pymysql` 注入为 `MySQLdb`）。 |
-| `backend/air_quality_system/settings.py` | 全局配置中心：MySQL 连接、DRF/CORS/OpenAPI、`AUTH_USER_MODEL`、上传文件（`MEDIA_*`）、统一异常响应等。 |
-| `backend/air_quality_system/settings_migrations.py` | 迁移生成辅助 settings：当 MySQL 迁移历史不一致时，允许用 SQLite 生成迁移文件（不改变生产目标库为 MySQL 的事实）。 |
-| `backend/air_quality_system/urls.py` | 根路由汇总：`/admin/`、`/api/`；`/` 临时重定向到 `/api/`；`apps.airquality.urls` 挂载导入相关 API。 |
+| `backend/manage.py` | Django 管理入口（`runserver` / `migrate` / `test` / `check`）。 |
+| `backend/requirements.txt` | 后端依赖清单（Django/DRF/pandas/openpyxl/xlrd 等）。 |
+| `backend/air_quality_system/__init__.py` | 注入 `PyMySQL` 兼容层。 |
+| `backend/air_quality_system/settings.py` | 全局设置：数据库、DRF、异常处理、CORS、上传、`AUTH_USER_MODEL`。 |
+| `backend/air_quality_system/settings_migrations.py` | 迁移辅助 settings（SQLite 用于迁移生成/测试）。 |
+| `backend/air_quality_system/urls.py` | 根路由：挂载 airquality/rules/articles API。 |
 | `backend/air_quality_system/asgi.py` | ASGI 入口。 |
 | `backend/air_quality_system/wsgi.py` | WSGI 入口。 |
 
-### 2.3 通用工具层（`backend/utils/`）
+### 3.2 公共工具层
 
-| 路径 | 作用 |
+| 文件 | 作用 |
 |---|---|
-| `backend/utils/response.py` | 统一 API 响应结构（`code/data/message`，列表可带 `total/page/page_size`）。 |
-| `backend/utils/exception_handler.py` | DRF 全局异常处理器：把常见 4xx/5xx 转换为统一响应。 |
-| `backend/utils/data_importer.py` | 数据导入核心实现：CSV/Excel 解析、模板字段映射、分批入库、逐行错误收集；写入 `ImportTask/ImportTaskLog`。 |
+| `backend/utils/response.py` | 统一响应包装器 `APIResponse`。 |
+| `backend/utils/exception_handler.py` | 全局异常处理，统一错误输出。 |
+| `backend/utils/data_importer.py` | CSV/XLS/XLSX 导入、字段映射、分批入库、导入日志记录。 |
 
-### 2.4 业务应用层（`backend/apps/`）
+### 3.3 accounts（用户）
 
-| app | 路径 | 作用 |
-|---|---|---|
-| accounts | `backend/apps/accounts/models.py` | 自定义用户模型 `User(AbstractUser)`，包含 `phone/role/status/is_deleted`，并按课题要求覆写密码为明文。 |
-| accounts | `backend/apps/accounts/admin.py` | 用户模型 Admin 注册与最小检索能力。 |
-| airquality | `backend/apps/airquality/models.py` | 省/市/监测站点/空气质量数据模型与约束（行政区划码校验、AQI 分级、唯一约束等）。 |
-| airquality | `backend/apps/airquality/admin.py` | 省/市/站点/空气质量数据 Admin 注册，便于手工验证。 |
-| airquality | `backend/apps/airquality/views.py` | 数据导入 API：上传返回 `task_id`；任务列表/详情；失败日志查询。 |
-| airquality | `backend/apps/airquality/urls.py` | 导入相关 API 路由（挂载到 `/api/`）。 |
-| airquality | `backend/apps/airquality/management/commands/import_data_file.py` | 管理命令：从本地文件触发导入（便于脚本化/压测）。 |
-| rules | `backend/apps/rules/models.py` | 防护规则 `ProtectionRule`，含区间合法性与区间重叠校验。 |
-| rules | `backend/apps/rules/admin.py` | 防护规则 Admin 注册。 |
-| articles | `backend/apps/articles/models.py` | 内容模型：分类 `ArticleCategory`、文章/公告 `Article`。 |
-| articles | `backend/apps/articles/admin.py` | 内容模型 Admin 注册。 |
-| logs | `backend/apps/logs/models.py` | 系统日志与导入任务：操作日志/异常日志/导入任务/导入明细日志。 |
-| logs | `backend/apps/logs/admin.py` | 日志与导入任务 Admin 注册。 |
-| logs | `backend/apps/logs/serializers.py` | 导入任务与日志的序列化（供导入 API 返回）。 |
-
-### 2.5 迁移层（`backend/apps/*/migrations/`）
-
-| 路径 | 作用 |
+| 文件 | 作用 |
 |---|---|
-| `backend/apps/accounts/migrations/0001_initial.py` | accounts 初始迁移（创建 `accounts_user` 及其与权限相关的多对多表）。 |
-| `backend/apps/airquality/migrations/0001_initial.py` | airquality 初始迁移（省/市/站点/空气质量数据）。 |
-| `backend/apps/rules/migrations/0001_initial.py` | rules 初始迁移（防护规则）。 |
-| `backend/apps/articles/migrations/0001_initial.py` | articles 初始迁移（分类与文章）。 |
-| `backend/apps/logs/migrations/0001_initial.py` | logs 初始迁移（操作日志/异常日志/导入任务/导入日志）。 |
+| `backend/apps/accounts/models.py` | `User` 自定义用户模型（`phone/role/status/is_deleted` + 明文密码逻辑）。 |
+| `backend/apps/accounts/admin.py` | 用户后台管理配置。 |
+| `backend/apps/accounts/migrations/0001_initial.py` | 用户与权限关联表初始迁移。 |
 
-## 3. 关键架构决策与实现要点
+### 3.4 airquality（空气质量核心域）
 
-- 自定义用户模型：`AUTH_USER_MODEL = accounts.User`；按课题要求实现“明文密码存储与校验”（仅用于课题演示，禁止用于生产）。
-- 约束分层：唯一约束/索引尽量下沉到 DB；业务约束在模型层 `full_clean()` 做校验。
-- 数据导入：通过 `ImportTask/ImportTaskLog` 记录导入任务与逐行失败原因，便于后台定位问题。
-- 批量写入注意事项：`bulk_create` 不会触发 `Model.save()`；导入 `AirQualityData` 时需显式计算 `quality_level`。
-- 迁移历史风险：若 `1.1` 先在 MySQL 迁移（存在 `auth_user` 历史），再在 `1.2` 切换 `AUTH_USER_MODEL` 可能出现 `InconsistentMigrationHistory`；推荐使用全新库执行迁移。
+| 文件 | 作用 |
+|---|---|
+| `backend/apps/airquality/models.py` | `Province/City/MonitoringStation/AirQualityData` 数据模型与约束。 |
+| `backend/apps/airquality/serializers.py` | 地图数据、历史数据输出序列化。 |
+| `backend/apps/airquality/filters.py` | 历史数据筛选条件（城市/站点/日期范围）。 |
+| `backend/apps/airquality/services.py` | 快照、24h 趋势、最新站点记录等可复用查询逻辑。 |
+| `backend/apps/airquality/views.py` | 阶段 `1.3` 导入 API + 阶段 `1.4.1~1.4.4` 用户端 API。 |
+| `backend/apps/airquality/urls.py` | 导入 API、概览 API、详情 API、历史 API、分析 API 路由。 |
+| `backend/apps/airquality/admin.py` | 空气质量相关模型后台管理。 |
+| `backend/apps/airquality/management/commands/import_data_file.py` | 命令行触发导入任务。 |
+| `backend/apps/airquality/migrations/0001_initial.py` | airquality 初始迁移。 |
 
-## 4. 数据库 Schema（完整）
+### 3.5 rules（防护规则域）
 
-说明：以下为“按当前代码从零迁移到 MySQL 后”的规范 schema（即推荐的干净安装结果）。
+| 文件 | 作用 |
+|---|---|
+| `backend/apps/rules/models.py` | `ProtectionRule` 模型，含 AQI 区间约束与重叠校验。 |
+| `backend/apps/rules/services.py` | 规则匹配服务 `RuleMatcherService`。 |
+| `backend/apps/rules/views.py` | `ProtectionGuideView`（防护建议 + 6/12h 趋势预警）。 |
+| `backend/apps/rules/urls.py` | `/api/protection-guide/` 路由。 |
+| `backend/apps/rules/admin.py` | 规则后台管理。 |
+| `backend/apps/rules/migrations/0001_initial.py` | rules 初始迁移。 |
 
-### 4.1 Django 基础表
+### 3.6 articles（文章/公告域）
+
+| 文件 | 作用 |
+|---|---|
+| `backend/apps/articles/models.py` | `ArticleCategory`、`Article` 模型。 |
+| `backend/apps/articles/serializers.py` | 文章列表、详情、分类输出序列化。 |
+| `backend/apps/articles/views.py` | 文章列表/详情、分类列表、公告列表 API。 |
+| `backend/apps/articles/urls.py` | `/api/articles/`、`/api/categories/`、`/api/announcements/` 路由。 |
+| `backend/apps/articles/admin.py` | 文章后台管理。 |
+| `backend/apps/articles/migrations/0001_initial.py` | articles 初始迁移。 |
+
+### 3.7 logs（日志与导入任务域）
+
+| 文件 | 作用 |
+|---|---|
+| `backend/apps/logs/models.py` | `OperationLog/ErrorLog/ImportTask/ImportTaskLog` 模型。 |
+| `backend/apps/logs/serializers.py` | 导入任务与导入错误日志序列化。 |
+| `backend/apps/logs/admin.py` | 日志后台管理。 |
+| `backend/apps/logs/migrations/0001_initial.py` | logs 初始迁移。 |
+
+### 3.8 测试文件（阶段一 `1.4` 回归）
+
+| 文件 | 作用 |
+|---|---|
+| `backend/apps/airquality/tests.py` | 覆盖概览、详情、趋势、历史导出、分析接口。 |
+| `backend/apps/rules/tests.py` | 覆盖防护指南接口与异常城市场景。 |
+| `backend/apps/articles/tests.py` | 覆盖文章/分类/公告接口与发布状态约束。 |
+
+## 4. 已交付 API（阶段一）
+
+### 4.1 阶段 `1.3` 管理端导入 API
+
+- `POST /api/admin/data-import/`
+- `GET /api/admin/data-import/tasks/`
+- `GET /api/admin/data-import/tasks/{task_id}/`
+- `GET /api/admin/data-import/tasks/{task_id}/logs/`
+
+### 4.2 阶段 `1.4` 用户端 API
+
+- `GET /api/overview/`
+- `GET /api/overview/top-cities/`
+- `GET /api/cities/{code}/`
+- `GET /api/cities/{code}/trend/`
+- `GET /api/stations/{code}/`
+- `GET /api/stations/{code}/trend/`
+- `GET /api/historical-data/`
+- `GET /api/historical-data/export/`
+- `POST /api/analysis/compare/`
+- `GET /api/analysis/correlation/`
+- `GET /api/analysis/distribution/`
+- `GET /api/protection-guide/`
+- `GET /api/articles/`
+- `GET /api/articles/{id}/`
+- `GET /api/categories/`
+- `GET /api/announcements/`
+
+## 5. 架构洞见（阶段一 `1.4` 的关键决策）
+
+1. `airquality/services.py` 把快照和趋势聚合从视图中剥离，降低视图耦合，便于后续前端联调和复用。
+2. 概览接口采用“每站点最新记录”子查询策略，避免混入历史旧数据导致全国均值失真。
+3. 历史导出接口使用 `pandas` 输出 CSV/XLSX；同时把 `REST_FRAMEWORK.URL_FORMAT_OVERRIDE` 设为 `None`，避免 `format` 查询参数冲突。
+4. 防护建议采用“规则匹配服务 + 趋势预测”结构，后续可在不改接口契约的前提下替换预测算法。
+5. 缓存策略先应用在首页概览和 Top 城市接口（60 秒），在数据实时性与响应速度之间取平衡。
+
+## 6. 数据库 Schema（完整）
+
+说明：以下为当前代码从零迁移后的完整 schema（逻辑完整，不省略任何表）。
+
+### 6.1 Django 基础表
 
 #### `django_migrations`
 - `id` bigint PK
@@ -124,11 +192,11 @@
 - `session_data` longtext
 - `expire_date` datetime(6) INDEX
 
-### 4.2 accounts（用户与权限关联）
+### 6.2 accounts
 
 #### `accounts_user`
 - `id` bigint PK
-- `password` varchar(128) 备注：实现为明文（课题要求）
+- `password` varchar(128)（按课题要求明文存储）
 - `last_login` datetime(6) NULL
 - `is_superuser` tinyint(1)
 - `username` varchar(150) UNIQUE
@@ -139,8 +207,8 @@
 - `is_active` tinyint(1)
 - `date_joined` datetime(6)
 - `phone` varchar(20) NULL
-- `role` varchar(20) 取值：`USER`/`ADMIN`
-- `status` tinyint(1) 备注：业务启用/禁用
+- `role` varchar(20)（`USER` / `ADMIN`）
+- `status` tinyint(1)
 - `is_deleted` tinyint(1) DEFAULT 0
 
 #### `accounts_user_groups`
@@ -155,19 +223,19 @@
 - `permission_id` int FK -> `auth_permission.id`
 - 约束：`(user_id, permission_id)` 唯一
 
-### 4.3 airquality（基础数据与监测数据）
+### 6.3 airquality
 
 #### `airquality_province`
 - `id` bigint PK
 - `name` varchar(100)
-- `code` varchar(12) UNIQUE 备注：校验为 6 位数字（国标行政区划码）
+- `code` varchar(12) UNIQUE（6 位行政区划码）
 - `level` varchar(20)
 
 #### `airquality_city`
 - `id` bigint PK
 - `province_id` bigint FK -> `airquality_province.id`
 - `name` varchar(100)
-- `code` varchar(12) UNIQUE 备注：校验为 6 位数字（国标行政区划码）
+- `code` varchar(12) UNIQUE（6 位行政区划码）
 - `longitude` decimal(10,6)
 - `latitude` decimal(10,6)
 
@@ -183,30 +251,30 @@
 - `id` bigint PK
 - `station_id` bigint FK -> `airquality_monitoringstation.id`
 - `monitor_time` datetime(6) INDEX
-- `aqi` int unsigned 备注：范围校验 0-500
+- `aqi` int unsigned（0-500）
 - `pm25` decimal(10,2) NULL
 - `pm10` decimal(10,2) NULL
 - `so2` decimal(10,2) NULL
 - `no2` decimal(10,2) NULL
 - `co` decimal(10,2) NULL
 - `o3` decimal(10,2) NULL
-- `quality_level` varchar(20) 备注：按 `HJ 633-2012` 边界自动计算
+- `quality_level` varchar(20)（按 `HJ 633-2012` 计算）
 - 约束：`(station_id, monitor_time)` 唯一（`uq_airq_station_monitor_time`）
 
-### 4.4 rules（防护规则）
+### 6.4 rules
 
 #### `rules_protectionrule`
 - `id` bigint PK
 - `rule_name` varchar(100)
 - `min_aqi` int unsigned
 - `max_aqi` int unsigned
-- `population_type` varchar(20) 取值：`GENERAL`/`CHILDREN`/`ELDERLY`/`PATIENTS`/`SENSITIVE`
+- `population_type` varchar(20)（`GENERAL` / `CHILDREN` / `ELDERLY` / `PATIENTS` / `SENSITIVE`）
 - `advice` longtext
 - `is_enabled` tinyint(1) DEFAULT 1
 - 约束：`min_aqi <= max_aqi`（`ck_rule_min_le_max`）
-- 业务约束：同一 `population_type` 内 AQI 闭区间 `[min_aqi, max_aqi]` 不允许重叠（模型层校验）
+- 业务约束：同一 `population_type` 的 AQI 区间闭区间不可重叠
 
-### 4.5 articles（文章与公告）
+### 6.5 articles
 
 #### `articles_articlecategory`
 - `id` bigint PK
@@ -218,14 +286,14 @@
 - `title` varchar(255)
 - `category_id` bigint FK -> `articles_articlecategory.id`
 - `content` longtext
-- `status` varchar(20) 取值：`DRAFT`/`PUBLISHED`/`OFFLINE`
+- `status` varchar(20)（`DRAFT` / `PUBLISHED` / `OFFLINE`）
 - `is_announcement` tinyint(1) DEFAULT 0
 - `sort_order` int DEFAULT 0
 - `created_at` datetime(6)
 - `updated_at` datetime(6)
 - 索引：`(status, is_announcement)`
 
-### 4.6 logs（操作/异常/导入任务）
+### 6.6 logs
 
 #### `logs_operationlog`
 - `id` bigint PK
@@ -247,7 +315,7 @@
 - `task_id` varchar(64) UNIQUE
 - `file_name` varchar(255)
 - `file_type` varchar(20)
-- `status` varchar(20) 取值：`PENDING`/`RUNNING`/`SUCCESS`/`FAILED`
+- `status` varchar(20)（`PENDING` / `RUNNING` / `SUCCESS` / `FAILED`）
 - `total_count` int DEFAULT 0
 - `success_count` int DEFAULT 0
 - `failed_count` int DEFAULT 0
@@ -263,6 +331,7 @@
 - `raw_data_snippet` longtext NULL
 - `created_at` datetime(6)
 
-## 5. 下一步边界
+## 7. 下一步边界
 
-- 阶段一 `1.4` 尚未开始；进入 `1.4` 前应先确认本地数据库是否为“干净安装”（避免迁移历史不一致）。
+- 阶段一 `1.4` 已收口。
+- 在收到明确指令前，不进入阶段二 `2.1`。
