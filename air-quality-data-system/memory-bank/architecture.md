@@ -3,8 +3,8 @@
 更新时间：2026-02-15
 
 ## 1. 当前架构状态
-- 当前里程碑：阶段一 `1.1` ~ `1.7` 已完成并通过测试，阶段二 `2.1`、`2.2` 已完成并通过测试。
-- 当前边界：阶段二 `2.3` 未开始（待用户确认）。
+- 当前里程碑：阶段一 `1.1` ~ `1.7` 已完成并通过测试，阶段二 `2.1`、`2.2`、`2.3` 已完成并通过测试。
+- 当前边界：阶段二 `2.4` 未开始（待用户确认）。
 - 架构形态：B/S 前后端分离。
   - 后端：Django + DRF + MySQL（端口 8000）
   - 前端：Vue 3 + Vite + Element Plus（端口 5173）
@@ -220,7 +220,52 @@
 - `frontend/src/assets/`：静态资源目录（待开发，图片、字体等）。
 
 ### 3.19 前端公共组件
-- `frontend/src/components/`：公共组件目录（待开发，ECharts 封装、数据表格等）。
+#### 图表组件目录（`frontend/src/components/charts/`）
+- `BaseChart.vue`：ECharts 基础封装组件
+  - 职责：封装 ECharts 初始化、响应式尺寸调整、资源释放
+  - Props：option（图表配置）、height（高度）、theme（主题）、loading（加载状态）
+  - Events：chart-ready（图表就绪）、chart-click（点击事件）
+  - 特性：深色/浅色主题、自动内存管理、ResizeObserver 响应式
+
+- `LineChart.vue`：折线图组件
+  - 职责：展示时间序列数据（AQI 趋势、城市对比）
+  - Props：data（系列数据）、xAxis（X 轴数据）、smooth（平滑曲线）、areaStyle（面积填充）、showDataZoom（数据缩放）
+  - 特性：多条折线、数据点标记、区域缩放、渐变填充
+
+- `BarChart.vue`：柱状图组件
+  - 职责：展示分类数据对比
+  - Props：data（系列数据）、xAxis（X 轴数据）、horizontal（水平方向）、stack（堆叠模式）
+  - 特性：渐变填充、圆角边框、弹性动画
+
+- `PieChart.vue`：饼图组件
+  - 职责：展示占比数据（AQI 等级分布）
+  - Props：data（数据项）、donut（环形图）、radius（半径）、showPercentage（显示百分比）
+  - 特性：环形图模式、百分比显示、扇区高亮
+
+- `ScatterChart.vue`：散点图组件
+  - 职责：展示相关性分析（污染物关系）
+  - Props：data（散点数据）、xAxisName/yAxisName（轴名称）、showRegression（回归线）、regressionData（回归线数据）
+  - 特性：渐变散点、回归线支持、悬停放大
+
+- `MapChart.vue`：中国地图热力图组件
+  - 职责：展示全国 AQI 地理分布
+  - Props：data（城市 AQI 数据）、mapType（地图类型）、roam（缩放漫游）、zoom（缩放级别）
+  - 特性：省份钻取、AQI 色谱映射、动态 GeoJSON 加载
+
+- `GaugeChart.vue`：仪表盘组件
+  - 职责：展示当前 AQI 指数
+  - Props：value（AQI 值）、title（标题）、showDetail（显示详情）、size（尺寸）
+  - 特性：AQI 等级颜色、进度环形、健康影响说明
+
+#### 通用组件目录（`frontend/src/components/common/`）
+- `DataTable.vue`：数据表格组件
+  - 职责：封装 Element Plus Table，提供统一的数据展示
+  - Props：data（数据）、columns（列配置）、pagination（分页）、selectable（多选）、theme（主题）
+  - Events：sort-change（排序变化）、selection-change（选择变化）、row-click（行点击）
+  - 特性：分页、排序、多选、加载状态、空状态插画、玻璃态设计
+
+#### 组件索引（`frontend/src/components/charts/index.js`）
+- 统一导出所有图表组件和通用组件，支持按需导入
 
 ## 4. 已交付 API（阶段一）
 ### 4.1 文档与契约（`1.7`）
@@ -480,5 +525,5 @@
 - `task_id` bigint FK -> `logs_importtask.id`
 
 ## 7. 下一步边界
-- 当前已完成阶段一 `1.7` 与阶段二 `2.1`、`2.2`。
-- 在新的用户确认前，不进入阶段二 `2.3`（公共组件开发）。
+- 当前已完成阶段一 `1.7` 与阶段二 `2.1`、`2.2`、`2.3`。
+- 在新的用户确认前，不进入阶段二 `2.4`（用户端页面开发）。
