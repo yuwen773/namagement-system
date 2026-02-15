@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -46,7 +48,25 @@ def _raise_serializer_validation_error(errors: dict):
     raise ValidationError(message=message, field=str(first_field))
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["User - Articles"],
+        summary="查询文章列表",
+        description="分页查询已发布的科普文章（不含公告），支持按分类过滤。",
+        operation_id="user_articles_list",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    retrieve=extend_schema(
+        tags=["User - Articles"],
+        summary="查询文章详情",
+        description="获取单篇已发布科普文章详情。",
+        operation_id="user_articles_detail",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class ArticleViewSet(viewsets.ViewSet):
+    """Public article list/detail endpoints for published non-announcement content."""
+
     permission_classes = [AllowAny]
 
     def list(self, request):
@@ -79,7 +99,17 @@ class ArticleViewSet(viewsets.ViewSet):
         return APIResponse.success(data=ArticleDetailSerializer(article).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Articles"],
+        summary="查询文章分类",
+        description="获取用户端可用的文章分类列表。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ArticleCategoryView(APIView):
+    """Public endpoint for article category list used by user-side filtering."""
+
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -87,7 +117,17 @@ class ArticleCategoryView(APIView):
         return APIResponse.success(data=ArticleCategorySerializer(categories, many=True).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Articles"],
+        summary="查询系统公告",
+        description="获取最新已发布系统公告，默认返回 5 条，最多 10 条。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class AnnouncementListView(APIView):
+    """Public endpoint for latest published system announcements."""
+
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -101,7 +141,35 @@ class AnnouncementListView(APIView):
         return APIResponse.success(data=data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Articles"],
+        summary="查询文章列表（管理端）",
+        description="管理员分页查询文章，支持状态、分类、公告标记与关键字过滤。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    post=extend_schema(
+        tags=["Admin - Articles"],
+        summary="新增文章",
+        description="管理员创建文章。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    put=extend_schema(
+        tags=["Admin - Articles"],
+        summary="更新文章",
+        description="管理员按 id 更新文章内容或发布状态。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    delete=extend_schema(
+        tags=["Admin - Articles"],
+        summary="删除文章",
+        description="管理员按 id 或 ids 删除文章。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class ArticleManageView(APIView):
+    """Admin CRUD endpoint for articles, including publish state and filtering."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -183,7 +251,35 @@ class ArticleManageView(APIView):
         return APIResponse.success(data={"deleted_count": deleted_count}, message="批量删除完成")
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Categories"],
+        summary="查询分类列表（管理端）",
+        description="管理员查询全部文章分类。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    post=extend_schema(
+        tags=["Admin - Categories"],
+        summary="新增分类",
+        description="管理员新增文章分类。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    put=extend_schema(
+        tags=["Admin - Categories"],
+        summary="更新分类",
+        description="管理员按 id 更新文章分类。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    delete=extend_schema(
+        tags=["Admin - Categories"],
+        summary="删除分类",
+        description="管理员按 id 或 ids 删除分类。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class CategoryManageView(APIView):
+    """Admin CRUD endpoint for article category management."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):

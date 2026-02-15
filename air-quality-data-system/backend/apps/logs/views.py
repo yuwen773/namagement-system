@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsAdminUser
@@ -39,7 +41,17 @@ def _get_optional_date_query_param(request, field: str):
         raise ValidationError("格式错误，应为 YYYY-MM-DD", field=field)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Logs"],
+        summary="查询操作日志",
+        description="管理员分页查询操作日志，支持用户、操作类型和日期区间过滤。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class OperationLogListView(APIView):
+    """Admin endpoint for operation log query with date/user/type filters."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -70,7 +82,17 @@ class OperationLogListView(APIView):
         return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Logs"],
+        summary="查询异常日志",
+        description="管理员分页查询异常日志，支持异常类型和日期区间过滤。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ErrorLogListView(APIView):
+    """Admin endpoint for error log query with date/type filters."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):

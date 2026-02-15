@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from django.db.models import Q
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -58,7 +60,17 @@ def _raise_serializer_validation_error(errors: dict):
     raise ValidationError(message=message, field=str(first_field))
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Auth"],
+        summary="用户登录",
+        description="使用用户名和密码登录，返回 Token 与当前用户信息。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class LoginView(APIView):
+    """User authentication endpoint for username/password login and token issue."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -87,7 +99,17 @@ class LoginView(APIView):
         )
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Auth"],
+        summary="用户注册",
+        description="创建普通用户账号并返回用户信息。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class RegisterView(APIView):
+    """Public registration endpoint for creating a normal user account."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -98,7 +120,29 @@ class RegisterView(APIView):
         return APIResponse.success(data=AuthUserSerializer(user).data, message="注册成功")
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Users"],
+        summary="查询用户列表",
+        description="管理员分页查询用户，支持关键字、角色、状态与是否包含已删除用户过滤。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    put=extend_schema(
+        tags=["Admin - Users"],
+        summary="更新用户信息",
+        description="管理员更新用户角色、状态、邮箱或手机号。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    delete=extend_schema(
+        tags=["Admin - Users"],
+        summary="软删除用户",
+        description="管理员按 id 或 ids 软删除用户，删除后用户将被禁用。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class UserManageView(APIView):
+    """Admin user management endpoint for list, update, and soft delete operations."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):

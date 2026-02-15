@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from django.db.models import Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
@@ -47,7 +49,17 @@ def _raise_serializer_validation_error(errors: dict):
     raise ValidationError(message=message, field=str(first_field))
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Protection"],
+        summary="获取防护指南",
+        description="根据城市当前 AQI 与趋势预测，返回分人群防护建议和未来预警信息。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ProtectionGuideView(APIView):
+    """Public endpoint for AQI-based protection advice and short-term forecast warning."""
+
     permission_classes = [AllowAny]
 
     @staticmethod
@@ -130,7 +142,35 @@ class ProtectionGuideView(APIView):
         return APIResponse.success(data=payload)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Rules"],
+        summary="查询防护规则",
+        description="管理员查询防护规则列表，支持人群、启用状态、关键字过滤。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    post=extend_schema(
+        tags=["Admin - Rules"],
+        summary="新增防护规则",
+        description="管理员新增一条防护规则。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    put=extend_schema(
+        tags=["Admin - Rules"],
+        summary="更新防护规则",
+        description="管理员更新单条规则，或按 ids 批量更新启用状态。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    delete=extend_schema(
+        tags=["Admin - Rules"],
+        summary="删除防护规则",
+        description="管理员按 id 或 ids 删除防护规则。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class ProtectionRuleManageView(APIView):
+    """Admin CRUD endpoint for protection rule configuration and batch enable toggles."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):

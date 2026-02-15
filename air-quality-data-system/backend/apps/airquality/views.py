@@ -14,6 +14,8 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -96,6 +98,15 @@ def _parse_int_payload(value, field: str) -> int:
         raise ValidationError("格式错误，应为整数", field=field)
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Admin - Import"],
+        summary="上传导入文件",
+        description="管理员上传 CSV/XLS/XLSX 文件并创建导入任务，返回 task_id。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class DataImportUploadView(APIView):
     """
     Phase 1 - Step 1.3.2
@@ -164,7 +175,18 @@ class DataImportUploadView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Import"],
+        summary="查询导入任务列表",
+        description="管理员分页查询导入任务状态。",
+        operation_id="admin_data_import_tasks_list",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskListView(APIView):
+    """Admin endpoint for paginated import task list and status tracking."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -183,7 +205,18 @@ class ImportTaskListView(APIView):
         return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Import"],
+        summary="查询导入任务详情",
+        description="管理员根据 task_id 查询单个导入任务详情。",
+        operation_id="admin_data_import_tasks_detail",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskDetailView(APIView):
+    """Admin endpoint for a single import task detail by task_id."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request, task_id: str):
@@ -194,7 +227,17 @@ class ImportTaskDetailView(APIView):
         return APIResponse.success(data=ImportTaskSerializer(task).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Import"],
+        summary="查询导入任务日志",
+        description="管理员分页查询指定导入任务的失败日志。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskLogListView(APIView):
+    """Admin endpoint for paginated import failure logs under one task."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request, task_id: str):
@@ -217,6 +260,14 @@ class ImportTaskLogListView(APIView):
         return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Admin - Import"],
+        summary="取消导入任务（可选）",
+        description="将运行中的导入任务标记为失败（不终止已启动线程）。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskCancelView(APIView):
     """
     Optional helper: mark a running task as FAILED (no hard cancellation of executor thread).
@@ -239,7 +290,17 @@ class ImportTaskCancelView(APIView):
         return APIResponse.success(data=ImportTaskSerializer(task).data, message="已标记为失败")
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Dashboard"],
+        summary="查询管理端仪表盘",
+        description="返回系统运行信息、数据统计、用户统计与最近导入任务。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class AdminDashboardView(APIView):
+    """Admin dashboard endpoint aggregating system, data, user, and import metrics."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -296,7 +357,31 @@ class AdminDashboardView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - AirQuality"],
+        summary="查询空气质量数据（管理端）",
+        description="管理员分页查询空气质量记录，支持多条件过滤与排序。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    put=extend_schema(
+        tags=["Admin - AirQuality"],
+        summary="更新空气质量数据",
+        description="管理员按 id 更新空气质量记录。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    ),
+    delete=extend_schema(
+        tags=["Admin - AirQuality"],
+        summary="删除空气质量数据",
+        description="管理员按 id 或 ids 删除空气质量记录。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class AirQualityDataManageView(APIView):
+    """Admin CRUD endpoint for air quality records with filtering and pagination."""
+
     permission_classes = [IsAdminUser]
     ordering_fields = {"monitor_time", "-monitor_time", "aqi", "-aqi"}
 
@@ -390,7 +475,23 @@ class AirQualityDataManageView(APIView):
         return APIResponse.success(data={"deleted_count": deleted_count}, message="批量删除完成")
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["User - Overview"],
+        summary="查询全国概览",
+        description="返回全国平均指标、地图数据与城市数量。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    top_cities=extend_schema(
+        tags=["User - Overview"],
+        summary="查询 Top 城市",
+        description="返回空气质量最佳/最差城市排行榜。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class AirQualityOverviewViewSet(viewsets.ViewSet):
+    """Public overview endpoints for national summary and top city rankings."""
+
     permission_classes = [AllowAny]
 
     @method_decorator(cache_page(60))
@@ -499,7 +600,17 @@ class AirQualityOverviewViewSet(viewsets.ViewSet):
         return APIResponse.success(data={"best": best, "worst": worst})
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - City"],
+        summary="查询城市详情",
+        description="根据城市编码查询城市最新空气质量快照。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CityDetailView(APIView):
+    """Public endpoint for city-level latest air quality snapshot."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -524,7 +635,17 @@ class CityDetailView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - City"],
+        summary="查询城市趋势",
+        description="根据城市编码查询指定小时窗口内的趋势数据。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CityTrendView(APIView):
+    """Public endpoint for city-level hourly trend data in a time window."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -546,7 +667,17 @@ class CityTrendView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Station"],
+        summary="查询站点详情",
+        description="根据站点编码查询站点最新空气质量快照。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class StationDetailView(APIView):
+    """Public endpoint for station-level latest air quality snapshot."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -575,7 +706,17 @@ class StationDetailView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Station"],
+        summary="查询站点趋势",
+        description="根据站点编码查询指定小时窗口内的趋势数据。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class StationTrendView(APIView):
+    """Public endpoint for station-level hourly trend data in a time window."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -599,7 +740,23 @@ class StationTrendView(APIView):
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["User - Historical"],
+        summary="查询历史数据",
+        description="分页查询历史空气质量数据，支持过滤与排序。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    export=extend_schema(
+        tags=["User - Historical"],
+        summary="导出历史数据",
+        description="按筛选条件导出历史数据文件，支持 CSV/XLSX。",
+        responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT},
+    ),
+)
 class HistoricalDataViewSet(viewsets.ViewSet):
+    """Public historical query and export endpoints for air quality records."""
+
     permission_classes = [AllowAny]
     ordering_fields = {"monitor_time", "-monitor_time", "aqi", "-aqi"}
 
@@ -685,7 +842,18 @@ class HistoricalDataViewSet(viewsets.ViewSet):
         return response
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["User - Analysis"],
+        summary="城市对比分析",
+        description="对多个城市进行趋势对比分析。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CityComparisonView(APIView):
+    """Public analysis endpoint for multi-city trend comparison."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -734,7 +902,17 @@ class CityComparisonView(APIView):
         return APIResponse.success(data={"hours": hours, "series": series})
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Analysis"],
+        summary="污染物相关性分析",
+        description="计算两个污染物之间的相关系数并返回散点数据。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CorrelationAnalysisView(APIView):
+    """Public analysis endpoint for pollutant correlation and scatter data."""
+
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -801,7 +979,17 @@ class CorrelationAnalysisView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Analysis"],
+        summary="AQI 分布统计",
+        description="统计空气质量等级分布及占比。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class AQIDistributionView(APIView):
+    """Public analysis endpoint for AQI quality-level distribution statistics."""
+
     permission_classes = [AllowAny]
 
     def get(self, request):

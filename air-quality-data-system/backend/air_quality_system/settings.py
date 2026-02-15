@@ -141,6 +141,11 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Air Quality Data System API",
-    "DESCRIPTION": "API schema for the air quality data monitoring platform.",
+    "DESCRIPTION": "OpenAPI schema for the air quality monitoring and protection guidance platform.",
     "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "displayOperationId": True,
+    },
 }
