@@ -18,29 +18,17 @@ const form = reactive({
 // 表单规则
 const rules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3-20 个字符', trigger: 'blur' }
+    { required: true, message: '请输入用户名', trigger: 'blur' }
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度在 6-20 个字符', trigger: 'blur' }
+    { required: true, message: '请输入密码', trigger: 'blur' }
   ],
   passwordConfirm: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
-    {
-      validator: (rule, value, callback) => {
-        if (value !== form.password) {
-          callback(new Error('两次输入的密码不一致'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
+    { required: true, message: '请确认密码', trigger: 'blur' }
   ],
   real_name: [
     { required: true, message: '请输入真实姓名', trigger: 'blur' }
@@ -52,22 +40,35 @@ const loading = ref(false)
 
 // 提交表单
 const handleSubmit = async () => {
-  if (!formRef.value) return
+  console.log('handleSubmit 被调用')
 
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
+  if (!formRef.value) {
+    console.log('formRef.value 是 null')
+    return
+  }
 
-    loading.value = true
-    try {
-      await register(form)
-      ElMessage.success('注册成功，请登录')
-      router.push('/login')
-    } catch (error) {
-      ElMessage.error(error.message || '注册失败')
-    } finally {
-      loading.value = false
+  try {
+    const valid = await formRef.value.validate()
+    console.log('验证结果:', valid)
+
+    if (!valid) {
+      console.log('验证失败')
+      ElMessage.warning('请检查输入信息')
+      return
     }
-  })
+
+    console.log('开始注册...')
+    loading.value = true
+
+    await register(form)
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
+  } catch (error) {
+    console.log('注册错误:', error)
+    // 错误已由 request.js 拦截器处理并显示
+  } finally {
+    loading.value = false
+  }
 }
 
 // 跳转到登录
@@ -137,7 +138,6 @@ const goToLogin = () => {
             placeholder="确认密码"
             prefix-icon="Lock"
             show-password
-            @keyup.enter="handleSubmit"
           />
         </el-form-item>
 

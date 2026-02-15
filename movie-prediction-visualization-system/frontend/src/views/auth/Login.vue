@@ -37,18 +37,19 @@ const handleSubmit = async () => {
     if (!valid) return
 
     loading.value = true
-    const result = await userStore.doLogin(form)
+    try {
+      const result = await userStore.doLogin(form)
 
-    loading.value = false
+      if (result.success) {
+        ElMessage.success('登录成功')
 
-    if (result.success) {
-      ElMessage.success('登录成功')
-
-      // 跳转到重定向页面或首页
-      const redirect = route.query.redirect || (userStore.isAdmin ? '/admin' : '/')
-      router.push(redirect)
-    } else {
-      ElMessage.error(result.message || '登录失败')
+        // 跳转到重定向页面或首页
+        const redirect = route.query.redirect || (userStore.isAdmin ? '/admin' : '/')
+        router.push(redirect)
+      }
+      // 失败情况已由 request.js 拦截器处理并显示
+    } finally {
+      loading.value = false
     }
   })
 }
