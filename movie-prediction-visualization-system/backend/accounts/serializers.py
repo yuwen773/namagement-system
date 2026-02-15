@@ -70,12 +70,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         Returns:
             User: 创建的用户对象
         """
+        # 强制设置角色为普通用户
         user = User.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
             email=validated_data.get('email'),
             real_name=validated_data.get('real_name'),
             phone=validated_data.get('phone'),
+            role='USER',
         )
         return user
 

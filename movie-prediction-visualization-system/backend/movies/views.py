@@ -393,16 +393,51 @@ class MovieViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         summary='删除影片',
-        description='删除指定ID的影片记录。',
-        responses={200: {'description': '删除成功'}},
+        description='''
+        删除指定ID的影片记录。
+
+        **限制：**
+        - 如果该影片有关联的票房记录，则无法删除
+
+        **影响：**
+        - 影片数据将被永久删除
+        - 相关的类型引用将被清除
+
+        **权限要求：**
+        需要管理员权限
+        ''',
+        responses={
+            200: {'description': '删除成功'},
+            400: {'description': '影片存在票房记录，无法删除'}
+        },
         tags=['影片管理']
     )
     def destroy(self, request, *args, **kwargs):
+        """
+        删除影片
+
+        Args:
+            request: 请求对象
+            pk: 影片ID
+
+        Returns:
+            Response: 返回操作结果
+        """
         instance = self.get_object()
+
+        # 检查是否有关联的票房记录
+        from boxoffice.models import BoxOfficeRecord
+        if BoxOfficeRecord.objects.filter(movie=instance).exists():
+            return Response({
+                'code': -1,
+                'message': f'影片《{instance.title}》存在票房记录，无法删除'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        title = instance.title
         instance.delete()
         return Response({
             'code': 0,
-            'message': f'影片 {instance.title} 已删除'
+            'message': f'影片《{title}》已删除'
         })
 
     @extend_schema(
