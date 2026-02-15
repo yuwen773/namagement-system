@@ -54,6 +54,13 @@ const routes = [
         name: 'ArticleDetail',
         component: () => import('@/views/user/ArticleDetail.vue'),
         meta: { title: '文章详情' }
+      },
+      // Demo route for testing chart components
+      {
+        path: 'chart-demo',
+        name: 'ChartDemo',
+        component: () => import('@/views/user/ChartDemo.vue'),
+        meta: { title: '图表组件演示' }
       }
     ]
   },
