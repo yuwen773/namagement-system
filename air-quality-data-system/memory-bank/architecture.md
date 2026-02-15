@@ -1,7 +1,7 @@
-# 架构文档（阶段一 `1.2` 完成后）
+# 架构文档（阶段一 `1.3` 完成后）
 
 更新时间：2026-02-15  
-当前里程碑：阶段一 `1.2`（数据库模型设计）已完成；在确认后未继续实施 `1.3`。
+当前里程碑：阶段一 `1.3`（数据导入功能）已完成；在确认后未继续实施 `1.4`。
 
 ## 1. 架构现状概览
 
@@ -16,20 +16,28 @@
 | 路径 | 作用 |
 |---|---|
 | `backend/manage.py` | Django 命令入口（`runserver`/`migrate`/`check`/`createsuperuser` 等）。 |
-| `backend/requirements.txt` | 后端依赖版本锁定（Django/DRF/CORS/filter/spectacular/PyMySQL）。 |
+| `backend/requirements.txt` | 后端依赖版本锁定（Django/DRF/CORS/filter/spectacular/PyMySQL/pandas/openpyxl/xlrd）。 |
 
 ### 2.2 项目配置层（`backend/air_quality_system/`）
 
 | 路径 | 作用 |
 |---|---|
 | `backend/air_quality_system/__init__.py` | 安装 `PyMySQL` 兼容层（将 `pymysql` 注入为 `MySQLdb`）。 |
-| `backend/air_quality_system/settings.py` | 全局配置中心：MySQL 连接、DRF/CORS/OpenAPI、`AUTH_USER_MODEL`、时区与语言等。 |
+| `backend/air_quality_system/settings.py` | 全局配置中心：MySQL 连接、DRF/CORS/OpenAPI、`AUTH_USER_MODEL`、上传文件（`MEDIA_*`）、统一异常响应等。 |
 | `backend/air_quality_system/settings_migrations.py` | 迁移生成辅助 settings：当 MySQL 迁移历史不一致时，允许用 SQLite 生成迁移文件（不改变生产目标库为 MySQL 的事实）。 |
-| `backend/air_quality_system/urls.py` | 根路由汇总：`/admin/`、`/api/`；`/` 临时重定向到 `/api/`。 |
+| `backend/air_quality_system/urls.py` | 根路由汇总：`/admin/`、`/api/`；`/` 临时重定向到 `/api/`；`apps.airquality.urls` 挂载导入相关 API。 |
 | `backend/air_quality_system/asgi.py` | ASGI 入口。 |
 | `backend/air_quality_system/wsgi.py` | WSGI 入口。 |
 
-### 2.3 业务应用层（`backend/apps/`）
+### 2.3 通用工具层（`backend/utils/`）
+
+| 路径 | 作用 |
+|---|---|
+| `backend/utils/response.py` | 统一 API 响应结构（`code/data/message`，列表可带 `total/page/page_size`）。 |
+| `backend/utils/exception_handler.py` | DRF 全局异常处理器：把常见 4xx/5xx 转换为统一响应。 |
+| `backend/utils/data_importer.py` | 数据导入核心实现：CSV/Excel 解析、模板字段映射、分批入库、逐行错误收集；写入 `ImportTask/ImportTaskLog`。 |
+
+### 2.4 业务应用层（`backend/apps/`）
 
 | app | 路径 | 作用 |
 |---|---|---|
@@ -37,14 +45,18 @@
 | accounts | `backend/apps/accounts/admin.py` | 用户模型 Admin 注册与最小检索能力。 |
 | airquality | `backend/apps/airquality/models.py` | 省/市/监测站点/空气质量数据模型与约束（行政区划码校验、AQI 分级、唯一约束等）。 |
 | airquality | `backend/apps/airquality/admin.py` | 省/市/站点/空气质量数据 Admin 注册，便于手工验证。 |
+| airquality | `backend/apps/airquality/views.py` | 数据导入 API：上传返回 `task_id`；任务列表/详情；失败日志查询。 |
+| airquality | `backend/apps/airquality/urls.py` | 导入相关 API 路由（挂载到 `/api/`）。 |
+| airquality | `backend/apps/airquality/management/commands/import_data_file.py` | 管理命令：从本地文件触发导入（便于脚本化/压测）。 |
 | rules | `backend/apps/rules/models.py` | 防护规则 `ProtectionRule`，含区间合法性与区间重叠校验。 |
 | rules | `backend/apps/rules/admin.py` | 防护规则 Admin 注册。 |
 | articles | `backend/apps/articles/models.py` | 内容模型：分类 `ArticleCategory`、文章/公告 `Article`。 |
 | articles | `backend/apps/articles/admin.py` | 内容模型 Admin 注册。 |
 | logs | `backend/apps/logs/models.py` | 系统日志与导入任务：操作日志/异常日志/导入任务/导入明细日志。 |
 | logs | `backend/apps/logs/admin.py` | 日志与导入任务 Admin 注册。 |
+| logs | `backend/apps/logs/serializers.py` | 导入任务与日志的序列化（供导入 API 返回）。 |
 
-### 2.4 迁移层（`backend/apps/*/migrations/`）
+### 2.5 迁移层（`backend/apps/*/migrations/`）
 
 | 路径 | 作用 |
 |---|---|
@@ -56,15 +68,11 @@
 
 ## 3. 关键架构决策与实现要点
 
-- 自定义用户模型与明文密码
-- `AUTH_USER_MODEL` 已切换为 `accounts.User`
-- 明文密码通过覆写 `User.set_password`/`User.check_password` 实现，满足课题要求
-- 数据约束分层
-- “结构性约束”尽量下沉到数据库层（唯一约束、check 约束、索引）
-- “业务逻辑约束”在模型层做 `clean/full_clean`（例如防护规则区间不重叠）
-- 数据一致性风险提示
-- 若在 `1.1` 阶段已对 MySQL 执行过迁移（存在 `auth_user` 迁移历史），在 `1.2` 切换 `AUTH_USER_MODEL` 后可能出现 `InconsistentMigrationHistory`
-- 推荐对 `1.2` 使用全新数据库后再执行 `python backend/manage.py migrate`
+- 自定义用户模型：`AUTH_USER_MODEL = accounts.User`；按课题要求实现“明文密码存储与校验”（仅用于课题演示，禁止用于生产）。
+- 约束分层：唯一约束/索引尽量下沉到 DB；业务约束在模型层 `full_clean()` 做校验。
+- 数据导入：通过 `ImportTask/ImportTaskLog` 记录导入任务与逐行失败原因，便于后台定位问题。
+- 批量写入注意事项：`bulk_create` 不会触发 `Model.save()`；导入 `AirQualityData` 时需显式计算 `quality_level`。
+- 迁移历史风险：若 `1.1` 先在 MySQL 迁移（存在 `auth_user` 历史），再在 `1.2` 切换 `AUTH_USER_MODEL` 可能出现 `InconsistentMigrationHistory`；推荐使用全新库执行迁移。
 
 ## 4. 数据库 Schema（完整）
 
@@ -257,5 +265,4 @@
 
 ## 5. 下一步边界
 
-- 阶段一 `1.3` 尚未开始；后续实施前应先确认本地数据库是否为“干净安装”（避免迁移历史不一致）。
-
+- 阶段一 `1.4` 尚未开始；进入 `1.4` 前应先确认本地数据库是否为“干净安装”（避免迁移历史不一致）。

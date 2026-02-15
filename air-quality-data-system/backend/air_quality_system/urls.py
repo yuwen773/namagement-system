@@ -25,4 +25,7 @@ urlpatterns = [
     path("", RedirectView.as_view(url="/api/", permanent=False)),
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
+    path("api/", include("apps.airquality.urls")),
+    path("api/", include("apps.rules.urls")),
+    path("api/", include("apps.articles.urls")),
 ]

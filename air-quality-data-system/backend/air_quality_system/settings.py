@@ -104,6 +104,17 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Uploaded files (data import).
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# Limit upload sizes (can be overridden by env vars).
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(50 * 1024 * 1024)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", str(50 * 1024 * 1024)))
+
+# Data import execution mode (thread pool) for development; tests can set to False.
+DATA_IMPORT_ASYNC = os.getenv("DATA_IMPORT_ASYNC", "True").lower() == "true"
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -118,6 +129,9 @@ CSRF_TRUSTED_ORIGINS = [
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
+    # Allow business endpoints to use `format` as a normal query parameter (e.g. export format).
+    "URL_FORMAT_OVERRIDE": None,
 }
 
 SPECTACULAR_SETTINGS = {
