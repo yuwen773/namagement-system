@@ -3,9 +3,10 @@ from __future__ import annotations
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsAdminUser
 from apps.articles.models import Article, ArticleCategory
 from apps.articles.serializers import (
     ArticleCategoryManageSerializer,

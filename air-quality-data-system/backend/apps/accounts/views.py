@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 from django.db.models import Q
-from rest_framework.permissions import IsAdminUser
+from django.utils import timezone
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
-from apps.accounts.serializers import UserManageSerializer
+from apps.accounts.permissions import IsAdminUser
+from apps.accounts.serializers import (
+    AuthUserSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    UserManageSerializer,
+)
 from apps.logs.services import create_operation_log
 from utils.exception_handler import ValidationError
 from utils.response import APIResponse
@@ -48,6 +56,46 @@ def _raise_serializer_validation_error(errors: dict):
     else:
         message = str(first_errors)
     raise ValidationError(message=message, field=str(first_field))
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            _raise_serializer_validation_error(serializer.errors)
+
+        username = serializer.validated_data["username"]
+        password = serializer.validated_data["password"]
+
+        user = User.objects.filter(username=username, is_deleted=False).first()
+        if user is None or not user.check_password(password):
+            return APIResponse.error(401, "用户名或密码错误")
+        if not user.status:
+            return APIResponse.error(403, "用户已被禁用")
+
+        token, _ = Token.objects.get_or_create(user=user)
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
+
+        return APIResponse.success(
+            data={
+                "token": token.key,
+                "user": AuthUserSerializer(user).data,
+            }
+        )
+
+
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if not serializer.is_valid():
+            _raise_serializer_validation_error(serializer.errors)
+        user = serializer.save()
+        return APIResponse.success(data=AuthUserSerializer(user).data, message="注册成功")
 
 
 class UserManageView(APIView):

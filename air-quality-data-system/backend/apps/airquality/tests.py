@@ -29,8 +29,8 @@ class DataImportAPITests(TestCase):
             data={"dataset_type": "provinces", "file": f},
             format="multipart",
         )
-        self.assertEqual(resp.status_code, 403)
-        self.assertEqual(resp.data["code"], 403)
+        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.data["code"], 401)
 
     def test_upload_provinces_csv_success(self):
         self.client.force_authenticate(user=self.admin)

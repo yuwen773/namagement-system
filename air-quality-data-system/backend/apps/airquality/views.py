@@ -17,9 +17,10 @@ from django.views.decorators.cache import cache_page
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsAdminUser
 from apps.airquality.filters import HistoricalDataFilter
 from apps.airquality.models import AirQualityData, City, MonitoringStation
 from apps.airquality.serializers import (

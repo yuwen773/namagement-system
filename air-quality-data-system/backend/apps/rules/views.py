@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from django.db.models import Q
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsAdminUser
 from apps.airquality.models import City
 from apps.airquality.services import (
     calc_quality_level_from_aqi,

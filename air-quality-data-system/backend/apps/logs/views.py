@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from rest_framework.permissions import IsAdminUser
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsAdminUser
 from apps.logs.models import ErrorLog, OperationLog
 from apps.logs.serializers import ErrorLogSerializer, OperationLogSerializer
 from utils.exception_handler import ValidationError

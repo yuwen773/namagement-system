@@ -143,3 +143,52 @@
 ### 边界确认
 - 在用户确认测试结果前未进入 `1.6`。
 - 当前仍未开始阶段二 `2.1`。
+
+## 2026-02-15 - 阶段一 `1.6` 认证与权限（已完成，测试通过）
+
+### 本次完成范围（`1.6.*`）
+- `1.6.1` 实现登录 API（用户名+密码，返回 Token 与用户信息，拦截 `is_deleted=True`）
+- `1.6.1b` 实现注册 API（用户名唯一校验、用户名/密码长度与邮箱格式校验）
+- `1.6.2` 实现并应用权限类（登录态校验 + 管理员校验），管理端 API 全量切换到 Token 鉴权链路
+
+### 具体变更（关键文件）
+- `backend/air_quality_system/settings.py`
+  - 启用 `rest_framework.authtoken`
+  - 配置 `DEFAULT_AUTHENTICATION_CLASSES = TokenAuthentication`
+- `backend/apps/accounts/models.py`
+  - 新增 `PlaintextUserManager`，修复 `create_user/create_superuser` 仍哈希密码的问题，统一为明文存储（按课题要求）
+- `backend/apps/accounts/permissions.py`
+  - 新增 `IsAuthenticated`（登录、未软删、启用状态）
+  - 新增 `IsAdminUser`（管理员角色/标记校验）
+- `backend/apps/accounts/serializers.py`
+  - 新增 `AuthUserSerializer`、`LoginSerializer`、`RegisterSerializer`
+- `backend/apps/accounts/views.py`
+  - 新增 `LoginView`、`RegisterView`
+  - 管理端用户接口改用项目内权限类 `IsAdminUser`
+- `backend/apps/accounts/urls.py`
+  - 新增 `/api/auth/login/`
+  - 新增 `/api/auth/register/`
+- `backend/apps/airquality/views.py`
+- `backend/apps/rules/views.py`
+- `backend/apps/articles/views.py`
+- `backend/apps/logs/views.py`
+  - 管理端接口统一改用 `apps.accounts.permissions.IsAdminUser`
+- `backend/apps/accounts/tests.py`
+  - 新增认证与权限回归测试（登录、注册、软删用户拦截、管理端权限）
+- `backend/apps/airquality/tests.py`
+  - 未登录访问管理导入接口状态码由 `403` 更新为 `401`（Token 认证生效后的预期）
+
+### 验证记录（本次）
+- 本地静态检查通过：`python manage.py check --settings=air_quality_system.settings_migrations`
+- 认证专项测试通过：`python manage.py test apps.accounts.tests --settings=air_quality_system.settings_migrations`
+- 关键回归测试通过：`python manage.py test apps.airquality.tests apps.rules.tests apps.articles.tests apps.accounts.tests apps.logs.tests --settings=air_quality_system.settings_migrations`
+- 用户验收反馈：测试通过
+
+### 给后续开发者的注意事项
+- 首次拉取 `1.6` 代码后需执行 `python manage.py migrate`，创建 `authtoken_token` 表。
+- 管理端接口不再依赖 `force_authenticate` 思维，前后端联调需显式传 `Authorization: Token <token>`。
+
+### 边界确认
+- 阶段一 `1.6` 已收口。
+- 按用户要求未开始阶段一 `1.7`。
+- 当前仍未开始阶段二 `2.1`。

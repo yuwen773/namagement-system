@@ -1,8 +1,8 @@
-# 架构文档（阶段一 `1.5` 完成后，文档本质版）
+# 架构文档（阶段一 `1.6` 完成后，文档本质版）
 
 更新时间：2026-02-15  
-当前里程碑：阶段一 `1.5`（管理端 API）已完成并通过测试。  
-边界状态：阶段一 `1.6` 尚未开始；阶段二 `2.1` 尚未开始。
+当前里程碑：阶段一 `1.6`（认证与权限）已完成并通过测试。  
+边界状态：阶段一 `1.7` 尚未开始；阶段二 `2.1` 尚未开始。
 
 ## 1. 当前架构状态
 
@@ -12,8 +12,8 @@
   - 数据导入能力（上传、任务跟踪、导入日志）
   - 用户端 API（概览、详情、历史、分析、防护、文章）
   - 管理端 API（仪表盘、空气质量数据管理、规则管理、用户管理、文章/分类管理、日志查询）
+  - 认证与权限（登录、注册、Token 认证、管理端统一权限类）
 - 未落地范围：
-  - 阶段一 `1.6` 认证与权限（简单 Token）
   - 阶段一 `1.7` API 文档导出
   - 阶段二前端与阶段三集成优化
 - 全局约束：
@@ -38,7 +38,7 @@
 | `backend/manage.py` | Django 管理入口（`runserver` / `migrate` / `test` / `check`）。 |
 | `backend/requirements.txt` | 后端依赖清单（Django/DRF/pandas/openpyxl/xlrd 等）。 |
 | `backend/air_quality_system/__init__.py` | 注入 `PyMySQL` 兼容层。 |
-| `backend/air_quality_system/settings.py` | 全局配置：数据库、DRF、CORS、异常处理、中间件、上传限制。 |
+| `backend/air_quality_system/settings.py` | 全局配置：数据库、DRF、Token 认证、CORS、异常处理、中间件、上传限制。 |
 | `backend/air_quality_system/settings_migrations.py` | 迁移辅助配置（SQLite）。 |
 | `backend/air_quality_system/urls.py` | 根路由：挂载 accounts/airquality/rules/articles/logs API。 |
 | `backend/air_quality_system/asgi.py` | ASGI 入口。 |
@@ -56,12 +56,13 @@
 
 | 文件 | 作用 |
 |---|---|
-| `backend/apps/accounts/models.py` | 自定义用户模型 `User`（`phone/role/status/is_deleted`，明文密码逻辑）。 |
-| `backend/apps/accounts/serializers.py` | 管理端用户序列化器 `UserManageSerializer`。 |
-| `backend/apps/accounts/views.py` | 管理端用户管理 API（列表/更新/逻辑删除）。 |
-| `backend/apps/accounts/urls.py` | `/api/admin/users/` 路由。 |
+| `backend/apps/accounts/models.py` | 自定义用户模型 `User` + `PlaintextUserManager`（`phone/role/status/is_deleted`，明文密码创建/校验逻辑）。 |
+| `backend/apps/accounts/serializers.py` | 登录/注册/用户信息与管理端用户序列化器。 |
+| `backend/apps/accounts/permissions.py` | 项目权限类：`IsAuthenticated`、`IsAdminUser`。 |
+| `backend/apps/accounts/views.py` | 认证 API（登录/注册）+ 管理端用户管理 API（列表/更新/逻辑删除）。 |
+| `backend/apps/accounts/urls.py` | `/api/auth/login/`、`/api/auth/register/`、`/api/admin/users/` 路由。 |
 | `backend/apps/accounts/admin.py` | Django Admin 用户管理配置。 |
-| `backend/apps/accounts/tests.py` | 用户管理 API 回归测试。 |
+| `backend/apps/accounts/tests.py` | 认证与权限、用户管理 API 回归测试。 |
 | `backend/apps/accounts/migrations/0001_initial.py` | accounts 初始迁移。 |
 
 ### 3.4 airquality（空气质量核心域）
@@ -157,13 +158,18 @@
 - `GET /api/admin/logs/operations/`
 - `GET /api/admin/logs/errors/`
 
-## 5. 架构洞见（`1.5`）
+### 4.4 `1.6` 认证与权限 API
+
+- `POST /api/auth/login/`
+- `POST /api/auth/register/`
+
+## 5. 架构洞见（`1.6`）
 
 1. 管理端与用户端 API 继续复用统一响应与统一异常，不在业务视图里分散拼装错误格式。  
-2. 通过 `IsAdminUser` 快速收口管理端权限，后续 `1.6` 再替换为 Token 鉴权链路。  
+2. 管理端权限已从 DRF 内置 `IsAdminUser` 收敛为项目内 `apps.accounts.permissions.IsAdminUser`，统一挂载“Token + 角色 + 软删除 + 状态”校验语义。  
 3. 管理写操作日志与异常日志下沉到 `logs/middleware.py`，减少每个视图重复打点代码。  
 4. 用户管理使用软删除（`is_deleted`）保留审计链路，默认查询排除软删用户。  
-5. 数据管理与规则管理都支持批量操作，接口契约稳定，便于后续前端后台批处理。  
+5. 认证链路使用 DRF `TokenAuthentication`（非 JWT），后续前端与联调只需标准 `Authorization: Token <token>` 头；接口契约稳定，便于阶段二接入。  
 
 ## 6. 数据库 Schema（完整）
 
@@ -214,6 +220,11 @@
 - `session_key` varchar(40) PK
 - `session_data` longtext
 - `expire_date` datetime(6) INDEX
+
+#### `authtoken_token`
+- `key` varchar(40) PK
+- `created` datetime(6)
+- `user_id` bigint UNIQUE FK -> `accounts_user.id`
 
 ### 6.2 accounts
 
@@ -356,5 +367,5 @@
 
 ## 7. 下一步边界
 
-- 阶段一 `1.5` 已收口并验证通过。
-- 在收到明确指令前，不进入阶段一 `1.6`。
+- 阶段一 `1.6` 已收口并验证通过。
+- 在收到明确指令前，不进入阶段一 `1.7`。
