@@ -25,6 +25,7 @@ import {
   deleteMovie,
   getMovieTypes
 } from '@/api/movie'
+import { showError, showSuccess } from '@/utils/errorHandler'
 
 const loading = ref(false)
 const tableLoading = ref(false)
@@ -83,8 +84,7 @@ const loadData = async () => {
     tableData.value = res.data || []
     total.value = res.total || 0
   } catch (error) {
-    ElMessage.error('加载数据失败')
-    console.error(error)
+    showError(error)
   } finally {
     tableLoading.value = false
   }
@@ -147,13 +147,10 @@ const handleDelete = (row) => {
   ).then(async () => {
     try {
       await deleteMovie(row.id)
-      ElMessage.success({
-        message: '删除成功',
-        icon: Check
-      })
+      showSuccess('删除成功')
       loadData()
     } catch (error) {
-      console.error('删除失败:', error)
+      showError(error)
     }
   }).catch(() => {})
 }
@@ -181,26 +178,17 @@ const submitForm = async () => {
 
     if (form.id) {
       await updateMovie(form.id, form)
-      ElMessage.success({
-        message: '更新成功',
-        icon: Check
-      })
+      showSuccess('更新成功')
     } else {
       await createMovie(form)
-      ElMessage.success({
-        message: '创建成功',
-        icon: Check
-      })
+      showSuccess('创建成功')
     }
 
     dialogVisible.value = false
     loadData()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error({
-        message: form.id ? '更新失败' : '创建失败',
-        icon: Close
-      })
+      showError(error)
     }
   } finally {
     formLoading.value = false
