@@ -47,3 +47,32 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
+
+
+class ArticleCategoryManageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArticleCategory
+        fields = ["id", "name", "sort"]
+
+
+class ArticleManageSerializer(serializers.ModelSerializer):
+    category_id = serializers.PrimaryKeyRelatedField(
+        source="category", queryset=ArticleCategory.objects.all()
+    )
+    category_name = serializers.CharField(source="category.name", read_only=True)
+
+    class Meta:
+        model = Article
+        fields = [
+            "id",
+            "title",
+            "category_id",
+            "category_name",
+            "content",
+            "status",
+            "is_announcement",
+            "sort_order",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "category_name", "created_at", "updated_at"]

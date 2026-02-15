@@ -7,8 +7,9 @@ from io import BytesIO, StringIO
 from pathlib import Path
 
 import pandas as pd
+from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -21,7 +22,11 @@ from rest_framework.views import APIView
 
 from apps.airquality.filters import HistoricalDataFilter
 from apps.airquality.models import AirQualityData, City, MonitoringStation
-from apps.airquality.serializers import HistoricalAirQualitySerializer, ProvinceCitySerializer
+from apps.airquality.serializers import (
+    AirQualityDataManageSerializer,
+    HistoricalAirQualitySerializer,
+    ProvinceCitySerializer,
+)
 from apps.airquality.services import (
     POLLUTANT_FIELDS,
     calc_quality_level_from_aqi,
@@ -38,6 +43,8 @@ from apps.logs.serializers import ImportTaskLogSerializer, ImportTaskSerializer
 from utils.data_importer import run_import_task, submit_import_task
 from utils.exception_handler import ValidationError
 from utils.response import APIResponse
+
+SERVICE_START_TIME = timezone.now()
 
 
 def _get_required_int_query_param(
@@ -70,6 +77,22 @@ def _parse_filter_errors(filterset: HistoricalDataFilter):
     else:
         message = str(errors)
     raise ValidationError(message, field=first_field)
+
+
+def _raise_serializer_validation_error(errors: dict):
+    first_field, first_errors = next(iter(errors.items()))
+    if isinstance(first_errors, (list, tuple)) and first_errors:
+        message = str(first_errors[0])
+    else:
+        message = str(first_errors)
+    raise ValidationError(message=message, field=str(first_field))
+
+
+def _parse_int_payload(value, field: str) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ValidationError("格式错误，应为整数", field=field)
 
 
 class DataImportUploadView(APIView):
@@ -213,6 +236,157 @@ class ImportTaskCancelView(APIView):
         task.end_time = timezone.now()
         task.save(update_fields=["status", "end_time"])
         return APIResponse.success(data=ImportTaskSerializer(task).data, message="已标记为失败")
+
+
+class AdminDashboardView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        now = timezone.now()
+        today = now.date()
+
+        data_summary = AirQualityData.objects.aggregate(
+            total_data_count=Count("id"),
+            today_new_count=Count("id", filter=Q(monitor_time__date=today)),
+            covered_city_count=Count("station__city_id", distinct=True),
+        )
+
+        user_model = get_user_model()
+        user_summary = user_model.objects.aggregate(
+            total_user_count=Count("id", filter=Q(is_deleted=False)),
+            today_active_user_count=Count(
+                "id",
+                filter=Q(is_deleted=False, last_login__date=today),
+                distinct=True,
+            ),
+        )
+
+        latest_task = ImportTask.objects.order_by("-start_time", "-id").first()
+        latest_task_data = None
+        latest_import_time = None
+        if latest_task is not None:
+            latest_import_time = latest_task.start_time
+            latest_task_data = {
+                "task_id": latest_task.task_id,
+                "status": latest_task.status,
+                "file_name": latest_task.file_name,
+                "file_type": latest_task.file_type,
+                "start_time": latest_task.start_time,
+                "end_time": latest_task.end_time,
+                "total_count": latest_task.total_count,
+                "success_count": latest_task.success_count,
+                "failed_count": latest_task.failed_count,
+            }
+
+        uptime_seconds = max(0, int((now - SERVICE_START_TIME).total_seconds()))
+
+        return APIResponse.success(
+            data={
+                "system": {
+                    "service_start_time": SERVICE_START_TIME,
+                    "current_time": now,
+                    "uptime_seconds": uptime_seconds,
+                    "latest_import_time": latest_import_time,
+                },
+                "data_summary": data_summary,
+                "user_summary": user_summary,
+                "latest_import_task": latest_task_data,
+            }
+        )
+
+
+class AirQualityDataManageView(APIView):
+    permission_classes = [IsAdminUser]
+    ordering_fields = {"monitor_time", "-monitor_time", "aqi", "-aqi"}
+
+    def _get_queryset(self, request):
+        queryset = AirQualityData.objects.select_related("station__city__province")
+
+        city_code = (request.query_params.get("city_code") or "").strip()
+        if city_code:
+            queryset = queryset.filter(station__city__code=city_code)
+
+        station_code = (request.query_params.get("station_code") or "").strip()
+        if station_code:
+            queryset = queryset.filter(station__code=station_code)
+
+        quality_level = (request.query_params.get("quality_level") or "").strip()
+        if quality_level:
+            queryset = queryset.filter(quality_level=quality_level)
+
+        start_date = _get_optional_date_query_param(request, "start_date")
+        end_date = _get_optional_date_query_param(request, "end_date")
+        if start_date:
+            queryset = queryset.filter(monitor_time__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(monitor_time__date__lte=end_date)
+
+        return queryset
+
+    def get(self, request):
+        page = _get_required_int_query_param(
+            request=request, field="page", default=1, min_value=1, max_value=100_000
+        )
+        page_size = _get_required_int_query_param(
+            request=request, field="page_size", default=20, min_value=1, max_value=200
+        )
+        ordering = request.query_params.get("ordering", "-monitor_time")
+        if ordering not in self.ordering_fields:
+            raise ValidationError("仅支持 monitor_time/-monitor_time/aqi/-aqi", field="ordering")
+
+        queryset = self._get_queryset(request).order_by(ordering, "-id")
+        total = queryset.count()
+        items = queryset[(page - 1) * page_size : page * page_size]
+        data = AirQualityDataManageSerializer(items, many=True).data
+        return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
+
+    def put(self, request):
+        data_id = _parse_int_payload(request.data.get("id"), field="id")
+        record = (
+            AirQualityData.objects.select_related("station__city__province").filter(id=data_id).first()
+        )
+        if record is None:
+            return APIResponse.error(404, "空气质量数据不存在")
+
+        serializer = AirQualityDataManageSerializer(record, data=request.data, partial=True)
+        if not serializer.is_valid():
+            _raise_serializer_validation_error(serializer.errors)
+        serializer.save()
+
+        refreshed = (
+            AirQualityData.objects.select_related("station__city__province").filter(id=record.id).first()
+        )
+        return APIResponse.success(data=AirQualityDataManageSerializer(refreshed).data)
+
+    def delete(self, request):
+        single_id = request.data.get("id")
+        id_list = request.data.get("ids")
+
+        if single_id is None and not id_list:
+            raise ValidationError("至少提供 id 或 ids", field="id")
+
+        if single_id is not None:
+            record_id = _parse_int_payload(single_id, field="id")
+            queryset = AirQualityData.objects.filter(id=record_id)
+            if not queryset.exists():
+                return APIResponse.error(404, "空气质量数据不存在")
+            deleted_count, _ = queryset.delete()
+            return APIResponse.success(data={"deleted_count": deleted_count}, message="删除成功")
+
+        if not isinstance(id_list, list):
+            raise ValidationError("格式错误，应为整数数组", field="ids")
+
+        normalized_ids = []
+        for raw in id_list:
+            value = _parse_int_payload(raw, field="ids")
+            if value > 0 and value not in normalized_ids:
+                normalized_ids.append(value)
+
+        if not normalized_ids:
+            raise ValidationError("至少提供一个有效 id", field="ids")
+
+        deleted_count, _ = AirQualityData.objects.filter(id__in=normalized_ids).delete()
+        return APIResponse.success(data={"deleted_count": deleted_count}, message="批量删除完成")
 
 
 class AirQualityOverviewViewSet(viewsets.ViewSet):

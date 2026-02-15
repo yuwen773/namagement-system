@@ -103,3 +103,43 @@
 
 ### 边界确认
 - 未开始阶段二 `2.1`。
+
+## 2026-02-15 - 阶段一 `1.5` 管理端 API 开发（已完成，测试通过）
+
+### 本次完成范围（`1.5.*`）
+- `1.5.1` 管理后台仪表盘 API：系统运行时间、最近导入时间、数据统计、用户统计、最近导入任务状态
+- `1.5.2` 空气质量数据管理 API：分页查询、单条更新、单条删除、批量删除
+- `1.5.3` 防护规则管理 API：CRUD、AQI 区间校验、批量启用/禁用
+- `1.5.4` 用户管理 API：默认过滤软删除用户、状态/角色修改、逻辑删除（`is_deleted=True`）
+- `1.5.5` 文章与分类管理 API：文章 CRUD、分类 CRUD、发布状态管理
+- `1.5.6` 系统日志 API：操作日志查询、异常日志查询、按时间/用户过滤；新增管理端操作/异常日志中间件
+
+### 具体变更（关键文件）
+- `backend/apps/airquality/views.py`：新增 `AdminDashboardView`、`AirQualityDataManageView`
+- `backend/apps/airquality/serializers.py`：新增 `AirQualityDataManageSerializer`
+- `backend/apps/airquality/urls.py`：新增 `/api/admin/dashboard/`、`/api/admin/air-quality/`
+- `backend/apps/rules/serializers.py`：新增 `ProtectionRuleSerializer`
+- `backend/apps/rules/views.py`：新增 `ProtectionRuleManageView`
+- `backend/apps/rules/urls.py`：新增 `/api/admin/rules/`
+- `backend/apps/accounts/serializers.py`：新增 `UserManageSerializer`
+- `backend/apps/accounts/views.py`：新增 `UserManageView`
+- `backend/apps/accounts/urls.py`：新增 `/api/admin/users/`
+- `backend/apps/articles/serializers.py`：新增管理端序列化器
+- `backend/apps/articles/views.py`：新增 `ArticleManageView`、`CategoryManageView`
+- `backend/apps/articles/urls.py`：新增 `/api/admin/articles/`、`/api/admin/categories/`
+- `backend/apps/logs/serializers.py`：新增操作日志/异常日志序列化器
+- `backend/apps/logs/views.py`：新增 `OperationLogListView`、`ErrorLogListView`
+- `backend/apps/logs/urls.py`：新增 `/api/admin/logs/operations/`、`/api/admin/logs/errors/`
+- `backend/apps/logs/services.py`：新增操作日志写入工具
+- `backend/apps/logs/middleware.py`：新增管理端写操作与异常自动记录中间件
+- `backend/air_quality_system/settings.py`：挂载日志中间件
+- `backend/air_quality_system/urls.py`：挂载 `apps.accounts.urls`、`apps.logs.urls`
+
+### 验证记录（本次）
+- 本地静态检查通过：`python manage.py check --settings=air_quality_system.settings_migrations`
+- 回归测试通过：`python manage.py test apps.airquality.tests apps.rules.tests apps.articles.tests apps.accounts.tests apps.logs.tests --settings=air_quality_system.settings_migrations`
+- 用户验收反馈：测试通过
+
+### 边界确认
+- 在用户确认测试结果前未进入 `1.6`。
+- 当前仍未开始阶段二 `2.1`。

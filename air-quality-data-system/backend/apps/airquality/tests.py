@@ -230,3 +230,138 @@ class UserAirQualityAPITests(TestCase):
         distribution_resp = self.client.get(f"/api/analysis/distribution/?city_code={self.city_a.code}")
         self.assertEqual(distribution_resp.status_code, 200)
         self.assertIn("distribution", distribution_resp.data["data"])
+
+
+class AdminDashboardAndAirQualityManageAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            username="admin_manage",
+            password="admin123",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.user_active = User.objects.create_user(
+            username="active_user",
+            password="123456",
+            is_staff=False,
+            is_superuser=False,
+        )
+        self.user_deleted = User.objects.create_user(
+            username="deleted_user",
+            password="123456",
+            is_staff=False,
+            is_superuser=False,
+            is_deleted=True,
+            status=False,
+        )
+        now = timezone.now()
+        User.objects.filter(id=self.user_active.id).update(last_login=now)
+        User.objects.filter(id=self.user_deleted.id).update(last_login=now)
+
+        self.province = Province.objects.create(code="120000", name="Tianjin", level="PROVINCE")
+        self.city = City.objects.create(
+            code="120100",
+            name="Tianjin City",
+            province=self.province,
+            longitude="117.200000",
+            latitude="39.133300",
+        )
+        self.station = MonitoringStation.objects.create(
+            code="TJ-MANAGE-001",
+            name="Manage Station",
+            city=self.city,
+            address="test",
+            station_type="URBAN",
+        )
+        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
+        self.record_1 = AirQualityData.objects.create(
+            station=self.station,
+            monitor_time=base_time - timedelta(hours=2),
+            aqi=90,
+            pm25=20,
+            pm10=30,
+            so2=4,
+            no2=5,
+            co=1,
+            o3=45,
+        )
+        self.record_2 = AirQualityData.objects.create(
+            station=self.station,
+            monitor_time=base_time - timedelta(hours=1),
+            aqi=110,
+            pm25=21,
+            pm10=31,
+            so2=4,
+            no2=5,
+            co=1,
+            o3=46,
+        )
+        self.record_3 = AirQualityData.objects.create(
+            station=self.station,
+            monitor_time=base_time,
+            aqi=120,
+            pm25=22,
+            pm10=32,
+            so2=4,
+            no2=5,
+            co=1,
+            o3=47,
+        )
+
+        ImportTask.objects.create(
+            task_id="task-dashboard-001",
+            file_name="sample.csv",
+            file_type="air_quality_data",
+            status=ImportTask.Status.SUCCESS,
+            total_count=100,
+            success_count=100,
+            failed_count=0,
+            initiator=self.admin,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+    def test_admin_dashboard_api(self):
+        resp = self.client.get("/api/admin/dashboard/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["code"], 200)
+        self.assertEqual(resp.data["data"]["data_summary"]["total_data_count"], 3)
+        self.assertEqual(resp.data["data"]["data_summary"]["covered_city_count"], 1)
+        self.assertGreaterEqual(resp.data["data"]["user_summary"]["today_active_user_count"], 1)
+        self.assertEqual(
+            resp.data["data"]["latest_import_task"]["task_id"],
+            "task-dashboard-001",
+        )
+
+    def test_air_quality_manage_list_update_and_delete(self):
+        list_resp = self.client.get("/api/admin/air-quality/?page=1&page_size=20")
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertEqual(list_resp.data["total"], 3)
+
+        update_resp = self.client.put(
+            "/api/admin/air-quality/",
+            data={"id": self.record_1.id, "aqi": 180, "pm25": 55.5},
+            format="json",
+        )
+        self.assertEqual(update_resp.status_code, 200)
+        self.record_1.refresh_from_db()
+        self.assertEqual(self.record_1.aqi, 180)
+        self.assertEqual(self.record_1.quality_level, AirQualityData.QualityLevel.MODERATE_POLLUTION)
+
+        delete_resp = self.client.delete(
+            "/api/admin/air-quality/",
+            data={"id": self.record_2.id},
+            format="json",
+        )
+        self.assertEqual(delete_resp.status_code, 200)
+        self.assertFalse(AirQualityData.objects.filter(id=self.record_2.id).exists())
+
+        batch_resp = self.client.delete(
+            "/api/admin/air-quality/",
+            data={"ids": [self.record_1.id, self.record_3.id]},
+            format="json",
+        )
+        self.assertEqual(batch_resp.status_code, 200)
+        self.assertEqual(AirQualityData.objects.count(), 0)

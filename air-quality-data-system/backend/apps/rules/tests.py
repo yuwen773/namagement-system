@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -95,3 +96,79 @@ class ProtectionGuideAPITests(TestCase):
         resp = self.client.get("/api/protection-guide/?city_code=999999")
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(resp.data["code"], 404)
+
+
+class ProtectionRuleManageAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            username="rule_admin",
+            password="admin123",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(user=self.admin)
+        self.rule = ProtectionRule.objects.create(
+            rule_name="General 0-50",
+            min_aqi=0,
+            max_aqi=50,
+            population_type=ProtectionRule.PopulationType.GENERAL,
+            advice="空气质量优，正常活动。",
+            is_enabled=True,
+        )
+        self.rule_2 = ProtectionRule.objects.create(
+            rule_name="General 51-100",
+            min_aqi=51,
+            max_aqi=100,
+            population_type=ProtectionRule.PopulationType.GENERAL,
+            advice="空气质量良，适量活动。",
+            is_enabled=True,
+        )
+
+    def test_rule_manage_crud_and_batch_enable(self):
+        list_resp = self.client.get("/api/admin/rules/")
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertGreaterEqual(len(list_resp.data["data"]), 2)
+
+        create_resp = self.client.post(
+            "/api/admin/rules/",
+            data={
+                "rule_name": "Sensitive 0-50",
+                "min_aqi": 0,
+                "max_aqi": 50,
+                "population_type": ProtectionRule.PopulationType.SENSITIVE,
+                "advice": "敏感人群可正常活动。",
+                "is_enabled": True,
+            },
+            format="json",
+        )
+        self.assertEqual(create_resp.status_code, 200)
+        created_id = create_resp.data["data"]["id"]
+
+        update_resp = self.client.put(
+            "/api/admin/rules/",
+            data={"id": created_id, "advice": "敏感人群建议减少户外停留。"},
+            format="json",
+        )
+        self.assertEqual(update_resp.status_code, 200)
+        self.assertEqual(update_resp.data["data"]["advice"], "敏感人群建议减少户外停留。")
+
+        batch_resp = self.client.put(
+            "/api/admin/rules/",
+            data={"ids": [self.rule.id, self.rule_2.id], "is_enabled": False},
+            format="json",
+        )
+        self.assertEqual(batch_resp.status_code, 200)
+        self.rule.refresh_from_db()
+        self.rule_2.refresh_from_db()
+        self.assertFalse(self.rule.is_enabled)
+        self.assertFalse(self.rule_2.is_enabled)
+
+        delete_resp = self.client.delete(
+            "/api/admin/rules/",
+            data={"id": created_id},
+            format="json",
+        )
+        self.assertEqual(delete_resp.status_code, 200)
+        self.assertFalse(ProtectionRule.objects.filter(id=created_id).exists())

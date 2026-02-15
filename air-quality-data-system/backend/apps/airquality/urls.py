@@ -2,7 +2,9 @@ from django.urls import path
 
 from .views import (
     AQIDistributionView,
+    AdminDashboardView,
     AirQualityOverviewViewSet,
+    AirQualityDataManageView,
     CityComparisonView,
     CityDetailView,
     CityTrendView,
@@ -23,6 +25,7 @@ historical_list_view = HistoricalDataViewSet.as_view({"get": "list"})
 historical_export_view = HistoricalDataViewSet.as_view({"get": "export"})
 
 urlpatterns = [
+    path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
     path("admin/data-import/", DataImportUploadView.as_view(), name="admin-data-import-upload"),
     path("admin/data-import/tasks/", ImportTaskListView.as_view(), name="admin-data-import-task-list"),
     path(
@@ -35,6 +38,7 @@ urlpatterns = [
         ImportTaskLogListView.as_view(),
         name="admin-data-import-task-logs",
     ),
+    path("admin/air-quality/", AirQualityDataManageView.as_view(), name="admin-air-quality-manage"),
     path("overview/", overview_list_view, name="overview-list"),
     path("overview/top-cities/", overview_top_cities_view, name="overview-top-cities"),
     path("cities/<str:code>/", CityDetailView.as_view(), name="city-detail"),
