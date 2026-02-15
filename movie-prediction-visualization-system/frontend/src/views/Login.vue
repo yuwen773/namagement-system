@@ -117,7 +117,7 @@
           <p class="text-xs font-medium mb-2" style="color: #92400e;">演示账号</p>
           <div class="space-y-1 text-xs" style="color: #6b7280;">
             <p><span class="font-medium">管理员：</span>admin / admin123</p>
-            <p><span class="font-medium">普通用户：</span>user / user123</p>
+            <p><span class="font-medium">普通用户：</span>test / test123</p>
           </div>
         </div>
       </div>
