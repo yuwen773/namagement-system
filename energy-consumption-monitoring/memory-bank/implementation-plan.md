@@ -86,7 +86,12 @@ energy-consumption-monitoring/
 - [ ] MySQL 服务正在运行
 - [ ] 数据库 `energy_monitoring` 已创建
 - [ ] 运行 `SHOW CREATE DATABASE energy_monitoring;` 确认字符集为 utf8mb4
-
+> 本机数据库配置如下：
+> - 数据库版本：MySQL 8.0.36
+> - 字符集：utf8mb4
+> - 端口：3307
+> - 用户名：root
+> - 密码：yuwen123
 ---
 
 ## 步骤 1.4：配置 Django 项目
