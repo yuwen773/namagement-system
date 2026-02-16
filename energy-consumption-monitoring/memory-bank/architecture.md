@@ -3,12 +3,13 @@
 ## 文档目的
 定义长期有效的架构边界、分层职责与文件分工；不记录一次性执行过程。
 
-## 当前架构基线（截至阶段 1.3）
+## 当前架构基线（截至阶段 1.4）
 - 开发顺序：后端优先（Django + DRF 先落地，前端后置）
 - 数据库策略：`MySQL` 单体架构（不引入 InfluxDB）
 - 分析策略：`Spark` 为可选增强，不作为当前阶段硬门槛
 - 运行环境：`backend/.venv`（Python 3.11，Django 5.2.x）
 - 数据库基线：已落地 `energy_monitoring` 库，默认字符集 `utf8mb4`
+- 后端基线：Django 项目入口与全局配置已落地（`manage.py`、`settings.py`、`urls.py`、`asgi.py`、`wsgi.py`）
 - 前端策略：`frontend/` 由第七阶段 Vite 自动初始化，不在当前阶段手动创建
 
 ## 分层与职责
@@ -35,6 +36,14 @@
 - `scripts/`：数据导入、清洗、统计生成等脚本目录。
 - `sql/init_db.sql`：数据库初始化与基线数据脚本入口。
 
+### memory-bank 文件
+- `memory-bank/pre-prd.md`：课题原始叙述与研究要求来源。
+- `memory-bank/PRD.md`：产品功能与非功能需求边界。
+- `memory-bank/implementation-plan.md`：分阶段执行路径与验收清单。
+- `memory-bank/tech-stack.md`：技术选型与版本方向约束。
+- `memory-bank/progress.md`：执行事实与阶段验收结论。
+- `memory-bank/architecture.md`：长期架构边界、分层职责、文件职责。
+
 ### 后端入口与配置
 - `backend/manage.py`：Django 管理入口，执行迁移、运行服务、管理命令。
 - `backend/requirements.txt`：Python 依赖清单文件（用于环境复现）。
@@ -42,7 +51,7 @@
 - `backend/energy_monitoring/urls.py`：全局路由入口，聚合各 app API。
 - `backend/energy_monitoring/wsgi.py`：WSGI 部署入口。
 - `backend/energy_monitoring/asgi.py`：ASGI 部署入口（异步能力扩展预留）。
-- `backend/energy_monitoring/__init__.py`：项目包标记文件。
+- `backend/energy_monitoring/__init__.py`：项目包初始化入口（当前用于 MySQL 驱动适配）。
 
 ### 领域应用边界（`backend/apps/`）
 - `backend/apps/accounts/`：认证、用户、角色权限域。
@@ -56,6 +65,7 @@
 
 ## 当前阶段架构见解
 - 在阶段 1.3 明确 `MySQL + utf8mb4` 基线后，后续模型、索引与导入脚本可按统一字符语义设计，降低编码与排序不一致风险。
+- 在阶段 1.4 落地 Django 全局配置后，项目已形成稳定“入口层 + 配置层”骨架，后续 app 开发可在统一数据库、时区、应用注册机制下推进。
 - `apps/` 按业务域划分是可维护性前提，跨域调用应经服务层或明确 API 边界，避免耦合扩散。
 - 文档职责保持分离：`progress.md` 记录“事实与验收”，`architecture.md` 维护“长期约束与组织方式”。
 
