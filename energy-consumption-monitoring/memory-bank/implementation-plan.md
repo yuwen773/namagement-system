@@ -4,6 +4,21 @@
 
 本计划遵循**后端优先**的开发策略：先完成后端开发和API接口文档，再进行前端开发。每个步骤都包含具体的测试验证方法。
 
+架构约束：
+1. 数据库采用 **MySQL 单体架构**（不引入 InfluxDB 等额外时序数据库）。
+2. `pre-prd.md` 中提到的 InfluxDB 混合存储要求，在本项目统一落地为 MySQL 单体实现。
+3. Spark 作为**可选增强**，不作为本期硬性验收门槛。
+4. 同时满足 `pre-prd.md` 与 `PRD.md`，并通过需求追踪矩阵（RTM）和自动化测试/CI 进行验收。
+
+决策冻结（本实施计划执行口径）：
+1. 显式建模校区维度（Campus），与数据集 `campus_id` 对齐。
+2. 角色体系采用 `ADMIN/USER` 两级，基于 `UserProfile.role` + 自定义权限类实现。
+3. 充值仅做模拟支付，但必须写入充值记录并更新系统内账务数据。
+4. 预测口径按数据集先落地“日粒度 + 7/30天 + campus/building/meter 维度”。
+5. API 统一响应格式遵循技能规范（`code`、`data`、`message`、`total`）。
+6. RTM 统一维护在 `docs/rtm.md`。
+7. 监控大屏地图能力以 2D 为必做，3D 为可选增强。
+
 ---
 
 # 第一阶段：项目初始化与基础设施
@@ -95,6 +110,22 @@ energy-consumption-monitoring/
 
 ---
 
+## 步骤 1.5：工业协议采集环境准备（Modbus/BACnet）
+
+### 操作说明
+1. 确认采集网关方案（直连仪表或网关转发），整理点位映射（仪表ID -> 设备ID -> 房间）。
+2. 准备 Modbus/BACnet 测试环境（真实设备或模拟器）。
+3. 定义采集频率、超时重试、断线重连策略。
+
+### 测试验证
+- [ ] Modbus 模拟设备可被读取，返回稳定测点值
+- [ ] BACnet 模拟设备可被读取，返回稳定测点值
+- [ ] 断网后自动重连并恢复采集
+- [ ] 采集数据字段与 `em_energy_data` 模型字段一致
+- [ ] 在无实物设备场景下，使用协议模拟器也可完成验收
+
+---
+
 # 第二阶段：数据库设计与模型开发
 
 ## 步骤 2.1：设计数据库表结构
@@ -105,19 +136,21 @@ energy-consumption-monitoring/
 **核心表清单**：
 1. `em_users` - 用户表（继承 Django User 或自定义）
 2. `em_roles` - 角色表（ADMIN、USER）
-3. `em_buildings` - 建筑档案表
-4. `em_floors` - 楼层表
-5. `em_rooms` - 房间表
-6. `em_energy_types` - 能源类型表（水、电、气）
-7. `em_devices` - 设备台账表
-8. `em_energy_data` - 能耗原始数据表
-9. `em_energy_statistics` - 能耗统计表（日/月/年）
-10. `em_alarms` - 告警记录表
-11. `em_alarm_rules` - 告警规则表
-12. `em_bills` - 账单表
-13. `em_recharge_records` - 充值记录表
-14. `em_notices` - 通知公告表
-15. `em_operation_logs` - 操作日志表
+3. `em_campuses` - 校区表（与数据集 `campus_meta.csv` 对齐）
+4. `em_buildings` - 建筑档案表（关联校区）
+5. `em_floors` - 楼层表
+6. `em_rooms` - 房间表
+7. `em_energy_types` - 能源类型表（水、电、气）
+8. `em_devices` - 设备台账表
+9. `em_energy_data` - 能耗原始数据表
+10. `em_energy_statistics` - 能耗统计表（日/月/年）
+11. `em_alarms` - 告警记录表
+12. `em_alarm_rules` - 告警规则表
+13. `em_bills` - 账单表
+14. `em_recharge_records` - 充值记录表
+15. `em_notices` - 通知公告表
+16. `em_operation_logs` - 操作日志表
+17. `em_energy_forecasts` - 能耗预测结果表（用于趋势预测）
 
 ### 测试验证
 - [ ] SQL 文件语法正确（在 MySQL 中运行无语法错误）
@@ -175,19 +208,25 @@ python manage.py startapp system
 ### 操作说明
 在 `apps/buildings/models.py` 中定义：
 
-1. **Building 模型**：
+1. **Campus 模型**：
+   - `name` - 校区名称
+   - `code` - 校区编码（唯一）
+   - `capacity` - 校区容量（可选）
+
+2. **Building 模型**：
+   - `campus` - ForeignKey 到 Campus
    - `name` - 建筑名称
    - `code` - 建筑编码（唯一）
    - `area_type` - 区域类型（教学区/生活区/办公区）
    - `address` - 地址
    - `floors_count` - 楼层数
 
-2. **Floor 模型**：
+3. **Floor 模型**：
    - `building` - ForeignKey 到 Building
    - `floor_number` - 楼层号
    - `name` - 楼层名称
 
-3. **Room 模型**：
+4. **Room 模型**：
    - `floor` - ForeignKey 到 Floor
    - `room_number` - 房间号
    - `room_type` - 房间类型（宿舍/办公室/教室）
@@ -196,7 +235,7 @@ python manage.py startapp system
 
 ### 测试验证
 - [ ] 运行 makemigrations 和 migrate
-- [ ] 在 Django Admin 中创建测试数据：1栋楼 → 3层 → 每层5个房间
+- [ ] 在 Django Admin 中创建测试数据：1个校区 → 1栋楼 → 3层 → 每层5个房间
 - [ ] 验证级联删除：删除建筑时，楼层和房间也被删除
 
 ---
@@ -345,6 +384,7 @@ python manage.py startapp system
 1. 创建所有表的 SQL
 2. 插入初始化数据：
    - 管理员账号（admin/admin123）
+   - 示例校区数据（与 `campus_meta.csv` 对齐）
    - 3种能源类型
    - 示例建筑、楼层、房间数据
    - 示例设备数据
@@ -370,6 +410,7 @@ python manage.py startapp system
    - `DEFAULT_AUTHENTICATION_CLASSES` - JWT 认证
    - `DEFAULT_PERMISSION_CLASSES` - 默认权限
    - `DEFAULT_FILTER_BACKENDS` - 搜索过滤
+   - 统一响应包装器与异常处理（确保返回 `code/data/message/total`）
 
 2. 配置 JWT：
    - 使用 `djangorestframework-simplejwt`
@@ -379,6 +420,7 @@ python manage.py startapp system
 ### 测试验证
 - [ ] 运行 `python manage.py check` 无错误
 - [ ] 创建测试视图验证分页生效
+- [ ] 成功/失败响应都符合统一格式（含 `code` 与 `message` 字段）
 
 ---
 
@@ -422,12 +464,16 @@ python manage.py startapp system
 在 `apps/buildings/` 中实现：
 
 1. **Serializers**：
+   - `CampusSerializer` - 校区序列化器
    - `BuildingSerializer` - 建筑序列化器（包含楼层嵌套）
    - `FloorSerializer` - 楼层序列化器（包含房间嵌套）
    - `RoomSerializer` - 房间序列化器
    - `BuildingTreeSerializer` - 树形结构序列化器
 
 2. **ViewSets**：
+   - `CampusViewSet`：
+     - `list` - 校区列表
+     - `retrieve` - 校区详情
    - `BuildingViewSet`：
      - `list` - 建筑列表（支持搜索、分页）
      - `retrieve` - 建筑详情
@@ -441,6 +487,8 @@ python manage.py startapp system
    - 按建筑名称搜索
 
 4. **URL 配置**：
+   - `/api/campuses/` - GET
+   - `/api/campuses/{id}/` - GET
    - `/api/buildings/` - GET/POST
    - `/api/buildings/{id}/` - GET/PUT/DELETE
    - `/api/buildings/tree/` - GET
@@ -448,6 +496,7 @@ python manage.py startapp system
    - `/api/rooms/` - GET/POST
 
 ### 测试验证
+- [ ] GET `/api/campuses/` 返回校区列表
 - [ ] GET `/api/buildings/` 返回建筑列表，包含分页信息
 - [ ] POST `/api/buildings/` 创建建筑（需要管理员权限）
 - [ ] GET `/api/buildings/tree/` 返回完整的树形结构
@@ -495,17 +544,17 @@ python manage.py startapp system
 在 `apps/energy/` 中实现：
 
 1. **Serializers**：
-   - `EnergyDataSerializer` - 原始数据
-   - `EnergyDataBatchSerializer` - 批量导入
-   - `EnergyStatisticsSerializer` - 统计数据
+    - `EnergyDataSerializer` - 原始数据
+    - `EnergyDataBatchSerializer` - 批量导入（CSV/Excel/JSON）
+    - `EnergyStatisticsSerializer` - 统计数据
 
 2. **ViewSets**：
    - `EnergyDataViewSet`：
      - `create` - 单条数据录入
-     - `batch_import` - 批量导入
-     - `list` - 数据列表（支持时间范围过滤）
-     - `latest` - 获取最新数据
-     - `export` - 导出数据
+      - `batch_import` - 批量导入
+      - `list` - 数据列表（支持时间范围过滤）
+      - `latest` - 获取最新数据
+      - `export` - 导出数据（支持 Excel/PDF）
 
 3. **URL 配置**：
    - `/api/energy-data/` - GET/POST
@@ -517,8 +566,11 @@ python manage.py startapp system
 ### 测试验证
 - [ ] POST `/api/energy-data/` 录入单条数据，返回 201
 - [ ] POST `/api/energy-data/batch-import/` 上传CSV文件，成功导入100条数据
+- [ ] POST `/api/energy-data/batch-import/` 上传JSON文件，成功导入100条数据
 - [ ] GET `/api/energy-data/?device_id=1&start_date=2024-01-01&end_date=2024-01-31` 返回指定时间范围数据
 - [ ] GET `/api/energy-data/latest/` 返回各设备最新读数
+- [ ] GET `/api/energy-data/export/?format=excel` 导出 xlsx 文件成功
+- [ ] GET `/api/energy-data/export/?format=pdf` 导出 pdf 文件成功
 - [ ] 批量导入1000条数据，响应时间 < 3秒
 
 ---
@@ -542,22 +594,26 @@ python manage.py startapp system
      - `distribution` - 能耗分布
        - 按区域统计
        - 按能源类型统计
-     - `ranking` - 能耗排名
-       - Top10 楼宇/房间
-     - `comparison` - 同比环比分析
+      - `ranking` - 能耗排名
+        - Top10 楼宇/房间/部门
+      - `comparison` - 同比环比分析
+      - `forecast` - 趋势预测（近7天/30天）
 
 3. **URL 配置**：
    - `/api/analysis/dashboard/` - GET
    - `/api/analysis/trend/` - GET
-   - `/api/analysis/distribution/` - GET
-   - `/api/analysis/ranking/` - GET
-   - `/api/analysis/comparison/` - GET
+    - `/api/analysis/distribution/` - GET
+    - `/api/analysis/ranking/` - GET
+    - `/api/analysis/comparison/` - GET
+    - `/api/analysis/forecast/` - GET
 
 ### 测试验证
 - [ ] GET `/api/analysis/dashboard/` 返回大屏所需的全部指标数据
 - [ ] GET `/api/analysis/trend/?period=day&device_id=1` 返回按日统计的趋势数据
 - [ ] GET `/api/analysis/distribution/?type=area` 返回按区域分布的饼图数据
 - [ ] GET `/api/analysis/ranking/?type=building&limit=10` 返回Top10建筑
+- [ ] GET `/api/analysis/ranking/?type=department&limit=10` 返回Top10部门
+- [ ] GET `/api/analysis/forecast/?target=building&period=30d` 返回预测序列
 - [ ] 所有分析接口响应时间 < 2秒
 
 ---
@@ -625,12 +681,28 @@ python manage.py startapp system
    - `OperationLogViewSet` - 只读
    - `/api/logs/` - GET（管理员）
 
+6. **费用与充值**：
+   - `RechargeViewSet` - 充值记录与模拟充值
+   - `/api/recharges/` - GET（历史记录）
+   - `/api/recharges/simulate/` - POST（模拟充值，不做真实支付，但写入充值流水并更新账务状态）
+
+7. **个人中心**：
+   - `ProfileViewSet` - 个人信息、绑定关系、告警订阅
+   - `/api/profile/` - GET/PUT
+   - `/api/profile/bind-rooms/` - POST/DELETE
+   - `/api/profile/alarm-subscriptions/` - GET/PUT
+
 ### 测试验证
 - [ ] 管理员能创建用户，返回 201
 - [ ] 普通用户访问 `/api/users/` 返回 403
 - [ ] 用户只能查看自己的账单 `/api/bills/my/`
 - [ ] 管理员能发布通知
 - [ ] 只有管理员能查看操作日志
+- [ ] 用户调用 `/api/recharges/simulate/` 返回模拟充值结果
+- [ ] 调用 `/api/recharges/simulate/` 后，`em_recharge_records` 新增记录且账务数据同步变化
+- [ ] 用户可通过 `/api/profile/` 更新头像和联系方式
+- [ ] 用户绑定/解绑房间接口生效
+- [ ] 用户告警订阅设置保存成功
 
 ---
 
@@ -645,6 +717,7 @@ python manage.py startapp system
    - `IsOwnerOrAdmin` - 资源所有者或管理员
 
 2. **在 ViewSets 中应用**：
+   - 角色来源：`UserProfile.role`（`ADMIN`/`USER`）
    - 建筑管理：`IsAdminOrReadOnly`
    - 设备管理：`IsAdminOrReadOnly`
    - 告警处理：`IsAdmin`
@@ -721,6 +794,24 @@ python manage.py startapp system
 
 ---
 
+## 步骤 4.4：建立需求追踪矩阵（RTM）
+
+### 操作说明
+创建 `docs/rtm.md`，逐条追踪：
+1. 字段模板：`需求ID`、`来源文档`、`需求描述`、`实施步骤`、`代码位置`、`测试用例`、`证据链接`、`状态`
+2. `pre-prd.md` 需求ID -> 实施步骤 -> API/页面 -> 测试用例
+3. `PRD.md` 需求ID -> 实施步骤 -> API/页面 -> 测试用例
+4. 标注状态（未开始/进行中/已完成/已验收）
+
+### 测试验证
+- [ ] `pre-prd.md` 所有需求在 RTM 中可追踪
+- [ ] `PRD.md` 所有需求在 RTM 中可追踪
+- [ ] 每条需求至少关联1个测试用例
+- [ ] 需求变更后 RTM 在24小时内更新
+- [ ] `docs/rtm.md` 中每条“已验收”需求均有可访问证据
+
+---
+
 # 第五阶段：数据导入工具开发
 
 ## 步骤 5.1：创建数据导入脚本框架
@@ -738,18 +829,20 @@ python manage.py startapp system
 
 ---
 
-## 步骤 5.2：实现 CSV 数据读取
+## 步骤 5.2：实现多格式数据读取（CSV/Excel/JSON）
 
 ### 操作说明
 使用 Pandas 实现：
 
-1. 读取 CSV/Excel 文件
+1. 读取 CSV/Excel/JSON 文件
 2. 检测数据格式
 3. 数据类型转换
 4. 缺失值处理
 
 ### 测试验证
 - [ ] 能读取示例 CSV 文件
+- [ ] 能读取示例 Excel 文件
+- [ ] 能读取示例 JSON 文件
 - [ ] 正确识别列名
 - [ ] 处理包含1000行的测试文件
 - [ ] 显示数据预览
@@ -786,12 +879,14 @@ python manage.py startapp system
 2. 使用 `bulk_create` 提高效率
 3. 添加进度显示
 4. 添加错误处理和回滚
+5. 支持百万级数据分批导入（分片、断点续传）
 
 ### 测试验证
 - [ ] 导入100条测试数据成功
 - [ ] 数据库中数据正确
 - [ ] 导入过程中显示进度
 - [ ] 部分数据错误时，正确数据仍能导入
+- [ ] 百万级数据（可分批）导入任务稳定完成并输出性能报告
 
 ---
 
@@ -809,6 +904,24 @@ python manage.py startapp system
 - [ ] `python manage.py generate_statistics` 生成统计表数据
 - [ ] `python manage.py check_alarms` 生成告警记录
 - [ ] 命令有详细的输出信息
+
+---
+
+## 步骤 5.6：实现 Modbus/BACnet 自动采集服务
+
+### 操作说明
+在 `scripts/protocol_collectors/` 下实现：
+1. `modbus_collector.py` - 周期读取 Modbus 仪表数据
+2. `bacnet_collector.py` - 周期读取 BACnet 设备数据
+3. `collector_runner.py` - 统一调度、重试、故障恢复
+4. 采集后统一写入 `em_energy_data`（MySQL）
+
+### 测试验证
+- [ ] Modbus 采集任务按周期写入数据
+- [ ] BACnet 采集任务按周期写入数据
+- [ ] 采集服务异常后可自动恢复
+- [ ] 采集数据可被监测中心页面实时读取
+- [ ] 支持通过 Modbus/BACnet 模拟器完成联调与验收
 
 ---
 
@@ -854,11 +967,9 @@ python manage.py startapp system
 
 ---
 
-## 步骤 6.3：集成 Spark（可选）
+## 步骤 6.3：集成 Spark 离线分析（可选增强）
 
 ### 操作说明
-如果数据量特别大，使用 Spark：
-
 1. 安装 PySpark
 2. 编写 Spark 分析脚本
 3. 读取 MySQL 数据进行分析
@@ -868,7 +979,8 @@ python manage.py startapp system
 - [ ] Spark 能正确连接 MySQL
 - [ ] 分析任务成功执行
 - [ ] 结果正确写入数据库
-- [ ] 大数据集处理时间可接受
+- [ ] 大数据集处理延迟达到分钟级
+- [ ] 若本期不启用 Spark，需提供替代说明（如仅使用 Python 离线聚合）
 
 ---
 
@@ -886,6 +998,21 @@ python manage.py startapp system
 - [ ] 查看日志确认执行记录
 - [ ] 统计数据按时更新
 - [ ] 告警及时生成
+
+---
+
+## 步骤 6.5：实现趋势预测任务
+
+### 操作说明
+1. 创建 `scripts/generate_forecast.py`，基于历史统计数据生成 7 天/30 天预测（按日粒度）。
+2. 预测结果写入 `em_energy_forecasts`，维度优先支持 `campus/building/meter`，`room/department` 作为可空扩展字段。
+3. 建议字段：`target_type`、`target_id`、`energy_type`、`forecast_date`、`forecast_value`、`model_version`、`created_at`。
+4. 提供给 `/api/analysis/forecast/` 接口读取。
+
+### 测试验证
+- [ ] 运行预测任务后，`em_energy_forecasts` 有有效数据
+- [ ] 可按校区/楼宇/设备查询预测结果
+- [ ] 前端预测曲线与接口返回一致
 
 ---
 
@@ -1061,6 +1188,8 @@ src/
 5. `analysis.js` - 分析接口
 6. `alarm.js` - 告警接口
 7. `system.js` - 系统接口
+8. `recharge.js` - 充值与模拟充值接口
+9. `profile.js` - 个人中心接口
 
 每个模块封装对应的 API 调用函数。
 
@@ -1135,6 +1264,7 @@ src/
    - 能耗趋势折线图（ECharts）
    - 能耗分布饼图（ECharts）
    - 实时功率柱状图（ECharts）
+   - 校园 2D 地图热力分布图（楼宇能耗热力，3D 为可选增强）
 
 3. **底部表格**：
    - 最新告警列表
@@ -1146,6 +1276,8 @@ src/
 - [ ] 图表支持交互（提示框、缩放）
 - [ ] 数据自动刷新（每30秒）
 - [ ] 组件销毁时 ECharts 实例被释放
+- [ ] 2D 地图热力分布正常显示并支持楼宇点击联动
+- [ ] 如实现 3D，需与 2D 使用同一数据源并保持口径一致
 
 ---
 
@@ -1188,15 +1320,18 @@ src/
    - 历史数据趋势图
    - 同比环比对比图
    - 能耗排名柱状图
+   - 趋势预测曲线图（7天/30天）
 
 3. **底部操作区**：
-   - 导出报表按钮
+   - 导出报表按钮（Excel/PDF）
    - 数据表格展示
 
 ### 测试验证
 - [ ] 筛选条件改变后图表更新
 - [ ] 同比环比计算正确
-- [ ] 导出功能下载文件
+- [ ] 导出 Excel 文件成功
+- [ ] 导出 PDF 文件成功
+- [ ] 预测曲线与 `forecast` 接口返回数据一致
 - [ ] 表格分页正常
 
 ---
@@ -1422,6 +1557,7 @@ src/
    - 充值历史列表
    - 充值金额
    - 时间
+   - 模拟充值按钮（调用 `/api/recharges/simulate/`）
 
 4. **费用计算器 Tab**：
    - 输入用量
@@ -1432,6 +1568,7 @@ src/
 - [ ] 账单列表正确显示
 - [ ] 充值记录正确显示
 - [ ] 费用计算器计算正确
+- [ ] 模拟充值接口调用成功并显示结果
 - [ ] Tab 切换正常
 
 ---
@@ -1559,21 +1696,33 @@ src/
 ## 步骤 10.2：性能测试
 
 ### 操作说明
-1. **API 响应时间**：
+1. **基线环境记录（本机）**：
+   - CPU：AMD Ryzen 7 7745HX（8C16T）
+   - 内存：16GB
+   - 系统：Windows 11 64-bit
+   - 数据集规模：`dataSource/` 总计约 2050 万行
+
+2. **API 响应时间**：
    - 统计分析接口 < 2秒
    - 列表查询 < 1秒
    - 大屏数据 < 1秒
 
-2. **前端性能**：
+3. **前端性能**：
    - 首屏加载时间
    - 图表渲染性能
    - 大数据量表格性能
+
+4. **导入与计算性能**：
+   - 百万级数据导入稳定性（分批导入）
+   - Spark 分析任务分钟级完成（启用 Spark 时）
 
 ### 测试验证
 - [ ] 所有 API 响应符合要求
 - [ ] 前端首屏加载 < 3秒
 - [ ] ECharts 图表渲染流畅
 - [ ] 1000条数据表格滚动流畅
+- [ ] 百万级导入压测有记录且任务可完成
+- [ ] 启用 Spark 时，离线任务延迟达到分钟级
 
 ---
 
@@ -1629,6 +1778,28 @@ src/
 - [ ] 所有已知 Bug 已修复
 - [ ] 代码无明显性能问题
 - [ ] 无明显代码重复
+
+---
+
+## 步骤 10.6：自动化测试与 CI 质量门禁
+
+### 操作说明
+1. 后端：使用 `pytest + pytest-django` 建立单元测试与 API 集成测试。
+2. 前端：使用 `vitest`（单元）和 `cypress/playwright`（关键流程 E2E）。
+3. CI：创建流水线（如 GitHub Actions/GitLab CI）执行：
+   - 代码检查（lint）
+   - 自动化测试
+   - 覆盖率统计与质量提示
+4. 设置门禁阈值（建议）：
+   - 后端覆盖率 >= 80%
+   - 前端关键流程 E2E 全通过
+5. 本项目阈值默认按“建议值”执行，可先采用告警模式，不强制阻断合并。
+
+### 测试验证
+- [ ] 每次提交自动触发 CI
+- [ ] 测试失败时至少触发告警并保留报告
+- [ ] 覆盖率报告可查看，并给出与建议阈值的对比
+- [ ] 关键业务流程（登录、导入、分析、告警处理）E2E 通过
 
 ---
 
@@ -1730,13 +1901,18 @@ src/
 
 ### 操作说明
 1. 对照 PRD 核对所有功能
-2. 准备演示数据
-3. 进行项目演示
+2. 对照 pre-prd 核对关键技术要求（Modbus/BACnet、监控大屏，Spark 为可选增强）
+3. 对照 RTM 核对每条需求的实现与测试证据
+4. 准备演示数据
+5. 进行项目演示
 
 ### 测试验证
 - [ ] 所有 PRD 功能已实现
+- [ ] 所有 pre-prd 核心要求已实现
+- [ ] RTM 中所有需求状态为已验收
 - [ ] 演示流畅
 - [ ] 数据展示正确
+- [ ] 大屏 2D 地图能力可稳定演示（若有 3D 则作为增强项展示）
 
 ---
 
