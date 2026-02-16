@@ -26,7 +26,7 @@
 ## 步骤 1.1：创建项目目录结构
 
 ### 操作说明
-在项目根目录下创建以下目录结构：
+在项目根目录下创建以下目录结构（**注意：`frontend` 目录将在第七阶段使用 Vite 自动生成，此处无需手动创建**）：
 
 ```
 energy-consumption-monitoring/
@@ -47,10 +47,7 @@ energy-consumption-monitoring/
 │       ├── analysis/        # 数据分析
 │       ├── alarms/          # 告警管理
 │       └── system/          # 系统管理
-├── frontend/                # Vue 前端
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.js
+├── frontend/                # Vue 前端（将在步骤 7.1 通过 npm create vite 生成）
 ├── sql/                     # 数据库脚本
 │   └── init_db.sql
 ├── scripts/                 # 数据导入脚本
@@ -1738,14 +1735,14 @@ src/
    - 用户只能查看自己的数据
 
 3. **数据安全**：
-   - 密码加密存储
+   - 密码**明文存储**（演示需求）
    - SQL 注入防护
    - XSS 防护
 
 ### 测试验证
 - [ ] 所有未认证访问被拦截
 - [ ] 跨权限访问被拒绝
-- [ ] 密码在数据库中加密
+- [ ] 密码在数据库中**明文可见**
 - [ ] 输入过滤生效
 
 ---
