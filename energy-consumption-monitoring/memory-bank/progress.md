@@ -5,8 +5,8 @@
 
 ## 当前里程碑（截至 2026-02-16）
 - 当前阶段：第一阶段（项目初始化与基础设施）
-- 已完成步骤：`1.1`、`1.2`、`1.3`、`1.4`
-- 当前状态：`1.4` 已由用户测试通过；按计划未开始 `1.5`
+- 已完成步骤：`1.1`、`1.2`、`1.3`、`1.4`、`1.5`
+- 当前状态：`1.5` 已由用户测试通过；按计划可进入第二阶段 `2.1`
 
 ## 已完成内容
 
@@ -44,6 +44,15 @@
   - 时区 `TIME_ZONE = "Asia/Shanghai"`
 - 已完成 `backend/requirements.txt` 依赖清单整理（Django、DRF、CORS、SimpleJWT、PyMySQL）。
 
+### 步骤 1.5：工业协议采集环境准备（Modbus/BACnet）（已完成）
+- 已新增阶段 1.5 协议采集脚手架目录：`scripts/protocol_collection/`。
+- 已落地点位映射配置模板：`collection_config.example.json`，明确 `仪表ID -> 设备ID -> 房间`，并保留 `gateway_mode`（`gateway_forward`/`direct_meter`）字段。
+- 已提供 Modbus/BACnet 协议模拟器：`simulators.py`，用于无实物设备场景验收。
+- 已实现采集策略与适配器：`adapters.py`、`collector.py`，覆盖采集频率、请求超时、重试退避、断线重连。
+- 已实现字段对齐校验：采集输出键严格对齐 `em_energy_data` 目标字段
+  `device/energy_type/timestamp/value/voltage/current/power/flow_rate`。
+- 已提供一键验收脚本：`validate_phase_1_5.py`，输出 5 项验收结果（PASS/FAIL）。
+
 ## 验收对照
 
 ### 1.1 验收
@@ -70,10 +79,20 @@
 - 首页验证：通过（`GET /` 返回 200，Django 安装成功页面可访问）
 - 验收结论：通过（用户已确认测试通过）
 
+### 1.5 验收
+- Modbus 模拟设备可被读取，返回稳定测点值：通过
+- BACnet 模拟设备可被读取，返回稳定测点值：通过
+- 断网后自动重连并恢复采集：通过
+- 采集数据字段与 `em_energy_data` 字段一致：通过
+- 无实物设备场景下可通过协议模拟器完成验收：通过
+- 验证命令：`python -m scripts.protocol_collection.validate_phase_1_5`
+- 验收结论：通过（用户已确认测试通过）
+
 ## 关键决策与约束
-- 严格按实施计划顺序执行，`1.4` 验收通过前未进入 `1.5`。
+- 严格按实施计划顺序执行，`1.4` 验收通过后再进入 `1.5`，并在 `1.5` 验收完成后进入下一阶段。
 - `frontend/` 继续按计划在第七阶段通过 Vite 自动初始化。
 - 生产环境敏感配置（如 `SECRET_KEY`、数据库凭据）采用环境变量覆盖本地默认值。
+- 阶段 1.5 验收以模拟器为默认基线，不依赖实物仪表。
 
 ## 下一步（待执行）
-- 阶段一 `1.5`：工业协议采集环境准备（Modbus/BACnet）。
+- 第二阶段 `2.1`：设计数据库表结构（`sql/init_db.sql`）。
