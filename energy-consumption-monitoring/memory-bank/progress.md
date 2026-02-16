@@ -4,9 +4,9 @@
 仅记录已完成事实、验收结果与下一步，不在此文档展开实现细节。
 
 ## 当前里程碑（截至 2026-02-16）
-- 当前阶段：第一阶段（项目初始化与基础设施）
-- 已完成步骤：`1.1`、`1.2`、`1.3`、`1.4`、`1.5`
-- 当前状态：`1.5` 已由用户测试通过；按计划可进入第二阶段 `2.1`
+- 当前阶段：第二阶段（数据库设计与模型开发）
+- 已完成步骤：`1.1`、`1.2`、`1.3`、`1.4`、`1.5`、`2.1`
+- 当前状态：`2.1` 已由用户测试通过；`2.2` 尚未开始
 
 ## 已完成内容
 
@@ -53,6 +53,14 @@
   `device/energy_type/timestamp/value/voltage/current/power/flow_rate`。
 - 已提供一键验收脚本：`validate_phase_1_5.py`，输出 5 项验收结果（PASS/FAIL）。
 
+### 步骤 2.1：设计数据库表结构（已完成）
+- 已在 `sql/init_db.sql` 落地 17 张核心业务表：  
+  `em_users`、`em_roles`、`em_campuses`、`em_buildings`、`em_floors`、`em_rooms`、`em_energy_types`、`em_devices`、`em_energy_data`、`em_energy_statistics`、`em_alarms`、`em_alarm_rules`、`em_bills`、`em_recharge_records`、`em_notices`、`em_operation_logs`、`em_energy_forecasts`。
+- 全部核心表均包含：`id` 主键、`created_at`、`updated_at`。
+- 已建立外键关系：用户/角色、校区-建筑-楼层-房间、设备-能源类型-房间、能耗数据与统计、告警、账单/充值/通知/日志、预测维度关联。
+- 已按后续查询场景建立关键索引（时间、状态、唯一约束、层级与维度索引）。
+- 脚本支持重复初始化（按依赖顺序 `DROP TABLE` 后重建）。
+
 ## 验收对照
 
 ### 1.1 验收
@@ -88,11 +96,19 @@
 - 验证命令：`python -m scripts.protocol_collection.validate_phase_1_5`
 - 验收结论：通过（用户已确认测试通过）
 
+### 2.1 验收
+- SQL 文件语法正确（MySQL 执行通过，无语法错误）：是
+- 所有核心表包含 `id`、`created_at`、`updated_at`：是（信息架构查询校验通过）
+- 外键关系正确建立：是（`information_schema.referential_constraints` 可查询）
+- `SHOW TABLES` 显示核心表：是（`em_%` 表共 17 张）
+- 验收结论：通过（用户于 2026-02-16 确认测试通过）
+
 ## 关键决策与约束
 - 严格按实施计划顺序执行，`1.4` 验收通过后再进入 `1.5`，并在 `1.5` 验收完成后进入下一阶段。
+- 阶段 2 仍按顺序推进：`2.1` 通过后才可进入 `2.2`；本次已完成并验收 `2.1`，未提前开展 `2.2` 实施。
 - `frontend/` 继续按计划在第七阶段通过 Vite 自动初始化。
 - 生产环境敏感配置（如 `SECRET_KEY`、数据库凭据）采用环境变量覆盖本地默认值。
 - 阶段 1.5 验收以模拟器为默认基线，不依赖实物仪表。
 
 ## 下一步（待执行）
-- 第二阶段 `2.1`：设计数据库表结构（`sql/init_db.sql`）。
+- 第二阶段 `2.2`：创建 Django 应用（`accounts`、`buildings`、`devices`、`energy`、`analysis`、`alarms`、`system`）。
