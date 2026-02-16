@@ -1,387 +1,321 @@
 <template>
-  <div class="analysis-container min-h-screen bg-slate-950 relative overflow-hidden">
-    <!-- Background grid -->
-    <div class="grid-background absolute inset-0 opacity-10 pointer-events-none"></div>
-
-    <!-- Main content -->
-    <div class="relative z-10 p-6 lg:p-8">
-      <!-- Header -->
-      <header class="mb-6 animate-fade-in-down">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1" style="font-family: 'Rajdhani', sans-serif;">
-              数据分析
-            </h1>
-            <p class="text-slate-400 text-sm">城市对比、相关性分析与数据可视化</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              @click="goBack"
-              class="w-10 h-10 rounded-xl glass-card flex items-center justify-center hover-scale group"
-            >
-              <svg class="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <!-- Analysis tabs -->
-      <div class="glass-card rounded-2xl mb-6 animate-fade-in" style="animation-delay: 0.1s;">
-        <div class="flex border-b border-slate-800/50">
-          <button
-            v-for="tab in analysisTabs"
-            :key="tab.key"
-            @click="activeTab = tab.key"
-            class="px-6 py-4 text-sm font-medium transition-all relative"
-            :class="activeTab === tab.key ? 'text-cyan-400' : 'text-slate-400 hover:text-slate-300'"
-            style="font-family: 'Rajdhani', sans-serif;"
-          >
-            {{ tab.label }}
-            <span
-              v-if="activeTab === tab.key"
-              class="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400"
-            ></span>
-          </button>
+  <div class="analysis-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <el-button link @click="goBack" class="back-button">
+          <el-icon><ArrowLeft /></el-icon>
+          返回概览
+        </el-button>
+        <div class="header-info">
+          <h1 class="page-title">数据分析</h1>
+          <p class="page-subtitle">城市对比、相关性分析与数据可视化</p>
         </div>
       </div>
+    </div>
 
-      <!-- Tab content -->
-      <div class="animate-fade-in" style="animation-delay: 0.15s;">
-        <!-- City comparison tab -->
-        <div v-show="activeTab === 'compare'" class="space-y-6">
-          <!-- City selector -->
-          <div class="glass-card rounded-xl p-6">
-            <div class="flex flex-wrap items-center gap-4">
-              <div class="flex-1 min-w-[300px]">
-                <label class="block text-slate-400 text-xs mb-2 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                  选择城市 (最多10个)
-                </label>
-                <el-select
-                  v-model="selectedCities"
-                  multiple
-                  filterable
-                  placeholder="选择要对比的城市"
-                  class="w-full custom-select"
-                  :popper-class="'dark-select-dropdown'"
-                  @change="handleCityChange"
-                >
-                  <el-option
-                    v-for="city in availableCities"
-                    :key="city.code"
-                    :label="city.name"
-                    :value="city.code"
-                  />
-                </el-select>
+    <!-- Analysis Tabs -->
+    <el-tabs v-model="activeTab" class="analysis-tabs">
+      <!-- City Comparison Tab -->
+      <el-tab-pane label="城市对比" name="compare">
+        <div class="tab-content">
+          <!-- City Selector -->
+          <div class="card selector-card">
+            <div class="selector-form">
+              <div class="form-row">
+                <div class="form-item">
+                  <label class="form-label">选择城市 (最多10个)</label>
+                  <el-select
+                    v-model="selectedCities"
+                    multiple
+                    filterable
+                    placeholder="选择要对比的城市"
+                    style="width: 100%"
+                    @change="handleCityChange"
+                  >
+                    <el-option
+                      v-for="city in availableCities"
+                      :key="city.code"
+                      :label="city.name"
+                      :value="city.code"
+                    />
+                  </el-select>
+                </div>
+                <div class="form-item form-item-actions">
+                  <el-button
+                    type="primary"
+                    @click="handleCompare"
+                    :disabled="selectedCities.length < 2 || loading"
+                    :loading="loading"
+                  >
+                    开始对比
+                  </el-button>
+                </div>
               </div>
-              <div class="flex items-end">
-                <button
-                  @click="handleCompare"
-                  :disabled="selectedCities.length < 2 || loading"
-                  class="px-6 py-2.5 rounded-xl bg-cyan-500 text-white font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-scale"
-                  style="font-family: 'Rajdhani', sans-serif;"
-                >
-                  <span v-if="!loading">开始对比</span>
-                  <span v-else>分析中...</span>
-                </button>
-              </div>
-            </div>
 
-            <!-- Selected cities tags -->
-            <div v-if="selectedCities.length > 0" class="mt-4 flex flex-wrap gap-2">
-              <span
-                v-for="code in selectedCities"
-                :key="code"
-                class="px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-300 text-sm flex items-center gap-2"
-              >
-                {{ getCityName(code) }}
-                <button @click="removeCity(code)" class="hover:text-red-400 transition-colors">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </span>
+              <!-- Selected cities tags -->
+              <div v-if="selectedCities.length > 0" class="selected-tags">
+                <el-tag
+                  v-for="code in selectedCities"
+                  :key="code"
+                  closable
+                  @close="removeCity(code)"
+                >
+                  {{ getCityName(code) }}
+                </el-tag>
+              </div>
             </div>
           </div>
 
-          <!-- Comparison chart -->
-          <div v-if="comparisonData" class="glass-card rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm text-slate-400 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                城市AQI趋势对比
-              </h2>
-              <div class="flex items-center gap-4 text-xs">
-                <div v-for="city in comparisonData.series" :key="city.city_code" class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded-sm" :style="{ background: city.color || '#06b6d4' }"></span>
-                  <span class="text-slate-400">{{ city.city_name }}</span>
-                </div>
+          <!-- Comparison Chart -->
+          <div v-if="comparisonData" class="card chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">城市AQI趋势对比</h3>
+              <div class="chart-legend">
+                <span
+                  v-for="city in comparisonData.series"
+                  :key="city.city_code"
+                  class="legend-item"
+                >
+                  <span class="legend-color" :style="{ background: city.color || '#06B6D4' }"></span>
+                  <span class="legend-label">{{ city.city_name }}</span>
+                </span>
               </div>
             </div>
-            <div class="h-[400px]">
+            <div class="chart-container">
               <LineChart
                 :data="comparisonData.series"
                 :x-axis="comparisonData.xAxis"
                 :smooth="true"
                 :area-style="false"
                 :show-data-zoom="true"
+                height="400px"
               />
             </div>
           </div>
-        </div>
 
-        <!-- Correlation analysis tab -->
-        <div v-show="activeTab === 'correlation'" class="space-y-6">
-          <!-- Correlation controls -->
-          <div class="glass-card rounded-xl p-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label class="block text-slate-400 text-xs mb-2 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                  X轴污染物
-                </label>
-                <el-select v-model="correlationForm.pollutantX" class="w-full custom-select" :popper-class="'dark-select-dropdown'">
-                  <el-option label="PM2.5" value="pm25" />
-                  <el-option label="PM10" value="pm10" />
-                  <el-option label="SO₂" value="so2" />
-                  <el-option label="NO₂" value="no2" />
-                  <el-option label="CO" value="co" />
-                  <el-option label="O₃" value="o3" />
-                </el-select>
-              </div>
-              <div>
-                <label class="block text-slate-400 text-xs mb-2 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                  Y轴污染物
-                </label>
-                <el-select v-model="correlationForm.pollutantY" class="w-full custom-select" :popper-class="'dark-select-dropdown'">
-                  <el-option label="PM2.5" value="pm25" />
-                  <el-option label="PM10" value="pm10" />
-                  <el-option label="SO₂" value="so2" />
-                  <el-option label="NO₂" value="no2" />
-                  <el-option label="CO" value="co" />
-                  <el-option label="O₃" value="o3" />
-                </el-select>
-              </div>
-              <div>
-                <label class="block text-slate-400 text-xs mb-2 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                  数据点数量
-                </label>
-                <el-select v-model="correlationForm.maxPoints" class="w-full custom-select" :popper-class="'dark-select-dropdown'">
-                  <el-option label="500" :value="500" />
-                  <el-option label="1000" :value="1000" />
-                  <el-option label="2000" :value="2000" />
-                  <el-option label="5000" :value="5000" />
-                </el-select>
-              </div>
-              <div class="flex items-end">
-                <button
-                  @click="handleCorrelation"
-                  :disabled="loading"
-                  class="w-full px-6 py-2.5 rounded-xl bg-cyan-500 text-white font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-scale"
-                  style="font-family: 'Rajdhani', sans-serif;"
-                >
-                  <span v-if="!loading">分析相关性</span>
-                  <span v-else">分析中...</span>
-                </button>
+          <el-empty v-else description="请选择至少2个城市进行对比分析" :image-size="100" />
+        </div>
+      </el-tab-pane>
+
+      <!-- Correlation Analysis Tab -->
+      <el-tab-pane label="相关性分析" name="correlation">
+        <div class="tab-content">
+          <!-- Correlation Controls -->
+          <div class="card selector-card">
+            <div class="selector-form">
+              <div class="form-row">
+                <div class="form-item">
+                  <label class="form-label">X轴污染物</label>
+                  <el-select v-model="correlationForm.pollutantX" style="width: 100%">
+                    <el-option label="PM2.5" value="pm25" />
+                    <el-option label="PM10" value="pm10" />
+                    <el-option label="SO₂" value="so2" />
+                    <el-option label="NO₂" value="no2" />
+                    <el-option label="CO" value="co" />
+                    <el-option label="O₃" value="o3" />
+                  </el-select>
+                </div>
+                <div class="form-item">
+                  <label class="form-label">Y轴污染物</label>
+                  <el-select v-model="correlationForm.pollutantY" style="width: 100%">
+                    <el-option label="PM2.5" value="pm25" />
+                    <el-option label="PM10" value="pm10" />
+                    <el-option label="SO₂" value="so2" />
+                    <el-option label="NO₂" value="no2" />
+                    <el-option label="CO" value="co" />
+                    <el-option label="O₃" value="o3" />
+                  </el-select>
+                </div>
+                <div class="form-item">
+                  <label class="form-label">数据点数量</label>
+                  <el-select v-model="correlationForm.maxPoints" style="width: 100%">
+                    <el-option label="500" :value="500" />
+                    <el-option label="1000" :value="1000" />
+                    <el-option label="2000" :value="2000" />
+                    <el-option label="5000" :value="5000" />
+                  </el-select>
+                </div>
+                <div class="form-item form-item-actions">
+                  <el-button
+                    type="primary"
+                    @click="handleCorrelation"
+                    :loading="loading"
+                  >
+                    分析相关性
+                  </el-button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Correlation results -->
-          <div v-if="correlationData" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Scatter chart -->
-            <div class="lg:col-span-2 glass-card rounded-2xl p-6">
-              <h2 class="text-sm text-slate-400 uppercase tracking-wider mb-4" style="font-family: 'Rajdhani', sans-serif;">
-                相关性散点图
-              </h2>
-              <div class="h-[400px]">
-                <ScatterChart
-                  :data="correlationData.scatterData"
-                  :x-axis-name="getPollutantLabel(correlationForm.pollutantX)"
-                  :y-axis-name="getPollutantLabel(correlationForm.pollutantY)"
-                  :show-regression="true"
-                  :regression-data="correlationData.regressionData"
-                />
-              </div>
-            </div>
-
-            <!-- Statistics -->
-            <div class="space-y-4">
-              <div class="glass-card rounded-xl p-4">
-                <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">
-                  相关系数
-                </div>
-                <div class="text-3xl font-bold font-mono" :style="{ color: getCorrelationColor(correlationData.correlation) }">
-                  {{ correlationData.correlation?.toFixed(4) || '--' }}
-                </div>
-                <div class="text-xs text-slate-500 mt-1">
-                  {{ getCorrelationLabel(correlationData.correlation) }}
-                </div>
-              </div>
-
-              <div class="glass-card rounded-xl p-4">
-                <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">
-                  样本数量
-                </div>
-                <div class="text-2xl font-bold font-mono text-cyan-400">
-                  {{ correlationData.sampleCount || '--' }}
-                </div>
-              </div>
-
-              <div class="glass-card rounded-xl p-4">
-                <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">
-                  回归方程
-                </div>
-                <div class="text-sm font-mono text-slate-300 break-all">
-                  y = {{ correlationData.slope?.toFixed(4) || '--' }}x + {{ correlationData.intercept?.toFixed(4) || '--' }}
-                </div>
-              </div>
-
-              <!-- Correlation guide -->
-              <div class="glass-card rounded-xl p-4">
-                <div class="text-slate-500 text-xs mb-2" style="font-family: 'Rajdhani', sans-serif;">
-                  相关系数解释
-                </div>
-                <div class="space-y-2 text-xs text-slate-400">
-                  <div class="flex justify-between">
-                    <span>0.9 - 1.0</span>
-                    <span class="text-emerald-400">极强相关</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>0.7 - 0.9</span>
-                    <span class="text-green-400">强相关</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>0.4 - 0.7</span>
-                    <span class="text-yellow-400">中等相关</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>0.2 - 0.4</span>
-                    <span class="text-orange-400">弱相关</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>0 - 0.2</span>
-                    <span class="text-red-400">极弱相关</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Distribution tab -->
-        <div v-show="activeTab === 'distribution'" class="space-y-6">
-          <!-- Distribution controls -->
-          <div class="glass-card rounded-xl p-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-slate-400 text-xs mb-2 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                  城市
-                </label>
-                <el-select
-                  v-model="distributionForm.city"
-                  filterable
-                  clearable
-                  placeholder="选择城市（可选）"
-                  class="w-full custom-select"
-                  :popper-class="'dark-select-dropdown'"
-                >
-                  <el-option
-                    v-for="city in availableCities"
-                    :key="city.code"
-                    :label="city.name"
-                    :value="city.code"
+          <!-- Correlation Results -->
+          <div v-if="correlationData" class="correlation-results">
+            <div class="results-grid">
+              <!-- Scatter Chart -->
+              <div class="card chart-card">
+                <h3 class="chart-title">相关性散点图</h3>
+                <div class="chart-container">
+                  <ScatterChart
+                    :data="correlationData.scatterData"
+                    :x-axis-name="getPollutantLabel(correlationForm.pollutantX)"
+                    :y-axis-name="getPollutantLabel(correlationForm.pollutantY)"
+                    :show-regression="true"
+                    :regression-data="correlationData.regressionData"
+                    height="400px"
                   />
-                </el-select>
+                </div>
               </div>
-              <div class="flex items-end gap-2">
-                <button
-                  @click="handleDistribution"
-                  :disabled="loading"
-                  class="flex-1 px-6 py-2.5 rounded-xl bg-cyan-500 text-white font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-scale"
-                  style="font-family: 'Rajdhani', sans-serif;"
-                >
-                  <span v-if="!loading">统计分布</span>
-                  <span v-else">统计中...</span>
-                </button>
-                <button
-                  @click="distributionForm.city = ''; handleDistribution()"
-                  class="px-6 py-2.5 rounded-xl glass-card text-slate-300 hover:text-white hover-scale"
-                  style="font-family: 'Rajdhani', sans-serif;"
-                >
-                  全国数据
-                </button>
+
+              <!-- Statistics -->
+              <div class="stats-column">
+                <div class="card stat-card">
+                  <div class="stat-label">相关系数</div>
+                  <div class="stat-value" :style="{ color: getCorrelationColor(correlationData.correlation) }">
+                    {{ correlationData.correlation?.toFixed(4) || '--' }}
+                  </div>
+                  <div class="stat-desc">{{ getCorrelationLabel(correlationData.correlation) }}</div>
+                </div>
+
+                <div class="card stat-card">
+                  <div class="stat-label">样本数量</div>
+                  <div class="stat-value stat-primary">{{ correlationData.sampleCount || '--' }}</div>
+                </div>
+
+                <div class="card stat-card">
+                  <div class="stat-label">回归方程</div>
+                  <div class="stat-equation">
+                    y = {{ correlationData.slope?.toFixed(4) || '--' }}x + {{ correlationData.intercept?.toFixed(4) || '--' }}
+                  </div>
+                </div>
+
+                <!-- Correlation Guide -->
+                <div class="card guide-card">
+                  <h4 class="guide-title">相关系数解释</h4>
+                  <div class="guide-list">
+                    <div class="guide-item">
+                      <span class="guide-range">0.9 - 1.0</span>
+                      <span class="guide-label guide-strong">极强相关</span>
+                    </div>
+                    <div class="guide-item">
+                      <span class="guide-range">0.7 - 0.9</span>
+                      <span class="guide-label guide-good">强相关</span>
+                    </div>
+                    <div class="guide-item">
+                      <span class="guide-range">0.4 - 0.7</span>
+                      <span class="guide-label guide-medium">中等相关</span>
+                    </div>
+                    <div class="guide-item">
+                      <span class="guide-range">0.2 - 0.4</span>
+                      <span class="guide-label guide-weak">弱相关</span>
+                    </div>
+                    <div class="guide-item">
+                      <span class="guide-range">0 - 0.2</span>
+                      <span class="guide-label guide-poor">极弱相关</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-tab-pane>
+
+      <!-- AQI Distribution Tab -->
+      <el-tab-pane label=" AQI分布" name="distribution">
+        <div class="tab-content">
+          <!-- Distribution Controls -->
+          <div class="card selector-card">
+            <div class="selector-form">
+              <div class="form-row">
+                <div class="form-item">
+                  <label class="form-label">城市</label>
+                  <el-select
+                    v-model="distributionForm.city"
+                    filterable
+                    clearable
+                    placeholder="选择城市（可选）"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="city in availableCities"
+                      :key="city.code"
+                      :label="city.name"
+                      :value="city.code"
+                    />
+                  </el-select>
+                </div>
+                <div class="form-item form-item-actions">
+                  <el-button
+                    type="primary"
+                    @click="handleDistribution"
+                    :loading="loading"
+                  >
+                    统计分布
+                  </el-button>
+                  <el-button @click="distributionForm.city = ''; handleDistribution()">
+                    全国数据
+                  </el-button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Distribution results -->
-          <div v-if="distributionData" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Pie chart -->
-            <div class="glass-card rounded-2xl p-6">
-              <h2 class="text-sm text-slate-400 uppercase tracking-wider mb-4" style="font-family: 'Rajdhani', sans-serif;">
-                空气质量等级分布
-              </h2>
-              <div class="h-[350px] flex items-center justify-center">
-                <PieChart
-                  :data="distributionData.distribution"
-                  :donut="true"
-                  :radius="['40%', '70%']"
-                  :show-percentage="true"
-                />
+          <!-- Distribution Results -->
+          <div v-if="distributionData" class="distribution-results">
+            <div class="results-grid">
+              <!-- Pie Chart -->
+              <div class="card chart-card">
+                <h3 class="chart-title">空气质量等级分布</h3>
+                <div class="chart-container">
+                  <PieChart
+                    :data="distributionData.distribution"
+                    :donut="true"
+                    :radius="['40%', '70%']"
+                    :show-percentage="true"
+                    height="350px"
+                  />
+                </div>
               </div>
-            </div>
 
-            <!-- Statistics table -->
-            <div class="glass-card rounded-2xl p-6">
-              <h2 class="text-sm text-slate-400 uppercase tracking-wider mb-4" style="font-family: 'Rajdhani', sans-serif;">
-                详细统计
-              </h2>
-              <div class="space-y-3">
-                <div
-                  v-for="item in distributionData.distribution"
-                  :key="item.qualityLevel"
-                  class="flex items-center justify-between p-4 rounded-xl bg-slate-900/30"
-                >
-                  <div class="flex items-center gap-3">
-                    <span
-                      class="w-4 h-4 rounded-full"
-                      :style="{ background: getAQIColorByLevel(item.qualityLevel) }"
-                    ></span>
-                    <span class="text-slate-300">{{ item.qualityLabel }}</span>
-                  </div>
-                  <div class="flex items-center gap-6">
-                    <div class="text-right">
-                      <div class="text-lg font-bold font-mono" :style="{ color: getAQIColorByLevel(item.qualityLevel) }">
+              <!-- Statistics Table -->
+              <div class="card table-card">
+                <h3 class="chart-title">详细统计</h3>
+                <div class="distribution-list">
+                  <div
+                    v-for="item in distributionData.distribution"
+                    :key="item.qualityLevel"
+                    class="distribution-item"
+                  >
+                    <div class="dist-info">
+                      <span class="dist-dot" :style="{ background: getAQIColorByLevel(item.qualityLevel) }"></span>
+                      <span class="dist-label">{{ item.qualityLabel }}</span>
+                    </div>
+                    <div class="dist-stats">
+                      <div class="dist-value" :style="{ color: getAQIColorByLevel(item.qualityLevel) }">
                         {{ item.count }}
                       </div>
-                      <div class="text-xs text-slate-500">数量</div>
-                    </div>
-                    <div class="text-right w-20">
-                      <div class="text-lg font-bold font-mono text-cyan-400">
-                        {{ item.percentage }}%
-                      </div>
-                      <div class="text-xs text-slate-500">占比</div>
+                      <div class="dist-percent">{{ item.percentage }}%</div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Total -->
-              <div class="mt-4 pt-4 border-t border-slate-800/50 flex items-center justify-between">
-                <span class="text-slate-400 text-sm">总样本数</span>
-                <span class="text-xl font-bold font-mono text-white">{{ distributionData.total }}</span>
+                <div class="dist-total">
+                  <span>总样本数</span>
+                  <span class="dist-total-value">{{ distributionData.total }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { LineChart, ScatterChart, PieChart } from '@/components/charts'
 import { compareCities, getCorrelationAnalysis, getAQIDistribution } from '@/api/airquality'
@@ -391,13 +325,6 @@ const router = useRouter()
 // State
 const loading = ref(false)
 const activeTab = ref('compare')
-
-// Tabs
-const analysisTabs = [
-  { key: 'compare', label: '城市对比' },
-  { key: 'correlation', label: '相关性分析' },
-  { key: 'distribution', label: 'AQI分布' }
-]
 
 // City comparison
 const selectedCities = ref([])
@@ -417,7 +344,7 @@ const distributionForm = ref({
 })
 const distributionData = ref(null)
 
-// Available cities (mock data - should come from API)
+// Available cities (mock data)
 const availableCities = ref([
   { code: '110101', name: '东城区' },
   { code: '110102', name: '西城区' },
@@ -433,8 +360,8 @@ const availableCities = ref([
 
 // Colors for city comparison
 const cityColors = [
-  '#06b6d4', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6',
-  '#3b82f6', '#6366f1', '#a855f7', '#f43f5e', '#0ea5e9'
+  '#06B6D4', '#8B5CF6', '#EC4899', '#F97316', '#14B8A6',
+  '#3B82F6', '#6366F1', '#A855F7', '#F43F5E', '#0EA5E9'
 ]
 
 // Methods
@@ -455,7 +382,6 @@ const removeCity = (code) => {
 }
 
 const handleCityChange = () => {
-  // Limit to 10 cities
   if (selectedCities.value.length > 10) {
     selectedCities.value = selectedCities.value.slice(0, 10)
     ElMessage.warning('最多选择10个城市进行对比')
@@ -480,7 +406,6 @@ const handleCompare = async () => {
       const data = response.data
       const xAxis = data.hours || []
 
-      // Transform data for LineChart
       comparisonData.value = {
         xAxis: xAxis.map(h => {
           const date = new Date()
@@ -519,13 +444,13 @@ const getPollutantLabel = (key) => {
 }
 
 const getCorrelationColor = (correlation) => {
-  if (!correlation) return '#64748b'
+  if (!correlation) return 'var(--text-secondary)'
   const abs = Math.abs(correlation)
-  if (abs >= 0.9) return '#10b981'
-  if (abs >= 0.7) return '#22c55e'
-  if (abs >= 0.4) return '#eab308'
-  if (abs >= 0.2) return '#f97316'
-  return '#ef4444'
+  if (abs >= 0.9) return '#10B981'
+  if (abs >= 0.7) return '#22C55E'
+  if (abs >= 0.4) return '#EAB308'
+  if (abs >= 0.2) return '#F97316'
+  return '#EF4444'
 }
 
 const getCorrelationLabel = (correlation) => {
@@ -595,14 +520,14 @@ const handleCorrelation = async () => {
 
 const getAQIColorByLevel = (level) => {
   const colors = {
-    EXCELLENT: '#00e400',
-    Good: '#ffff00',
-    'Light pollution': '#ff7e00',
-    'Moderate pollution': '#ff0000',
-    'Heavy pollution': '#99004c',
-    'Severe pollution': '#7e0023'
+    EXCELLENT: '#10B981',
+    Good: '#FBBF24',
+    'Light pollution': '#F97316',
+    'Moderate pollution': '#EF4444',
+    'Heavy pollution': '#A855F7',
+    'Severe pollution': '#7F1D1D'
   }
-  return colors[level] || '#64748b'
+  return colors[level] || 'var(--text-secondary)'
 }
 
 const handleDistribution = async () => {
@@ -623,7 +548,8 @@ const handleDistribution = async () => {
           qualityLevel: d.quality_level,
           qualityLabel: d.quality_label,
           count: d.count,
-          percentage: d.percentage
+          percentage: d.percentage,
+          value: d.count
         }))
       }
     } else {
@@ -638,110 +564,373 @@ const handleDistribution = async () => {
 }
 
 onMounted(() => {
-  // Load initial data
   handleDistribution()
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-.glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.analysis-page {
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.glass-card:hover {
-  border-color: rgba(148, 163, 184, 0.2);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+/* Page Header */
+.page-header {
+  margin-bottom: var(--spacing-xl);
 }
 
-.grid-background {
-  background-image: linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
-.hover-scale {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.back-button {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
-.hover-scale:hover {
-  transform: translateY(-1px);
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
 }
 
-.animate-fade-in {
-  animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: 0;
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-.animate-fade-in-down {
-  animation: fade-in-down 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: 0;
+/* Tabs */
+.analysis-tabs {
+  background: transparent;
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+:deep(.el-tabs__header) {
+  margin-bottom: var(--spacing-lg);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 0 var(--spacing-md);
+  border: 1px solid var(--border);
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+:deep(.el-tabs__item) {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: var(--primary);
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: var(--primary);
+}
+
+:deep(.el-tabs__active-bar) {
+  background: var(--primary);
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.selector-card {
+  padding: var(--spacing-lg);
+}
+
+.chart-card {
+  padding: var(--spacing-lg);
+}
+
+/* Selector Form */
+.selector-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.form-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-item-actions {
+  flex: 0;
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: var(--spacing-xs);
+}
+
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+/* Chart Card */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.chart-legend {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.chart-container {
+  min-height: 400px;
+}
+
+/* Correlation Results */
+.correlation-results,
+.distribution-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+.stats-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.stat-card {
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.stat-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+.stat-equation {
+  font-size: 14px;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.stat-primary {
+  color: var(--primary);
+}
+
+/* Guide Card */
+.guide-card {
+  padding: var(--spacing-md);
+}
+
+.guide-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.guide-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.guide-range {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.guide-label {
+  font-weight: 500;
+}
+
+.guide-strong { color: #10B981; }
+.guide-good { color: #22C55E; }
+.guide-medium { color: #EAB308; }
+.guide-weak { color: #F97316; }
+.guide-poor { color: #EF4444; }
+
+/* Distribution List */
+.distribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.distribution-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.dist-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dist-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dist-label {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.dist-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.dist-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.dist-percent {
+  font-size: 14px;
+  color: var(--text-secondary);
+  width: 50px;
+  text-align: right;
+}
+
+.dist-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.dist-total-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .results-grid {
+    grid-template-columns: 1fr;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .analysis-page {
+    padding: var(--spacing-md);
   }
-}
 
-@keyframes fade-in-down {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
+  .form-row {
+    flex-direction: column;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .form-item,
+  .form-item-actions {
+    width: 100%;
   }
-}
 
-/* Custom Element Plus overrides */
-:deep(.custom-select .el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: none;
-}
+  .form-item-actions {
+    display: flex;
+  }
 
-:deep(.custom-select .el-input__wrapper:hover) {
-  border-color: rgba(148, 163, 184, 0.3);
-}
-
-:deep(.custom-select .el-input__wrapper.is-focus) {
-  border-color: rgba(6, 182, 212, 0.5);
-}
-
-:deep(.custom-select .el-input__inner) {
-  color: #e2e8f0;
-  font-family: 'IBM Plex Sans', sans-serif;
-}
-
-:deep(.dark-select-dropdown) {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  backdrop-filter: blur(12px);
-}
-
-:deep(.dark-select-dropdown .el-select-dropdown__item) {
-  color: #e2e8f0;
-  font-family: 'IBM Plex Sans', sans-serif;
-}
-
-:deep(.dark-select-dropdown .el-select-dropdown__item.hover) {
-  background: rgba(6, 182, 212, 0.1);
-}
-
-:deep(.dark-select-dropdown .el-select-dropdown__item.selected) {
-  color: #06b6d4;
-  background: rgba(6, 182, 212, 0.15);
+  .form-item-actions .el-button {
+    flex: 1;
+  }
 }
 </style>

@@ -1,47 +1,42 @@
 <template>
-  <div class="historical-data-container min-h-screen bg-slate-950 relative overflow-hidden">
-    <!-- Background grid -->
-    <div class="grid-background absolute inset-0 opacity-10 pointer-events-none"></div>
-
-    <!-- Main content -->
-    <div class="relative z-10 p-6 lg:p-8">
-      <!-- Header -->
-      <header class="mb-6 animate-fade-in-down">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl lg:text-3xl font-bold text-white mb-1" style="font-family: 'Rajdhani', sans-serif;">
-              历史数据查询
-            </h1>
-            <p class="text-slate-400 text-sm">检索与回溯历史空气质量监测数据</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              @click="goBack"
-              class="w-10 h-10 rounded-xl glass-card flex items-center justify-center hover-scale group"
-            >
-              <svg class="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-              </svg>
-            </button>
-          </div>
+  <div class="historical-data-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <el-button link @click="goBack" class="back-button">
+          <el-icon><ArrowLeft /></el-icon>
+          返回概览
+        </el-button>
+        <div class="header-info">
+          <h1 class="page-title">历史数据查询</h1>
+          <p class="page-subtitle">检索与回溯历史空气质量监测数据</p>
         </div>
-      </header>
+      </div>
+      <div class="header-actions">
+        <el-button
+          type="primary"
+          @click="handleExport"
+          :disabled="loading || tableData.length === 0"
+          :loading="exporting"
+        >
+          <el-icon><Download /></el-icon>
+          导出数据
+        </el-button>
+      </div>
+    </div>
 
-      <!-- Query form -->
-      <div class="glass-card rounded-2xl p-6 mb-6 animate-fade-in" style="animation-delay: 0.1s;">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <!-- City selector -->
-          <div class="md:col-span-1">
-            <label class="block text-slate-400 text-xs mb-2 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-              城市
-            </label>
+    <!-- Query Form -->
+    <div class="card query-card">
+      <div class="query-form">
+        <div class="form-row">
+          <div class="form-item">
+            <label class="form-label">城市</label>
             <el-select
               v-model="queryForm.city"
               filterable
               placeholder="选择城市"
               clearable
-              class="w-full custom-select"
-              :popper-class="'dark-select-dropdown'"
+              style="width: 100%"
             >
               <el-option
                 v-for="city in availableCities"
@@ -51,12 +46,8 @@
               />
             </el-select>
           </div>
-
-          <!-- Date range -->
-          <div class="md:col-span-2">
-            <label class="block text-slate-400 text-xs mb-2 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-              日期范围
-            </label>
+          <div class="form-item form-item-wide">
+            <label class="form-label">日期范围</label>
             <el-date-picker
               v-model="queryForm.dateRange"
               type="daterange"
@@ -65,230 +56,129 @@
               end-placeholder="结束日期"
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
-              class="w-full custom-date-picker"
-              :popper-class="'dark-date-picker'"
+              style="width: 100%"
               unlink-panels
             />
           </div>
-
-          <!-- Action buttons -->
-          <div class="flex items-end gap-2">
-            <button
-              @click="handleQuery"
-              :disabled="loading"
-              class="flex-1 px-4 py-2.5 rounded-xl bg-cyan-500 text-white font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover-scale"
-              style="font-family: 'Rajdhani', sans-serif;"
-            >
-              <span v-if="!loading">查询</span>
-              <span v-else class="flex items-center justify-center gap-2">
-                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                查询中
-              </span>
-            </button>
-            <button
-              @click="handleReset"
-              class="px-4 py-2.5 rounded-xl glass-card text-slate-300 hover:text-white hover-scale"
-              style="font-family: 'Rajdhani', sans-serif;"
-            >
-              重置
-            </button>
+          <div class="form-item form-item-actions">
+            <el-button type="primary" @click="handleQuery" :loading="loading">
+              查询
+            </el-button>
+            <el-button @click="handleReset">重置</el-button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Statistics summary -->
-      <div v-if="statistics" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 animate-fade-in" style="animation-delay: 0.15s;">
-        <div class="glass-card rounded-xl p-4">
-          <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">数据总量</div>
-          <div class="text-2xl font-bold font-mono text-cyan-400">{{ statistics.total }}</div>
-        </div>
-        <div class="glass-card rounded-xl p-4">
-          <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">平均 AQI</div>
-          <div class="text-2xl font-bold font-mono" :style="{ color: getAQIColor(statistics.avgAQI) }">
-            {{ statistics.avgAQI?.toFixed(0) || '--' }}
-          </div>
-        </div>
-        <div class="glass-card rounded-xl p-4">
-          <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">最高 AQI</div>
-          <div class="text-2xl font-bold font-mono text-red-400">{{ statistics.maxAQI || '--' }}</div>
-        </div>
-        <div class="glass-card rounded-xl p-4">
-          <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">最低 AQI</div>
-          <div class="text-2xl font-bold font-mono text-emerald-400">{{ statistics.minAQI || '--' }}</div>
-        </div>
-        <div class="glass-card rounded-xl p-4">
-          <div class="text-slate-500 text-xs mb-1" style="font-family: 'Rajdhani', sans-serif;">优占比</div>
-          <div class="text-2xl font-bold font-mono text-green-400">{{ statistics.excellentRate }}%</div>
+    <!-- Statistics Summary -->
+    <div v-if="statistics" class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">数据总量</div>
+        <div class="stat-value">{{ statistics.total }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">平均 AQI</div>
+        <div class="stat-value" :style="{ color: getAQIColor(statistics.avgAQI) }">
+          {{ statistics.avgAQI?.toFixed(0) || '--' }}
         </div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">最高 AQI</div>
+        <div class="stat-value stat-danger">{{ statistics.maxAQI || '--' }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">最低 AQI</div>
+        <div class="stat-value stat-success">{{ statistics.minAQI || '--' }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">优占比</div>
+        <div class="stat-value stat-primary">{{ statistics.excellentRate }}%</div>
+      </div>
+    </div>
 
-      <!-- Data table with export -->
-      <div class="glass-card rounded-2xl animate-fade-in" style="animation-delay: 0.2s;">
-        <div class="p-6 border-b border-slate-800/50">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm text-slate-400 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-              查询结果 <span class="text-slate-500">({{ tableData.length }} 条)</span>
-            </h2>
-            <div class="flex items-center gap-2">
-              <button
-                @click="handleExport"
-                :disabled="loading || tableData.length === 0"
-                class="px-4 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-                style="font-family: 'Rajdhani', sans-serif; font-size: 13px;"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                导出数据
-              </button>
-            </div>
-          </div>
-        </div>
+    <!-- Data Table -->
+    <div class="card table-card">
+      <div class="table-header">
+        <h3 class="table-title">
+          查询结果
+          <span class="record-count">({{ tableData.length }} 条)</span>
+        </h3>
+      </div>
 
-        <!-- Table -->
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-slate-800/50">
-                <th class="px-6 py-4 text-left text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  监测时间
-                </th>
-                <th class="px-6 py-4 text-left text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  城市
-                </th>
-                <th class="px-6 py-4 text-left text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  站点
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  AQI
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  等级
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  PM2.5
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  PM10
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  SO₂
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  NO₂
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  CO
-                </th>
-                <th class="px-6 py-4 text-center text-xs text-slate-500 uppercase tracking-wider font-medium" style="font-family: 'Rajdhani', sans-serif;">
-                  O₃
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="loading && tableData.length === 0">
-                <td colspan="11" class="px-6 py-12 text-center">
-                  <div class="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p class="text-slate-500 text-sm">数据加载中...</p>
-                </td>
-              </tr>
-              <tr v-else-if="tableData.length === 0">
-                <td colspan="11" class="px-6 py-12 text-center">
-                  <svg class="w-16 h-16 mx-auto mb-4 text-slate-600 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                  </svg>
-                  <p class="text-slate-500">暂无数据，请调整查询条件</p>
-                </td>
-              </tr>
-              <tr
-                v-for="row in tableData"
-                :key="row.id"
-                class="border-b border-slate-800/30 hover:bg-slate-900/30 transition-colors group"
-              >
-                <td class="px-6 py-4 text-sm text-slate-300 font-mono">
-                  {{ formatDateTime(row.monitor_time) }}
-                </td>
-                <td class="px-6 py-4 text-sm text-slate-300">
-                  {{ row.city_name }}
-                </td>
-                <td class="px-6 py-4 text-sm text-slate-400">
-                  {{ row.station_name }}
-                </td>
-                <td class="px-6 py-4 text-sm font-mono text-center font-bold" :style="{ color: getAQIColor(row.aqi) }">
-                  {{ row.aqi }}
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <span
-                    class="px-2 py-1 rounded-full text-xs font-medium"
-                    :style="{ background: `${getAQIColor(row.aqi)}20`, color: getAQIColor(row.aqi) }"
-                    style="font-family: 'Rajdhani', sans-serif;"
-                  >
-                    {{ getAQILevelText(row.aqi) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-sm text-center text-slate-400 font-mono">
-                  {{ row.pm25?.toFixed(1) || '--' }}
-                </td>
-                <td class="px-6 py-4 text-sm text-center text-slate-400 font-mono">
-                  {{ row.pm10?.toFixed(1) || '--' }}
-                </td>
-                <td class="px-6 py-4 text-sm text-center text-slate-400 font-mono">
-                  {{ row.so2?.toFixed(1) || '--' }}
-                </td>
-                <td class="px-6 py-4 text-sm text-center text-slate-400 font-mono">
-                  {{ row.no2?.toFixed(1) || '--' }}
-                </td>
-                <td class="px-6 py-4 text-sm text-center text-slate-400 font-mono">
-                  {{ row.co?.toFixed(2) || '--' }}
-                </td>
-                <td class="px-6 py-4 text-sm text-center text-slate-400 font-mono">
-                  {{ row.o3?.toFixed(1) || '--' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <el-table
+        :data="tableData"
+        v-loading="loading && tableData.length === 0"
+        stripe
+        style="width: 100%"
+      >
+        <el-table-column prop="monitor_time" label="监测时间" width="180">
+          <template #default="{ row }">
+            <span class="mono-text">{{ formatDateTime(row.monitor_time) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="city_name" label="城市" width="120" />
+        <el-table-column prop="station_name" label="站点" width="180" />
+        <el-table-column prop="aqi" label="AQI" width="100" align="center">
+          <template #default="{ row }">
+            <span class="aqi-value" :style="{ color: getAQIColor(row.aqi) }">
+              {{ row.aqi }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="等级" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getAQITagType(row.aqi)" size="small">
+              {{ getAQILevelText(row.aqi) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="pm25" label="PM2.5" width="100" align="center">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.pm25?.toFixed(1) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="pm10" label="PM10" width="100" align="center">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.pm10?.toFixed(1) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="so2" label="SO₂" width="100" align="center">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.so2?.toFixed(1) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="no2" label="NO₂" width="100" align="center">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.no2?.toFixed(1) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="co" label="CO" width="100" align="center">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.co?.toFixed(2) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="o3" label="O₃" width="100" align="center">
+          <template #default="{ row }">
+            <span class="mono-text">{{ row.o3?.toFixed(1) || '--' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
 
-        <!-- Pagination -->
-        <div v-if="total > 0" class="p-6 border-t border-slate-800/50">
-          <div class="flex items-center justify-between">
-            <div class="text-sm text-slate-500">
-              共 {{ total }} 条记录，第 {{ pagination.page }} / {{ Math.ceil(total / pagination.pageSize) }} 页
-            </div>
-            <div class="flex items-center gap-2">
-              <button
-                @click="handlePageChange(pagination.page - 1)"
-                :disabled="pagination.page === 1"
-                class="px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                上一页
-              </button>
-              <div class="flex items-center gap-1">
-                <button
-                  v-for="page in visiblePages"
-                  :key="page"
-                  @click="handlePageChange(page)"
-                  class="w-8 h-8 rounded-lg text-sm transition-all"
-                  :class="page === pagination.page
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'"
-                >
-                  {{ page }}
-                </button>
-              </div>
-              <button
-                @click="handlePageChange(pagination.page + 1)"
-                :disabled="pagination.page >= Math.ceil(total / pagination.pageSize)"
-                class="px-3 py-1.5 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                下一页
-              </button>
-            </div>
-          </div>
-        </div>
+      <template v-if="tableData.length === 0 && !loading">
+        <el-empty description="暂无数据，请调整查询条件" :image-size="100" />
+      </template>
+
+      <!-- Pagination -->
+      <div v-if="total > 0" class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
       </div>
     </div>
   </div>
@@ -297,6 +187,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ArrowLeft, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getHistoricalData, exportHistoricalData } from '@/api/airquality'
 
@@ -304,6 +195,7 @@ const router = useRouter()
 
 // State
 const loading = ref(false)
+const exporting = ref(false)
 const tableData = ref([])
 const total = ref(0)
 const statistics = ref(null)
@@ -320,7 +212,7 @@ const pagination = ref({
   pageSize: 20
 })
 
-// Available cities (mock data - should come from API)
+// Available cities (mock data)
 const availableCities = ref([
   { code: '110101', name: '东城区' },
   { code: '110102', name: '西城区' },
@@ -330,52 +222,15 @@ const availableCities = ref([
   { code: '440103', name: '荔湾区' }
 ])
 
-// Computed
-const visiblePages = computed(() => {
-  const totalPages = Math.ceil(total.value / pagination.value.pageSize)
-  const current = pagination.value.page
-  const pages = []
-
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i)
-    }
-  } else {
-    if (current <= 4) {
-      for (let i = 1; i <= 5; i++) {
-        pages.push(i)
-      }
-      pages.push('...')
-      pages.push(totalPages)
-    } else if (current >= totalPages - 3) {
-      pages.push(1)
-      pages.push('...')
-      for (let i = totalPages - 4; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      pages.push(1)
-      pages.push('...')
-      for (let i = current - 1; i <= current + 1; i++) {
-        pages.push(i)
-      }
-      pages.push('...')
-      pages.push(totalPages)
-    }
-  }
-
-  return pages
-})
-
 // Methods
 const getAQIColor = (aqi) => {
-  if (!aqi) return '#64748b'
-  if (aqi <= 50) return '#00e400'
-  if (aqi <= 100) return '#ffff00'
-  if (aqi <= 150) return '#ff7e00'
-  if (aqi <= 200) return '#ff0000'
-  if (aqi <= 300) return '#99004c'
-  return '#7e0023'
+  if (!aqi) return 'var(--text-secondary)'
+  if (aqi <= 50) return '#10B981'
+  if (aqi <= 100) return '#FBBF24'
+  if (aqi <= 150) return '#F97316'
+  if (aqi <= 200) return '#EF4444'
+  if (aqi <= 300) return '#A855F7'
+  return '#7F1D1D'
 }
 
 const getAQILevelText = (aqi) => {
@@ -386,6 +241,15 @@ const getAQILevelText = (aqi) => {
   if (aqi <= 200) return '中度'
   if (aqi <= 300) return '重度'
   return '严重'
+}
+
+const getAQITagType = (aqi) => {
+  if (!aqi) return 'info'
+  if (aqi <= 50) return 'success'
+  if (aqi <= 100) return 'warning'
+  if (aqi <= 150) return 'warning'
+  if (aqi <= 200) return 'danger'
+  return 'danger'
 }
 
 const formatDateTime = (dateStr) => {
@@ -422,14 +286,18 @@ const handleReset = () => {
 }
 
 const handlePageChange = async (page) => {
-  if (page === '...' || page < 1 || page > Math.ceil(total.value / pagination.value.pageSize)) {
-    return
-  }
   pagination.value.page = page
   await fetchData()
 }
 
+const handleSizeChange = async (size) => {
+  pagination.value.pageSize = size
+  pagination.value.page = 1
+  await fetchData()
+}
+
 const handleExport = async () => {
+  exporting.value = true
   try {
     const params = {
       city_code: queryForm.value.city,
@@ -454,6 +322,8 @@ const handleExport = async () => {
   } catch (error) {
     console.error('Export failed:', error)
     ElMessage.error('导出失败')
+  } finally {
+    exporting.value = false
   }
 }
 
@@ -502,7 +372,6 @@ const fetchData = async () => {
       tableData.value = response.data || []
       total.value = response.total || 0
 
-      // Calculate statistics for current page
       if (tableData.value.length > 0) {
         statistics.value = calculateStatistics(tableData.value)
       } else {
@@ -520,166 +389,218 @@ const fetchData = async () => {
 }
 
 onMounted(() => {
-  // Load initial data
   fetchData()
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-.glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.historical-data-page {
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.glass-card:hover {
-  border-color: rgba(148, 163, 184, 0.2);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
 }
 
-.grid-background {
-  background-image: linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
-.hover-scale {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.back-button {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
-.hover-scale:hover {
-  transform: translateY(-1px);
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
 }
 
-.animate-fade-in {
-  animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: 0;
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-.animate-fade-in-down {
-  animation: fade-in-down 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: 0;
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-lg);
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+.card:last-child {
+  margin-bottom: 0;
+}
+
+/* Query Form */
+.query-card {
+  padding: var(--spacing-lg);
+}
+
+.query-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.form-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-item-wide {
+  flex: 2;
+  min-width: 300px;
+}
+
+.form-item-actions {
+  flex: 0;
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Stats Row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: var(--spacing-md);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.stat-danger { color: var(--error); }
+.stat-success { color: var(--success); }
+.stat-primary { color: var(--primary); }
+
+/* Table Card */
+.table-card {
+  overflow: hidden;
+}
+
+.table-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.record-count {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-left: var(--spacing-xs);
+}
+
+.aqi-value {
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.mono-text {
+  font-family: var(--font-mono);
+}
+
+.pagination-wrapper {
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .stats-row {
+    grid-template-columns: repeat(3, 1fr);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .historical-data-page {
+    padding: var(--spacing-md);
   }
-}
 
-@keyframes fade-in-down {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .form-row {
+    flex-direction: column;
   }
-}
 
-/* Custom Element Plus overrides */
-:deep(.custom-select .el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: none;
-  transition: all 0.3s;
-}
+  .form-item,
+  .form-item-wide {
+    min-width: 100%;
+  }
 
-:deep(.custom-select .el-input__wrapper:hover) {
-  border-color: rgba(148, 163, 184, 0.3);
-}
+  .form-item-actions {
+    width: 100%;
+  }
 
-:deep(.custom-select .el-input__wrapper.is-focus) {
-  border-color: rgba(6, 182, 212, 0.5);
-}
+  .form-item-actions .el-button {
+    flex: 1;
+  }
 
-:deep(.custom-select .el-input__inner) {
-  color: #e2e8f0;
-  font-family: 'IBM Plex Sans', sans-serif;
-}
-
-:deep(.custom-date-picker .el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: none;
-}
-
-:deep(.custom-date-picker .el-input__wrapper:hover) {
-  border-color: rgba(148, 163, 184, 0.3);
-}
-
-:deep(.custom-date-picker .el-input__wrapper.is-focus) {
-  border-color: rgba(6, 182, 212, 0.5);
-}
-
-:deep(.custom-date-picker .el-input__inner) {
-  color: #e2e8f0;
-  font-family: 'IBM Plex Sans', sans-serif;
-}
-
-:deep(.custom-date-picker .el-input__prefix) {
-  color: #64748b;
-}
-
-:deep(.dark-select-dropdown) {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  backdrop-filter: blur(12px);
-}
-
-:deep(.dark-select-dropdown .el-select-dropdown__item) {
-  color: #e2e8f0;
-  font-family: 'IBM Plex Sans', sans-serif;
-}
-
-:deep(.dark-select-dropdown .el-select-dropdown__item.hover) {
-  background: rgba(6, 182, 212, 0.1);
-}
-
-:deep(.dark-select-dropdown .el-select-dropdown__item.selected) {
-  color: #06b6d4;
-  background: rgba(6, 182, 212, 0.15);
-}
-
-:deep(.dark-date-picker) {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  backdrop-filter: blur(12px);
-}
-
-:deep(.dark-date-picker .el-date-table th) {
-  color: #64748b;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-:deep(.dark-date-picker .el-date-table td) {
-  color: #e2e8f0;
-}
-
-:deep(.dark-date-picker .el-date-table td.in-range div) {
-  background: rgba(6, 182, 212, 0.2);
-}
-
-:deep(.dark-date-picker .el-date-table td.start-date div,
-  .dark-date-picker .el-date-table td.end-date div) {
-  background: rgba(6, 182, 212, 0.5);
-}
-
-:deep(.dark-date-picker .el-date-table td.today div) {
-  color: #06b6d4;
-}
-
-:deep(.dark-date-picker .el-picker-panel__content .cell:hover) {
-  color: #06b6d4;
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

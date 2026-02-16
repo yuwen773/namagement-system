@@ -1,237 +1,175 @@
 <template>
-  <div class="city-detail-container min-h-screen bg-slate-950 relative overflow-hidden">
-    <!-- Background grid -->
-    <div class="grid-background absolute inset-0 opacity-10 pointer-events-none"></div>
-
-    <!-- Main content -->
-    <div class="relative z-10 p-6 lg:p-8">
-      <!-- Header with back button -->
-      <header class="mb-6 animate-fade-in-down">
-        <div class="flex items-center justify-between flex-wrap gap-4">
-          <div class="flex items-center gap-4">
-            <button
-              @click="goBack"
-              class="w-10 h-10 rounded-xl glass-card flex items-center justify-center hover-scale group"
-            >
-              <svg class="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-              </svg>
-            </button>
-            <div>
-              <div class="flex items-center gap-3">
-                <h1 class="text-2xl lg:text-3xl font-bold text-white" style="font-family: 'Rajdhani', sans-serif;">
-                  {{ cityData?.city_name || '城市详情' }}
-                </h1>
-                <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800/50 text-slate-300" style="font-family: 'JetBrains Mono', monospace;">
-                  {{ cityData?.city_code || '--' }}
-                </span>
-              </div>
-              <div class="flex items-center gap-4 mt-1 text-sm text-slate-400">
-                <span class="flex items-center gap-1">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
-                  {{ cityData?.province_name || '--' }}
-                </span>
-                <span class="flex items-center gap-1" style="font-family: 'JetBrains Mono', monospace;">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
-                  {{ cityData?.latitude?.toFixed(4) || '--' }}, {{ cityData?.longitude?.toFixed(4) || '--' }}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-slate-400 text-xs">更新时间</span>
-            <span class="text-slate-300 text-xs font-mono">{{ updateTime }}</span>
+  <div class="city-detail-page">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <el-button link @click="goBack" class="back-button">
+          <el-icon><ArrowLeft /></el-icon>
+          返回概览
+        </el-button>
+        <div class="header-info">
+          <h1 class="page-title">{{ cityData?.city_name || '城市详情' }}</h1>
+          <div class="header-meta">
+            <span class="city-code">{{ cityData?.city_code || '--' }}</span>
+            <span class="divider">|</span>
+            <span>{{ cityData?.province_name || '--' }}</span>
+            <span class="divider">|</span>
+            <span class="update-time">更新于 {{ updateTime }}</span>
           </div>
         </div>
-      </header>
+      </div>
+      <div class="header-actions">
+        <el-button type="primary" @click="refreshData">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+      </div>
+    </div>
 
-      <!-- Main grid -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <!-- Left column - AQI gauge and pollutants -->
-        <div class="space-y-6">
-          <!-- AQI Gauge card -->
-          <div class="glass-card rounded-2xl p-6 animate-fade-in" style="animation-delay: 0.1s;">
-            <h2 class="text-sm text-slate-400 mb-4 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-              空气质量指数
-            </h2>
-            <div class="flex justify-center">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container">
+      <el-skeleton :rows="6" animated />
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-container">
+      <el-result icon="error" title="加载失败" sub-title="无法获取城市数据">
+        <template #extra>
+          <el-button type="primary" @click="goBack">返回</el-button>
+        </template>
+      </el-result>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else class="content-grid">
+      <!-- Left Column -->
+      <div class="left-column">
+        <!-- AQI Card -->
+        <div class="card aqi-card">
+          <div class="card-header">
+            <h3 class="card-title">空气质量指数</h3>
+            <el-tag :type="getAQITagType(cityData?.snapshot?.aqi)" size="large">
+              {{ aqiLevelText }}
+            </el-tag>
+          </div>
+          <div class="aqi-display">
+            <div class="aqi-gauge">
               <GaugeChart
                 v-if="cityData?.snapshot?.aqi !== undefined"
                 :value="cityData.snapshot.aqi"
-                :size="'large'"
+                size="large"
                 :show-detail="true"
               />
-              <div v-else class="w-64 h-32 flex items-center justify-center">
-                <div class="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-              </div>
             </div>
-            <div class="mt-4 text-center">
-              <div class="text-3xl font-bold font-mono" :style="{ color: aqiColor }">
-                {{ cityData?.snapshot?.aqi || '--' }}
-              </div>
-              <div class="text-sm mt-1" :style="{ color: aqiColor }">
-                {{ aqiLevelText }}
-              </div>
+            <div class="aqi-value" :style="{ color: aqiColor }">
+              {{ cityData?.snapshot?.aqi || '--' }}
             </div>
           </div>
+        </div>
 
-          <!-- Pollutants grid -->
-          <div class="grid grid-cols-2 gap-4">
+        <!-- Pollutants -->
+        <div class="card pollutants-card">
+          <div class="card-header">
+            <h3 class="card-title">污染物浓度</h3>
+          </div>
+          <div class="pollutants-grid">
             <div
               v-for="pollutant in pollutants"
               :key="pollutant.key"
-              class="glass-card rounded-xl p-4 animate-fade-in hover-scale"
-              :style="{ animationDelay: `${0.15 + pollutant.index * 0.05}s` }"
+              class="pollutant-item"
             >
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-slate-400 text-xs" style="font-family: 'Rajdhani', sans-serif;">{{ pollutant.label }}</span>
-                <span class="w-2 h-2 rounded-full" :style="{ background: pollutant.color }"></span>
+              <div class="pollutant-header">
+                <span class="pollutant-name">{{ pollutant.label }}</span>
+                <span class="pollutant-unit">{{ pollutant.unit }}</span>
               </div>
-              <div class="text-2xl font-bold font-mono" :style="{ color: pollutant.color }">
+              <div class="pollutant-value" :style="{ color: pollutant.color }">
                 {{ cityData?.snapshot?.[pollutant.key]?.toFixed(1) || '--' }}
               </div>
-              <div class="text-slate-500 text-xs mt-1">{{ pollutant.unit }}</div>
+              <div class="pollutant-bar">
+                <div
+                  class="pollutant-fill"
+                  :style="{
+                    width: getPollutantPercent(cityData?.snapshot?.[pollutant.key], pollutant.max) + '%',
+                    background: pollutant.color
+                  }"
+                />
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Right column - Trend and stations -->
-        <div class="xl:col-span-2 space-y-6">
-          <!-- Trend chart -->
-          <div class="glass-card rounded-2xl p-6 animate-fade-in" style="animation-delay: 0.4s;">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm text-slate-400 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                24小时 AQI 趋势
-              </h2>
-              <div class="flex items-center gap-2 text-xs text-slate-500">
-                <span class="w-3 h-3 rounded-sm" :style="{ background: aqiColor }"></span>
-                <span>AQI</span>
+      <!-- Right Column -->
+      <div class="right-column">
+        <!-- Trend Chart -->
+        <div class="card trend-card">
+          <div class="card-header">
+            <h3 class="card-title">24小时 AQI 趋势</h3>
+          </div>
+          <div class="chart-container">
+            <LineChart
+              v-if="trendData?.length"
+              :data="[{ name: 'AQI', data: trendData.map(d => d.aqi), color: aqiColor }]"
+              :x-axis="trendData.map(d => formatTime(d.time))"
+              :smooth="true"
+              :area-style="true"
+              :show-data-zoom="true"
+              height="280px"
+            />
+            <el-empty v-else description="暂无趋势数据" :image-size="100" />
+          </div>
+        </div>
+
+        <!-- Stations -->
+        <div class="card stations-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              监测站点
+              <el-badge :value="cityData?.snapshot?.station_count || 0" class="station-badge" />
+            </h3>
+          </div>
+          <div v-if="stations.length" class="stations-list">
+            <div
+              v-for="station in stations"
+              :key="station.code"
+              class="station-item"
+              @click="goToStation(station.code)"
+            >
+              <div class="station-info">
+                <div class="station-name">{{ station.name }}</div>
+                <div class="station-address">{{ station.address }}</div>
               </div>
-            </div>
-            <div class="h-[280px]">
-              <LineChart
-                v-if="trendData?.length"
-                :data="[{ name: 'AQI', data: trendData.map(d => d.aqi), color: aqiColor }]"
-                :x-axis="trendData.map(d => formatTime(d.time))"
-                :smooth="true"
-                :area-style="true"
-                :show-data-zoom="true"
-              />
-              <div v-else class="h-full flex items-center justify-center">
-                <div class="text-center">
-                  <div class="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mb-3 mx-auto"></div>
-                  <p class="text-slate-500 text-sm">趋势数据加载中...</p>
-                </div>
+              <div class="station-aqi">
+                <span class="aqi-value" :style="{ color: getAQIColor(station.aqi) }">
+                  {{ station.aqi }}
+                </span>
               </div>
             </div>
           </div>
-
-          <!-- Monitoring stations list -->
-          <div class="glass-card rounded-2xl p-6 animate-fade-in" style="animation-delay: 0.5s;">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-sm text-slate-400 uppercase tracking-wider" style="font-family: 'Rajdhani', sans-serif;">
-                监测站点 <span class="text-slate-500">({{ cityData?.snapshot?.station_count || 0 }})</span>
-              </h2>
-            </div>
-            <div v-if="stations.length" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div
-                v-for="station in stations"
-                :key="station.code"
-                @click="goToStation(station.code)"
-                class="p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 cursor-pointer transition-all group"
-              >
-                <div class="flex items-center justify-between">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class="text-white font-medium group-hover:text-cyan-400 transition-colors truncate">
-                        {{ station.name }}
-                      </span>
-                      <span class="px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-400 flex-shrink-0">
-                        {{ station.type }}
-                      </span>
-                    </div>
-                    <p class="text-slate-500 text-xs mt-1 truncate">{{ station.address }}</p>
-                  </div>
-                  <div class="flex-shrink-0 ml-3">
-                    <div class="text-lg font-bold font-mono" :style="{ color: getAQIColor(station.aqi) }">
-                      {{ station.aqi }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="text-center py-8 text-slate-500 text-sm">
-              <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-              </svg>
-              暂无站点数据
-            </div>
-          </div>
-
-          <!-- Quick navigation -->
-          <div class="grid grid-cols-3 gap-4 animate-fade-in" style="animation-delay: 0.55s;">
-            <router-link
-              to="/historical"
-              class="glass-card rounded-xl p-4 text-center hover-scale group"
-            >
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform" style="background: rgba(59, 130, 246, 0.2);">
-                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <span class="text-white text-sm" style="font-family: 'Rajdhani', sans-serif;">历史数据</span>
-            </router-link>
-            <router-link
-              to="/analysis"
-              class="glass-card rounded-xl p-4 text-center hover-scale group"
-            >
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform" style="background: rgba(139, 92, 246, 0.2);">
-                <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-              </div>
-              <span class="text-white text-sm" style="font-family: 'Rajdhani', sans-serif;">数据分析</span>
-            </router-link>
-            <button
-              @click="goToProtection"
-              class="glass-card rounded-xl p-4 text-center hover-scale group w-full"
-            >
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform" style="background: rgba(16, 185, 129, 0.2);">
-                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-              </div>
-              <span class="text-white text-sm" style="font-family: 'Rajdhani', sans-serif;">防护指南</span>
-            </button>
-          </div>
+          <el-empty v-else description="暂无站点数据" :image-size="80" />
         </div>
       </div>
     </div>
 
-    <!-- Loading overlay -->
-    <div v-if="loading" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-      <div class="text-center">
-        <div class="w-20 h-20 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mb-6 mx-auto"></div>
-        <p class="text-slate-400 text-lg" style="font-family: 'Rajdhani', sans-serif;">数据加载中...</p>
+    <!-- Quick Navigation -->
+    <div class="quick-nav">
+      <div class="nav-item" @click="$router.push('/historical')">
+        <div class="nav-icon" style="background: linear-gradient(135deg, #3B82F6, #2563EB)">
+          <el-icon :size="20"><Clock /></el-icon>
+        </div>
+        <span>历史数据</span>
       </div>
-    </div>
-
-    <!-- Error state -->
-    <div v-if="error" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-      <div class="text-center">
-        <svg class="w-20 h-20 mx-auto mb-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-        </svg>
-        <p class="text-slate-400 text-lg mb-4">加载失败</p>
-        <button @click="goBack" class="px-6 py-2 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600 transition-colors">
-          返回上一页
-        </button>
+      <div class="nav-item" @click="$router.push('/analysis')">
+        <div class="nav-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED)">
+          <el-icon :size="20"><ArrowUp /></el-icon>
+        </div>
+        <span>数据分析</span>
+      </div>
+      <div class="nav-item" @click="goToProtection">
+        <div class="nav-icon" style="background: linear-gradient(135deg, #10B981, #059669)">
+          <el-icon :size="20"><CircleCheck /></el-icon>
+        </div>
+        <span>防护指南</span>
       </div>
     </div>
   </div>
@@ -240,13 +178,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { ArrowLeft, Refresh, Clock, ArrowUp, CircleCheck } from '@element-plus/icons-vue'
 import { GaugeChart, LineChart } from '@/components/charts'
 import { getCityDetail, getCityTrend } from '@/api/airquality'
 
 const router = useRouter()
 const route = useRoute()
 
-// State
 const loading = ref(true)
 const error = ref(false)
 const cityData = ref(null)
@@ -254,20 +192,18 @@ const trendData = ref([])
 const stations = ref([])
 const updateTime = ref('')
 
-// Pollutants configuration
 const pollutants = [
-  { key: 'pm25', label: 'PM2.5', unit: 'μg/m³', color: '#f97316', index: 0 },
-  { key: 'pm10', label: 'PM10', unit: 'μg/m³', color: '#ef4444', index: 1 },
-  { key: 'so2', label: 'SO₂', unit: 'μg/m³', color: '#8b5cf6', index: 2 },
-  { key: 'no2', label: 'NO₂', unit: 'μg/m³', color: '#06b6d4', index: 3 },
-  { key: 'co', label: 'CO', unit: 'mg/m³', color: '#ec4899', index: 4 },
-  { key: 'o3', label: 'O₃', unit: 'μg/m³', color: '#14b8a6', index: 5 }
+  { key: 'pm25', label: 'PM2.5', unit: 'μg/m³', color: '#F97316', max: 100 },
+  { key: 'pm10', label: 'PM10', unit: 'μg/m³', color: '#EF4444', max: 150 },
+  { key: 'o3', label: 'O3', unit: 'μg/m³', color: '#14B8A6', max: 200 },
+  { key: 'no2', label: 'NO2', unit: 'μg/m³', color: '#06B6D4', max: 80 },
+  { key: 'so2', label: 'SO2', unit: 'μg/m³', color: '#8B5CF6', max: 50 },
+  { key: 'co', label: 'CO', unit: 'mg/m³', color: '#EC4899', max: 10 }
 ]
 
-// Computed
 const aqiColor = computed(() => {
   const aqi = cityData.value?.snapshot?.aqi
-  if (!aqi) return '#64748b'
+  if (!aqi) return '#94A3B8'
   return getAQIColor(aqi)
 })
 
@@ -277,14 +213,13 @@ const aqiLevelText = computed(() => {
   return getAQILevelText(aqi)
 })
 
-// Methods
 const getAQIColor = (aqi) => {
-  if (aqi <= 50) return '#00e400'
-  if (aqi <= 100) return '#ffff00'
-  if (aqi <= 150) return '#ff7e00'
-  if (aqi <= 200) return '#ff0000'
-  if (aqi <= 300) return '#99004c'
-  return '#7e0023'
+  if (aqi <= 50) return '#10B981'
+  if (aqi <= 100) return '#FBBF24'
+  if (aqi <= 150) return '#F97316'
+  if (aqi <= 200) return '#EF4444'
+  if (aqi <= 300) return '#A855F7'
+  return '#7F1D1D'
 }
 
 const getAQILevelText = (aqi) => {
@@ -294,6 +229,20 @@ const getAQILevelText = (aqi) => {
   if (aqi <= 200) return '中度污染'
   if (aqi <= 300) return '重度污染'
   return '严重污染'
+}
+
+const getAQITagType = (aqi) => {
+  if (!aqi) return 'info'
+  if (aqi <= 50) return 'success'
+  if (aqi <= 100) return 'warning'
+  if (aqi <= 150) return 'warning'
+  if (aqi <= 200) return 'danger'
+  return 'danger'
+}
+
+const getPollutantPercent = (value, max) => {
+  if (!value) return 0
+  return Math.min((value / max) * 100, 100)
 }
 
 const formatTime = (timeStr) => {
@@ -312,6 +261,10 @@ const goToStation = (stationCode) => {
 const goToProtection = () => {
   const cityCode = route.query.code
   router.push({ path: '/protection', query: { city_code: cityCode } })
+}
+
+const refreshData = () => {
+  fetchData()
 }
 
 const fetchData = async () => {
@@ -333,7 +286,6 @@ const fetchData = async () => {
 
     if (detailRes.code === 0) {
       cityData.value = detailRes.data
-      // Mock stations data based on station_count
       const count = detailRes.data?.snapshot?.station_count || 0
       stations.value = Array.from({ length: Math.min(count, 6) }, (_, i) => ({
         code: `${cityCode}-ST${String(i + 1).padStart(3, '0')}`,
@@ -364,64 +316,309 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-.glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.city-detail-page {
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.glass-card:hover {
-  border-color: rgba(148, 163, 184, 0.2);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
 }
 
-.grid-background {
-  background-image: linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
-.hover-scale {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.back-button {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
-.hover-scale:hover {
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.city-code {
+  font-family: var(--font-mono);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.divider {
+  color: var(--border);
+}
+
+.update-time {
+  font-family: var(--font-mono);
+}
+
+/* Content Grid */
+.content-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.card:last-child {
+  margin-bottom: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+/* AQI Card */
+.aqi-card {
+  text-align: center;
+}
+
+.aqi-display {
+  padding: var(--spacing-xl);
+}
+
+.aqi-gauge {
+  margin-bottom: var(--spacing-md);
+}
+
+.aqi-value {
+  font-size: 48px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+/* Pollutants */
+.pollutants-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+}
+
+.pollutant-item {
+  padding: var(--spacing-md);
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.pollutant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.pollutant-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pollutant-unit {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.pollutant-value {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+}
+
+.pollutant-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.pollutant-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-slow);
+}
+
+/* Chart Container */
+.chart-container {
+  padding: var(--spacing-lg);
+  min-height: 320px;
+}
+
+/* Stations */
+.station-badge {
+  margin-left: var(--spacing-sm);
+}
+
+.stations-list {
+  padding: var(--spacing-md);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.station-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--spacing-sm);
+}
+
+.station-item:hover {
+  background: var(--border-light);
+}
+
+.station-item:last-child {
+  margin-bottom: 0;
+}
+
+.station-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.station-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.station-address {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.station-aqi {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+/* Quick Navigation */
+.quick-nav {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.nav-item:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-.animate-fade-in {
-  animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: 0;
+.nav-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
 }
 
-.animate-fade-in-down {
-  animation: fade-in-down 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: 0;
+.nav-item span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Loading & Error */
+.loading-container {
+  padding: var(--spacing-2xl);
 }
 
-@keyframes fade-in-down {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
+.error-container {
+  padding: var(--spacing-2xl);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .city-detail-page {
+    padding: var(--spacing-md);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-nav {
+    flex-direction: column;
+  }
+
+  .header-meta {
+    flex-wrap: wrap;
   }
 }
 </style>
