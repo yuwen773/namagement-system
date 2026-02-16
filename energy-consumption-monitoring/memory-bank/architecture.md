@@ -1,92 +1,55 @@
-# 架构说明（Architecture）
+﻿# 架构说明（Architecture）
 
 ## 文档目的
-定义长期有效的架构边界、分层职责与文件分工；不记录一次性执行过程。
+定义长期稳定的架构边界、分层职责、文件职责。
+不记录一次性操作、命令输出和临时排障过程。
 
-## 当前架构基线（截至阶段 2.1）
-- 开发顺序：后端优先（Django + DRF 先落地，前端后置）
-- 数据库策略：`MySQL` 单体架构（不引入 InfluxDB）
-- 分析策略：`Spark` 为可选增强，不作为当前阶段硬门槛
-- 运行环境：`backend/.venv`（Python 3.11，Django 5.2.x）
-- 数据库基线：已落地 `energy_monitoring` 库，默认字符集 `utf8mb4`
-- 数据模型基线：`sql/init_db.sql` 已落地 17 张核心业务表、主外键约束与查询索引
-- 后端基线：Django 项目入口与全局配置已落地（`manage.py`、`settings.py`、`urls.py`、`asgi.py`、`wsgi.py`）
-- 协议采集基线：已落地 `scripts/protocol_collection/`，形成“配置 -> 协议适配器 -> 模拟器 -> 验收脚本”最小闭环
-- 前端策略：`frontend/` 由第七阶段 Vite 自动初始化，不在当前阶段手动创建
+## 当前架构基线（2026-02-16）
+- 开发策略：后端优先，前端后置
+- 技术基线：Django + DRF + MySQL（`utf8mb4`）；Spark 为可选增强
+- 数据策略：单库 MySQL；原始数据与统计数据分层（`em_energy_data` / `em_energy_statistics`）
+- 领域划分：`accounts`、`buildings`、`devices`、`energy`、`analysis`、`alarms`、`system`
+- 当前进度基线：阶段 `2.2` 已完成应用骨架与注册，`2.3` 未开始
 
-## 分层与职责
-1. 数据接入层：负责 CSV/Excel 导入入口，以及 Modbus/BACnet 协议采集入口。
-2. 业务服务层：Django Apps 承载领域模型、业务逻辑与 API。
-3. 数据持久层：MySQL 表结构、索引、初始化脚本。
-4. 展示层：Vue 3 + ECharts（后续阶段实现）。
+## 分层职责
+1. 数据接入层：CSV/Excel 导入与 Modbus/BACnet 协议采集入口
+2. 业务服务层：Django Apps（模型、服务、API）
+3. 数据持久层：MySQL 表结构、约束、索引与迁移
+4. 展示层：Vue 3 + ECharts（后续阶段实现）
 
-## 文档分工（回归文档本质）
-- `memory-bank/pre-prd.md`：课题背景与原始需求来源。
-- `memory-bank/PRD.md`：产品需求定义（做什么、给谁做、做到什么程度）。
-- `memory-bank/implementation-plan.md`：实施顺序与验收标准（怎么分步做）。
-- `memory-bank/tech-stack.md`：技术选型约束（用什么做）。
-- `memory-bank/progress.md`：执行事实与验收结论（做到哪一步）。
-- `memory-bank/architecture.md`：架构边界与职责约束（系统如何组织）。
+## 关键文件职责
 
-## 工程文件职责
+### `memory-bank/`（项目记忆）
+- `memory-bank/pre-prd.md`：课题原始背景与约束来源
+- `memory-bank/PRD.md`：产品功能与非功能需求边界
+- `memory-bank/implementation-plan.md`：分阶段实施步骤与验收标准
+- `memory-bank/tech-stack.md`：技术选型与版本约束
+- `memory-bank/progress.md`：事实性进度与验收结果
+- `memory-bank/architecture.md`：长期架构边界与职责定义
 
-### 根目录
-- `AGENTS.md`：仓库协作约束与执行规范（代理行为边界）。
-- `CLAUDE.md`：实现约定与目标架构补充说明。
-- `dataSource/`：原始数据集输入目录（导入与分析的上游数据）。
-- `docs/`：交付文档目录（RTM、部署文档、接口说明等）。
-- `scripts/`：数据导入、清洗、统计生成等脚本目录。
-- `sql/init_db.sql`：数据库结构基线脚本；定义跨域主外键关系、时间字段规范、索引策略与后续迁移对照口径。
+### `backend/`（后端锚点）
+- `backend/manage.py`：Django 管理入口（`runserver`、`migrate`、`check`、管理命令）
+- `backend/requirements.txt`：后端依赖基线
+- `backend/energy_monitoring/settings.py`：全局配置中心（应用注册、数据库、中间件等）
+- `backend/energy_monitoring/urls.py`：全局路由聚合入口
+- `backend/energy_monitoring/asgi.py`：ASGI 入口
+- `backend/energy_monitoring/wsgi.py`：WSGI 入口
+- `backend/energy_monitoring/__init__.py`：项目包初始化入口
 
-### 协议采集脚本（`scripts/protocol_collection/`）
-- `scripts/protocol_collection/README.md`：阶段 1.5 使用说明与验收命令。
-- `scripts/protocol_collection/collection_config.example.json`：采集策略与点位映射模板（`仪表ID -> 设备ID -> 房间`）。
-- `scripts/protocol_collection/config.py`：配置解析与静态校验（协议类型、网关模式、点位字段完整性）。
-- `scripts/protocol_collection/adapters.py`：协议适配器，封装超时、重试、重连。
-- `scripts/protocol_collection/simulators.py`：Modbus/BACnet 模拟器（无实物设备验收基线）。
-- `scripts/protocol_collection/collector.py`：统一采集执行入口，输出与 `em_energy_data` 对齐的 JSONL 数据。
-- `scripts/protocol_collection/validate_phase_1_5.py`：阶段 1.5 一键验收（稳定读取、断线重连、字段对齐、模拟器验收）。
-- `scripts/protocol_collection/__init__.py`：包边界标记。
+### `backend/apps/`（领域模块）
+- `backend/apps/accounts/`：认证、用户、角色权限
+- `backend/apps/buildings/`：校区、建筑、楼层、房间
+- `backend/apps/devices/`：设备与能源类型
+- `backend/apps/energy/`：能耗原始数据与统计
+- `backend/apps/analysis/`：统计分析、对比、预测
+- `backend/apps/alarms/`：告警规则与处置
+- `backend/apps/system/`：账单、充值、通知、操作日志
 
-### memory-bank 文件
-- `memory-bank/pre-prd.md`：课题原始叙述与研究要求来源。
-- `memory-bank/PRD.md`：产品功能与非功能需求边界。
-- `memory-bank/implementation-plan.md`：分阶段执行路径与验收清单。
-- `memory-bank/tech-stack.md`：技术选型与版本方向约束。
-- `memory-bank/progress.md`：执行事实与阶段验收结论。
-- `memory-bank/architecture.md`：长期架构边界、分层职责、文件职责。
+## 架构见解（阶段 2.2 后）
+- 先完成 7 个应用骨架并注册，确保“领域边界先行”，避免后续把模型与 API 混杂在单一应用。
+- 在 2.2 阶段即统一 `urls.py` 与 `serializers.py` 文件位点，后续接口开发可按固定路径推进，降低重构成本。
+- 应用统一在 `settings.py` 注册后，迁移、路由、权限的演进入口集中，便于按阶段做验收与回归。
 
-### 后端入口与配置
-- `backend/manage.py`：Django 管理入口，执行迁移、运行服务、管理命令。
-- `backend/requirements.txt`：Python 依赖清单文件（用于环境复现）。
-- `backend/energy_monitoring/settings.py`：全局配置中心（应用注册、中间件、数据库、时区等）。
-- `backend/energy_monitoring/urls.py`：全局路由入口，聚合各 app API。
-- `backend/energy_monitoring/wsgi.py`：WSGI 部署入口。
-- `backend/energy_monitoring/asgi.py`：ASGI 部署入口（异步能力扩展预留）。
-- `backend/energy_monitoring/__init__.py`：项目包初始化入口（当前用于 MySQL 驱动适配）。
-
-### 领域应用边界（`backend/apps/`）
-- `backend/apps/accounts/`：认证、用户、角色权限域。
-- `backend/apps/buildings/`：校区/建筑/楼层/房间域。
-- `backend/apps/devices/`：设备与能源类型域。
-- `backend/apps/energy/`：能耗原始数据与统计域。
-- `backend/apps/analysis/`：分析、对比、预测域。
-- `backend/apps/alarms/`：告警规则与告警处理域。
-- `backend/apps/system/`：账单、充值、通知、操作日志域。
-- 各目录中的 `__init__.py`：包边界标记，确保可导入与模块化组织。
-
-## 当前阶段架构见解
-- 在阶段 1.3 明确 `MySQL + utf8mb4` 基线后，后续模型、索引与导入脚本可按统一字符语义设计，降低编码与排序不一致风险。
-- 在阶段 1.4 落地 Django 全局配置后，项目已形成稳定“入口层 + 配置层”骨架，后续 app 开发可在统一数据库、时区、应用注册机制下推进。
-- 在阶段 1.5 引入协议采集脚手架后，数据接入层形成“双通道”：批量导入（文件）与在线采集（协议）；两者在字段语义上统一对齐 `em_energy_data`。
-- 在阶段 2.1 落地关系模型后，系统形成“领域对象 -> 表结构 -> 约束与索引”一致口径，为 2.2-2.9 的 Django 模型与迁移提供直接参照。
-- 分层主链路（`campus -> building -> floor -> room -> device -> energy_data`）通过外键固化，保证空间维度与设备维度的数据可追溯性。
-- 业务域横向链路（告警、账单、充值、通知、日志、预测）通过引用设备/房间/用户/能源类型形成可扩展的分析闭环，避免孤立数据表。
-- `em_energy_data` 与 `em_energy_statistics` 的“原始 + 聚合”双层设计，为高频写入和统计查询分层优化留出空间。
-- 采集策略（频率、超时、重试、重连）下沉到配置与适配器层，避免在业务层硬编码连接策略。
-- `apps/` 按业务域划分是可维护性前提，跨域调用应经服务层或明确 API 边界，避免耦合扩散。
-- 文档职责保持分离：`progress.md` 记录“事实与验收”，`architecture.md` 维护“长期约束与组织方式”。
-
-## 架构演进规则
-- 每完成一个实施计划步骤，必须同步更新 `memory-bank/progress.md`。
-- 若架构决策变化（分层、基础设施、中间件、服务边界），先更新本文件，再改代码。
+## 演进规则
+- 每完成一个实施步骤，同步更新 `memory-bank/progress.md`
+- 架构边界发生变化时，先更新 `memory-bank/architecture.md`，再改代码

@@ -33,6 +33,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "apps.accounts.apps.AccountsConfig",
+    "apps.buildings.apps.BuildingsConfig",
+    "apps.devices.apps.DevicesConfig",
+    "apps.energy.apps.EnergyConfig",
+    "apps.analysis.apps.AnalysisConfig",
+    "apps.alarms.apps.AlarmsConfig",
+    "apps.system.apps.SystemConfig",
 ]
 
 MIDDLEWARE = [
