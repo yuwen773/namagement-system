@@ -79,20 +79,20 @@
       <div class="stat-card">
         <div class="stat-label">平均 AQI</div>
         <div class="stat-value" :style="{ color: getAQIColor(statistics.avgAQI) }">
-          {{ statistics.avgAQI?.toFixed(0) || '--' }}
+          {{ statistics.avgAQI ?? '--' }}
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-label">最高 AQI</div>
-        <div class="stat-value stat-danger">{{ statistics.maxAQI || '--' }}</div>
+        <div class="stat-value stat-danger">{{ statistics.maxAQI ?? '--' }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">最低 AQI</div>
-        <div class="stat-value stat-success">{{ statistics.minAQI || '--' }}</div>
+        <div class="stat-value stat-success">{{ statistics.minAQI ?? '--' }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">优占比</div>
-        <div class="stat-value stat-primary">{{ statistics.excellentRate }}%</div>
+        <div class="stat-value stat-primary">{{ statistics.excellentRate ?? '--' }}%</div>
       </div>
     </div>
 
@@ -189,7 +189,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { getHistoricalData, exportHistoricalData } from '@/api/airquality'
+import { getHistoricalData, exportHistoricalData, getHistoricalStatistics, getOverview } from '@/api/airquality'
 
 const router = useRouter()
 
@@ -212,15 +212,30 @@ const pagination = ref({
   pageSize: 20
 })
 
-// Available cities (mock data)
-const availableCities = ref([
-  { code: '110101', name: '东城区' },
-  { code: '110102', name: '西城区' },
-  { code: '310101', name: '黄浦区' },
-  { code: '310104', name: '徐汇区' },
-  { code: '440101', name: '市辖区' },
-  { code: '440103', name: '荔湾区' }
-])
+// Available cities (fetched from API)
+const availableCities = ref([])
+
+// Fetch available cities from overview API
+const fetchAvailableCities = async () => {
+  try {
+    const response = await getOverview()
+    if (response.code === 0 && response.data?.map_data) {
+      // Extract unique cities from map_data
+      const cityMap = new Map()
+      response.data.map_data.forEach(city => {
+        if (!cityMap.has(city.city_code)) {
+          cityMap.set(city.city_code, {
+            code: city.city_code,
+            name: city.city_name
+          })
+        }
+      })
+      availableCities.value = Array.from(cityMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+    }
+  } catch (error) {
+    console.error('Failed to fetch available cities:', error)
+  }
+}
 
 // Methods
 const getAQIColor = (aqi) => {
@@ -334,26 +349,6 @@ const handleExport = async () => {
   }
 }
 
-const calculateStatistics = (data) => {
-  if (!data || data.length === 0) return null
-
-  const aqiValues = data.map(d => d.aqi)
-  const sum = aqiValues.reduce((acc, val) => acc + val, 0)
-  const avg = sum / aqiValues.length
-  const max = Math.max(...aqiValues)
-  const min = Math.min(...aqiValues)
-  const excellentCount = aqiValues.filter(v => v <= 50).length
-  const excellentRate = ((excellentCount / aqiValues.length) * 100).toFixed(1)
-
-  return {
-    total: data.length,
-    avgAQI: avg,
-    maxAQI: max,
-    minAQI: min,
-    excellentRate
-  }
-}
-
 const fetchData = async () => {
   loading.value = true
 
@@ -378,15 +373,12 @@ const fetchData = async () => {
     if (response.code === 0) {
       tableData.value = response.data || []
       total.value = response.total || 0
-
-      if (tableData.value.length > 0) {
-        statistics.value = calculateStatistics(tableData.value)
-      } else {
-        statistics.value = null
-      }
     } else {
       ElMessage.error(response.message || '查询失败')
     }
+
+    // Fetch statistics separately (based on all filtered data)
+    await fetchStatistics()
   } catch (error) {
     console.error('Failed to fetch historical data:', error)
     ElMessage.error('查询失败')
@@ -395,7 +387,32 @@ const fetchData = async () => {
   }
 }
 
+const fetchStatistics = async () => {
+  try {
+    const params = {
+      city_code: queryForm.value.city || undefined,
+      start_date: queryForm.value.dateRange?.[0] || undefined,
+      end_date: queryForm.value.dateRange?.[1] || undefined
+    }
+
+    // Remove undefined values
+    Object.keys(params).forEach(key => {
+      if (params[key] === undefined) {
+        delete params[key]
+      }
+    })
+
+    const response = await getHistoricalStatistics(params)
+    if (response.code === 0) {
+      statistics.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to fetch statistics:', error)
+  }
+}
+
 onMounted(() => {
+  fetchAvailableCities()
   fetchData()
 })
 </script>

@@ -2,6 +2,7 @@ import request from '@/utils/request'
 
 /**
  * Get national overview data
+ * @returns {Object} Response with cities data in map_data field
  */
 export function getOverview() {
   return request({
@@ -68,6 +69,22 @@ export function getStationDetail(code) {
 export function getStationTrend(code, params = {}) {
   return request({
     url: `/stations/${code}/trend/`,
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * Get historical data statistics
+ * @param {Object} params - Query parameters
+ * @param {string} params.city_code - City code
+ * @param {string} params.station_code - Station code
+ * @param {string} params.start_date - Start date (YYYY-MM-DD)
+ * @param {string} params.end_date - End date (YYYY-MM-DD)
+ */
+export function getHistoricalStatistics(params) {
+  return request({
+    url: '/historical-data/statistics/',
     method: 'get',
     params
   })

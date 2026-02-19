@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Max, Min, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -753,6 +753,12 @@ class StationTrendView(APIView):
         description="按筛选条件导出历史数据文件，支持 CSV/XLSX。",
         responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT},
     ),
+    statistics=extend_schema(
+        tags=["User - Historical"],
+        summary="统计历史数据",
+        description="返回筛选条件的统计信息，包括总数、平均/最高/最低AQI及优良占比。",
+        responses=OpenApiTypes.OBJECT,
+    ),
 )
 class HistoricalDataViewSet(viewsets.ViewSet):
     """Public historical query and export endpoints for air quality records."""
@@ -865,6 +871,60 @@ class HistoricalDataViewSet(viewsets.ViewSet):
         )
         response["Content-Disposition"] = f'attachment; filename="historical_data_{timestamp}.xlsx"'
         return response
+
+    @action(detail=False, methods=["get"], url_path="statistics")
+    def statistics(self, request):
+        """返回历史数据的统计信息（基于所有筛选条件，不分页）"""
+        # Build queryset with filters
+        queryset = AirQualityData.objects.all()
+
+        city_code = (request.query_params.get("city_code") or "").strip()
+        if city_code:
+            queryset = queryset.filter(station__city__code=city_code)
+
+        station_code = (request.query_params.get("station_code") or "").strip()
+        if station_code:
+            queryset = queryset.filter(station__code=station_code)
+
+        start_date = _get_optional_date_query_param(request, "start_date")
+        if start_date:
+            queryset = queryset.filter(monitor_time__date__gte=start_date)
+
+        end_date = _get_optional_date_query_param(request, "end_date")
+        if end_date:
+            queryset = queryset.filter(monitor_time__date__lte=end_date)
+
+        # Calculate statistics
+        total = queryset.count()
+        if total == 0:
+            return APIResponse.success(
+                data={
+                    "total": 0,
+                    "avgAQI": None,
+                    "maxAQI": None,
+                    "minAQI": None,
+                    "excellentRate": None,
+                }
+            )
+
+        stats = queryset.aggregate(
+            avgAQI=Avg("aqi"),
+            maxAQI=Max("aqi"),
+            minAQI=Min("aqi"),
+        )
+
+        excellent_count = queryset.filter(aqi__lte=50).count()
+        excellent_rate = round((excellent_count / total) * 100, 1)
+
+        return APIResponse.success(
+            data={
+                "total": total,
+                "avgAQI": to_int(stats["avgAQI"]),
+                "maxAQI": stats["maxAQI"],
+                "minAQI": stats["minAQI"],
+                "excellentRate": excellent_rate,
+            }
+        )
 
 
 @extend_schema_view(
