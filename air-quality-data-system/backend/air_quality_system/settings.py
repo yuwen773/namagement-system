@@ -137,6 +137,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     # Allow business endpoints to use `format` as a normal query parameter (e.g. export format).
     "URL_FORMAT_OVERRIDE": None,
+    # 友好的错误消息配置（中文化）
+    "DEFAULT_EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {
