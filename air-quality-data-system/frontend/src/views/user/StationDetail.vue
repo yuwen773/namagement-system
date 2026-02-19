@@ -83,7 +83,7 @@
                 <span class="pollutant-unit">{{ pollutant.unit }}</span>
               </div>
               <div class="pollutant-value" :style="{ color: pollutant.color }">
-                {{ stationData?.snapshot?.[pollutant.key]?.toFixed(1) || '--' }}
+                {{ formatPollutantValue(stationData?.snapshot?.[pollutant.key]) }}
               </div>
               <div class="pollutant-bar">
                 <div
@@ -261,6 +261,13 @@ const getAQITagType = (aqi) => {
 const getPollutantPercent = (value, max) => {
   if (!value) return 0
   return Math.min((value / max) * 100, 100)
+}
+
+const formatPollutantValue = (value) => {
+  if (value === null || value === undefined || value === '') return '--'
+  const num = typeof value === 'string' ? parseFloat(value) : value
+  if (isNaN(num)) return '--'
+  return num.toFixed(1)
 }
 
 const formatTime = (timeStr) => {

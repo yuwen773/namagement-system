@@ -27,6 +27,11 @@ request.interceptors.request.use(
 // Response interceptor - unified error handling
 request.interceptors.response.use(
   (response) => {
+    // Handle blob response (file download)
+    if (response.config.responseType === 'blob') {
+      return response.data
+    }
+
     // Handle standard response format: { code: 0, data: {...}, message: "success" }
     const res = response.data
 

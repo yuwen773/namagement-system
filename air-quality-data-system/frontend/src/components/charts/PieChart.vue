@@ -90,7 +90,9 @@ const chartOption = computed(() => {
     tooltip: {
       trigger: 'item',
       formatter: (params) => {
-        const percent = ((params.value / total.value) * 100).toFixed(1)
+        const value = Number(params.value) || 0
+        const totalVal = Number(total.value) || 1
+        const percent = totalVal > 0 ? ((value / totalVal) * 100).toFixed(1) : '0.0'
         return `
           <div style="font-weight: 600; margin-bottom: 6px; color: ${textMain};">${params.name}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -121,7 +123,9 @@ const chartOption = computed(() => {
       formatter: (name) => {
         const item = props.data.find(d => d.name === name)
         if (!item) return name
-        const percent = ((item.value / total.value) * 100).toFixed(1)
+        const value = Number(item.value) || 0
+        const totalVal = Number(total.value) || 1
+        const percent = totalVal > 0 ? ((value / totalVal) * 100).toFixed(1) : '0.0'
         return `${name} ${percent}%`
       }
     },

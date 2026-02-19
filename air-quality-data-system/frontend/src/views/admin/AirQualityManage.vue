@@ -582,8 +582,10 @@ const formatDateTime = (dateStr) => {
 }
 
 const formatValue = (val) => {
-  if (val === null || val === undefined) return '-'
-  return Number(val).toFixed(1)
+  if (val === null || val === undefined || val === '') return '-'
+  const num = typeof val === 'string' ? parseFloat(val) : val
+  if (isNaN(num)) return '-'
+  return num.toFixed(1)
 }
 
 const getAQIColor = (aqi) => {

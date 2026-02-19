@@ -790,7 +790,26 @@ class HistoricalDataViewSet(viewsets.ViewSet):
         if export_format not in {"csv", "xlsx"}:
             raise ValidationError("仅支持 csv/xlsx", field="format")
 
-        queryset = self._get_filtered_queryset(request).order_by("-monitor_time", "-id")
+        # Build queryset with filters, ignoring empty string values
+        queryset = AirQualityData.objects.select_related("station__city__province")
+
+        city_code = (request.query_params.get("city_code") or "").strip()
+        if city_code:
+            queryset = queryset.filter(station__city__code=city_code)
+
+        station_code = (request.query_params.get("station_code") or "").strip()
+        if station_code:
+            queryset = queryset.filter(station__code=station_code)
+
+        start_date = _get_optional_date_query_param(request, "start_date")
+        if start_date:
+            queryset = queryset.filter(monitor_time__date__gte=start_date)
+
+        end_date = _get_optional_date_query_param(request, "end_date")
+        if end_date:
+            queryset = queryset.filter(monitor_time__date__lte=end_date)
+
+        queryset = queryset.order_by("-monitor_time", "-id")
         if not queryset.exists():
             return APIResponse.error(400, "没有可导出的数据")
 
@@ -823,6 +842,12 @@ class HistoricalDataViewSet(viewsets.ViewSet):
                 "station__name": "station_name",
             }
         )
+
+        # Convert timezone-aware datetime to naive datetime for Excel export
+        if "monitor_time" in data_frame.columns:
+            data_frame["monitor_time"] = data_frame["monitor_time"].apply(
+                lambda x: x.replace(tzinfo=None) if x and hasattr(x, 'tzinfo') else x
+            )
 
         timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
         if export_format == "csv":

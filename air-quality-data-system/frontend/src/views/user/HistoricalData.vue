@@ -134,32 +134,32 @@
         </el-table-column>
         <el-table-column prop="pm25" label="PM2.5" width="100" align="center">
           <template #default="{ row }">
-            <span class="mono-text">{{ row.pm25?.toFixed(1) || '--' }}</span>
+            <span class="mono-text">{{ formatNumber(row.pm25, 1) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="pm10" label="PM10" width="100" align="center">
           <template #default="{ row }">
-            <span class="mono-text">{{ row.pm10?.toFixed(1) || '--' }}</span>
+            <span class="mono-text">{{ formatNumber(row.pm10, 1) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="so2" label="SO₂" width="100" align="center">
           <template #default="{ row }">
-            <span class="mono-text">{{ row.so2?.toFixed(1) || '--' }}</span>
+            <span class="mono-text">{{ formatNumber(row.so2, 1) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="no2" label="NO₂" width="100" align="center">
           <template #default="{ row }">
-            <span class="mono-text">{{ row.no2?.toFixed(1) || '--' }}</span>
+            <span class="mono-text">{{ formatNumber(row.no2, 1) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="co" label="CO" width="100" align="center">
           <template #default="{ row }">
-            <span class="mono-text">{{ row.co?.toFixed(2) || '--' }}</span>
+            <span class="mono-text">{{ formatNumber(row.co, 2) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="o3" label="O₃" width="100" align="center">
           <template #default="{ row }">
-            <span class="mono-text">{{ row.o3?.toFixed(1) || '--' }}</span>
+            <span class="mono-text">{{ formatNumber(row.o3, 1) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -262,6 +262,13 @@ const formatDateTime = (dateStr) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+const formatNumber = (value, decimals = 1) => {
+  if (value === null || value === undefined || value === '') return '--'
+  const num = typeof value === 'string' ? parseFloat(value) : value
+  if (isNaN(num)) return '--'
+  return num.toFixed(decimals)
 }
 
 const goBack = () => {

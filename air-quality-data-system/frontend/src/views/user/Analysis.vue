@@ -172,7 +172,7 @@
                 <div class="card stat-card">
                   <div class="stat-label">相关系数</div>
                   <div class="stat-value" :style="{ color: getCorrelationColor(correlationData.correlation) }">
-                    {{ correlationData.correlation?.toFixed(4) || '--' }}
+                    {{ formatDecimal(correlationData.correlation, 4) }}
                   </div>
                   <div class="stat-desc">{{ getCorrelationLabel(correlationData.correlation) }}</div>
                 </div>
@@ -185,7 +185,7 @@
                 <div class="card stat-card">
                   <div class="stat-label">回归方程</div>
                   <div class="stat-equation">
-                    y = {{ correlationData.slope?.toFixed(4) || '--' }}x + {{ correlationData.intercept?.toFixed(4) || '--' }}
+                    y = {{ formatDecimal(correlationData.slope, 4) }}x + {{ formatDecimal(correlationData.intercept, 4) }}
                   </div>
                 </div>
 
@@ -463,6 +463,13 @@ const getCorrelationLabel = (correlation) => {
   if (abs >= 0.4) return '中等相关'
   if (abs >= 0.2) return '弱相关'
   return '极弱相关'
+}
+
+const formatDecimal = (value, decimals = 4) => {
+  if (value === null || value === undefined || value === '') return '--'
+  const num = typeof value === 'string' ? parseFloat(value) : value
+  if (isNaN(num)) return '--'
+  return num.toFixed(decimals)
 }
 
 const handleCorrelation = async () => {
