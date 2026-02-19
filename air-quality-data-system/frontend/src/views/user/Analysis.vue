@@ -50,6 +50,12 @@
                   >
                     开始对比
                   </el-button>
+                  <el-button
+                    @click="handleReset"
+                    :disabled="loading"
+                  >
+                    重置
+                  </el-button>
                 </div>
               </div>
 
@@ -143,6 +149,12 @@
                     :loading="loading"
                   >
                     分析相关性
+                  </el-button>
+                  <el-button
+                    @click="handleCorrelationReset"
+                    :disabled="loading"
+                  >
+                    重置
                   </el-button>
                 </div>
               </div>
@@ -253,8 +265,11 @@
                   >
                     统计分布
                   </el-button>
-                  <el-button @click="distributionForm.city = ''; handleDistribution()">
+                  <el-button @click="handleDistributionReset" :disabled="loading">
                     全国数据
+                  </el-button>
+                  <el-button @click="handleDistributionClear" :disabled="loading">
+                    重置
                   </el-button>
                 </div>
               </div>
@@ -320,7 +335,7 @@ import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { LineChart, ScatterChart, PieChart } from '@/components/charts'
-import { compareCities, getCorrelationAnalysis, getAQIDistribution } from '@/api/airquality'
+import { compareCities, getCorrelationAnalysis, getAQIDistribution, getOverview } from '@/api/airquality'
 
 const router = useRouter()
 
@@ -346,19 +361,25 @@ const distributionForm = ref({
 })
 const distributionData = ref(null)
 
-// Available cities (mock data)
-const availableCities = ref([
-  { code: '110101', name: '东城区' },
-  { code: '110102', name: '西城区' },
-  { code: '310101', name: '黄浦区' },
-  { code: '310104', name: '徐汇区' },
-  { code: '310105', name: '长宁区' },
-  { code: '310106', name: '静安区' },
-  { code: '440101', name: '市辖区' },
-  { code: '440103', name: '荔湾区' },
-  { code: '440104', name: '越秀区' },
-  { code: '440106', name: '天河区' }
-])
+// Available cities - loaded from API
+const availableCities = ref([])
+
+// Fetch available cities from API
+const fetchAvailableCities = async () => {
+  try {
+    const response = await getOverview()
+    console.log('Overview response:', response)
+    if (response.code === 0 && response.data.map_data) {
+      availableCities.value = response.data.map_data.map(city => ({
+        code: city.city_code,
+        name: city.city_name
+      }))
+      console.log('Loaded cities:', availableCities.value)
+    }
+  } catch (error) {
+    console.error('Failed to fetch cities:', error)
+  }
+}
 
 // Colors for city comparison
 const cityColors = [
@@ -384,44 +405,105 @@ const removeCity = (code) => {
 }
 
 const handleCityChange = () => {
+  // Remove duplicates and empty values
+  const unique = [...new Set(selectedCities.value.filter(c => c && c.trim()))]
+  selectedCities.value = unique
+
   if (selectedCities.value.length > 10) {
     selectedCities.value = selectedCities.value.slice(0, 10)
     ElMessage.warning('最多选择10个城市进行对比')
   }
 }
 
+const handleReset = () => {
+  selectedCities.value = []
+  comparisonData.value = null
+  ElMessage.success('已重置')
+}
+
 const handleCompare = async () => {
-  if (selectedCities.value.length < 2) {
+  // Normalize and validate selected cities
+  const normalizedCodes = selectedCities.value
+    .map(code => String(code).trim())
+    .filter(code => code.length > 0)
+
+  // Remove duplicates
+  const uniqueCodes = [...new Set(normalizedCodes)]
+
+  if (uniqueCodes.length < 2) {
     ElMessage.warning('请至少选择2个城市进行对比')
     return
   }
 
+  // Debug: log selected cities
+  console.log('Selected cities:', selectedCities.value)
+  console.log('Normalized codes:', normalizedCodes)
+  console.log('Unique codes:', uniqueCodes)
+  console.log('Available cities:', availableCities.value)
+
   loading.value = true
 
   try {
-    const response = await compareCities({
-      city_codes: selectedCities.value,
+    const requestData = {
+      city_codes: uniqueCodes,
       hours: 24
-    })
+    }
+    console.log('Request data:', requestData)
+
+    const response = await compareCities(requestData)
 
     if (response.code === 0) {
       const data = response.data
-      const xAxis = data.hours || []
+      // hours is a number (like 24), convert to array for xAxis
+      const hoursCount = data.hours || 0
+      const xAxis = Array.from({ length: hoursCount }, (_, i) => hoursCount - 1 - i)
 
-      comparisonData.value = {
-        xAxis: xAxis.map(h => {
+      // Find the maximum data length across all series
+      const maxDataLength = Math.max(...data.series.map(s => s.trend.length))
+
+      // Build xAxis from the first series with most data, or generate time labels
+      let xAxisLabels
+      let referenceSeries = data.series.find(s => s.trend.length === maxDataLength)
+
+      if (referenceSeries && referenceSeries.trend.length > 0) {
+        // Use actual time from the series with most data
+        xAxisLabels = referenceSeries.trend.map(d => {
+          const date = new Date(d.time)
+          return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        })
+      } else {
+        // Fallback to generated time labels
+        xAxisLabels = xAxis.map(h => {
           const date = new Date()
           date.setHours(date.getHours() - h)
           return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-        }),
-        series: data.series.map((series, index) => ({
-          name: series.city_name,
-          city_code: series.city_code,
-          city_name: series.city_name,
-          data: series.trend.map(d => d.aqi),
-          color: cityColors[index % cityColors.length]
-        }))
+        })
       }
+
+      comparisonData.value = {
+        xAxis: xAxisLabels,
+        series: data.series.map((series, index) => {
+          const values = series.trend.map(d => d.aqi)
+          console.log('Series ' + index + ' (' + series.city_name + '): ' + values.length + ' data points')
+
+          // If this series has fewer data points, pad with null at the beginning
+          let paddedValues = values
+          if (values.length < maxDataLength) {
+            const padding = Array(maxDataLength - values.length).fill(null)
+            paddedValues = [...padding, ...values]
+          }
+
+          return {
+            name: series.city_name,
+            city_code: series.city_code,
+            city_name: series.city_name,
+            values: paddedValues,
+            color: cityColors[index % cityColors.length]
+          }
+        })
+      }
+
+      console.log('Comparison data:', comparisonData.value)
     } else {
       ElMessage.error(response.message || '对比分析失败')
     }
@@ -527,6 +609,14 @@ const handleCorrelation = async () => {
   }
 }
 
+const handleCorrelationReset = () => {
+  correlationForm.value.pollutantX = 'pm25'
+  correlationForm.value.pollutantY = 'pm10'
+  correlationForm.value.maxPoints = 2000
+  correlationData.value = null
+  ElMessage.success('已重置')
+}
+
 const getAQIColorByLevel = (level) => {
   const colors = {
     EXCELLENT: '#10B981',
@@ -579,8 +669,20 @@ const handleDistribution = async () => {
   }
 }
 
+const handleDistributionReset = () => {
+  distributionForm.value.city = ''
+  handleDistribution()
+}
+
+const handleDistributionClear = () => {
+  distributionForm.value.city = ''
+  distributionData.value = null
+  ElMessage.success('已重置')
+}
+
 onMounted(() => {
-  // Only load distribution data when switching to distribution tab
+  // Load available cities on mount
+  fetchAvailableCities()
 })
 
 // Watch for tab changes to lazy load distribution data

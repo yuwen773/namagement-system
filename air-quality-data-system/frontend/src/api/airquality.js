@@ -15,6 +15,7 @@ export function getOverview() {
  * Get top cities by AQI (best/worst)
  * @param {Object} params - Query parameters
  * @param {number} params.limit - Number of cities to return (default: 10, range: 1-50)
+ * @returns {Object} Response with best and worst city arrays
  */
 export function getTopCities(params = {}) {
   return request({

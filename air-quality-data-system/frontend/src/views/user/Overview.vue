@@ -228,13 +228,23 @@ const majorCities = computed(() => {
 const fetchOverview = async () => {
   try {
     const response = await getOverview()
-    mapData.value = response.data.cities || []
-    pollutantData.value = response.data.pollutants || {}
+    // Backend returns map_data, not cities
+    mapData.value = response.data.map_data || []
+    // Backend returns national object with pollutant data
+    const national = response.data.national || {}
+    pollutantData.value = {
+      pm25: national.pm25,
+      pm10: national.pm10,
+      o3: national.o3,
+      no2: national.no2,
+      so2: national.so2,
+      co: national.co
+    }
 
     // Update stats
-    stats.value[0].value = response.data.total_cities || '-'
-    stats.value[1].value = response.data.avg_aqi || '-'
-    stats.value[2].value = response.data.excellent_rate ? (response.data.excellent_rate * 100).toFixed(1) + '%' : '-'
+    stats.value[0].value = response.data.city_count || '-'
+    stats.value[1].value = national.aqi || '-'
+    stats.value[2].value = national.quality_level === 'EXCELLENT' ? '100%' : '-'
     stats.value[3].value = response.data.warning_cities || '-'
   } catch (error) {
     console.error('Failed to fetch overview:', error)
@@ -243,8 +253,10 @@ const fetchOverview = async () => {
 
 const fetchTopCities = async () => {
   try {
-    const response = await getTopCities({ limit: 10, order: rankingType.value === 'best' ? 'aqi' : '-aqi' })
-    topCities.value = response.data.results || []
+    const response = await getTopCities({ limit: 10 })
+    // Backend returns { best: [...], worst: [...] }
+    const key = rankingType.value === 'best' ? 'best' : 'worst'
+    topCities.value = response.data[key] || []
   } catch (error) {
     console.error('Failed to fetch top cities:', error)
   }
