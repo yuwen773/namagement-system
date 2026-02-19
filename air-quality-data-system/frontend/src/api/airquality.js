@@ -12,11 +12,14 @@ export function getOverview() {
 
 /**
  * Get top cities by AQI (best/worst)
+ * @param {Object} params - Query parameters
+ * @param {number} params.limit - Number of cities to return (default: 10, range: 1-50)
  */
-export function getTopCities() {
+export function getTopCities(params = {}) {
   return request({
     url: '/overview/top-cities/',
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 
@@ -32,13 +35,16 @@ export function getCityDetail(code) {
 }
 
 /**
- * Get city trend data (24 hours)
+ * Get city trend data
  * @param {string} code - City code
+ * @param {Object} params - Query parameters
+ * @param {number} params.hours - Hours of data to retrieve (default: 24, range: 1-168)
  */
-export function getCityTrend(code) {
+export function getCityTrend(code, params = {}) {
   return request({
     url: `/cities/${code}/trend/`,
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 
@@ -54,24 +60,29 @@ export function getStationDetail(code) {
 }
 
 /**
- * Get station trend data (24 hours)
+ * Get station trend data
  * @param {string} code - Station code
+ * @param {Object} params - Query parameters
+ * @param {number} params.hours - Hours of data to retrieve (default: 24, range: 1-168)
  */
-export function getStationTrend(code) {
+export function getStationTrend(code, params = {}) {
   return request({
     url: `/stations/${code}/trend/`,
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 
 /**
  * Get historical data with filters
  * @param {Object} params - Query parameters
- * @param {string} params.city - City code
- * @param {string} params.start_date - Start date
- * @param {string} params.end_date - End date
- * @param {number} params.page - Page number
- * @param {number} params.page_size - Page size
+ * @param {string} params.city_code - City code
+ * @param {string} params.station_code - Station code
+ * @param {string} params.start_date - Start date (YYYY-MM-DD)
+ * @param {string} params.end_date - End date (YYYY-MM-DD)
+ * @param {string} params.ordering - Ordering field (default: -monitor_time)
+ * @param {number} params.page - Page number (default: 1, range: 1-100000)
+ * @param {number} params.page_size - Page size (default: 20, range: 1-200)
  */
 export function getHistoricalData(params) {
   return request({
@@ -84,6 +95,11 @@ export function getHistoricalData(params) {
 /**
  * Export historical data
  * @param {Object} params - Query parameters
+ * @param {string} params.format - Export format: 'csv' or 'xlsx' (default: 'csv')
+ * @param {string} params.city_code - City code
+ * @param {string} params.station_code - Station code
+ * @param {string} params.start_date - Start date (YYYY-MM-DD)
+ * @param {string} params.end_date - End date (YYYY-MM-DD)
  */
 export function exportHistoricalData(params) {
   return request({
@@ -147,8 +163,9 @@ export function getProtectionGuide(params) {
 /**
  * Get articles list
  * @param {Object} params - Query parameters
- * @param {number} params.category - Category ID
- * @param {number} params.page - Page number
+ * @param {number} params.category_id - Category ID
+ * @param {number} params.page - Page number (default: 1, range: 1-100000)
+ * @param {number} params.page_size - Page size (default: 20, range: 1-200)
  */
 export function getArticles(params) {
   return request({
@@ -181,10 +198,13 @@ export function getCategories() {
 
 /**
  * Get announcements
+ * @param {Object} params - Query parameters
+ * @param {number} params.limit - Number of announcements to return (default: 5, range: 5-10)
  */
-export function getAnnouncements() {
+export function getAnnouncements(params = {}) {
   return request({
     url: '/announcements/',
-    method: 'get'
+    method: 'get',
+    params
   })
 }

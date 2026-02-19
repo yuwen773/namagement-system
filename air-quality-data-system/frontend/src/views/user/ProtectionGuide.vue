@@ -186,11 +186,12 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, Warning, User, CircleCheck, Check, Document, Star, List } from '@element-plus/icons-vue'
 import { getProtectionGuide } from '@/api/airquality'
 
 const router = useRouter()
+const route = useRoute()
 
 // AQI Levels Data
 const aqiLevels = [
@@ -206,6 +207,7 @@ const selectedLevel = ref(2)
 const loading = ref(false)
 const error = ref('')
 const guideData = ref(null)
+const cityCode = ref(route.query.city_code || '')
 
 const currentAQIInfo = computed(() => {
   return aqiLevels.find(l => l.value === selectedLevel.value) || aqiLevels[1]
@@ -219,7 +221,12 @@ const fetchGuide = async () => {
   loading.value = true
   error.value = ''
   try {
-    const response = await getProtectionGuide(selectedLevel.value)
+    if (!cityCode.value) {
+      error.value = '缺少城市参数，请从城市详情页进入'
+      loading.value = false
+      return
+    }
+    const response = await getProtectionGuide({ city_code: cityCode.value })
     guideData.value = response.data
   } catch (err) {
     console.error('Failed to fetch protection guide:', err)
@@ -239,9 +246,11 @@ const goBack = () => {
   router.back()
 }
 
-watch(selectedLevel, () => {
-  fetchGuide()
-})
+// Note: The API returns protection guide based on city's current AQI,
+// not user-selected level. The selectedLevel UI is kept for reference/visual purposes.
+// watch(selectedLevel, () => {
+//   fetchGuide()
+// })
 
 onMounted(() => {
   fetchGuide()

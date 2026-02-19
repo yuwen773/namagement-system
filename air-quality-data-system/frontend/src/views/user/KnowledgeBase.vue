@@ -36,7 +36,7 @@
             <el-radio-button
               v-for="category in categories"
               :key="category.id"
-              :label="category.id"
+              :value="category.id"
             >
               {{ category.name }}
             </el-radio-button>

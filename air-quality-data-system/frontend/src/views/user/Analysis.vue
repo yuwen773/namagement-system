@@ -262,7 +262,7 @@
           </div>
 
           <!-- Distribution Results -->
-          <div v-if="distributionData" class="distribution-results">
+          <div v-if="distributionData && distributionData.distribution && distributionData.distribution.length > 0" class="distribution-results">
             <div class="results-grid">
               <!-- Pie Chart -->
               <div class="card chart-card">
@@ -306,6 +306,8 @@
               </div>
             </div>
           </div>
+
+          <el-empty v-else description="暂无分布数据，请点击统计按钮获取数据" :image-size="100" />
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -313,7 +315,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -542,14 +544,21 @@ const handleDistribution = async () => {
     const response = await getAQIDistribution(params)
 
     if (response.code === 0) {
+      const distribution = response.data?.distribution
+      if (!distribution || distribution.length === 0) {
+        distributionData.value = null
+        ElMessage.warning('暂无分布数据')
+        return
+      }
+
       distributionData.value = {
-        total: response.data.total,
-        distribution: response.data.distribution.map(d => ({
+        total: response.data.total || 0,
+        distribution: distribution.map(d => ({
           qualityLevel: d.quality_level,
           qualityLabel: d.quality_label,
-          count: d.count,
-          percentage: d.percentage,
-          value: d.count
+          count: d.count || 0,
+          percentage: d.percentage || 0,
+          value: d.count || 0
         }))
       }
     } else {
@@ -564,7 +573,15 @@ const handleDistribution = async () => {
 }
 
 onMounted(() => {
-  handleDistribution()
+  // Only load distribution data when switching to distribution tab
+})
+
+// Watch for tab changes to lazy load distribution data
+watch(activeTab, async (newTab) => {
+  if (newTab === 'distribution' && !distributionData.value) {
+    await nextTick()
+    handleDistribution()
+  }
 })
 </script>
 

@@ -30,9 +30,17 @@ export function register(data) {
 }
 
 /**
- * User logout (client-side only)
+ * User logout
+ * @param {string} token - Auth token (optional, will use localStorage if not provided)
  */
 export function logout() {
+  // Client-side cleanup
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+
+  // Optional: Call backend logout endpoint if token exists
+  // return request({
+  //   url: '/auth/logout/',
+  //   method: 'post'
+  // })
 }

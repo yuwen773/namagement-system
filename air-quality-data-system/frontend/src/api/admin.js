@@ -13,12 +13,14 @@ export function getDashboardData() {
 /**
  * Upload data file for import
  * @param {FormData} formData - File data
+ * @param {string} dataset_type - Type of dataset: provinces, cities, stations, air_quality_data
  */
-export function uploadDataFile(formData) {
+export function uploadDataFile(formData, datasetType) {
   return request({
     url: '/admin/data-import/',
     method: 'post',
     data: formData,
+    params: { dataset_type: datasetType },
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -51,11 +53,15 @@ export function getImportTaskDetail(taskId) {
 /**
  * Get import task logs
  * @param {string} taskId - Task ID
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (default: 1)
+ * @param {number} params.page_size - Page size (default: 50)
  */
-export function getImportTaskLogs(taskId) {
+export function getImportTaskLogs(taskId, params = {}) {
   return request({
     url: `/admin/data-import/tasks/${taskId}/logs/`,
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 
@@ -73,35 +79,68 @@ export function getAirQualityDataList(params) {
 
 /**
  * Update air quality data
- * @param {number} id - Data ID
- * @param {Object} data - Data to update
+ * @param {Object} data - Data to update (must include id)
+ * @param {number} data.id - Data ID (required)
+ * @param {number} data.station_id - Station ID
+ * @param {string} data.monitor_time - Monitor time
+ * @param {number} data.aqi - AQI value
+ * @param {number} data.pm25 - PM2.5 value
+ * @param {number} data.pm10 - PM10 value
+ * @param {number} data.so2 - SO2 value
+ * @param {number} data.no2 - NO2 value
+ * @param {number} data.co - CO value
+ * @param {number} data.o3 - O3 value
  */
-export function updateAirQualityData(id, data) {
+export function updateAirQualityData(data) {
   return request({
-    url: `/admin/air-quality/${id}/`,
+    url: '/admin/air-quality/',
     method: 'put',
     data
   })
 }
 
 /**
- * Delete air quality data
- * @param {number} id - Data ID
+ * Delete air quality data (single or batch)
+ * @param {Object} data - Delete parameters
+ * @param {number} data.id - Single data ID (optional, mutually exclusive with ids)
+ * @param {number[]} data.ids - Array of data IDs for batch delete (optional, mutually exclusive with id)
  */
-export function deleteAirQualityData(id) {
+export function deleteAirQualityData(data) {
   return request({
-    url: `/admin/air-quality/${id}/`,
-    method: 'delete'
+    url: '/admin/air-quality/',
+    method: 'delete',
+    data
   })
 }
 
 /**
- * Get protection rules list
+ * Helper function to delete single air quality data by ID
+ * @param {number} id - Data ID
  */
-export function getRulesList() {
+export function deleteAirQualityDataById(id) {
+  return deleteAirQualityData({ id })
+}
+
+/**
+ * Helper function to batch delete air quality data by IDs
+ * @param {number[]} ids - Array of data IDs
+ */
+export function deleteAirQualityDataByIds(ids) {
+  return deleteAirQualityData({ ids })
+}
+
+/**
+ * Get protection rules list
+ * @param {Object} params - Query parameters
+ * @param {string} params.population_type - Population type filter (GENERAL, CHILDREN, ELDERLY, PATIENTS, SENSITIVE)
+ * @param {boolean} params.is_enabled - Enable status filter
+ * @param {string} params.keyword - Keyword search in rule_name or advice
+ */
+export function getRulesList(params = {}) {
   return request({
     url: '/admin/rules/',
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 
@@ -131,24 +170,45 @@ export function updateRule(id, data) {
 }
 
 /**
- * Delete protection rule
- * @param {number} id - Rule ID
+ * Delete protection rule (single or batch)
+ * @param {Object} data - Delete parameters
+ * @param {number} data.id - Single rule ID (optional, mutually exclusive with ids)
+ * @param {number[]} data.ids - Array of rule IDs for batch delete (optional, mutually exclusive with id)
  */
-export function deleteRule(id) {
+export function deleteRule(data) {
   return request({
-    url: `/admin/rules/${id}/`,
-    method: 'delete'
+    url: '/admin/rules/',
+    method: 'delete',
+    data
   })
 }
 
 /**
+ * Helper function to delete single rule by ID
+ * @param {number} id - Rule ID
+ */
+export function deleteRuleById(id) {
+  return deleteRule({ id })
+}
+
+/**
+ * Helper function to batch delete rules by IDs
+ * @param {number[]} ids - Array of rule IDs
+ */
+export function deleteRuleByIds(ids) {
+  return deleteRule({ ids })
+}
+
+/**
  * Batch update rules status
- * @param {Object} data - { ids: number[], is_enabled: boolean }
+ * @param {Object} data - Batch update parameters
+ * @param {number[]} data.ids - Array of rule IDs
+ * @param {boolean} data.is_enabled - Enable/disable status
  */
 export function batchUpdateRules(data) {
   return request({
-    url: '/admin/rules/batch/',
-    method: 'post',
+    url: '/admin/rules/',
+    method: 'put',
     data
   })
 }
@@ -179,14 +239,33 @@ export function updateUser(id, data) {
 }
 
 /**
- * Delete user (soft delete)
+ * Delete user (soft delete, single or batch)
+ * @param {Object} data - Delete parameters
+ * @param {number} data.id - Single user ID (optional, mutually exclusive with ids)
+ * @param {number[]} data.ids - Array of user IDs for batch delete (optional, mutually exclusive with id)
+ */
+export function deleteUser(data) {
+  return request({
+    url: '/admin/users/',
+    method: 'delete',
+    data
+  })
+}
+
+/**
+ * Helper function to delete single user by ID
  * @param {number} id - User ID
  */
-export function deleteUser(id) {
-  return request({
-    url: `/admin/users/${id}/`,
-    method: 'delete'
-  })
+export function deleteUserById(id) {
+  return deleteUser({ id })
+}
+
+/**
+ * Helper function to batch delete users by IDs
+ * @param {number[]} ids - Array of user IDs
+ */
+export function deleteUserByIds(ids) {
+  return deleteUser({ ids })
 }
 
 /**
@@ -227,14 +306,33 @@ export function updateArticle(id, data) {
 }
 
 /**
- * Delete article
+ * Delete article (single or batch)
+ * @param {Object} data - Delete parameters
+ * @param {number} data.id - Single article ID (optional, mutually exclusive with ids)
+ * @param {number[]} data.ids - Array of article IDs for batch delete (optional, mutually exclusive with id)
+ */
+export function deleteArticle(data) {
+  return request({
+    url: '/admin/articles/',
+    method: 'delete',
+    data
+  })
+}
+
+/**
+ * Helper function to delete single article by ID
  * @param {number} id - Article ID
  */
-export function deleteArticle(id) {
-  return request({
-    url: `/admin/articles/${id}/`,
-    method: 'delete'
-  })
+export function deleteArticleById(id) {
+  return deleteArticle({ id })
+}
+
+/**
+ * Helper function to batch delete articles by IDs
+ * @param {number[]} ids - Array of article IDs
+ */
+export function deleteArticleByIds(ids) {
+  return deleteArticle({ ids })
 }
 
 /**
@@ -273,14 +371,33 @@ export function updateCategory(id, data) {
 }
 
 /**
- * Delete category
+ * Delete category (single or batch)
+ * @param {Object} data - Delete parameters
+ * @param {number} data.id - Single category ID (optional, mutually exclusive with ids)
+ * @param {number[]} data.ids - Array of category IDs for batch delete (optional, mutually exclusive with id)
+ */
+export function deleteCategory(data) {
+  return request({
+    url: '/admin/categories/',
+    method: 'delete',
+    data
+  })
+}
+
+/**
+ * Helper function to delete single category by ID
  * @param {number} id - Category ID
  */
-export function deleteCategory(id) {
-  return request({
-    url: `/admin/categories/${id}/`,
-    method: 'delete'
-  })
+export function deleteCategoryById(id) {
+  return deleteCategory({ id })
+}
+
+/**
+ * Helper function to batch delete categories by IDs
+ * @param {number[]} ids - Array of category IDs
+ */
+export function deleteCategoryByIds(ids) {
+  return deleteCategory({ ids })
 }
 
 /**
@@ -302,6 +419,23 @@ export function getOperationLogs(params) {
 export function getErrorLogs(params) {
   return request({
     url: '/admin/logs/errors/',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * Get system logs
+ * @param {Object} params - Query parameters
+ * @param {string} params.level - Log level filter (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+ * @param {string} params.module - Module filter
+ * @param {string} params.search - Keyword search
+ * @param {string} params.start_time - Start time filter
+ * @param {string} params.end_time - End time filter
+ */
+export function getSystemLogs(params) {
+  return request({
+    url: '/admin/logs/system/',
     method: 'get',
     params
   })

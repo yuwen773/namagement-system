@@ -57,8 +57,8 @@
         <div class="card-header">
           <h3 class="card-title">城市 AQI 排名</h3>
           <el-radio-group v-model="rankingType" size="small">
-            <el-radio-button label="best">最优</el-radio-button>
-            <el-radio-button label="worst">最差</el-radio-button>
+            <el-radio-button value="best">最优</el-radio-button>
+            <el-radio-button value="worst">最差</el-radio-button>
           </el-radio-group>
         </div>
         <div class="card-body">
@@ -177,7 +177,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { Refresh, Warning, Bell, Location, ArrowUp, ArrowDown, Star, CircleCheck, Document, Search } from '@element-plus/icons-vue'
 import { MapChart } from '@/components/charts'
@@ -195,10 +195,10 @@ const rankingType = ref('best')
 const pollutantCity = ref('')
 
 const stats = ref([
-  { key: 'cities', label: '监测城市', value: '-', icon: Location, trend: '-', trendIcon: ArrowUp, trendClass: '', color: 'blue' },
-  { key: 'avgAQI', label: '平均 AQI', value: '-', icon: Star, trend: '-', trendIcon: ArrowDown, trendClass: 'down', color: 'green' },
-  { key: 'excellent', label: '优良率', value: '-', icon: ArrowUp, trend: '-', trendIcon: ArrowUp, trendClass: 'up', color: 'cyan' },
-  { key: 'warnings', label: '预警城市', value: '-', icon: Warning, trend: '-', trendIcon: ArrowDown, trendClass: 'down', color: 'orange' }
+  { key: 'cities', label: '监测城市', value: '-', icon: markRaw(Location), trend: '-', trendIcon: markRaw(ArrowUp), trendClass: '', color: 'blue' },
+  { key: 'avgAQI', label: '平均 AQI', value: '-', icon: markRaw(Star), trend: '-', trendIcon: markRaw(ArrowDown), trendClass: 'down', color: 'green' },
+  { key: 'excellent', label: '优良率', value: '-', icon: markRaw(ArrowUp), trend: '-', trendIcon: markRaw(ArrowUp), trendClass: 'up', color: 'cyan' },
+  { key: 'warnings', label: '预警城市', value: '-', icon: markRaw(Warning), trend: '-', trendIcon: markRaw(ArrowDown), trendClass: 'down', color: 'orange' }
 ])
 
 const pollutants = [
@@ -211,11 +211,11 @@ const pollutants = [
 ]
 
 const quickNav = [
-  { label: '城市详情', path: '/cities', icon: Location, color: 'linear-gradient(135deg, #0066CC, #0052A3)' },
-  { label: '历史数据', path: '/historical', icon: Search, color: 'linear-gradient(135deg, #0EA5E9, #0284C7)' },
-  { label: '数据分析', path: '/analysis', icon: Star, color: 'linear-gradient(135deg, #10B981, #059669)' },
-  { label: '防护指南', path: '/protection', icon: CircleCheck, color: 'linear-gradient(135deg, #10B981, #059669)' },
-  { label: '科普知识', path: '/knowledge', icon: Document, color: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }
+  { label: '城市详情', path: '/cities', icon: markRaw(Location), color: 'linear-gradient(135deg, #0066CC, #0052A3)' },
+  { label: '历史数据', path: '/historical', icon: markRaw(Search), color: 'linear-gradient(135deg, #0EA5E9, #0284C7)' },
+  { label: '数据分析', path: '/analysis', icon: markRaw(Star), color: 'linear-gradient(135deg, #10B981, #059669)' },
+  { label: '防护指南', path: '/protection', icon: markRaw(CircleCheck), color: 'linear-gradient(135deg, #10B981, #059669)' },
+  { label: '科普知识', path: '/knowledge', icon: markRaw(Document), color: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }
 ]
 
 const majorCities = computed(() => {

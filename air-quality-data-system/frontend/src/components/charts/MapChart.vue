@@ -3,14 +3,14 @@
     :option="chartOption"
     :height="height"
     :theme="theme"
-    :loading="loading"
+    :loading="loading || mapLoading"
     @chart-ready="handleMapReady"
     @chart-click="$emit('chart-click', $event)"
   />
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import BaseChart from './BaseChart.vue'
 import { registerMap } from 'echarts/core'
 
@@ -66,6 +66,7 @@ const emit = defineEmits(['chart-ready', 'chart-click'])
 
 let chartInstance = null
 const mapRegistered = ref(false)
+const mapLoading = ref(true)
 
 // AQI level colors for visual map (Commercial colors)
 const aqiLevels = [
@@ -90,6 +91,11 @@ const visualMapPieces = computed(() => {
 })
 
 const chartOption = computed(() => {
+  // Don't render chart until map is registered
+  if (!mapRegistered.value) {
+    return {}
+  }
+
   const isDark = props.theme === 'dark'
   const textColor = isDark ? '#94A3B8' : '#64748B'
   const textMain = isDark ? '#F1F5F9' : '#1E293B'
@@ -221,15 +227,17 @@ async function loadChinaMap() {
 
 const handleMapReady = async (chart) => {
   chartInstance = chart
-
-  if (!mapRegistered.value) {
-    await loadChinaMap()
-  }
-
   if (mapRegistered.value) {
     emit('chart-ready', chart)
   }
 }
+
+// Load map on component mount
+onMounted(async () => {
+  mapLoading.value = true
+  await loadChinaMap()
+  mapLoading.value = false
+})
 
 watch(() => props.mapType, async () => {
   mapRegistered.value = false
