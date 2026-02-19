@@ -567,8 +567,9 @@ const handleCorrelation = async () => {
     if (response.code === 0) {
       const data = response.data
 
-      // Calculate regression line
-      const scatterData = data.scatterData || []
+      // Calculate regression line - handle both snake_case and camelCase
+      const scatterData = data.scatter_data || data.scatterData || []
+      const sampleCount = data.sample_count || data.sampleCount || 0
       const n = scatterData.length
       let slope = 0, intercept = 0
 
@@ -585,18 +586,22 @@ const handleCorrelation = async () => {
         }
       }
 
+      // Convert scatter data from {x, y} format to [x, y] format for ECharts
+      const scatterDataArray = scatterData.map(p => [p.x, p.y])
+      const regressionDataArray = scatterData.length > 0
+        ? [
+            [Math.min(...scatterData.map(p => p.x)), intercept + slope * Math.min(...scatterData.map(p => p.x))],
+            [Math.max(...scatterData.map(p => p.x)), intercept + slope * Math.max(...scatterData.map(p => p.x))]
+          ]
+        : []
+
       correlationData.value = {
-        scatterData: scatterData,
+        scatterData: scatterDataArray,
         correlation: data.correlation,
-        sampleCount: data.sampleCount,
+        sampleCount: sampleCount,
         slope,
         intercept,
-        regressionData: scatterData.length > 0
-          ? [
-            { x: Math.min(...scatterData.map(p => p.x)), y: intercept + slope * Math.min(...scatterData.map(p => p.x)) },
-            { x: Math.max(...scatterData.map(p => p.x)), y: intercept + slope * Math.max(...scatterData.map(p => p.x)) }
-          ]
-          : []
+        regressionData: regressionDataArray
       }
     } else {
       ElMessage.error(response.message || '相关性分析失败')
