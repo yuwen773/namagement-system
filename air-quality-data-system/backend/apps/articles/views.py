@@ -78,6 +78,12 @@ class ArticleViewSet(viewsets.ViewSet):
             except ValueError:
                 raise ValidationError("格式错误，应为整数", field="category_id")
             queryset = queryset.filter(category_id=category_id_int)
+
+        # 支持搜索参数
+        search = (request.query_params.get("search") or "").strip()
+        if search:
+            queryset = queryset.filter(Q(title__icontains=search) | Q(content__icontains=search))
+
         queryset = queryset.filter(is_announcement=False).order_by("-created_at", "-id")
 
         page = _parse_int_query_param(request, "page", 1, 1, 100_000)

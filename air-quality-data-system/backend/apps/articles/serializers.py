@@ -4,10 +4,21 @@ from .models import Article, ArticleCategory
 
 
 class ArticleCategorySerializer(serializers.ModelSerializer):
+    """用于用户端的分类序列化器，包含文章计数"""
+    article_count = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ArticleCategory
-        fields = ["id", "name", "sort"]
+        fields = ["id", "name", "sort", "article_count"]
         read_only_fields = fields
+
+    def get_article_count(self, obj):
+        """获取该分类下已发布的非公告文章数量"""
+        return Article.objects.filter(
+            category=obj,
+            status=Article.Status.PUBLISHED,
+            is_announcement=False
+        ).count()
 
 
 class ArticleListSerializer(serializers.ModelSerializer):

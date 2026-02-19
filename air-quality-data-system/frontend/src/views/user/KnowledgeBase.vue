@@ -135,7 +135,7 @@
           </div>
           <div class="category-info">
             <h4>{{ category.name }}</h4>
-            <p>{{ category.description || category.article_count || 0 }} 篇文章</p>
+            <p>{{ category.article_count || 0 }} 篇文章</p>
           </div>
         </div>
       </div>
@@ -191,7 +191,7 @@ const fetchArticles = async () => {
       page_size: pageSize.value
     }
     if (selectedCategory.value !== 'all') {
-      params.category = selectedCategory.value
+      params.category_id = selectedCategory.value
     }
     if (searchQuery.value.trim()) {
       params.search = searchQuery.value.trim()
