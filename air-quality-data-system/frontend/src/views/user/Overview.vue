@@ -303,7 +303,9 @@ const updateMapData = () => {
     .filter(item => item && item.city_name && item[field] !== null && item[field] !== undefined)
     .map(item => ({
       name: item.city_name,
-      value: item[field]
+      value: item[field],
+      // 经纬度坐标，用于散点图
+      coord: [item.longitude, item.latitude]
     }))
 }
 

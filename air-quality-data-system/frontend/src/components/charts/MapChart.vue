@@ -175,27 +175,65 @@ const chartOption = computed(() => {
         borderWidth: 1
       }
     },
-    series: [{
-      type: 'map',
-      map: props.mapType,
-      geoIndex: 0,
-      data: props.data.map(item => ({
-        name: item.name,
-        value: item.value,
-        itemStyle: {
-          areaColor: getAQIColor(item.value)
+    series: [
+      // 省份地图背景
+      {
+        type: 'map',
+        map: props.mapType,
+        geoIndex: 0,
+        data: props.data.map(item => ({
+          name: item.name,
+          value: item.value,
+          itemStyle: {
+            areaColor: getAQIColor(item.value)
+          }
+        })),
+        emphasis: {
+          label: {
+            show: true
+          },
+          itemStyle: {
+            shadowBlur: 8,
+            shadowColor: 'rgba(0, 0, 0, 0.3)'
+          }
         }
-      })),
-      emphasis: {
-        label: {
-          show: true
+      },
+      // 城市散点/气泡
+      {
+        type: 'effectScatter',
+        coordinateSystem: 'geo',
+        symbol: 'circle',
+        symbolSize: (val, params) => {
+          // 气泡大小基于 AQI 值，范围 10-25px
+          const aqi = params.value[2] || 0
+          return Math.max(10, Math.min(25, aqi / 8))
+        },
+        showEffectOn: 'render',
+        rippleEffect: {
+          brushType: 'stroke',
+          scale: 3,
+          period: 4
         },
         itemStyle: {
-          shadowBlur: 8,
-          shadowColor: 'rgba(0, 0, 0, 0.3)'
-        }
+          color: (params) => getAQIColor(params.value[2]),
+          shadowBlur: 4,
+          shadowColor: 'rgba(0,0,0,0.3)'
+        },
+        emphasis: {
+          scale: 1.3,
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0,0,0,0.5)'
+          }
+        },
+        data: props.data
+          .filter(item => item.coord && item.coord[0] && item.coord[1])
+          .map(item => ({
+            name: item.name,
+            value: [...item.coord, item.value] // [lng, lat, aqi]
+          }))
       }
-    }],
+    ],
     animationDuration: 800,
     animationEasing: 'cubicOut'
   }
