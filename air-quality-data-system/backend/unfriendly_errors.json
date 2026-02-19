@@ -1,0 +1,23 @@
+[
+  {
+    "endpoint": "POST /api/auth/register/",
+    "scenario": "手机号包含非法字符",
+    "current_message": "phone: Phone must be 6-20 chars: digits, spaces, + - ( ) only.",
+    "issue": "错误消息不是中文",
+    "suggested_message": "phone: 手机号格式不正确，应为6-20位数字，可包含空格和+-()符号"
+  },
+  {
+    "endpoint": "POST /api/auth/register/",
+    "scenario": "手机号太短",
+    "current_message": "phone: Phone must be 6-20 chars: digits, spaces, + - ( ) only.",
+    "issue": "错误消息不是中文",
+    "suggested_message": "phone: 手机号格式不正确，应为6-20位数字，可包含空格和+-()符号"
+  },
+  {
+    "endpoint": "PUT /api/admin/users/",
+    "scenario": "更新 - 手机号格式错误",
+    "current_message": "phone: Phone must be 6-20 chars: digits, spaces, + - ( ) only.",
+    "issue": "错误消息不是中文",
+    "suggested_message": "phone: 手机号格式不正确，应为6-20位数字，可包含空格和+-()符号"
+  }
+]

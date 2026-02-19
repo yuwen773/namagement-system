@@ -110,7 +110,7 @@ const currentTitle = computed(() => route.meta.title || '')
 
 const menuItems = [
   { key: 'dashboard', label: '仪表盘', path: '/admin' },
-  { key: 'data-import', label: '数据导入', path: '/admin/data-import' },
+  // { key: 'data-import', label: '数据导入', path: '/admin/data-import' },
   { key: 'air-quality', label: '数据管理', path: '/admin/air-quality' },
   { key: 'rules', label: '规则管理', path: '/admin/rules' },
   { key: 'users', label: '用户管理', path: '/admin/users' },

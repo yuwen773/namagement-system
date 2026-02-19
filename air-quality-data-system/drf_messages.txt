@@ -1,0 +1,6 @@
+This field is required. = 此字段是必填项。
+This field may not be blank. = 此字段不能为空。
+Ensure this field has at least {min_length} characters. = 确保此字段至少包含 {min_length} 个字符。
+Ensure this field has no more than {max_length} characters. = 确保此字段不超过 {max_length} 个字符。
+Enter a valid email address. = 输入合法的电子邮件地址。
+Not a valid string. = 输入有效的字符串。
