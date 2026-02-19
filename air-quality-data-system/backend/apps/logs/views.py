@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TypedDict
 
+from django.db.models import QuerySet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.views import APIView
@@ -11,6 +13,17 @@ from apps.logs.models import ErrorLog, OperationLog
 from apps.logs.serializers import ErrorLogSerializer, OperationLogSerializer
 from utils.exception_handler import ValidationError
 from utils.response import APIResponse
+
+
+class SystemLogItem(TypedDict):
+    id: int
+    level: str
+    module: str
+    timestamp: str
+    message: str
+    username: str | None
+    ip_address: str | None
+    extra_data: dict | None
 
 
 def _parse_int_query_param(request, field: str, default: int, min_value: int, max_value: int) -> int:
@@ -117,3 +130,146 @@ class ErrorLogListView(APIView):
         items = queryset[(page - 1) * page_size : page * page_size]
         data = ErrorLogSerializer(items, many=True).data
         return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
+
+
+def _extract_module_from_operation_type(operation_type: str) -> str:
+    """Extract module name from operation type."""
+    parts = operation_type.split(".")
+    return parts[0].lower() if parts else "system"
+
+
+def _extract_module_from_error_type(error_type: str) -> str:
+    """Extract module name from error type."""
+    parts = error_type.split(".")
+    return parts[0].lower() if parts else "system"
+
+
+def _convert_operation_log_to_system_log(log: OperationLog) -> SystemLogItem:
+    """Convert operation log to system log format."""
+    return {
+        "id": f"op_{log.id}",
+        "level": "INFO",
+        "module": _extract_module_from_operation_type(log.operation_type),
+        "timestamp": log.operation_time.isoformat(),
+        "message": f"{log.operation_type}: {log.operation_content}",
+        "username": log.user.username,
+        "ip_address": log.ip_address,
+        "extra_data": {"operation_type": log.operation_type},
+    }
+
+
+def _convert_error_log_to_system_log(log: ErrorLog) -> SystemLogItem:
+    """Convert error log to system log format."""
+    return {
+        "id": f"err_{log.id}",
+        "level": "ERROR",
+        "module": _extract_module_from_error_type(log.error_type),
+        "timestamp": log.occurred_at.isoformat(),
+        "message": f"{log.error_type}: {log.error_message}",
+        "username": None,
+        "ip_address": None,
+        "extra_data": {"error_type": log.error_type, "stack_trace": log.stack_trace},
+    }
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Logs"],
+        summary="查询系统日志",
+        description="管理员分页查询系统日志（包括操作日志和异常日志），支持级别、模块和关键词过滤。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
+class SystemLogListView(APIView):
+    """Admin endpoint for unified system log query with filters."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        # Build querysets for both operation and error logs
+        operation_qs = OperationLog.objects.select_related("user").all()
+        error_qs = ErrorLog.objects.all()
+
+        # Apply level filter
+        level = (request.query_params.get("level") or "").strip().upper()
+        if level:
+            if level == "INFO":
+                error_qs = error_qs.none()
+            elif level == "ERROR":
+                operation_qs = operation_qs.none()
+            else:
+                # For other levels (DEBUG, WARNING, CRITICAL), return empty
+                operation_qs = operation_qs.none()
+                error_qs = error_qs.none()
+
+        # Apply module filter
+        module = (request.query_params.get("module") or "").strip().lower()
+        if module:
+            operation_qs = [
+                log for log in operation_qs if _extract_module_from_operation_type(log.operation_type) == module
+            ]
+            error_qs = [log for log in error_qs if _extract_module_from_error_type(log.error_type) == module]
+
+        # Apply search filter
+        search = (request.query_params.get("search") or "").strip()
+        if search:
+            search_lower = search.lower()
+            operation_qs = [
+                log for log in operation_qs
+                if search_lower in log.operation_content.lower()
+                or search_lower in log.operation_type.lower()
+                or search_lower in log.user.username.lower()
+            ]
+            error_qs = [
+                log for log in error_qs
+                if search_lower in log.error_message.lower()
+                or search_lower in log.error_type.lower()
+            ]
+
+        # Apply date range filter
+        start_date = _get_optional_date_query_param(request, "start_date")
+        end_date = _get_optional_date_query_param(request, "end_date")
+        if start_date:
+            if isinstance(operation_qs, QuerySet):
+                operation_qs = operation_qs.filter(operation_time__date__gte=start_date)
+            if isinstance(error_qs, QuerySet):
+                error_qs = error_qs.filter(occurred_at__date__gte=start_date)
+        if end_date:
+            if isinstance(operation_qs, QuerySet):
+                operation_qs = operation_qs.filter(operation_time__date__lte=end_date)
+            if isinstance(error_qs, QuerySet):
+                error_qs = error_qs.filter(occurred_at__date__lte=end_date)
+
+        # Convert to list format
+        if isinstance(operation_qs, QuerySet):
+            operation_qs = list(operation_qs)
+        if isinstance(error_qs, QuerySet):
+            error_qs = list(error_qs)
+
+        # Combine and sort by timestamp (descending)
+        all_logs: list[SystemLogItem] = [
+            *_convert_operation_logs_to_system_logs(operation_qs),
+            *_convert_error_logs_to_system_logs(error_qs),
+        ]
+        all_logs.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        # Apply pagination
+        page = _parse_int_query_param(request, "page", 1, 1, 100_000)
+        page_size = _parse_int_query_param(request, "page_size", 50, 1, 200)
+
+        total = len(all_logs)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_logs = all_logs[start_idx:end_idx]
+
+        return APIResponse.paginate(data=paginated_logs, total=total, page=page, page_size=page_size)
+
+
+def _convert_operation_logs_to_system_logs(logs: list[OperationLog] | QuerySet) -> list[SystemLogItem]:
+    """Convert operation logs to system log format."""
+    return [_convert_operation_log_to_system_log(log) for log in logs]
+
+
+def _convert_error_logs_to_system_logs(logs: list[ErrorLog] | QuerySet) -> list[SystemLogItem]:
+    """Convert error logs to system log format."""
+    return [_convert_error_log_to_system_log(log) for log in logs]

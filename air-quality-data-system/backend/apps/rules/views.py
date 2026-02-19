@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -47,6 +48,15 @@ def _raise_serializer_validation_error(errors: dict):
     else:
         message = str(first_errors)
     raise ValidationError(message=message, field=str(first_field))
+
+
+def _translate_validation_error(message: str) -> str:
+    """Translate common validation error messages to Chinese."""
+    translations = {
+        "AQI ranges must not overlap within the same population_type.": "该人群类型下已存在相同或重叠的 AQI 范围，请检查并调整范围。",
+        "min_aqi must be <= max_aqi.": "AQI 最小值不能大于最大值。",
+    }
+    return translations.get(message, message)
 
 
 @extend_schema_view(
@@ -195,7 +205,19 @@ class ProtectionRuleManageView(APIView):
         serializer = ProtectionRuleSerializer(data=request.data)
         if not serializer.is_valid():
             _raise_serializer_validation_error(serializer.errors)
-        instance = serializer.save()
+        try:
+            instance = serializer.save()
+        except DjangoValidationError as e:
+            # Convert Django ValidationError to our API error format
+            error_dict = e.message_dict if hasattr(e, 'message_dict') else {'__all__': list(e.messages)}
+            first_field, first_errors = next(iter(error_dict.items()))
+            if isinstance(first_errors, (list, tuple)) and first_errors:
+                message = str(first_errors[0])
+            else:
+                message = str(first_errors)
+            # Translate common error messages to Chinese
+            message = _translate_validation_error(message)
+            raise ValidationError(message=message, field=str(first_field) if first_field != '__all__' else None)
         return APIResponse.success(data=ProtectionRuleSerializer(instance).data)
 
     def put(self, request):
@@ -225,7 +247,19 @@ class ProtectionRuleManageView(APIView):
         serializer = ProtectionRuleSerializer(instance, data=request.data, partial=True)
         if not serializer.is_valid():
             _raise_serializer_validation_error(serializer.errors)
-        serializer.save()
+        try:
+            serializer.save()
+        except DjangoValidationError as e:
+            # Convert Django ValidationError to our API error format
+            error_dict = e.message_dict if hasattr(e, 'message_dict') else {'__all__': list(e.messages)}
+            first_field, first_errors = next(iter(error_dict.items()))
+            if isinstance(first_errors, (list, tuple)) and first_errors:
+                message = str(first_errors[0])
+            else:
+                message = str(first_errors)
+            # Translate common error messages to Chinese
+            message = _translate_validation_error(message)
+            raise ValidationError(message=message, field=str(first_field) if first_field != '__all__' else None)
         return APIResponse.success(data=serializer.data)
 
     def delete(self, request):

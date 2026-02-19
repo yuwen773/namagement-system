@@ -46,7 +46,7 @@ class User(AbstractUser):
         validators=[
             RegexValidator(
                 regex=r"^[0-9+\-() ]{6,20}$",
-                message="Phone must be 6-20 chars: digits, spaces, + - ( ) only.",
+                message="手机号格式不正确，应为6-20位数字，可包含空格和+-()符号",
             )
         ],
     )

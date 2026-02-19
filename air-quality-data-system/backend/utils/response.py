@@ -1,10 +1,9 @@
 """
 Unified API response wrapper.
 
-Skill requirement (python-data-analysis-backend):
-All APIs return a consistent structure:
+All APIs return a consistent structure (per API_DOCS.md):
 {
-  "code": 200,
+  "code": 0,          # 成功响应 code 为 0，错误响应为 HTTP 状态码 (400/401/403/404/500)
   "data": ...,
   "message": "",
   # optionally:
@@ -45,7 +44,8 @@ class APIResponse(Response):
 
     @classmethod
     def success(cls, data: Any = None, message: str = "") -> "APIResponse":
-        return cls(data=data, code=200, message=message)
+        # API_DOCS.md 规定：成功响应 code 为 0
+        return cls(data=data, code=0, message=message)
 
     @classmethod
     def error(cls, code: int, message: str) -> "APIResponse":
@@ -55,5 +55,6 @@ class APIResponse(Response):
     def paginate(
         cls, data: list, total: int, page: int = 1, page_size: int = 20, message: str = ""
     ) -> "APIResponse":
-        return cls(data=data, code=200, message=message, total=total, page=page, page_size=page_size)
+        # API_DOCS.md 规定：成功响应 code 为 0
+        return cls(data=data, code=0, message=message, total=total, page=page, page_size=page_size)
 
