@@ -18,10 +18,16 @@ const props = defineProps({
   data: {
     type: Array,
     required: true,
+    default: () => [],
     validator: (value) => {
-      return value.every(item =>
-        item.hasOwnProperty('name') && item.hasOwnProperty('value')
-      )
+      // Allow empty array
+      if (!Array.isArray(value) || value.length === 0) {
+        return true
+      }
+      // Check each item has required properties
+      return value.every(item => {
+        return item && typeof item === 'object' && 'name' in item && 'value' in item
+      })
     }
   },
   height: {

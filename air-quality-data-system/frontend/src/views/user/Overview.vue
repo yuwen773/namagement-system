@@ -45,7 +45,7 @@
           </el-select>
         </div>
         <div class="card-body">
-          <MapChart v-if="mapData" :data="mapData" :metric="selectedMetric" height="400px" />
+          <MapChart v-if="mapData.length > 0" :data="mapData" height="400px" />
           <div v-else class="chart-loading">
             <el-skeleton :rows="8" animated />
           </div>
@@ -186,7 +186,8 @@ import { getOverview, getTopCities, getAnnouncements } from '@/api/airquality'
 const router = useRouter()
 
 const loading = ref(false)
-const mapData = ref(null)
+const mapData = ref([])
+const rawMapData = ref([]) // Store raw data for metric switching
 const topCities = ref([])
 const announcements = ref([])
 const pollutantData = ref(null)
@@ -228,8 +229,9 @@ const majorCities = computed(() => {
 const fetchOverview = async () => {
   try {
     const response = await getOverview()
-    // Backend returns map_data, not cities
-    mapData.value = response.data.map_data || []
+    // Store raw data for metric switching
+    rawMapData.value = response.data.map_data || []
+    updateMapData()
     // Backend returns national object with pollutant data
     const national = response.data.national || {}
     pollutantData.value = {
@@ -241,11 +243,19 @@ const fetchOverview = async () => {
       co: national.co
     }
 
-    // Update stats
-    stats.value[0].value = response.data.city_count || '-'
-    stats.value[1].value = national.aqi || '-'
-    stats.value[2].value = national.quality_level === 'EXCELLENT' ? '100%' : '-'
-    stats.value[3].value = response.data.warning_cities || '-'
+    // Update stats - create new array to trigger reactivity
+    const excellentCount = rawMapData.value.filter(city => city.aqi <= 100).length
+    const excellentRate = rawMapData.value.length > 0
+      ? Math.round((excellentCount / rawMapData.value.length) * 100)
+      : 0
+    const warningCount = rawMapData.value.filter(city => city.aqi > 150).length
+
+    stats.value = [
+      { ...stats.value[0], value: response.data.city_count || '-' },
+      { ...stats.value[1], value: national.aqi || '-' },
+      { ...stats.value[2], value: excellentRate + '%' },
+      { ...stats.value[3], value: warningCount || '-' }
+    ]
   } catch (error) {
     console.error('Failed to fetch overview:', error)
   }
@@ -265,7 +275,8 @@ const fetchTopCities = async () => {
 const fetchAnnouncements = async () => {
   try {
     const response = await getAnnouncements({ limit: 5 })
-    announcements.value = response.data.results || []
+    // API returns data as array directly
+    announcements.value = response.data || []
   } catch (error) {
     console.error('Failed to fetch announcements:', error)
   }
@@ -275,6 +286,25 @@ const refreshData = () => {
   fetchOverview()
   fetchTopCities()
   fetchAnnouncements()
+}
+
+// Metric field mapping
+const metricFields = {
+  aqi: 'aqi',
+  pm25: 'pm25',
+  pm10: 'pm10',
+  o3: 'o3'
+}
+
+// Update map data based on selected metric
+const updateMapData = () => {
+  const field = metricFields[selectedMetric.value] || 'aqi'
+  mapData.value = rawMapData.value
+    .filter(item => item && item.city_name && item[field] !== null && item[field] !== undefined)
+    .map(item => ({
+      name: item.city_name,
+      value: item[field]
+    }))
 }
 
 const goToCity = (cityCode) => {
@@ -336,6 +366,10 @@ const getPollutantColor = (value, max) => {
 
 watch(rankingType, () => {
   fetchTopCities()
+})
+
+watch(selectedMetric, () => {
+  updateMapData()
 })
 
 onMounted(() => {

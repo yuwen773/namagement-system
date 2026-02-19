@@ -14,6 +14,12 @@ const routes = [
         meta: { title: '全国概览' }
       },
       {
+        path: 'cities',
+        name: 'Cities',
+        component: () => import('@/views/user/Cities.vue'),
+        meta: { title: '城市列表' }
+      },
+      {
         path: 'city/:code',
         name: 'CityDetail',
         component: () => import('@/views/user/CityDetail.vue'),

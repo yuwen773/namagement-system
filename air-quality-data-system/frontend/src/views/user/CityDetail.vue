@@ -266,7 +266,7 @@ const goToStation = (stationCode) => {
 }
 
 const goToProtection = () => {
-  const cityCode = route.query.code
+  const cityCode = route.params.code
   router.push({ path: '/protection', query: { city_code: cityCode } })
 }
 
@@ -275,7 +275,7 @@ const refreshData = () => {
 }
 
 const fetchData = async () => {
-  const cityCode = route.query.code
+  const cityCode = route.params.code
   if (!cityCode) {
     error.value = true
     loading.value = false
