@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -49,9 +49,17 @@ class UserDetailView(viewsets.GenericViewSet):
         })
 
 
+class IsAdminRole(permissions.BasePermission):
+    """自定义权限：检查 role 字段是否为 admin"""
+    message = "您没有执行该操作的权限。"
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.role == 'admin'
+
+
 class UserListView(viewsets.GenericViewSet):
     """用户管理视图（仅管理员）"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminRole]
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
