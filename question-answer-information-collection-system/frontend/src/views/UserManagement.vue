@@ -57,6 +57,47 @@
         </div>
       </div>
 
+      <!-- 筛选下拉框 -->
+      <div class="filter-container">
+        <!-- 角色筛选 -->
+        <el-select
+          v-model="filters.role"
+          placeholder="角色"
+          clearable
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="全部" value="" />
+          <el-option label="管理员" value="admin" />
+          <el-option label="普通用户" value="user" />
+        </el-select>
+
+        <!-- 状态筛选 -->
+        <el-select
+          v-model="filters.is_active"
+          placeholder="状态"
+          clearable
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="全部" value="" />
+          <el-option label="正常" value="true" />
+          <el-option label="禁用" value="false" />
+        </el-select>
+
+        <!-- 时间范围筛选 -->
+        <el-date-picker
+          v-model="filters.dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          class="filter-date-range"
+          @change="handleFilterChange"
+        />
+      </div>
+
       <div class="control-actions">
         <button class="refresh-btn" :disabled="tableLoading" @click="fetchData">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -293,6 +334,13 @@ const pageSize = ref(20)
 const searchKeyword = ref('')
 const searchTimer = ref(null)
 
+// 筛选状态
+const filters = reactive({
+  role: '',
+  is_active: '',
+  dateRange: null
+})
+
 // Dialog state
 const dialogVisible = ref(false)
 const dialogFormRef = ref(null)
@@ -361,7 +409,11 @@ const fetchData = async () => {
     const params = {
       page: currentPage.value,
       page_size: pageSize.value,
-      search: searchKeyword.value || undefined
+      search: searchKeyword.value || undefined,
+      role: filters.role || undefined,
+      is_active: filters.is_active || undefined,
+      created_at_after: filters.dateRange?.[0] || undefined,
+      created_at_before: filters.dateRange?.[1] || undefined
     }
     const res = await request.get('/api/auth/users/', { params })
     if (res.code === 0 || res.code === 200) {
@@ -392,6 +444,11 @@ const handleSearch = () => {
 
 const clearSearch = () => {
   searchKeyword.value = ''
+  currentPage.value = 1
+  fetchData()
+}
+
+const handleFilterChange = () => {
   currentPage.value = 1
   fetchData()
 }
@@ -766,6 +823,51 @@ onMounted(() => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.filter-container {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.filter-select {
+  width: 140px;
+}
+
+.filter-select :deep(.el-input__wrapper) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.filter-select :deep(.el-input__wrapper:hover) {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.filter-select :deep(.el-input__wrapper.is-focus) {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.filter-date-range {
+  width: 240px;
+}
+
+.filter-date-range :deep(.el-input__wrapper) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.filter-date-range :deep(.el-input__wrapper:hover) {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.filter-date-range :deep(.el-input__wrapper.is-focus) {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .control-actions {

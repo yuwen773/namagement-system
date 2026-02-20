@@ -554,6 +554,12 @@ class QuestionViewSet(viewsets.ModelViewSet):
         - page_size: 每页数量（默认20，最大100）
         - search: 搜索关键词（标题模糊搜索）
         - ordering: 排序字段（默认 -created_at）
+        - category: 分类筛选
+        - location: 地理位置筛选
+        - publish_time_after: 发布时间起始（格式：YYYY-MM-DD）
+        - publish_time_before: 发布时间结束（格式：YYYY-MM-DD）
+        - answer_count_min: 回答数量最小值
+        - answer_count_max: 回答数量最大值
         """
         # 获取查询参数
         search = request.query_params.get('search', '')
@@ -565,8 +571,38 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(title__icontains=search)
 
-        # 排序
-        queryset = queryset.order_by(ordering)
+        # 分类筛选
+        category = request.query_params.get('category', '')
+        if category:
+            queryset = queryset.filter(category=category)
+
+        # 地理位置筛选
+        location = request.query_params.get('location', '')
+        if location:
+            queryset = queryset.filter(location=location)
+
+        # 发布时间范围筛选
+        publish_time_after = request.query_params.get('publish_time_after')
+        publish_time_before = request.query_params.get('publish_time_before')
+        if publish_time_after:
+            queryset = queryset.filter(publish_time__gte=publish_time_after)
+        if publish_time_before:
+            queryset = queryset.filter(publish_time__lte=publish_time_before)
+
+        # 回答数量范围筛选
+        answer_count_min = request.query_params.get('answer_count_min')
+        answer_count_max = request.query_params.get('answer_count_max')
+        if answer_count_min:
+            queryset = queryset.filter(answer_count__gte=int(answer_count_min))
+        if answer_count_max:
+            queryset = queryset.filter(answer_count__lte=int(answer_count_max))
+
+        # 排序（添加 answer_count 排序选项）
+        valid_orderings = ['created_at', '-created_at', 'publish_time', '-publish_time', 'answer_count', '-answer_count']
+        if ordering in valid_orderings:
+            queryset = queryset.order_by(ordering)
+        else:
+            queryset = queryset.order_by('-created_at')
 
         # 分页
         try:
@@ -964,3 +1000,27 @@ class StatisticsOverviewView(APIView):
                 make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class QuestionFilterOptionsView(APIView):
+    """获取问答筛选选项"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """获取可选的分类和位置列表"""
+        # 获取所有不同的分类
+        categories = Question.objects.filter(
+            category__isnull=False
+        ).exclude(category='').values_list('category', flat=True).distinct()
+
+        # 获取所有不同的位置
+        locations = Question.objects.filter(
+            location__isnull=False
+        ).exclude(location='').values_list('location', flat=True).distinct()
+
+        return Response(
+            make_response(code=0, data={
+                'categories': list(categories),
+                'locations': list(locations)
+            })
+        )

@@ -54,6 +54,69 @@
         </div>
       </div>
 
+      <!-- 筛选组件 -->
+      <div class="filter-container">
+        <!-- 分类筛选 -->
+        <el-select
+          v-model="filters.category"
+          placeholder="分类"
+          clearable
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="全部" value="" />
+          <el-option
+            v-for="cat in filterOptions.categories"
+            :key="cat"
+            :label="cat"
+            :value="cat"
+          />
+        </el-select>
+
+        <!-- 位置筛选 -->
+        <el-select
+          v-model="filters.location"
+          placeholder="位置"
+          clearable
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="全部" value="" />
+          <el-option
+            v-for="loc in filterOptions.locations"
+            :key="loc"
+            :label="loc"
+            :value="loc"
+          />
+        </el-select>
+
+        <!-- 回答数筛选 -->
+        <el-select
+          v-model="filters.answerCount"
+          placeholder="回答数"
+          clearable
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="全部" value="" />
+          <el-option label="0" value="0" />
+          <el-option label="1-3" value="1-3" />
+          <el-option label="3以上" value="3+" />
+        </el-select>
+
+        <!-- 发布时间筛选 -->
+        <el-date-picker
+          v-model="filters.dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          class="filter-date-range"
+          @change="handleFilterChange"
+        />
+      </div>
+
       <div class="control-actions">
         <button class="refresh-btn" :disabled="tableLoading" @click="fetchData">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -271,11 +334,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { getQuestions, deleteQuestion } from '@/api/questions'
+import request from '@/utils/request'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -290,6 +354,20 @@ const searchKeyword = ref('')
 const detailVisible = ref(false)
 const selectedQuestion = ref(null)
 const searchTimer = ref(null)
+
+// 筛选状态
+const filters = reactive({
+  category: '',
+  location: '',
+  answerCount: '',
+  dateRange: null
+})
+
+// 筛选选项
+const filterOptions = reactive({
+  categories: [],
+  locations: []
+})
 
 // Computed
 const isAdmin = computed(() => authStore.isAdmin)
@@ -318,8 +396,26 @@ const fetchData = async () => {
     const params = {
       page: currentPage.value,
       page_size: pageSize.value,
-      search: searchKeyword.value || undefined
+      search: searchKeyword.value || undefined,
+      category: filters.category || undefined,
+      location: filters.location || undefined,
+      publish_time_after: filters.dateRange?.[0] || undefined,
+      publish_time_before: filters.dateRange?.[1] || undefined
     }
+
+    // 处理回答数筛选
+    if (filters.answerCount) {
+      if (filters.answerCount === '0') {
+        params.answer_count_min = 0
+        params.answer_count_max = 0
+      } else if (filters.answerCount === '1-3') {
+        params.answer_count_min = 1
+        params.answer_count_max = 3
+      } else if (filters.answerCount === '3+') {
+        params.answer_count_min = 3
+      }
+    }
+
     const res = await getQuestions(params)
     if (res.code === 0 || res.code === 200) {
       tableData.value = res.data || []
@@ -353,6 +449,25 @@ const handleSearch = () => {
 
 const clearSearch = () => {
   searchKeyword.value = ''
+  currentPage.value = 1
+  fetchData()
+}
+
+// 获取筛选选项
+const fetchFilterOptions = async () => {
+  try {
+    const res = await request.get('/api/questions/filter-options/')
+    if (res.code === 0) {
+      filterOptions.categories = res.data.categories || []
+      filterOptions.locations = res.data.locations || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch filter options:', e)
+  }
+}
+
+// 筛选变化处理
+const handleFilterChange = () => {
   currentPage.value = 1
   fetchData()
 }
@@ -408,6 +523,7 @@ const handleDelete = async (row) => {
 // Lifecycle
 onMounted(() => {
   fetchData()
+  fetchFilterOptions()
 })
 </script>
 
@@ -544,6 +660,77 @@ onMounted(() => {
   flex: 1;
   max-width: 480px;
   min-width: 280px;
+}
+
+/* 筛选容器 */
+.filter-container {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-select {
+  width: 140px;
+}
+
+.filter-date-range {
+  width: 240px;
+}
+
+/* Element Plus 筛选组件样式覆盖 */
+.filter-select :deep(.el-input__wrapper) {
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.filter-select :deep(.el-input__wrapper:hover) {
+  border-color: #cbd5e1;
+}
+
+.filter-select :deep(.el-input__wrapper.is-focus) {
+  border-color: rgba(13, 148, 136, 0.5);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.filter-select :deep(.el-input__inner) {
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.filter-select :deep(.el-input__inner::placeholder) {
+  color: #94a3b8;
+}
+
+.filter-date-range :deep(.el-input__wrapper) {
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.filter-date-range :deep(.el-input__wrapper:hover) {
+  border-color: #cbd5e1;
+}
+
+.filter-date-range :deep(.el-input__wrapper.is-focus) {
+  border-color: rgba(13, 148, 136, 0.5);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.filter-date-range :deep(.el-range-input) {
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.filter-date-range :deep(.el-range-input::placeholder) {
+  color: #94a3b8;
+}
+
+.filter-date-range :deep(.el-range-separator) {
+  color: #94a3b8;
 }
 
 .search-wrapper {

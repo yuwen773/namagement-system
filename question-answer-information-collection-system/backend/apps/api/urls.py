@@ -15,6 +15,7 @@ from .views import (
     CrawlerResumeView,
     CrawlerOperationLogsView,
     QuestionViewSet,
+    QuestionFilterOptionsView,
     StatisticsTrendView,
     StatisticsCategoriesView,
     StatisticsAnswerersView,
@@ -54,6 +55,9 @@ urlpatterns = [
     path('statistics/trend/', StatisticsTrendView.as_view(), name='statistics-trend'),
     path('statistics/categories/', StatisticsCategoriesView.as_view(), name='statistics-categories'),
     path('statistics/answerers/', StatisticsAnswerersView.as_view(), name='statistics-answerers'),
+
+    # 问答筛选选项 API
+    path('questions/filter-options/', QuestionFilterOptionsView.as_view(), name='question-filter-options'),
 ]
 
 # 添加 ViewSet 路由

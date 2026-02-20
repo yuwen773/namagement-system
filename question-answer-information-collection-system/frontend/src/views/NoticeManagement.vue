@@ -55,6 +55,34 @@
         </div>
       </div>
 
+      <!-- 筛选组件 -->
+      <div class="filter-container">
+        <!-- 状态筛选 -->
+        <el-select
+          v-model="filters.is_active"
+          placeholder="状态"
+          clearable
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="全部" value="" />
+          <el-option label="启用" value="true" />
+          <el-option label="禁用" value="false" />
+        </el-select>
+
+        <!-- 时间范围筛选 -->
+        <el-date-picker
+          v-model="filters.dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          class="filter-date-range"
+          @change="handleFilterChange"
+        />
+      </div>
+
       <div class="control-actions">
         <button class="refresh-btn" :disabled="tableLoading" @click="fetchData">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -267,6 +295,12 @@ const pageSize = ref(20)
 const searchKeyword = ref('')
 const searchTimer = ref(null)
 
+// 筛选状态
+const filters = reactive({
+  is_active: '',
+  dateRange: null
+})
+
 // Dialog state
 const dialogVisible = ref(false)
 const dialogFormRef = ref(null)
@@ -316,10 +350,15 @@ const getContentPreview = (content) => {
 const fetchData = async () => {
   tableLoading.value = true
   try {
-    const res = await getNoticeList({
+    const params = {
       page: currentPage.value,
-      page_size: pageSize.value
-    })
+      page_size: pageSize.value,
+      search: searchKeyword.value || undefined,
+      is_active: filters.is_active || undefined,
+      created_at_after: filters.dateRange?.[0] || undefined,
+      created_at_before: filters.dateRange?.[1] || undefined
+    }
+    const res = await getNoticeList(params)
     if (res.code === 0 || res.code === 200) {
       tableData.value = res.data || []
       total.value = res.total || 0
@@ -342,6 +381,11 @@ const handleSearchInput = () => {
 
 const handleSearch = () => {
   if (searchTimer.value) clearTimeout(searchTimer.value)
+  currentPage.value = 1
+  fetchData()
+}
+
+const handleFilterChange = () => {
   currentPage.value = 1
   fetchData()
 }
@@ -708,6 +752,56 @@ onMounted(() => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Filter Container */
+.filter-container {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.filter-select {
+  width: 140px;
+}
+
+.filter-date-range {
+  width: 240px;
+}
+
+/* Element Plus Filter Components */
+.filter-select :deep(.el-select__wrapper) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: none;
+  height: 44px;
+}
+
+.filter-select :deep(.el-select__wrapper:hover) {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.filter-select :deep(.el-select__wrapper.is-focused) {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.filter-date-range :deep(.el-range-editor) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: none;
+  height: 44px;
+}
+
+.filter-date-range :deep(.el-range-editor:hover) {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.filter-date-range :deep(.el-range-editor.is-active) {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .control-actions {
