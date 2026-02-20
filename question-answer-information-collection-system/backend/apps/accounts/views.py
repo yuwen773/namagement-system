@@ -86,13 +86,13 @@ class UserListView(viewsets.GenericViewSet):
         created_at_after = request.query_params.get('created_at_after')
         created_at_before = request.query_params.get('created_at_before')
         if created_at_after:
-            queryset = queryset.filter(created_at__gte=created_at_after)
+            queryset = queryset.filter(date_joined__gte=created_at_after)
         if created_at_before:
-            queryset = queryset.filter(created_at__lte=created_at_before)
+            queryset = queryset.filter(date_joined__lte=created_at_before)
 
         # 排序
-        ordering = request.query_params.get('ordering', '-created_at')
-        if ordering in ['created_at', '-created_at', 'username', '-username']:
+        ordering = request.query_params.get('ordering', '-date_joined')
+        if ordering in ['date_joined', '-date_joined', 'username', '-username']:
             queryset = queryset.order_by(ordering)
 
         # 分页
