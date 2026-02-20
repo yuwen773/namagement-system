@@ -75,9 +75,9 @@
           <div class="header-row">
             <div class="header-cell col-id">ID</div>
             <div class="header-cell col-title">问题标题</div>
-            <div class="header-cell col-answerer">回答者</div>
+            <div class="header-cell col-answerer">分类</div>
             <div class="header-cell col-time">回答时间</div>
-            <div class="header-cell col-tags">标签</div>
+            <div class="header-cell col-tags">位置</div>
             <div class="header-cell col-actions" v-if="authStore.isAdmin">操作</div>
           </div>
         </div>
@@ -120,29 +120,22 @@
                 </div>
               </div>
               <div class="data-cell col-answerer">
-                <div class="answerer-badge" v-if="row.answerer">
+                <div class="answerer-badge" v-if="row.category">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
                   </svg>
-                  <span>{{ row.answerer }}</span>
+                  <span>{{ row.category }}</span>
                 </div>
                 <span v-else class="empty-text">-</span>
               </div>
               <div class="data-cell col-time">
-                <span class="time-text">{{ formatDate(row.answer_time) }}</span>
+                <span class="time-text">{{ formatDate(row.publish_time) }}</span>
               </div>
               <div class="data-cell col-tags">
-                <div class="tags-wrapper" v-if="row.tags && row.tags.length">
-                  <span
-                    v-for="tag in row.tags.slice(0, 3)"
-                    :key="tag"
-                    class="tag-badge"
-                  >
-                    {{ tag }}
-                  </span>
-                  <span v-if="row.tags.length > 3" class="tag-more">
-                    +{{ row.tags.length - 3 }}
+                <div class="tags-wrapper" v-if="row.location">
+                  <span class="tag-badge">
+                    {{ row.location }}
                   </span>
                 </div>
                 <span v-else class="empty-text">-</span>
@@ -213,23 +206,27 @@
       <div class="detail-content" v-if="selectedQuestion">
         <div class="detail-header">
           <div class="detail-meta">
-            <span class="meta-item" v-if="selectedQuestion.answerer">
+            <span class="meta-item" v-if="selectedQuestion.category">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
               </svg>
-              {{ selectedQuestion.answerer }}
+              {{ selectedQuestion.category }}
             </span>
             <span class="meta-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
-              {{ formatDate(selectedQuestion.answer_time) }}
+              {{ formatDate(selectedQuestion.publish_time) }}
             </span>
-          </div>
-          <div class="detail-tags" v-if="selectedQuestion.tags && selectedQuestion.tags.length">
-            <span v-for="tag in selectedQuestion.tags" :key="tag" class="detail-tag">{{ tag }}</span>
+            <span class="meta-item" v-if="selectedQuestion.location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ selectedQuestion.location }}
+            </span>
           </div>
         </div>
 
@@ -240,7 +237,7 @@
           </div>
         </div>
 
-        <div class="detail-section">
+        <div class="detail-section" v-if="selectedQuestion.answers && selectedQuestion.answers.length">
           <h4 class="section-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -248,7 +245,13 @@
             回答内容
           </h4>
           <div class="section-content answer">
-            <p>{{ selectedQuestion.answer_content }}</p>
+            <div v-for="(answer, index) in selectedQuestion.answers" :key="index" class="answer-item">
+              <div class="answer-meta" v-if="answer.answerer">
+                <span class="answerer-name">{{ answer.answerer }}</span>
+                <span class="answer-time">{{ formatDate(answer.answer_time) }}</span>
+              </div>
+              <p>{{ answer.content }}</p>
+            </div>
           </div>
         </div>
 
@@ -413,12 +416,28 @@ onMounted(() => {
 .data-center-page {
   min-height: 100%;
   padding: 2rem;
-  background: linear-gradient(180deg, #0a0e17 0%, #0d1117 50%, #0a0e17 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  position: relative;
+}
+
+.data-center-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(13, 148, 136, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+  pointer-events: none;
 }
 
 /* Header */
 .page-header {
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 .header-content {
@@ -439,15 +458,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(240, 165, 0, 0.15) 0%, rgba(240, 165, 0, 0.05) 100%);
-  border: 1px solid rgba(240, 165, 0, 0.3);
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.12) 0%, rgba(20, 184, 166, 0.12) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.2);
   border-radius: 16px;
 }
 
 .header-icon svg {
   width: 28px;
   height: 28px;
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .header-text {
@@ -457,16 +476,16 @@ onMounted(() => {
 }
 
 .page-title {
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #f1f5f9;
+  font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1e293b;
   margin: 0;
   letter-spacing: -0.02em;
 }
 
 .page-subtitle {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #64748b;
   margin: 0;
 }
@@ -474,6 +493,8 @@ onMounted(() => {
 .header-stats {
   display: flex;
   gap: 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .stat-pill {
@@ -481,15 +502,16 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .stat-dot {
   width: 8px;
   height: 8px;
-  background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
   border-radius: 50%;
   animation: pulse-dot 2s ease-in-out infinite;
 }
@@ -497,8 +519,8 @@ onMounted(() => {
 .stat-value {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #f0a500;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #0d9488;
+  font-family: 'Outfit', 'SF Mono', 'Fira Code', monospace;
 }
 
 .stat-label {
@@ -514,6 +536,8 @@ onMounted(() => {
   margin-bottom: 1.5rem;
   gap: 1rem;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
 .search-container {
@@ -533,7 +557,7 @@ onMounted(() => {
   left: 1rem;
   width: 20px;
   height: 20px;
-  color: #64748b;
+  color: #94a3b8;
   pointer-events: none;
   transition: color 0.2s ease;
 }
@@ -542,26 +566,26 @@ onMounted(() => {
   flex: 1;
   height: 48px;
   padding: 0 3.5rem 0 3rem;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  color: #f1f5f9;
+  color: #1e293b;
   font-size: 0.9rem;
   transition: all 0.2s ease;
 }
 
 .search-input::placeholder {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: rgba(240, 165, 0, 0.5);
-  box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.1);
+  border-color: rgba(13, 148, 136, 0.5);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
 }
 
 .search-input:focus + .search-icon {
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .clear-btn {
@@ -572,13 +596,13 @@ onMounted(() => {
   padding: 0;
   background: none;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .clear-btn:hover {
-  color: #f1f5f9;
+  color: #1e293b;
 }
 
 .clear-btn svg {
@@ -594,17 +618,17 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
   border: none;
   border-radius: 10px;
-  color: #0a0e17;
+  color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .search-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(240, 165, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3);
 }
 
 .search-btn:disabled {
@@ -620,8 +644,8 @@ onMounted(() => {
 .loading-spinner-small {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(10, 14, 23, 0.3);
-  border-top-color: #0a0e17;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -640,18 +664,18 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  color: #e2e8f0;
+  color: #475569;
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: rgba(30, 41, 59, 0.6);
-  border-color: rgba(71, 85, 105, 0.6);
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 .refresh-btn:disabled {
@@ -666,10 +690,13 @@ onMounted(() => {
 
 /* Table Section */
 .table-section {
-  background: rgba(15, 23, 42, 0.4);
-  border: 1px solid rgba(51, 65, 85, 0.4);
-  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .table-container {
@@ -677,8 +704,8 @@ onMounted(() => {
 }
 
 .table-header {
-  background: rgba(15, 23, 42, 0.8);
-  border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .header-row {
@@ -710,7 +737,7 @@ onMounted(() => {
 .data-row {
   display: flex;
   min-width: 900px;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+  border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
   animation: rowFadeIn 0.4s ease-out forwards;
   opacity: 0;
@@ -729,7 +756,7 @@ onMounted(() => {
 }
 
 .data-row:hover {
-  background: rgba(240, 165, 0, 0.05);
+  background: rgba(13, 148, 136, 0.03);
 }
 
 .data-row:last-child {
@@ -741,7 +768,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   font-size: 0.875rem;
-  color: #e2e8f0;
+  color: #334155;
 }
 
 .col-id { justify-content: center; }
@@ -755,7 +782,7 @@ onMounted(() => {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.75rem;
   color: #64748b;
-  background: rgba(51, 65, 85, 0.3);
+  background: #f1f5f9;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
 }
@@ -776,7 +803,7 @@ onMounted(() => {
 
 .source-hint {
   flex-shrink: 0;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .source-hint svg {
@@ -788,7 +815,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .answerer-badge svg {
@@ -803,7 +830,7 @@ onMounted(() => {
 }
 
 .empty-text {
-  color: #475569;
+  color: #cbd5e1;
 }
 
 .tags-wrapper {
@@ -814,19 +841,19 @@ onMounted(() => {
 
 .tag-badge {
   padding: 0.25rem 0.625rem;
-  background: rgba(240, 165, 0, 0.1);
-  border: 1px solid rgba(240, 165, 0, 0.2);
+  background: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.15);
   border-radius: 9999px;
   font-size: 0.7rem;
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .tag-more {
   padding: 0.25rem 0.5rem;
-  background: rgba(71, 85, 105, 0.3);
+  background: #f1f5f9;
   border-radius: 9999px;
   font-size: 0.7rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 /* Action Buttons */
@@ -836,10 +863,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -849,15 +876,15 @@ onMounted(() => {
 }
 
 .action-btn.view:hover {
-  background: rgba(0, 210, 255, 0.1);
-  border-color: rgba(0, 210, 255, 0.3);
-  color: #00d2ff;
+  background: rgba(13, 148, 136, 0.08);
+  border-color: rgba(13, 148, 136, 0.2);
+  color: #0d9488;
 }
 
 .action-btn.delete:hover {
-  background: rgba(255, 107, 107, 0.1);
-  border-color: rgba(255, 107, 107, 0.3);
-  color: #ff6b6b;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
 
 .action-btn svg {
@@ -869,7 +896,7 @@ onMounted(() => {
 .skeleton-row {
   display: flex;
   min-width: 900px;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .skeleton-cell {
@@ -878,7 +905,7 @@ onMounted(() => {
 
 .skeleton-block {
   height: 16px;
-  background: linear-gradient(90deg, rgba(51, 65, 85, 0.3) 25%, rgba(71, 85, 105, 0.5) 50%, rgba(51, 65, 85, 0.3) 75%);
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
   border-radius: 4px;
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
@@ -912,8 +939,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 20px;
   margin-bottom: 1.5rem;
 }
@@ -921,13 +948,13 @@ onMounted(() => {
 .empty-icon svg {
   width: 40px;
   height: 40px;
-  color: #475569;
+  color: #cbd5e1;
 }
 
 .empty-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1e293b;
   margin: 0 0 0.5rem;
 }
 
@@ -943,8 +970,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  background: rgba(15, 23, 42, 0.4);
-  border-top: 1px solid rgba(51, 65, 85, 0.4);
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -956,8 +983,8 @@ onMounted(() => {
 
 .info-highlight {
   font-weight: 500;
-  color: #f0a500;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #0d9488;
+  font-family: 'Outfit', 'SF Mono', 'Fira Code', monospace;
 }
 
 .pagination-controls {
@@ -967,16 +994,16 @@ onMounted(() => {
 
 /* Element Plus Pagination Override */
 .pagination-controls :deep(.el-pagination) {
-  --el-pagination-bg-color: rgba(15, 23, 42, 0.6);
-  --el-pagination-text-color: #e2e8f0;
-  --el-pagination-button-bg-color: rgba(15, 23, 42, 0.6);
-  --el-pagination-hover-color: #f0a500;
+  --el-pagination-bg-color: #ffffff;
+  --el-pagination-text-color: #475569;
+  --el-pagination-button-bg-color: #ffffff;
+  --el-pagination-hover-color: #0d9488;
   --el-pagination-font-size: 0.8rem;
 }
 
 .pagination-controls :deep(.el-pagination .el-pager li) {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   margin: 0 0.25rem;
   min-width: 32px;
@@ -985,51 +1012,51 @@ onMounted(() => {
 }
 
 .pagination-controls :deep(.el-pagination .el-pager li.is-active) {
-  background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
-  color: #0a0e17;
-  border-color: #f0a500;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #fff;
+  border-color: #0d9488;
 }
 
 .pagination-controls :deep(.el-pagination .el-pager li:hover) {
-  border-color: #f0a500;
+  border-color: #0d9488;
 }
 
 .pagination-controls :deep(.el-pagination .btn-prev),
 .pagination-controls :deep(.el-pagination .btn-next) {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  color: #e2e8f0;
+  color: #475569;
   min-width: 32px;
   height: 32px;
 }
 
 .pagination-controls :deep(.el-pagination .el-select .el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.6);
+  background: #ffffff;
   border-radius: 8px;
 }
 
 .pagination-controls :deep(.el-pagination .el-input__inner) {
-  color: #e2e8f0;
+  color: #475569;
 }
 
 /* Detail Dialog */
 .detail-dialog :deep(.el-dialog) {
-  background: rgba(15, 23, 42, 0.98);
-  border: 1px solid rgba(51, 65, 85, 0.4);
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12);
 }
 
 .detail-dialog :deep(.el-dialog__header) {
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .detail-dialog :deep(.el-dialog__title) {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1e293b;
 }
 
 .detail-dialog :deep(.el-dialog__headerbtn) {
@@ -1037,16 +1064,16 @@ onMounted(() => {
   right: 1rem;
   width: 32px;
   height: 32px;
-  background: rgba(71, 85, 105, 0.3);
+  background: #f8fafc;
   border-radius: 8px;
 }
 
 .detail-dialog :deep(.el-dialog__headerbtn:hover) {
-  background: rgba(255, 107, 107, 0.2);
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .detail-dialog :deep(.el-dialog__headerbtn .el-icon) {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 1.25rem;
 }
 
@@ -1064,7 +1091,7 @@ onMounted(() => {
   align-items: flex-start;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  border-bottom: 1px solid #f1f5f9;
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -1080,13 +1107,13 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .meta-item svg {
   width: 16px;
   height: 16px;
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .detail-tags {
@@ -1097,11 +1124,11 @@ onMounted(() => {
 
 .detail-tag {
   padding: 0.375rem 0.75rem;
-  background: rgba(240, 165, 0, 0.1);
-  border: 1px solid rgba(240, 165, 0, 0.2);
+  background: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.15);
   border-radius: 9999px;
   font-size: 0.75rem;
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .detail-section {
@@ -1118,29 +1145,29 @@ onMounted(() => {
   gap: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1e293b;
   margin: 0 0 0.75rem;
 }
 
 .section-title svg {
   width: 18px;
   height: 18px;
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .section-content {
   padding: 1rem;
-  background: rgba(15, 23, 42, 0.4);
-  border: 1px solid rgba(51, 65, 85, 0.3);
-  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   font-size: 0.9rem;
   line-height: 1.7;
-  color: #cbd5e1;
+  color: #475569;
 }
 
 .section-content.answer {
-  background: rgba(240, 165, 0, 0.05);
-  border-color: rgba(240, 165, 0, 0.2);
+  background: rgba(13, 148, 136, 0.03);
+  border-color: rgba(13, 148, 136, 0.15);
 }
 
 .section-content p {
@@ -1151,21 +1178,21 @@ onMounted(() => {
 .detail-footer {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(51, 65, 85, 0.3);
+  border-top: 1px solid #f1f5f9;
 }
 
 .source-link {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #f0a500;
+  color: #0d9488;
   text-decoration: none;
   font-size: 0.875rem;
   transition: all 0.2s ease;
 }
 
 .source-link:hover {
-  color: #f5af19;
+  color: #14b8a6;
 }
 
 .source-link svg {

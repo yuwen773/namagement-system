@@ -51,7 +51,7 @@
           <div class="user-info" v-show="!sidebarCollapsed">
             <span class="user-name">{{ authStore.userInfo.username }}</span>
             <span class="user-role">
-              <el-tag size="small" type="warning" effect="dark">管理员</el-tag>
+              <el-tag size="small" effect="light" class="admin-tag">管理员</el-tag>
             </span>
           </div>
         </div>
@@ -182,19 +182,19 @@ const adminNavItems = [
 </script>
 
 <style scoped>
-/* CSS Variables - Industrial Dark Theme */
+/* CSS Variables - Light Theme */
 .admin-layout {
-  --color-bg-primary: #0a0b0d;
-  --color-bg-secondary: #111318;
-  --color-bg-tertiary: #1a1d26;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(255, 255, 255, 0.12);
-  --color-accent: #f59e0b;
-  --color-accent-hover: #fbbf24;
-  --color-accent-dim: rgba(245, 158, 11, 0.12);
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+  --color-accent: #0d9488;
+  --color-accent-hover: #14b8a6;
+  --color-accent-dim: rgba(13, 148, 136, 0.1);
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 72px;
   --topbar-height: 64px;
@@ -214,8 +214,8 @@ const adminNavItems = [
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
   z-index: 0;
@@ -227,7 +227,7 @@ const adminNavItems = [
   height: 600px;
   top: -200px;
   right: -200px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -235,7 +235,7 @@ const adminNavItems = [
 /* Sidebar */
 .sidebar {
   width: var(--sidebar-width);
-  background: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+  background: linear-gradient(180deg, var(--color-bg-secondary) 0%, #f8fafc 100%);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -245,6 +245,7 @@ const adminNavItems = [
   left: 0;
   bottom: 0;
   z-index: 100;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.03);
 }
 
 .sidebar.collapsed {
@@ -273,19 +274,20 @@ const adminNavItems = [
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, var(--color-accent) 0%, #d97706 100%);
+  background: linear-gradient(145deg, var(--color-accent) 0%, #14b8a6 100%);
   border-radius: 12px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
 }
 
 .logo-icon svg {
   width: 26px;
   height: 26px;
-  color: #0a0b0d;
+  color: #ffffff;
 }
 
 .logo-text {
+  font-family: 'Outfit', 'PingFang SC', sans-serif;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-text-primary);
@@ -371,7 +373,7 @@ const adminNavItems = [
   transform: translateY(-50%);
   width: 3px;
   height: 24px;
-  background: linear-gradient(180deg, var(--color-accent) 0%, #f97316 100%);
+  background: linear-gradient(180deg, var(--color-accent) 0%, #14b8a6 100%);
   border-radius: 0 3px 3px 0;
 }
 
@@ -419,7 +421,7 @@ const adminNavItems = [
   align-items: center;
   gap: 0.75rem;
   padding: 0.875rem;
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   margin-bottom: 0.75rem;
@@ -431,11 +433,11 @@ const adminNavItems = [
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, var(--color-accent) 0%, #d97706 100%);
+  background: linear-gradient(145deg, var(--color-accent) 0%, #14b8a6 100%);
   border-radius: 10px;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #0a0b0d;
+  color: #ffffff;
   flex-shrink: 0;
 }
 
@@ -460,6 +462,38 @@ const adminNavItems = [
   color: var(--color-text-muted);
 }
 
+.admin-tag {
+  background: var(--color-accent-dim);
+  border-color: transparent;
+  color: var(--color-accent);
+}
+
+/* Element Plus Dropdown Overrides */
+:deep(.el-dropdown-menu) {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem;
+}
+
+:deep(.el-dropdown-menu__item) {
+  color: var(--color-text-secondary);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+}
+
+:deep(.el-dropdown-menu__item--divided) {
+  border-top: 1px solid var(--color-border);
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+}
+
 .logout-btn {
   width: 100%;
   display: flex;
@@ -477,8 +511,8 @@ const adminNavItems = [
 }
 
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
   color: #ef4444;
 }
 
@@ -510,12 +544,13 @@ const adminNavItems = [
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(17, 19, 24, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 50;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .breadcrumb-wrapper {
@@ -563,11 +598,11 @@ const adminNavItems = [
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, var(--color-accent) 0%, #d97706 100%);
+  background: linear-gradient(145deg, var(--color-accent) 0%, #14b8a6 100%);
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #0a0b0d;
+  color: #ffffff;
 }
 
 .user-name-small {
@@ -584,7 +619,7 @@ const adminNavItems = [
 /* Page Content */
 .page-content {
   flex: 1;
-  padding: 2rem;
+  padding: 0;
   overflow-x: hidden;
 }
 
@@ -641,7 +676,7 @@ const adminNavItems = [
   }
 
   .page-content {
-    padding: 1rem;
+    padding: 0;
   }
 }
 </style>

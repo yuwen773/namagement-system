@@ -352,11 +352,28 @@ const handlePasswordSubmit = async () => {
 .profile-page {
   min-height: 100%;
   padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  position: relative;
+}
+
+.profile-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(13, 148, 136, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+  pointer-events: none;
 }
 
 /* Header */
 .page-header {
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 .header-content {
@@ -377,15 +394,15 @@ const handlePasswordSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(240, 165, 0, 0.15) 0%, rgba(240, 165, 0, 0.05) 100%);
-  border: 1px solid rgba(240, 165, 0, 0.3);
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.12) 0%, rgba(20, 184, 166, 0.12) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.2);
   border-radius: 16px;
 }
 
 .header-icon svg {
   width: 28px;
   height: 28px;
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .header-text {
@@ -395,16 +412,16 @@ const handlePasswordSubmit = async () => {
 }
 
 .page-title {
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #f1f5f9;
+  font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1e293b;
   margin: 0;
   letter-spacing: -0.02em;
 }
 
 .page-subtitle {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #64748b;
   margin: 0;
 }
@@ -415,6 +432,8 @@ const handlePasswordSubmit = async () => {
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   max-width: 1200px;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 900px) {
@@ -426,11 +445,12 @@ const handlePasswordSubmit = async () => {
 /* Profile Card */
 .profile-card {
   position: relative;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 20px;
   overflow: hidden;
   animation: cardFadeIn 0.6s ease-out forwards;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .profile-card:first-child {
@@ -458,16 +478,16 @@ const handlePasswordSubmit = async () => {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #5c7cfa, #748ffc);
+  background: linear-gradient(90deg, #0d9488, #14b8a6);
 }
 
 .password-card .card-glow {
-  background: linear-gradient(90deg, #38a169, #48bb78);
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
 }
 
 .card-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e9f0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .card-title {
@@ -476,18 +496,18 @@ const handlePasswordSubmit = async () => {
   gap: 0.625rem;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #2d3748;
+  color: #1e293b;
   margin: 0;
 }
 
 .card-title svg {
   width: 22px;
   height: 22px;
-  color: #f0a500;
+  color: #0d9488;
 }
 
 .password-card .card-title svg {
-  color: #00d2ff;
+  color: #8b5cf6;
 }
 
 .card-body {
@@ -512,17 +532,17 @@ const handlePasswordSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
   border-radius: 20px;
   font-size: 1.75rem;
   font-weight: 700;
-  color: #0a0e17;
+  color: #ffffff;
 }
 
 .avatar-ring {
   position: absolute;
   inset: -4px;
-  border: 2px solid rgba(240, 165, 0, 0.3);
+  border: 2px solid rgba(13, 148, 136, 0.3);
   border-radius: 24px;
   animation: ringPulse 2s ease-in-out infinite;
 }
@@ -545,7 +565,7 @@ const handlePasswordSubmit = async () => {
 .username {
   font-size: 1.375rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1e293b;
   margin: 0 0 0.5rem;
 }
 
@@ -563,15 +583,15 @@ const handlePasswordSubmit = async () => {
 }
 
 .role-badge.admin {
-  background: rgba(240, 165, 0, 0.15);
-  color: #f0a500;
-  border: 1px solid rgba(240, 165, 0, 0.3);
+  background: rgba(13, 148, 136, 0.1);
+  color: #0d9488;
+  border: 1px solid rgba(13, 148, 136, 0.2);
 }
 
 .role-badge.user {
-  background: rgba(0, 210, 255, 0.15);
-  color: #00d2ff;
-  border: 1px solid rgba(0, 210, 255, 0.3);
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .user-id {
@@ -598,8 +618,8 @@ const handlePasswordSubmit = async () => {
   justify-content: space-between;
   align-items: center;
   padding: 0.875rem 1rem;
-  background: rgba(15, 23, 42, 0.4);
-  border: 1px solid rgba(51, 65, 85, 0.3);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
 }
 
@@ -610,7 +630,7 @@ const handlePasswordSubmit = async () => {
 
 .info-value {
   font-size: 0.875rem;
-  color: #f1f5f9;
+  color: #1e293b;
   font-weight: 500;
 }
 
@@ -623,7 +643,7 @@ const handlePasswordSubmit = async () => {
 .status-dot {
   width: 8px;
   height: 8px;
-  background: linear-gradient(135deg, #a8ff78 0%, #78ffd6 100%);
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
   border-radius: 50%;
   animation: statusPulse 2s ease-in-out infinite;
 }
@@ -647,8 +667,8 @@ const handlePasswordSubmit = async () => {
 }
 
 .password-input :deep(.el-input__wrapper) {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: none;
   padding: 0.25rem 0.75rem;
@@ -656,25 +676,25 @@ const handlePasswordSubmit = async () => {
 }
 
 .password-input :deep(.el-input__wrapper:hover) {
-  border-color: rgba(240, 165, 0, 0.5);
+  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .password-input :deep(.el-input__wrapper.is-focus) {
-  border-color: #f0a500;
-  box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.1);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .password-input :deep(.el-input__inner) {
-  color: #f1f5f9;
+  color: #1e293b;
   font-size: 0.9rem;
 }
 
 .password-input :deep(.el-input__inner::placeholder) {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .password-input :deep(.el-form-item__label) {
-  color: #94a3b8;
+  color: #475569;
   font-size: 0.875rem;
   font-weight: 500;
   padding-bottom: 0.5rem;
@@ -688,13 +708,13 @@ const handlePasswordSubmit = async () => {
   justify-content: center;
   background: none;
   border: none;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .toggle-btn:hover {
-  color: #f0a500;
+  color: #8b5cf6;
 }
 
 .toggle-btn svg {
@@ -713,10 +733,10 @@ const handlePasswordSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
   border: none;
   border-radius: 12px;
-  color: #0a0e17;
+  color: #ffffff;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -725,7 +745,7 @@ const handlePasswordSubmit = async () => {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(240, 165, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
 }
 
 .submit-btn:disabled {
@@ -753,17 +773,21 @@ const handlePasswordSubmit = async () => {
 .spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(10, 14, 23, 0.3);
-  border-top-color: #0a0e17;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Security Tips */
 .security-tips {
   padding: 1rem;
-  background: rgba(240, 165, 0, 0.05);
-  border: 1px solid rgba(240, 165, 0, 0.1);
+  background: rgba(139, 92, 246, 0.04);
+  border: 1px solid rgba(139, 92, 246, 0.1);
   border-radius: 12px;
 }
 
@@ -774,7 +798,7 @@ const handlePasswordSubmit = async () => {
   margin-bottom: 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #f0a500;
+  color: #8b5cf6;
 }
 
 .tips-header svg {
@@ -802,7 +826,7 @@ const handlePasswordSubmit = async () => {
 }
 
 .password-form :deep(.el-form-item__error) {
-  color: #ff6b6b;
+  color: #ef4444;
   font-size: 0.8rem;
   padding-top: 0.375rem;
 }
