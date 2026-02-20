@@ -58,12 +58,12 @@ const routes = [
     component: UserManagement,
     meta: { requiresAuth: true, roles: ['admin'], layout: 'admin', title: '用户管理' }
   },
-  // Notice Management - admin for management, regular users for viewing
+  // Notice Management - accessible to all authenticated users
   {
     path: '/notices',
     name: 'NoticeManagement',
     component: NoticeManagement,
-    meta: { requiresAuth: true, layout: 'user', title: '通知公告' }
+    meta: { requiresAuth: true, title: '通知公告' }
   },
   // Profile - accessible to all
   {
