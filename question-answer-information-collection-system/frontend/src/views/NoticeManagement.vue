@@ -11,8 +11,8 @@
             </svg>
           </div>
           <div class="header-text">
-            <h1 class="page-title">公告管理</h1>
-            <p class="page-subtitle">发布和管理系统公告</p>
+            <h1 class="page-title">{{ isAdmin ? '公告管理' : '通知公告' }}</h1>
+            <p class="page-subtitle">{{ isAdmin ? '发布和管理系统公告' : '查看系统公告通知' }}</p>
           </div>
         </div>
         <div class="header-stats">
@@ -65,7 +65,7 @@
           </svg>
           <span>刷新</span>
         </button>
-        <button class="add-btn" @click="openAddDialog">
+        <button v-if="isAdmin" class="add-btn" @click="openAddDialog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -86,7 +86,7 @@
             <div class="header-cell col-content">内容摘要</div>
             <div class="header-cell col-status">状态</div>
             <div class="header-cell col-created">创建时间</div>
-            <div class="header-cell col-actions">操作</div>
+            <div class="header-cell col-actions" v-if="isAdmin">操作</div>
           </div>
         </div>
 
@@ -130,7 +130,7 @@
               <div class="data-cell col-created">
                 <span class="time-text">{{ formatDate(row.created_at) }}</span>
               </div>
-              <div class="data-cell col-actions">
+              <div class="data-cell col-actions" v-if="isAdmin">
                 <button class="action-btn edit" @click="openEditDialog(row)" title="编辑">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -159,7 +159,7 @@
                 </svg>
               </div>
               <h3 class="empty-title">暂无公告</h3>
-              <p class="empty-desc">点击"添加公告"创建新公告</p>
+              <p class="empty-desc">{{ isAdmin ? '点击"添加公告"创建新公告' : '暂无系统公告' }}</p>
             </div>
           </template>
         </div>
@@ -250,9 +250,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
 import { getNoticeList, createNotice, updateNotice, deleteNotice } from '@/api/notices'
+
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.isAdmin)
 
 // Table state
 const tableData = ref([])
