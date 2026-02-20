@@ -31,4 +31,6 @@ urlpatterns = [
     path("api/auth/", include("apps.accounts.urls")),
     # Crawler API URLs
     path("api/", include("apps.api.urls")),
+    # Notices API URLs
+    path("api/notices/", include("apps.notices.urls")),
 ]

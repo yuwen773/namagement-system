@@ -4,6 +4,7 @@ import Login from '@/views/Login.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import DataCenter from '@/views/DataCenter.vue'
 import UserManagement from '@/views/UserManagement.vue'
+import NoticeManagement from '@/views/NoticeManagement.vue'
 import Profile from '@/views/Profile.vue'
 
 // Routes with lazy loading
@@ -44,6 +45,13 @@ const routes = [
     name: 'UserManagement',
     component: UserManagement,
     meta: { requiresAuth: true, roles: ['admin'], layout: 'admin', title: '用户管理' }
+  },
+  // Notice Management - admin only
+  {
+    path: '/notices',
+    name: 'NoticeManagement',
+    component: NoticeManagement,
+    meta: { requiresAuth: true, roles: ['admin'], layout: 'admin', title: '公告管理' }
   },
   // Profile - accessible to all
   {
