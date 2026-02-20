@@ -50,6 +50,7 @@
           </button>
           <button class="search-btn" :disabled="tableLoading" @click="handleSearch">
             <svg v-if="!tableLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
               <path d="m21 21-4.35-4.35"/>
             </svg>
             <span v-else class="loading-spinner-small"></span>
@@ -126,6 +127,7 @@
           <div class="header-row">
             <div class="header-cell col-id">ID</div>
             <div class="header-cell col-username">用户名</div>
+            <div class="header-cell col-email">邮箱</div>
             <div class="header-cell col-role">角色</div>
             <div class="header-cell col-status">状态</div>
             <div class="header-cell col-created">创建时间</div>
@@ -140,6 +142,7 @@
             <div v-for="n in 8" :key="n" class="skeleton-row">
               <div class="skeleton-cell col-id"><div class="skeleton-block" style="width: 30px;"></div></div>
               <div class="skeleton-cell col-username"><div class="skeleton-block" style="width: 100px;"></div></div>
+              <div class="skeleton-cell col-email"><div class="skeleton-block" style="width: 150px;"></div></div>
               <div class="skeleton-cell col-role"><div class="skeleton-block" style="width: 60px;"></div></div>
               <div class="skeleton-cell col-status"><div class="skeleton-block" style="width: 50px;"></div></div>
               <div class="skeleton-cell col-created"><div class="skeleton-block" style="width: 120px;"></div></div>
@@ -164,6 +167,9 @@
                   <span class="username-text">{{ row.username }}</span>
                 </div>
               </div>
+              <div class="data-cell col-email">
+                <span class="email-text" :title="row.email">{{ row.email || '-' }}</span>
+              </div>
               <div class="data-cell col-role">
                 <span class="role-badge" :class="row.role">
                   {{ row.role === 'admin' ? '管理员' : '普通用户' }}
@@ -176,7 +182,7 @@
                 </span>
               </div>
               <div class="data-cell col-created">
-                <span class="time-text">{{ formatDate(row.created_at) }}</span>
+                <span class="time-text">{{ formatDate(row.date_joined) }}</span>
               </div>
               <div class="data-cell col-actions">
                 <button class="action-btn edit" @click="openEditDialog(row)" title="编辑">
@@ -952,9 +958,10 @@ onMounted(() => {
 
 .col-id { width: 80px; flex-shrink: 0; text-align: center; }
 .col-username { width: 180px; flex-shrink: 0; }
+.col-email { flex: 1; min-width: 200px; }
 .col-role { width: 120px; flex-shrink: 0; }
 .col-status { width: 100px; flex-shrink: 0; }
-.col-created { width: 160px; flex-shrink: 0; }
+.col-created { width: 180px; flex-shrink: 0; }
 .col-actions { width: 120px; flex-shrink: 0; text-align: center; }
 
 .table-body {
@@ -993,7 +1000,16 @@ onMounted(() => {
 
 .col-id { justify-content: center; }
 .col-username { justify-content: flex-start; gap: 0.75rem; }
+.col-email { justify-content: flex-start; }
 .col-role { justify-content: flex-start; }
+
+.email-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #64748b;
+  width: 100%;
+}
 .col-status { justify-content: flex-start; }
 .col-created { justify-content: flex-start; }
 .col-actions { justify-content: center; gap: 0.5rem; }
@@ -1152,12 +1168,7 @@ onMounted(() => {
   100% { background-position: -200% 0; }
 }
 
-.col-id { width: 80px; flex-shrink: 0; }
-.col-username { width: 180px; flex-shrink: 0; }
-.col-role { width: 120px; flex-shrink: 0; }
-.col-status { width: 100px; flex-shrink: 0; }
-.col-created { width: 160px; flex-shrink: 0; }
-.col-actions { width: 120px; flex-shrink: 0; }
+
 
 /* Empty State */
 .empty-state {
