@@ -235,6 +235,7 @@ import {
   EditPen
 } from '@element-plus/icons-vue'
 import { getMyAttendance, getAttendanceStatistics } from '../../api/attendance'
+import { createAppeal } from '../../api/salary'
 import { useUserStore } from '../../stores/user'
 
 const userStore = useUserStore()
@@ -411,15 +412,29 @@ const submitAppeal = async () => {
 
     submitting.value = true
 
-    // TODO: 调用后端 API 提交申诉
-    // 目前仅模拟提交成功
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // 获取员工 ID
+    const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
+    if (!employeeId) {
+      ElMessage.error('未找到员工信息')
+      return
+    }
+
+    // 调用后端 API 提交申诉
+    await createAppeal({
+      appeal_type: 'ATTENDANCE',
+      employee: employeeId,
+      target_id: currentAppealRecord.value?.id,
+      reason: appealForm.reason
+    })
 
     ElMessage.success('异常上报已提交，等待管理员审核')
     appealDialogVisible.value = false
+    // 重置表单
+    appealForm.reason = ''
   } catch (error) {
     if (error !== false) {
       console.error('提交异常上报失败:', error)
+      ElMessage.error('提交失败，请稍后重试')
     }
   } finally {
     submitting.value = false
