@@ -668,9 +668,9 @@ const handleExport = async () => {
   }
 
   try {
-    const response = await exportSalarySheet({ year_month: selectedMonth.value })
-    // 处理 blob 下载
-    const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const res = await exportSalarySheet({ year_month: selectedMonth.value })
+    // 处理 blob 下载（响应拦截器返回整个 response 对象）
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
