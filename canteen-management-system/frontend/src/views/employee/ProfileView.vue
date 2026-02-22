@@ -3,11 +3,42 @@
     <!-- 页面标题 -->
     <div class="page-header">
       <h1>个人信息中心</h1>
-      <p>查看您的个人档案、岗位信息及资质证书</p>
+      <p v-if="userStore.isAdmin">查看您的管理员账户信息</p>
+      <p v-else>查看您的个人档案、岗位信息及资质证书</p>
     </div>
 
-    <!-- 个人信息卡片 -->
-    <el-card class="info-card" shadow="hover">
+    <!-- 管理员个人信息卡片 -->
+    <el-card v-if="userStore.isAdmin" class="info-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <el-icon :size="20" color="#409EFF"><User /></el-icon>
+          <span>账户信息</span>
+        </div>
+      </template>
+      <div class="info-content" v-loading="loading">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="用户名">
+            <span class="info-value">{{ employeeProfile?.username || '-' }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="角色">
+            <el-tag type="primary" effect="dark">
+              {{ employeeProfile?.role_display || employeeProfile?.role || '-' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="账号状态">
+            <el-tag :type="employeeProfile?.status === 'ENABLED' ? 'success' : 'danger'" effect="plain">
+              {{ employeeProfile?.status_display || employeeProfile?.status || '-' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="创建时间">
+            <span class="info-value">{{ employeeProfile?.created_at || '-' }}</span>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+    </el-card>
+
+    <!-- 员工个人信息卡片 -->
+    <el-card v-else class="info-card" shadow="hover">
       <template #header>
         <div class="card-header">
           <el-icon :size="20" color="#FF6B35"><User /></el-icon>
@@ -48,8 +79,8 @@
       </div>
     </el-card>
 
-    <!-- 证书信息卡片 -->
-    <el-card class="info-card certificate-card" shadow="hover">
+    <!-- 证书信息卡片（仅员工显示） -->
+    <el-card v-if="!userStore.isAdmin" class="info-card certificate-card" shadow="hover">
       <template #header>
         <div class="card-header">
           <el-icon :size="20" color="#F7C52D"><Document /></el-icon>
@@ -223,6 +254,21 @@ const isHealthCertExpiringSoon = computed(() => {
 
 // 获取员工档案信息
 const fetchEmployeeProfile = async () => {
+  // 管理员显示管理员信息
+  if (userStore.isAdmin) {
+    employeeProfile.value = {
+      isAdmin: true,
+      username: userStore.userInfo?.username,
+      role: userStore.userInfo?.role,
+      role_display: userStore.userInfo?.role_display,
+      status: userStore.userInfo?.status,
+      status_display: userStore.userInfo?.status_display,
+      created_at: userStore.userInfo?.created_at
+    }
+    return
+  }
+
+  // 员工获取员工档案信息
   const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.id
   if (!employeeId) {
     ElMessage.warning('未关联员工档案')
