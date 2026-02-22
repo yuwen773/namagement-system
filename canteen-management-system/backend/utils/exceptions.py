@@ -178,6 +178,7 @@ class AuthenticationException(BaseAPIException):
 class InvalidCredentialsException(AuthenticationException):
     """用户名或密码错误异常"""
 
+    status_code = 400  # 改为 400，避免前端误认为是登录过期
     error_code = 'E011'
     default_message = '用户名或密码错误'
 
