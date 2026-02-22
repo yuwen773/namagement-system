@@ -94,6 +94,13 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+// 响应式检测
+const isMobile = ref(window.innerWidth < 768)
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
 
@@ -142,14 +149,16 @@ const handleLogout = () => {
 
 onMounted(() => {
   updateDate()
-  // 每秒更新时间
-  dateTimer = setInterval(updateDate, 1000)
+  dateTimer = setInterval(updateDate, 60000) // 改为每分钟更新一次
+  window.addEventListener('resize', checkMobile)
+  checkMobile() // 初始化检测
 })
 
 onUnmounted(() => {
   if (dateTimer) {
     clearInterval(dateTimer)
   }
+  window.removeEventListener('resize', checkMobile)
 })
 </script>
 
@@ -298,8 +307,15 @@ onUnmounted(() => {
 }
 
 /* 响应式设计 */
-/* 小屏幕（笔记本） < 1200px */
-@media (max-width: 1199px) {
+/* 大桌面 1440px+ */
+@media (min-width: 1440px) {
+  .top-menu {
+    max-width: 800px;
+  }
+}
+
+/* 桌面 1200px - 1439px */
+@media (min-width: 1200px) and (max-width: 1439px) {
   .top-header {
     padding: 0 20px;
   }
@@ -313,42 +329,101 @@ onUnmounted(() => {
   }
 
   .main-content {
-    padding: 16px;
+    padding: 18px;
   }
 
   .logo-text {
     font-size: 18px;
   }
 
+  .top-menu {
+    max-width: 600px;
+  }
+
   .top-menu :deep(.el-menu-item) {
     font-size: 15px;
-    padding: 0 14px;
+    padding: 0 16px;
+  }
+}
+
+/* 小桌面 992px - 1199px */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .top-header {
+    padding: 0 16px;
+  }
+
+  .header-right {
+    gap: 12px;
+  }
+
+  .user-name {
+    max-width: 60px;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+
+  .logo-text {
+    font-size: 16px;
   }
 
   .top-menu {
     max-width: 500px;
   }
-}
 
-/* 中等屏幕 1200px - 1439px */
-@media (min-width: 1200px) and (max-width: 1439px) {
-  .main-content {
-    padding: 18px;
-  }
-
-  .top-menu {
-    /* max-width removed */
+  .top-menu :deep(.el-menu-item) {
+    font-size: 14px;
+    padding: 0 12px;
+    height: 56px;
+    line-height: 56px;
   }
 }
 
-/* 超小屏幕（特殊优化） < 768px */
-@media (max-width: 767px) {
+/* 平板 768px - 991px */
+@media (min-width: 768px) and (max-width: 991px) {
   .top-header {
     padding: 0 12px;
     height: 56px;
   }
 
   .logo-text {
+    font-size: 14px;
+  }
+
+  .header-center {
+    display: none;
+  }
+
+  .header-right {
+    gap: 12px;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .date-info {
+    display: none;
+  }
+
+  .main-content {
+    padding: 12px;
+  }
+}
+
+/* 手机 < 768px */
+@media (max-width: 767px) {
+  .top-header {
+    padding: 0 8px;
+    height: 52px;
+  }
+
+  .logo-text {
+    display: none;
+  }
+
+  .header-center {
     display: none;
   }
 
@@ -361,7 +436,7 @@ onUnmounted(() => {
   }
 
   .main-content {
-    padding: 12px;
+    padding: 8px;
   }
 
   .top-menu :deep(.el-menu-item) {
@@ -375,7 +450,6 @@ onUnmounted(() => {
     padding: 6px 8px;
   }
 
-  /* 更大的点击区域 */
   .user-dropdown,
   .top-menu :deep(.el-menu-item) {
     min-height: 44px;
