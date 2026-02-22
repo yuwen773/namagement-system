@@ -69,6 +69,12 @@ const routes = [
         name: 'SystemManage',
         component: () => import('../views/admin/SystemManageView.vue'),
         meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: 'profile',
+        name: 'AdminProfile',
+        component: () => import('../views/employee/ProfileView.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
       }
     ]
   },

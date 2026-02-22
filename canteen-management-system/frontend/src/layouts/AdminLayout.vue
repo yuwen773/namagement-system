@@ -197,7 +197,7 @@ const toggleCollapse = () => {
 const handleUserAction = (command) => {
   switch (command) {
     case 'profile':
-      ElMessage.info('个人信息功能开发中')
+      router.push('/admin/profile')
       break
     case 'settings':
       router.push('/admin/system')
