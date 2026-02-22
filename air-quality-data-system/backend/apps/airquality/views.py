@@ -7,21 +7,29 @@ from io import BytesIO, StringIO
 from pathlib import Path
 
 import pandas as pd
+from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Max, Min, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsAdminUser
 from apps.airquality.filters import HistoricalDataFilter
 from apps.airquality.models import AirQualityData, City, MonitoringStation
-from apps.airquality.serializers import HistoricalAirQualitySerializer, ProvinceCitySerializer
+from apps.airquality.serializers import (
+    AirQualityDataManageSerializer,
+    HistoricalAirQualitySerializer,
+    ProvinceCitySerializer,
+)
 from apps.airquality.services import (
     POLLUTANT_FIELDS,
     calc_quality_level_from_aqi,
@@ -38,6 +46,8 @@ from apps.logs.serializers import ImportTaskLogSerializer, ImportTaskSerializer
 from utils.data_importer import run_import_task, submit_import_task
 from utils.exception_handler import ValidationError
 from utils.response import APIResponse
+
+SERVICE_START_TIME = timezone.now()
 
 
 def _get_required_int_query_param(
@@ -72,6 +82,31 @@ def _parse_filter_errors(filterset: HistoricalDataFilter):
     raise ValidationError(message, field=first_field)
 
 
+def _raise_serializer_validation_error(errors: dict):
+    first_field, first_errors = next(iter(errors.items()))
+    if isinstance(first_errors, (list, tuple)) and first_errors:
+        message = str(first_errors[0])
+    else:
+        message = str(first_errors)
+    raise ValidationError(message=message, field=str(first_field))
+
+
+def _parse_int_payload(value, field: str) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ValidationError("格式错误，应为整数", field=field)
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Admin - Import"],
+        summary="上传导入文件",
+        description="管理员上传 CSV/XLS/XLSX 文件并创建导入任务，返回 task_id。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class DataImportUploadView(APIView):
     """
     Phase 1 - Step 1.3.2
@@ -140,7 +175,18 @@ class DataImportUploadView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Import"],
+        summary="查询导入任务列表",
+        description="管理员分页查询导入任务状态。",
+        operation_id="admin_data_import_tasks_list",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskListView(APIView):
+    """Admin endpoint for paginated import task list and status tracking."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -159,7 +205,18 @@ class ImportTaskListView(APIView):
         return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Import"],
+        summary="查询导入任务详情",
+        description="管理员根据 task_id 查询单个导入任务详情。",
+        operation_id="admin_data_import_tasks_detail",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskDetailView(APIView):
+    """Admin endpoint for a single import task detail by task_id."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request, task_id: str):
@@ -170,7 +227,17 @@ class ImportTaskDetailView(APIView):
         return APIResponse.success(data=ImportTaskSerializer(task).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Import"],
+        summary="查询导入任务日志",
+        description="管理员分页查询指定导入任务的失败日志。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskLogListView(APIView):
+    """Admin endpoint for paginated import failure logs under one task."""
+
     permission_classes = [IsAdminUser]
 
     def get(self, request, task_id: str):
@@ -193,6 +260,14 @@ class ImportTaskLogListView(APIView):
         return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=["Admin - Import"],
+        summary="取消导入任务（可选）",
+        description="将运行中的导入任务标记为失败（不终止已启动线程）。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ImportTaskCancelView(APIView):
     """
     Optional helper: mark a running task as FAILED (no hard cancellation of executor thread).
@@ -215,7 +290,208 @@ class ImportTaskCancelView(APIView):
         return APIResponse.success(data=ImportTaskSerializer(task).data, message="已标记为失败")
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Dashboard"],
+        summary="查询管理端仪表盘",
+        description="返回系统运行信息、数据统计、用户统计与最近导入任务。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
+class AdminDashboardView(APIView):
+    """Admin dashboard endpoint aggregating system, data, user, and import metrics."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        now = timezone.now()
+        today = now.date()
+
+        data_summary = AirQualityData.objects.aggregate(
+            total_data_count=Count("id"),
+            today_new_count=Count("id", filter=Q(monitor_time__date=today)),
+            covered_city_count=Count("station__city_id", distinct=True),
+        )
+
+        user_model = get_user_model()
+        user_summary = user_model.objects.aggregate(
+            total_user_count=Count("id", filter=Q(is_deleted=False)),
+            today_active_user_count=Count(
+                "id",
+                filter=Q(is_deleted=False, last_login__date=today),
+                distinct=True,
+            ),
+        )
+
+        latest_task = ImportTask.objects.order_by("-start_time", "-id").first()
+        latest_task_data = None
+        latest_import_time = None
+        if latest_task is not None:
+            latest_import_time = latest_task.start_time
+            latest_task_data = {
+                "task_id": latest_task.task_id,
+                "status": latest_task.status,
+                "file_name": latest_task.file_name,
+                "file_type": latest_task.file_type,
+                "start_time": latest_task.start_time,
+                "end_time": latest_task.end_time,
+                "total_count": latest_task.total_count,
+                "success_count": latest_task.success_count,
+                "failed_count": latest_task.failed_count,
+            }
+
+        uptime_seconds = max(0, int((now - SERVICE_START_TIME).total_seconds()))
+
+        return APIResponse.success(
+            data={
+                "system": {
+                    "service_start_time": SERVICE_START_TIME,
+                    "current_time": now,
+                    "uptime_seconds": uptime_seconds,
+                    "latest_import_time": latest_import_time,
+                },
+                "data_summary": data_summary,
+                "user_summary": user_summary,
+                "latest_import_task": latest_task_data,
+            }
+        )
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - AirQuality"],
+        summary="查询空气质量数据（管理端）",
+        description="管理员分页查询空气质量记录，支持多条件过滤与排序。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    put=extend_schema(
+        tags=["Admin - AirQuality"],
+        summary="更新空气质量数据",
+        description="管理员按 id 更新空气质量记录。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    ),
+    delete=extend_schema(
+        tags=["Admin - AirQuality"],
+        summary="删除空气质量数据",
+        description="管理员按 id 或 ids 删除空气质量记录。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
+class AirQualityDataManageView(APIView):
+    """Admin CRUD endpoint for air quality records with filtering and pagination."""
+
+    permission_classes = [IsAdminUser]
+    ordering_fields = {"monitor_time", "-monitor_time", "aqi", "-aqi"}
+
+    def _get_queryset(self, request):
+        queryset = AirQualityData.objects.select_related("station__city__province")
+
+        city_code = (request.query_params.get("city_code") or "").strip()
+        if city_code:
+            queryset = queryset.filter(station__city__code=city_code)
+
+        station_code = (request.query_params.get("station_code") or "").strip()
+        if station_code:
+            queryset = queryset.filter(station__code=station_code)
+
+        quality_level = (request.query_params.get("quality_level") or "").strip()
+        if quality_level:
+            queryset = queryset.filter(quality_level=quality_level)
+
+        start_date = _get_optional_date_query_param(request, "start_date")
+        end_date = _get_optional_date_query_param(request, "end_date")
+        if start_date:
+            queryset = queryset.filter(monitor_time__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(monitor_time__date__lte=end_date)
+
+        return queryset
+
+    def get(self, request):
+        page = _get_required_int_query_param(
+            request=request, field="page", default=1, min_value=1, max_value=100_000
+        )
+        page_size = _get_required_int_query_param(
+            request=request, field="page_size", default=20, min_value=1, max_value=200
+        )
+        ordering = request.query_params.get("ordering", "-monitor_time")
+        if ordering not in self.ordering_fields:
+            raise ValidationError("仅支持 monitor_time/-monitor_time/aqi/-aqi", field="ordering")
+
+        queryset = self._get_queryset(request).order_by(ordering, "-id")
+        total = queryset.count()
+        items = queryset[(page - 1) * page_size : page * page_size]
+        data = AirQualityDataManageSerializer(items, many=True).data
+        return APIResponse.paginate(data=data, total=total, page=page, page_size=page_size)
+
+    def put(self, request):
+        data_id = _parse_int_payload(request.data.get("id"), field="id")
+        record = (
+            AirQualityData.objects.select_related("station__city__province").filter(id=data_id).first()
+        )
+        if record is None:
+            return APIResponse.error(404, "空气质量数据不存在")
+
+        serializer = AirQualityDataManageSerializer(record, data=request.data, partial=True)
+        if not serializer.is_valid():
+            _raise_serializer_validation_error(serializer.errors)
+        serializer.save()
+
+        refreshed = (
+            AirQualityData.objects.select_related("station__city__province").filter(id=record.id).first()
+        )
+        return APIResponse.success(data=AirQualityDataManageSerializer(refreshed).data)
+
+    def delete(self, request):
+        single_id = request.data.get("id")
+        id_list = request.data.get("ids")
+
+        if single_id is None and not id_list:
+            raise ValidationError("至少提供 id 或 ids", field="id")
+
+        if single_id is not None:
+            record_id = _parse_int_payload(single_id, field="id")
+            queryset = AirQualityData.objects.filter(id=record_id)
+            if not queryset.exists():
+                return APIResponse.error(404, "空气质量数据不存在")
+            deleted_count, _ = queryset.delete()
+            return APIResponse.success(data={"deleted_count": deleted_count}, message="删除成功")
+
+        if not isinstance(id_list, list):
+            raise ValidationError("格式错误，应为整数数组", field="ids")
+
+        normalized_ids = []
+        for raw in id_list:
+            value = _parse_int_payload(raw, field="ids")
+            if value > 0 and value not in normalized_ids:
+                normalized_ids.append(value)
+
+        if not normalized_ids:
+            raise ValidationError("至少提供一个有效 id", field="ids")
+
+        deleted_count, _ = AirQualityData.objects.filter(id__in=normalized_ids).delete()
+        return APIResponse.success(data={"deleted_count": deleted_count}, message="批量删除完成")
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=["User - Overview"],
+        summary="查询全国概览",
+        description="返回全国平均指标、地图数据与城市数量。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    top_cities=extend_schema(
+        tags=["User - Overview"],
+        summary="查询 Top 城市",
+        description="返回空气质量最佳/最差城市排行榜。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class AirQualityOverviewViewSet(viewsets.ViewSet):
+    """Public overview endpoints for national summary and top city rankings."""
+
     permission_classes = [AllowAny]
 
     @method_decorator(cache_page(60))
@@ -324,7 +600,17 @@ class AirQualityOverviewViewSet(viewsets.ViewSet):
         return APIResponse.success(data={"best": best, "worst": worst})
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - City"],
+        summary="查询城市详情",
+        description="根据城市编码查询城市最新空气质量快照。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CityDetailView(APIView):
+    """Public endpoint for city-level latest air quality snapshot."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -349,7 +635,17 @@ class CityDetailView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - City"],
+        summary="查询城市趋势",
+        description="根据城市编码查询指定小时窗口内的趋势数据。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CityTrendView(APIView):
+    """Public endpoint for city-level hourly trend data in a time window."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -371,7 +667,17 @@ class CityTrendView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Station"],
+        summary="查询站点详情",
+        description="根据站点编码查询站点最新空气质量快照。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class StationDetailView(APIView):
+    """Public endpoint for station-level latest air quality snapshot."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -400,7 +706,17 @@ class StationDetailView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Station"],
+        summary="查询站点趋势",
+        description="根据站点编码查询指定小时窗口内的趋势数据。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class StationTrendView(APIView):
+    """Public endpoint for station-level hourly trend data in a time window."""
+
     permission_classes = [AllowAny]
 
     def get(self, request, code: str):
@@ -424,7 +740,29 @@ class StationTrendView(APIView):
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["User - Historical"],
+        summary="查询历史数据",
+        description="分页查询历史空气质量数据，支持过滤与排序。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    export=extend_schema(
+        tags=["User - Historical"],
+        summary="导出历史数据",
+        description="按筛选条件导出历史数据文件，支持 CSV/XLSX。",
+        responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT},
+    ),
+    statistics=extend_schema(
+        tags=["User - Historical"],
+        summary="统计历史数据",
+        description="返回筛选条件的统计信息，包括总数、平均/最高/最低AQI及优良占比。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
 class HistoricalDataViewSet(viewsets.ViewSet):
+    """Public historical query and export endpoints for air quality records."""
+
     permission_classes = [AllowAny]
     ordering_fields = {"monitor_time", "-monitor_time", "aqi", "-aqi"}
 
@@ -458,7 +796,26 @@ class HistoricalDataViewSet(viewsets.ViewSet):
         if export_format not in {"csv", "xlsx"}:
             raise ValidationError("仅支持 csv/xlsx", field="format")
 
-        queryset = self._get_filtered_queryset(request).order_by("-monitor_time", "-id")
+        # Build queryset with filters, ignoring empty string values
+        queryset = AirQualityData.objects.select_related("station__city__province")
+
+        city_code = (request.query_params.get("city_code") or "").strip()
+        if city_code:
+            queryset = queryset.filter(station__city__code=city_code)
+
+        station_code = (request.query_params.get("station_code") or "").strip()
+        if station_code:
+            queryset = queryset.filter(station__code=station_code)
+
+        start_date = _get_optional_date_query_param(request, "start_date")
+        if start_date:
+            queryset = queryset.filter(monitor_time__date__gte=start_date)
+
+        end_date = _get_optional_date_query_param(request, "end_date")
+        if end_date:
+            queryset = queryset.filter(monitor_time__date__lte=end_date)
+
+        queryset = queryset.order_by("-monitor_time", "-id")
         if not queryset.exists():
             return APIResponse.error(400, "没有可导出的数据")
 
@@ -492,6 +849,12 @@ class HistoricalDataViewSet(viewsets.ViewSet):
             }
         )
 
+        # Convert timezone-aware datetime to naive datetime for Excel export
+        if "monitor_time" in data_frame.columns:
+            data_frame["monitor_time"] = data_frame["monitor_time"].apply(
+                lambda x: x.replace(tzinfo=None) if x and hasattr(x, 'tzinfo') else x
+            )
+
         timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
         if export_format == "csv":
             buffer = StringIO()
@@ -509,8 +872,73 @@ class HistoricalDataViewSet(viewsets.ViewSet):
         response["Content-Disposition"] = f'attachment; filename="historical_data_{timestamp}.xlsx"'
         return response
 
+    @action(detail=False, methods=["get"], url_path="statistics")
+    def statistics(self, request):
+        """返回历史数据的统计信息（基于所有筛选条件，不分页）"""
+        # Build queryset with filters
+        queryset = AirQualityData.objects.all()
 
+        city_code = (request.query_params.get("city_code") or "").strip()
+        if city_code:
+            queryset = queryset.filter(station__city__code=city_code)
+
+        station_code = (request.query_params.get("station_code") or "").strip()
+        if station_code:
+            queryset = queryset.filter(station__code=station_code)
+
+        start_date = _get_optional_date_query_param(request, "start_date")
+        if start_date:
+            queryset = queryset.filter(monitor_time__date__gte=start_date)
+
+        end_date = _get_optional_date_query_param(request, "end_date")
+        if end_date:
+            queryset = queryset.filter(monitor_time__date__lte=end_date)
+
+        # Calculate statistics
+        total = queryset.count()
+        if total == 0:
+            return APIResponse.success(
+                data={
+                    "total": 0,
+                    "avgAQI": None,
+                    "maxAQI": None,
+                    "minAQI": None,
+                    "excellentRate": None,
+                }
+            )
+
+        stats = queryset.aggregate(
+            avgAQI=Avg("aqi"),
+            maxAQI=Max("aqi"),
+            minAQI=Min("aqi"),
+        )
+
+        excellent_count = queryset.filter(aqi__lte=50).count()
+        excellent_rate = round((excellent_count / total) * 100, 1)
+
+        return APIResponse.success(
+            data={
+                "total": total,
+                "avgAQI": to_int(stats["avgAQI"]),
+                "maxAQI": stats["maxAQI"],
+                "minAQI": stats["minAQI"],
+                "excellentRate": excellent_rate,
+            }
+        )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["User - Analysis"],
+        summary="城市对比分析",
+        description="对多个城市进行趋势对比分析。",
+        request=OpenApiTypes.OBJECT,
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CityComparisonView(APIView):
+    """Public analysis endpoint for multi-city trend comparison."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -559,7 +987,17 @@ class CityComparisonView(APIView):
         return APIResponse.success(data={"hours": hours, "series": series})
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Analysis"],
+        summary="污染物相关性分析",
+        description="计算两个污染物之间的相关系数并返回散点数据。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class CorrelationAnalysisView(APIView):
+    """Public analysis endpoint for pollutant correlation and scatter data."""
+
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -626,7 +1064,17 @@ class CorrelationAnalysisView(APIView):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Analysis"],
+        summary="AQI 分布统计",
+        description="统计空气质量等级分布及占比。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class AQIDistributionView(APIView):
+    """Public analysis endpoint for AQI quality-level distribution statistics."""
+
     permission_classes = [AllowAny]
 
     def get(self, request):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import ImportTask, ImportTaskLog
+from .models import ErrorLog, ImportTask, ImportTaskLog, OperationLog
 
 
 class ImportTaskSerializer(serializers.ModelSerializer):
@@ -41,3 +41,32 @@ class ImportTaskLogSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+
+class OperationLogSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model = OperationLog
+        fields = [
+            "id",
+            "user",
+            "username",
+            "operation_type",
+            "operation_content",
+            "ip_address",
+            "operation_time",
+        ]
+        read_only_fields = fields
+
+
+class ErrorLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ErrorLog
+        fields = [
+            "id",
+            "error_type",
+            "error_message",
+            "stack_trace",
+            "occurred_at",
+        ]
+        read_only_fields = fields

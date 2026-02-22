@@ -1,0 +1,65 @@
+[
+    {
+        "endpoint": "POST /api/auth/login/",
+        "scenario": "缺少用户名",
+        "current_message": "该字段是必填项。",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "请输入用户名"
+    },
+    {
+        "endpoint": "POST /api/auth/login/",
+        "scenario": "缺少密码",
+        "current_message": "该字段是必填项。",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "请输入密码"
+    },
+    {
+        "endpoint": "POST /api/auth/register/",
+        "scenario": "缺少用户名",
+        "current_message": "该字段是必填项。",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "请输入用户名"
+    },
+    {
+        "endpoint": "POST /api/auth/register/",
+        "scenario": "缺少密码",
+        "current_message": "用户名已存在",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "请输入密码"
+    },
+    {
+        "endpoint": "POST /api/auth/register/",
+        "scenario": "缺少邮箱",
+        "current_message": "用户名已存在",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "请输入邮箱地址"
+    },
+    {
+        "endpoint": "POST /api/auth/register/",
+        "scenario": "密码长度不足（少于6位）",
+        "current_message": "用户名已存在",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "密码长度至少需要6位"
+    },
+    {
+        "endpoint": "POST /api/auth/register/",
+        "scenario": "邮箱格式错误",
+        "current_message": "请输入合法的邮件地址。",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "请输入有效的邮箱地址"
+    },
+    {
+        "endpoint": "POST /api/auth/register/",
+        "scenario": "用户名长度不足（少于3位）",
+        "current_message": "请确保这个字段至少包含 3 个字符。",
+        "issue": "DRF 默认消息，比较生硬",
+        "suggested_message": "用户名长度至少需要3位"
+    },
+    {
+        "endpoint": "POST /api/auth/register/",
+        "scenario": "用户名已存在",
+        "current_message": "用户名已存在",
+        "issue": "自定义消息，但可以更友好",
+        "suggested_message": "该用户名已被注册，请更换其他用户名"
+    }
+]

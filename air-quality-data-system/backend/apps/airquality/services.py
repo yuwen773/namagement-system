@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import timedelta
 from typing import Any
 
 from django.db.models import Avg, OuterRef, Subquery
-from django.db.models.functions import TruncHour
 from django.utils import timezone
 
 from .models import AirQualityData, MonitoringStation
@@ -99,6 +99,45 @@ def get_station_latest_snapshot(station) -> dict[str, Any] | None:
     }
 
 
+def _group_by_hour(records) -> list[dict[str, Any]]:
+    """Group records by hour in Python (avoids TruncHour timezone issues)."""
+    hourly_data = defaultdict(lambda: {"aqi": [], "pm25": [], "pm10": [], "so2": [], "no2": [], "co": [], "o3": []})
+
+    for record in records:
+        # Truncate to hour
+        hour_key = record["monitor_time"].replace(minute=0, second=0, microsecond=0)
+        hourly_data[hour_key]["aqi"].append(record["aqi"])
+        hourly_data[hour_key]["pm25"].append(record["pm25"])
+        hourly_data[hour_key]["pm10"].append(record["pm10"])
+        hourly_data[hour_key]["so2"].append(record["so2"])
+        hourly_data[hour_key]["no2"].append(record["no2"])
+        hourly_data[hour_key]["co"].append(record["co"])
+        hourly_data[hour_key]["o3"].append(record["o3"])
+
+    result = []
+    for hour_key in sorted(hourly_data.keys()):
+        data = hourly_data[hour_key]
+        # Calculate averages for each pollutant
+        def avg_list(lst):
+            if not lst or all(v is None for v in lst):
+                return None
+            vals = [v for v in lst if v is not None]
+            return sum(vals) / len(vals) if vals else None
+
+        result.append({
+            "time": hour_key,
+            "aqi": to_int(avg_list(data["aqi"])),
+            "pm25": to_float(avg_list(data["pm25"])),
+            "pm10": to_float(avg_list(data["pm10"])),
+            "so2": to_float(avg_list(data["so2"])),
+            "no2": to_float(avg_list(data["no2"])),
+            "co": to_float(avg_list(data["co"])),
+            "o3": to_float(avg_list(data["o3"])),
+        })
+
+    return result
+
+
 def get_city_hourly_trend(city, hours: int = 24) -> list[dict[str, Any]]:
     latest_snapshot = get_city_latest_snapshot(city)
     if latest_snapshot is None:
@@ -107,39 +146,14 @@ def get_city_hourly_trend(city, hours: int = 24) -> list[dict[str, Any]]:
     latest_time = latest_snapshot["monitor_time"]
     start_time = latest_time - timedelta(hours=max(hours, 1) - 1)
 
-    rows = (
+    # Get all records in the time range
+    records = list(
         AirQualityData.objects.filter(
             station__city=city, monitor_time__gte=start_time, monitor_time__lte=latest_time
-        )
-        .annotate(hour=TruncHour("monitor_time", tzinfo=timezone.get_current_timezone()))
-        .values("hour")
-        .annotate(
-            aqi=Avg("aqi"),
-            pm25=Avg("pm25"),
-            pm10=Avg("pm10"),
-            so2=Avg("so2"),
-            no2=Avg("no2"),
-            co=Avg("co"),
-            o3=Avg("o3"),
-        )
-        .order_by("hour")
+        ).values("monitor_time", "aqi", "pm25", "pm10", "so2", "no2", "co", "o3")
     )
 
-    result = []
-    for row in rows:
-        result.append(
-            {
-                "time": row["hour"],
-                "aqi": to_int(row["aqi"]),
-                "pm25": to_float(row["pm25"]),
-                "pm10": to_float(row["pm10"]),
-                "so2": to_float(row["so2"]),
-                "no2": to_float(row["no2"]),
-                "co": to_float(row["co"]),
-                "o3": to_float(row["o3"]),
-            }
-        )
-    return result
+    return _group_by_hour(records)
 
 
 def get_station_hourly_trend(station, hours: int = 24) -> list[dict[str, Any]]:
@@ -150,39 +164,14 @@ def get_station_hourly_trend(station, hours: int = 24) -> list[dict[str, Any]]:
     latest_time = latest_snapshot["monitor_time"]
     start_time = latest_time - timedelta(hours=max(hours, 1) - 1)
 
-    rows = (
+    # Get all records in the time range
+    records = list(
         AirQualityData.objects.filter(
             station=station, monitor_time__gte=start_time, monitor_time__lte=latest_time
-        )
-        .annotate(hour=TruncHour("monitor_time", tzinfo=timezone.get_current_timezone()))
-        .values("hour")
-        .annotate(
-            aqi=Avg("aqi"),
-            pm25=Avg("pm25"),
-            pm10=Avg("pm10"),
-            so2=Avg("so2"),
-            no2=Avg("no2"),
-            co=Avg("co"),
-            o3=Avg("o3"),
-        )
-        .order_by("hour")
+        ).values("monitor_time", "aqi", "pm25", "pm10", "so2", "no2", "co", "o3")
     )
 
-    result = []
-    for row in rows:
-        result.append(
-            {
-                "time": row["hour"],
-                "aqi": to_int(row["aqi"]),
-                "pm25": to_float(row["pm25"]),
-                "pm10": to_float(row["pm10"]),
-                "so2": to_float(row["so2"]),
-                "no2": to_float(row["no2"]),
-                "co": to_float(row["co"]),
-                "o3": to_float(row["o3"]),
-            }
-        )
-    return result
+    return _group_by_hour(records)
 
 
 def get_latest_station_records_queryset():

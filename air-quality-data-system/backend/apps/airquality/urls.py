@@ -2,7 +2,9 @@ from django.urls import path
 
 from .views import (
     AQIDistributionView,
+    AdminDashboardView,
     AirQualityOverviewViewSet,
+    AirQualityDataManageView,
     CityComparisonView,
     CityDetailView,
     CityTrendView,
@@ -21,8 +23,10 @@ overview_top_cities_view = AirQualityOverviewViewSet.as_view({"get": "top_cities
 
 historical_list_view = HistoricalDataViewSet.as_view({"get": "list"})
 historical_export_view = HistoricalDataViewSet.as_view({"get": "export"})
+historical_statistics_view = HistoricalDataViewSet.as_view({"get": "statistics"})
 
 urlpatterns = [
+    path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
     path("admin/data-import/", DataImportUploadView.as_view(), name="admin-data-import-upload"),
     path("admin/data-import/tasks/", ImportTaskListView.as_view(), name="admin-data-import-task-list"),
     path(
@@ -35,6 +39,7 @@ urlpatterns = [
         ImportTaskLogListView.as_view(),
         name="admin-data-import-task-logs",
     ),
+    path("admin/air-quality/", AirQualityDataManageView.as_view(), name="admin-air-quality-manage"),
     path("overview/", overview_list_view, name="overview-list"),
     path("overview/top-cities/", overview_top_cities_view, name="overview-top-cities"),
     path("cities/<str:code>/", CityDetailView.as_view(), name="city-detail"),
@@ -43,6 +48,7 @@ urlpatterns = [
     path("stations/<str:code>/trend/", StationTrendView.as_view(), name="station-trend"),
     path("historical-data/", historical_list_view, name="historical-data-list"),
     path("historical-data/export/", historical_export_view, name="historical-data-export"),
+    path("historical-data/statistics/", historical_statistics_view, name="historical-data-statistics"),
     path("analysis/compare/", CityComparisonView.as_view(), name="analysis-city-compare"),
     path("analysis/correlation/", CorrelationAnalysisView.as_view(), name="analysis-correlation"),
     path("analysis/distribution/", AQIDistributionView.as_view(), name="analysis-distribution"),

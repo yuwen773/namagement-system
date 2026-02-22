@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsAdminUser
 from apps.airquality.models import City
 from apps.airquality.services import (
     calc_quality_level_from_aqi,
@@ -11,11 +16,60 @@ from apps.airquality.services import (
     get_city_latest_snapshot,
 )
 from apps.rules.models import ProtectionRule
+from apps.rules.serializers import ProtectionRuleSerializer
 from apps.rules.services import RuleMatcherService
+from utils.exception_handler import ValidationError
 from utils.response import APIResponse
 
 
+def _parse_int_payload(value, field: str) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ValidationError("格式错误，应为整数", field=field)
+
+
+def _parse_bool_payload(value, field: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes"}:
+            return True
+        if normalized in {"false", "0", "no"}:
+            return False
+    raise ValidationError("格式错误，应为布尔值", field=field)
+
+
+def _raise_serializer_validation_error(errors: dict):
+    first_field, first_errors = next(iter(errors.items()))
+    if isinstance(first_errors, (list, tuple)) and first_errors:
+        message = str(first_errors[0])
+    else:
+        message = str(first_errors)
+    raise ValidationError(message=message, field=str(first_field))
+
+
+def _translate_validation_error(message: str) -> str:
+    """Translate common validation error messages to Chinese."""
+    translations = {
+        "AQI ranges must not overlap within the same population_type.": "该人群类型下已存在相同或重叠的 AQI 范围，请检查并调整范围。",
+        "min_aqi must be <= max_aqi.": "AQI 最小值不能大于最大值。",
+    }
+    return translations.get(message, message)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["User - Protection"],
+        summary="获取防护指南",
+        description="根据城市当前 AQI 与趋势预测，返回分人群防护建议和未来预警信息。",
+        responses=OpenApiTypes.OBJECT,
+    )
+)
 class ProtectionGuideView(APIView):
+    """Public endpoint for AQI-based protection advice and short-term forecast warning."""
+
     permission_classes = [AllowAny]
 
     @staticmethod
@@ -96,3 +150,141 @@ class ProtectionGuideView(APIView):
             },
         }
         return APIResponse.success(data=payload)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Admin - Rules"],
+        summary="查询防护规则",
+        description="管理员查询防护规则列表，支持人群、启用状态、关键字过滤。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    post=extend_schema(
+        tags=["Admin - Rules"],
+        summary="新增防护规则",
+        description="管理员新增一条防护规则。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    put=extend_schema(
+        tags=["Admin - Rules"],
+        summary="更新防护规则",
+        description="管理员更新单条规则，或按 ids 批量更新启用状态。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+    delete=extend_schema(
+        tags=["Admin - Rules"],
+        summary="删除防护规则",
+        description="管理员按 id 或 ids 删除防护规则。",
+        responses=OpenApiTypes.OBJECT,
+    ),
+)
+class ProtectionRuleManageView(APIView):
+    """Admin CRUD endpoint for protection rule configuration and batch enable toggles."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        queryset = ProtectionRule.objects.all()
+
+        population_type = (request.query_params.get("population_type") or "").strip()
+        if population_type:
+            queryset = queryset.filter(population_type=population_type)
+
+        is_enabled = request.query_params.get("is_enabled")
+        if is_enabled is not None:
+            queryset = queryset.filter(is_enabled=_parse_bool_payload(is_enabled, field="is_enabled"))
+
+        keyword = (request.query_params.get("keyword") or "").strip()
+        if keyword:
+            queryset = queryset.filter(Q(rule_name__icontains=keyword) | Q(advice__icontains=keyword))
+
+        queryset = queryset.order_by("population_type", "min_aqi", "id")
+        return APIResponse.success(data=ProtectionRuleSerializer(queryset, many=True).data)
+
+    def post(self, request):
+        serializer = ProtectionRuleSerializer(data=request.data)
+        if not serializer.is_valid():
+            _raise_serializer_validation_error(serializer.errors)
+        try:
+            instance = serializer.save()
+        except DjangoValidationError as e:
+            # Convert Django ValidationError to our API error format
+            error_dict = e.message_dict if hasattr(e, 'message_dict') else {'__all__': list(e.messages)}
+            first_field, first_errors = next(iter(error_dict.items()))
+            if isinstance(first_errors, (list, tuple)) and first_errors:
+                message = str(first_errors[0])
+            else:
+                message = str(first_errors)
+            # Translate common error messages to Chinese
+            message = _translate_validation_error(message)
+            raise ValidationError(message=message, field=str(first_field) if first_field != '__all__' else None)
+        return APIResponse.success(data=ProtectionRuleSerializer(instance).data)
+
+    def put(self, request):
+        batch_ids = request.data.get("ids")
+        if isinstance(batch_ids, list):
+            if "is_enabled" not in request.data:
+                raise ValidationError("批量更新时必须提供 is_enabled", field="is_enabled")
+            is_enabled = _parse_bool_payload(request.data.get("is_enabled"), field="is_enabled")
+            normalized_ids = []
+            for raw in batch_ids:
+                value = _parse_int_payload(raw, field="ids")
+                if value > 0 and value not in normalized_ids:
+                    normalized_ids.append(value)
+            if not normalized_ids:
+                raise ValidationError("至少提供一个有效 id", field="ids")
+
+            updated_count = ProtectionRule.objects.filter(id__in=normalized_ids).update(
+                is_enabled=is_enabled
+            )
+            return APIResponse.success(data={"updated_count": updated_count}, message="批量更新完成")
+
+        rule_id = _parse_int_payload(request.data.get("id"), field="id")
+        instance = ProtectionRule.objects.filter(id=rule_id).first()
+        if instance is None:
+            return APIResponse.error(404, "防护规则不存在")
+
+        serializer = ProtectionRuleSerializer(instance, data=request.data, partial=True)
+        if not serializer.is_valid():
+            _raise_serializer_validation_error(serializer.errors)
+        try:
+            serializer.save()
+        except DjangoValidationError as e:
+            # Convert Django ValidationError to our API error format
+            error_dict = e.message_dict if hasattr(e, 'message_dict') else {'__all__': list(e.messages)}
+            first_field, first_errors = next(iter(error_dict.items()))
+            if isinstance(first_errors, (list, tuple)) and first_errors:
+                message = str(first_errors[0])
+            else:
+                message = str(first_errors)
+            # Translate common error messages to Chinese
+            message = _translate_validation_error(message)
+            raise ValidationError(message=message, field=str(first_field) if first_field != '__all__' else None)
+        return APIResponse.success(data=serializer.data)
+
+    def delete(self, request):
+        single_id = request.data.get("id")
+        id_list = request.data.get("ids")
+        if single_id is None and not id_list:
+            raise ValidationError("至少提供 id 或 ids", field="id")
+
+        if single_id is not None:
+            rule_id = _parse_int_payload(single_id, field="id")
+            queryset = ProtectionRule.objects.filter(id=rule_id)
+            if not queryset.exists():
+                return APIResponse.error(404, "防护规则不存在")
+            deleted_count, _ = queryset.delete()
+            return APIResponse.success(data={"deleted_count": deleted_count}, message="删除成功")
+
+        if not isinstance(id_list, list):
+            raise ValidationError("格式错误，应为整数数组", field="ids")
+        normalized_ids = []
+        for raw in id_list:
+            value = _parse_int_payload(raw, field="ids")
+            if value > 0 and value not in normalized_ids:
+                normalized_ids.append(value)
+        if not normalized_ids:
+            raise ValidationError("至少提供一个有效 id", field="ids")
+
+        deleted_count, _ = ProtectionRule.objects.filter(id__in=normalized_ids).delete()
+        return APIResponse.success(data={"deleted_count": deleted_count}, message="批量删除完成")

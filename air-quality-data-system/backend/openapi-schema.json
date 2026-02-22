@@ -1,0 +1,1317 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Air Quality Data System API",
+    "version": "1.0.0",
+    "description": "OpenAPI schema for the air quality monitoring and protection guidance platform."
+  },
+  "paths": {
+    "/api/admin/air-quality/": {
+      "get": {
+        "operationId": "admin_air_quality_retrieve",
+        "description": "管理员分页查询空气质量记录，支持多条件过滤与排序。",
+        "summary": "查询空气质量数据（管理端）",
+        "tags": [
+          "Admin - AirQuality"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "admin_air_quality_update",
+        "description": "管理员按 id 更新空气质量记录。",
+        "summary": "更新空气质量数据",
+        "tags": [
+          "Admin - AirQuality"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "admin_air_quality_destroy",
+        "description": "管理员按 id 或 ids 删除空气质量记录。",
+        "summary": "删除空气质量数据",
+        "tags": [
+          "Admin - AirQuality"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/admin/articles/": {
+      "get": {
+        "operationId": "admin_articles_retrieve",
+        "description": "管理员分页查询文章，支持状态、分类、公告标记与关键字过滤。",
+        "summary": "查询文章列表（管理端）",
+        "tags": [
+          "Admin - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "admin_articles_create",
+        "description": "管理员创建文章。",
+        "summary": "新增文章",
+        "tags": [
+          "Admin - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "admin_articles_update",
+        "description": "管理员按 id 更新文章内容或发布状态。",
+        "summary": "更新文章",
+        "tags": [
+          "Admin - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "admin_articles_destroy",
+        "description": "管理员按 id 或 ids 删除文章。",
+        "summary": "删除文章",
+        "tags": [
+          "Admin - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/admin/categories/": {
+      "get": {
+        "operationId": "admin_categories_retrieve",
+        "description": "管理员查询全部文章分类。",
+        "summary": "查询分类列表（管理端）",
+        "tags": [
+          "Admin - Categories"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "admin_categories_create",
+        "description": "管理员新增文章分类。",
+        "summary": "新增分类",
+        "tags": [
+          "Admin - Categories"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "admin_categories_update",
+        "description": "管理员按 id 更新文章分类。",
+        "summary": "更新分类",
+        "tags": [
+          "Admin - Categories"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "admin_categories_destroy",
+        "description": "管理员按 id 或 ids 删除分类。",
+        "summary": "删除分类",
+        "tags": [
+          "Admin - Categories"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/": {
+      "get": {
+        "operationId": "admin_dashboard_retrieve",
+        "description": "返回系统运行信息、数据统计、用户统计与最近导入任务。",
+        "summary": "查询管理端仪表盘",
+        "tags": [
+          "Admin - Dashboard"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/data-import/": {
+      "post": {
+        "operationId": "admin_data_import_create",
+        "description": "管理员上传 CSV/XLS/XLSX 文件并创建导入任务，返回 task_id。",
+        "summary": "上传导入文件",
+        "tags": [
+          "Admin - Import"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/data-import/tasks/": {
+      "get": {
+        "operationId": "admin_data_import_tasks_list",
+        "description": "管理员分页查询导入任务状态。",
+        "summary": "查询导入任务列表",
+        "tags": [
+          "Admin - Import"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/data-import/tasks/{task_id}/": {
+      "get": {
+        "operationId": "admin_data_import_tasks_detail",
+        "description": "管理员根据 task_id 查询单个导入任务详情。",
+        "summary": "查询导入任务详情",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "Admin - Import"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/data-import/tasks/{task_id}/logs/": {
+      "get": {
+        "operationId": "admin_data_import_tasks_logs_retrieve",
+        "description": "管理员分页查询指定导入任务的失败日志。",
+        "summary": "查询导入任务日志",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "Admin - Import"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/logs/errors/": {
+      "get": {
+        "operationId": "admin_logs_errors_retrieve",
+        "description": "管理员分页查询异常日志，支持异常类型和日期区间过滤。",
+        "summary": "查询异常日志",
+        "tags": [
+          "Admin - Logs"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/logs/operations/": {
+      "get": {
+        "operationId": "admin_logs_operations_retrieve",
+        "description": "管理员分页查询操作日志，支持用户、操作类型和日期区间过滤。",
+        "summary": "查询操作日志",
+        "tags": [
+          "Admin - Logs"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/rules/": {
+      "get": {
+        "operationId": "admin_rules_retrieve",
+        "description": "管理员查询防护规则列表，支持人群、启用状态、关键字过滤。",
+        "summary": "查询防护规则",
+        "tags": [
+          "Admin - Rules"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "admin_rules_create",
+        "description": "管理员新增一条防护规则。",
+        "summary": "新增防护规则",
+        "tags": [
+          "Admin - Rules"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "admin_rules_update",
+        "description": "管理员更新单条规则，或按 ids 批量更新启用状态。",
+        "summary": "更新防护规则",
+        "tags": [
+          "Admin - Rules"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "admin_rules_destroy",
+        "description": "管理员按 id 或 ids 删除防护规则。",
+        "summary": "删除防护规则",
+        "tags": [
+          "Admin - Rules"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/admin/users/": {
+      "get": {
+        "operationId": "admin_users_retrieve",
+        "description": "管理员分页查询用户，支持关键字、角色、状态与是否包含已删除用户过滤。",
+        "summary": "查询用户列表",
+        "tags": [
+          "Admin - Users"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "admin_users_update",
+        "description": "管理员更新用户角色、状态、邮箱或手机号。",
+        "summary": "更新用户信息",
+        "tags": [
+          "Admin - Users"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "admin_users_destroy",
+        "description": "管理员按 id 或 ids 软删除用户，删除后用户将被禁用。",
+        "summary": "软删除用户",
+        "tags": [
+          "Admin - Users"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/analysis/compare/": {
+      "post": {
+        "operationId": "analysis_compare_create",
+        "description": "对多个城市进行趋势对比分析。",
+        "summary": "城市对比分析",
+        "tags": [
+          "User - Analysis"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/analysis/correlation/": {
+      "get": {
+        "operationId": "analysis_correlation_retrieve",
+        "description": "计算两个污染物之间的相关系数并返回散点数据。",
+        "summary": "污染物相关性分析",
+        "tags": [
+          "User - Analysis"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/analysis/distribution/": {
+      "get": {
+        "operationId": "analysis_distribution_retrieve",
+        "description": "统计空气质量等级分布及占比。",
+        "summary": "AQI 分布统计",
+        "tags": [
+          "User - Analysis"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/announcements/": {
+      "get": {
+        "operationId": "announcements_retrieve",
+        "description": "获取最新已发布系统公告，默认返回 5 条，最多 10 条。",
+        "summary": "查询系统公告",
+        "tags": [
+          "User - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/articles/": {
+      "get": {
+        "operationId": "user_articles_list",
+        "description": "分页查询已发布的科普文章（不含公告），支持按分类过滤。",
+        "summary": "查询文章列表",
+        "tags": [
+          "User - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/articles/{id}/": {
+      "get": {
+        "operationId": "user_articles_detail",
+        "description": "获取单篇已发布科普文章详情。",
+        "summary": "查询文章详情",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "User - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/auth/login/": {
+      "post": {
+        "operationId": "auth_login_create",
+        "description": "使用用户名和密码登录，返回 Token 与当前用户信息。",
+        "summary": "用户登录",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/auth/register/": {
+      "post": {
+        "operationId": "auth_register_create",
+        "description": "创建普通用户账号并返回用户信息。",
+        "summary": "用户注册",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/categories/": {
+      "get": {
+        "operationId": "categories_retrieve",
+        "description": "获取用户端可用的文章分类列表。",
+        "summary": "查询文章分类",
+        "tags": [
+          "User - Articles"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/cities/{code}/": {
+      "get": {
+        "operationId": "cities_retrieve",
+        "description": "根据城市编码查询城市最新空气质量快照。",
+        "summary": "查询城市详情",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "User - City"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/cities/{code}/trend/": {
+      "get": {
+        "operationId": "cities_trend_retrieve",
+        "description": "根据城市编码查询指定小时窗口内的趋势数据。",
+        "summary": "查询城市趋势",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "User - City"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/historical-data/": {
+      "get": {
+        "operationId": "historical_data_retrieve",
+        "description": "分页查询历史空气质量数据，支持过滤与排序。",
+        "summary": "查询历史数据",
+        "tags": [
+          "User - Historical"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/historical-data/export/": {
+      "get": {
+        "operationId": "historical_data_export_retrieve",
+        "description": "按筛选条件导出历史数据文件，支持 CSV/XLSX。",
+        "summary": "导出历史数据",
+        "tags": [
+          "User - Historical"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/overview/": {
+      "get": {
+        "operationId": "overview_retrieve",
+        "description": "返回全国平均指标、地图数据与城市数量。",
+        "summary": "查询全国概览",
+        "tags": [
+          "User - Overview"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/overview/top-cities/": {
+      "get": {
+        "operationId": "overview_top_cities_retrieve",
+        "description": "返回空气质量最佳/最差城市排行榜。",
+        "summary": "查询 Top 城市",
+        "tags": [
+          "User - Overview"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/protection-guide/": {
+      "get": {
+        "operationId": "protection_guide_retrieve",
+        "description": "根据城市当前 AQI 与趋势预测，返回分人群防护建议和未来预警信息。",
+        "summary": "获取防护指南",
+        "tags": [
+          "User - Protection"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/stations/{code}/": {
+      "get": {
+        "operationId": "stations_retrieve",
+        "description": "根据站点编码查询站点最新空气质量快照。",
+        "summary": "查询站点详情",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "User - Station"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/stations/{code}/trend/": {
+      "get": {
+        "operationId": "stations_trend_retrieve",
+        "description": "根据站点编码查询指定小时窗口内的趋势数据。",
+        "summary": "查询站点趋势",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "User - Station"
+        ],
+        "security": [
+          {
+            "tokenAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "tokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Token-based authentication with required prefix \"Token\""
+      }
+    }
+  }
+}
