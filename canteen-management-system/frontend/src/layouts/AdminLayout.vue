@@ -1,7 +1,17 @@
 <template>
   <el-container class="admin-layout">
+    <!-- 移动端遮罩层 -->
+    <div
+      v-if="isMobileMenuOpen"
+      class="mobile-overlay"
+      @click="closeMobileMenu"
+    ></div>
+
     <!-- 侧导航栏 -->
-    <el-aside :width="isCollapse ? '64px' : '200px'" class="sidebar">
+    <el-aside
+      :width="isCollapse ? '64px' : '200px'"
+      :class="['sidebar', { 'mobile-open': isMobileMenuOpen }]"
+    >
       <div class="logo-area">
         <div v-if="!isCollapse" class="logo-full">
           <el-icon :size="32" class="logo-icon"><Grid /></el-icon>
@@ -152,6 +162,30 @@ const userStore = useUserStore()
 // 侧边栏折叠状态
 const isCollapse = ref(false)
 
+// 移动端菜单状态
+const isMobileMenuOpen = ref(false)
+
+// 响应式检测
+const isMobile = ref(window.innerWidth < 768)
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+  // 桌面端关闭移动菜单
+  if (!isMobile.value) {
+    isMobileMenuOpen.value = false
+  }
+}
+
+const openMobileMenu = () => {
+  if (isMobile.value) {
+    isMobileMenuOpen.value = true
+  }
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
+
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
 
@@ -190,7 +224,13 @@ const updateDate = () => {
 
 // 切换侧边栏折叠
 const toggleCollapse = () => {
-  isCollapse.value = !isCollapse.value
+  if (isMobile.value) {
+    // 移动端：打开/关闭菜单
+    isMobileMenuOpen.value = !isMobileMenuOpen.value
+  } else {
+    // 桌面端：折叠/展开侧边栏
+    isCollapse.value = !isCollapse.value
+  }
 }
 
 // 处理用户操作
@@ -223,14 +263,16 @@ const handleLogout = () => {
 
 onMounted(() => {
   updateDate()
-  // 每秒更新时间
   dateTimer = setInterval(updateDate, 1000)
+  window.addEventListener('resize', checkMobile)
+  checkMobile() // 初始化检测
 })
 
 onUnmounted(() => {
   if (dateTimer) {
     clearInterval(dateTimer)
   }
+  window.removeEventListener('resize', checkMobile)
 })
 </script>
 
@@ -435,8 +477,34 @@ onUnmounted(() => {
 }
 
 /* 响应式设计 */
-/* 小屏幕（笔记本） < 1200px */
-@media (max-width: 1199px) {
+/* 大桌面 1440px+ */
+@media (min-width: 1440px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .main-content {
+    padding: 24px;
+  }
+}
+
+/* 桌面 1200px - 1439px */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .top-header {
+    padding: 0 20px;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+}
+
+/* 小桌面 992px - 1199px */
+@media (min-width: 992px) and (max-width: 1199px) {
   .top-header {
     padding: 0 16px;
   }
@@ -468,14 +536,39 @@ onUnmounted(() => {
   }
 }
 
-/* 中等屏幕 1200px - 1439px */
-@media (min-width: 1200px) and (max-width: 1439px) {
+/* 平板 768px - 991px */
+@media (min-width: 768px) and (max-width: 991px) {
+  .sidebar {
+    width: 64px;
+  }
+
+  .logo-area {
+    padding: 0;
+  }
+
+  .logo-text,
+  .sidebar-menu :deep(.el-menu-item span) {
+    display: none;
+  }
+
+  .top-header {
+    padding: 0 12px;
+  }
+
   .main-content {
-    padding: 18px;
+    padding: 12px;
+  }
+
+  .date-info {
+    display: none;
+  }
+
+  .user-name {
+    display: none;
   }
 }
 
-/* 超小屏幕（特殊优化） < 768px */
+/* 手机 < 768px */
 @media (max-width: 767px) {
   .sidebar {
     position: fixed;
@@ -483,6 +576,12 @@ onUnmounted(() => {
     top: 0;
     height: 100vh;
     z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
   }
 
   .main-container {
@@ -502,18 +601,24 @@ onUnmounted(() => {
   }
 
   .main-content {
-    padding: 12px;
+    padding: 8px;
   }
 
-  /* 更大的按钮方便点击 */
   .collapse-btn {
     min-width: 40px;
     min-height: 40px;
   }
 
-  /* 面包屑简化 */
   .header-left :deep(.el-breadcrumb) {
     font-size: 13px;
   }
+}
+
+/* 移动端遮罩层 */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
 }
 </style>
