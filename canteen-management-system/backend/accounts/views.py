@@ -10,6 +10,11 @@ from .serializers import (
     SystemSettingsSerializer
 )
 from utils.response import ApiResponse
+from utils.exceptions import (
+    ValidationException,
+    InvalidCredentialsException,
+    RequiredFieldException,
+)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -39,18 +44,17 @@ class UserViewSet(viewsets.ModelViewSet):
         请求体：{"username": "admin", "password": "admin123"}
         """
         serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            username = serializer.validated_data['username']
-            password = serializer.validated_data['password']
+        serializer.is_valid(raise_exception=True)
 
-            user = User.verify_password(username, password)
-            if user:
-                user_data = UserSerializer(user).data
-                return ApiResponse.success(data=user_data, message='登录成功')
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
 
-            return ApiResponse.unauthorized(message='用户名或密码错误')
+        user = User.verify_password(username, password)
+        if user:
+            user_data = UserSerializer(user).data
+            return ApiResponse.success(data=user_data, message='登录成功')
 
-        return ApiResponse.error(message='请求参数错误', errors=serializer.errors)
+        raise InvalidCredentialsException('用户名或密码错误')
 
     @action(detail=False, methods=['post'], url_path='register')
     def register(self, request):
@@ -60,18 +64,17 @@ class UserViewSet(viewsets.ModelViewSet):
         请求体：{"username": "test_user", "password": "123456", "phone": "13800138000", "email": "test@example.com"}
         """
         serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            # 创建新用户，默认角色为 EMPLOYEE
-            user = User.objects.create(
-                username=serializer.validated_data['username'],
-                password=serializer.validated_data['password'],  # 开发阶段明文存储
-                role=User.Role.EMPLOYEE,
-                status=User.Status.ENABLED
-            )
-            user_data = UserSerializer(user).data
-            return ApiResponse.success(data=user_data, message='注册成功', code=201)
+        serializer.is_valid(raise_exception=True)
 
-        return ApiResponse.error(message='注册失败', errors=serializer.errors)
+        # 创建新用户，默认角色为 EMPLOYEE
+        user = User.objects.create(
+            username=serializer.validated_data['username'],
+            password=serializer.validated_data['password'],  # 开发阶段明文存储
+            role=User.Role.EMPLOYEE,
+            status=User.Status.ENABLED
+        )
+        user_data = UserSerializer(user).data
+        return ApiResponse.success(data=user_data, message='注册成功', code=201)
 
     def list(self, request, *args, **kwargs):
         """
@@ -106,11 +109,9 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         # TODO: 添加权限验证，只允许管理员访问
         serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return ApiResponse.success(data=serializer.data, message='创建成功', code=201)
-
-        return ApiResponse.error(message='创建失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ApiResponse.success(data=serializer.data, message='创建成功', code=201)
 
     def update(self, request, *args, **kwargs):
         """
@@ -119,11 +120,9 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         instance = self.get_object()
         serializer = UserSerializer(instance, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return ApiResponse.success(data=serializer.data, message='更新成功')
-
-        return ApiResponse.error(message='更新失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ApiResponse.success(data=serializer.data, message='更新成功')
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -184,11 +183,9 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         settings = SystemSettings.get_settings()
         serializer = SystemSettingsSerializer(settings, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return ApiResponse.success(data=serializer.data, message='设置保存成功')
-
-        return ApiResponse.error(message='设置保存失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ApiResponse.success(data=serializer.data, message='设置保存成功')
 
     @action(detail=False, methods=['get'], url_path='roles')
     def get_roles(self, request):
@@ -250,11 +247,11 @@ class UserViewSet(viewsets.ModelViewSet):
         new_password = request.data.get('new_password')
 
         if not old_password or not new_password:
-            return ApiResponse.error(message='请提供旧密码和新密码')
+            raise RequiredFieldException('请提供旧密码和新密码')
 
         # 验证旧密码是否正确
         if user.password != old_password:
-            return ApiResponse.unauthorized(message='旧密码错误')
+            raise InvalidCredentialsException('旧密码错误')
 
         # 更新密码
         user.password = new_password

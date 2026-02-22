@@ -15,6 +15,11 @@ from .serializers import (
 )
 from utils.response import ApiResponse
 from utils.pagination import StandardPagination
+from utils.exceptions import (
+    ValidationException,
+    RequiredFieldException,
+    AlreadyProcessedException,
+)
 
 
 class ShiftViewSet(viewsets.ModelViewSet):
@@ -145,8 +150,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         如果排班已存在，根据 force_update 参数决定是否更新
         """
         serializer = BatchScheduleSerializer(data=request.data)
-        if not serializer.is_valid():
-            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         employee_ids = data['employee_ids']
@@ -234,8 +238,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         返回指定日期范围的排班数据，用于日历组件展示
         """
         serializer = CalendarViewSerializer(data=request.data)
-        if not serializer.is_valid():
-            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         start_date = data['start_date']
@@ -364,14 +367,11 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
 
         # 检查当前申请状态
         if swap_request.status != 'PENDING':
-            return ApiResponse.error(
-                message=f'该申请已被{swap_request.get_status_display()}，无法重复操作'
-            )
+            raise AlreadyProcessedException(f'该申请已被{swap_request.get_status_display()}，无法重复操作')
 
         # 验证审批参数
         serializer = ShiftSwapApprovalSerializer(data=request.data)
-        if not serializer.is_valid():
-            return ApiResponse.error(message='参数验证失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         approve_status = data['approve']
@@ -436,7 +436,7 @@ class ShiftSwapRequestViewSet(viewsets.ModelViewSet):
         employee_id = request.query_params.get('employee_id')
 
         if not employee_id:
-            return ApiResponse.error(message='请提供员工ID')
+            raise RequiredFieldException('请提供员工ID')
 
         requests = self.queryset.filter(requester_id=employee_id)
         page = self.paginate_queryset(requests)

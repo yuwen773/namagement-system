@@ -20,6 +20,12 @@ from employees.models import EmployeeProfile
 from schedules.models import Schedule
 from utils.response import ApiResponse
 from utils.pagination import StandardPagination
+from utils.exceptions import (
+    RequiredFieldException,
+    EmployeeNotFoundException,
+    AlreadyProcessedException,
+    StateNotAllowedException,
+)
 
 
 class AttendanceRecordViewSet(viewsets.ModelViewSet):
@@ -96,12 +102,12 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         # TODO: 从请求中获取员工ID（后续需要实现登录认证后从token中获取）
         employee_id = request.data.get('employee_id')
         if not employee_id:
-            return ApiResponse.error(message='缺少员工ID')
+            raise RequiredFieldException('缺少员工ID')
 
         try:
             employee = EmployeeProfile.objects.get(id=employee_id)
         except EmployeeProfile.DoesNotExist:
-            return ApiResponse.not_found(message='员工不存在')
+            raise EmployeeNotFoundException('员工不存在')
 
         # 验证请求参数
         serializer = ClockInSerializer(data=request.data)
@@ -170,12 +176,12 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         # TODO: 从请求中获取员工ID（后续需要实现登录认证后从token中获取）
         employee_id = request.data.get('employee_id')
         if not employee_id:
-            return ApiResponse.error(message='缺少员工ID')
+            raise RequiredFieldException('缺少员工ID')
 
         try:
             employee = EmployeeProfile.objects.get(id=employee_id)
         except EmployeeProfile.DoesNotExist:
-            return ApiResponse.not_found(message='员工不存在')
+            raise EmployeeNotFoundException('员工不存在')
 
         # 验证请求参数
         serializer = ClockOutSerializer(data=request.data)
@@ -193,18 +199,14 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         ).order_by('-clock_in_time').first()
 
         if not attendance:
-            return ApiResponse.error(message='未找到今日签到记录，请先签到')
+            raise StateNotAllowedException('未找到今日签到记录，请先签到')
 
         if not attendance.clock_in_time:
-            return ApiResponse.error(message='未找到签到记录，请先签到')
+            raise StateNotAllowedException('未找到签到记录，请先签到')
 
         if attendance.clock_out_time:
-            return ApiResponse.error(
-                message='今日已签退，请勿重复签退',
-                data={
-                    'clock_out_time': attendance.clock_out_time,
-                    'status': attendance.get_status_display()
-                }
+            raise AlreadyProcessedException(
+                '今日已签退，请勿重复签退'
             )
 
         # 更新签退信息
@@ -321,7 +323,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
-            return ApiResponse.error(message='缺少员工ID')
+            raise RequiredFieldException('缺少员工ID')
 
         # 构建查询条件
         queryset = AttendanceRecord.objects.filter(employee_id=employee_id)

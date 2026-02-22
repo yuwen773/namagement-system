@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from django.db.models import Sum, Q, Count
 from django.utils import timezone
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -32,6 +32,13 @@ from utils.constants import (
     SALARY_STATUS_PUBLISHED,
     SALARY_STATUS_ADJUSTED,
     SALARY_STATUS_APPEALED,
+)
+from utils.exceptions import (
+    RequiredFieldException,
+    InvalidStateException,
+    AlreadyProcessedException,
+    EmployeeNotFoundException,
+    FormatErrorException,
 )
 
 
@@ -149,10 +156,7 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
             if month < 1 or month > 12:
                 raise ValueError
         except (ValueError, AttributeError):
-            return Response({
-                'code': 400,
-                'message': '年月格式不正确，应为 YYYY-MM'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            raise FormatErrorException('年月格式不正确，应为 YYYY-MM')
 
         # 计算该月的起始和结束日期
         if month == 12:
@@ -298,7 +302,7 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         if instance.status != 'DRAFT':
-            return ApiResponse.error(message='只有草稿状态的薪资记录才能发布')
+            raise InvalidStateException('只有草稿状态的薪资记录才能发布')
 
         instance.status = 'PUBLISHED'
         instance.save()
@@ -314,7 +318,7 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         """
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
-            return ApiResponse.error(message='请提供 employee_id 参数')
+            raise RequiredFieldException('请提供 employee_id 参数')
 
         queryset = self.queryset.filter(employee_id=employee_id)
 
@@ -419,7 +423,7 @@ class AppealViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         if instance.status != 'PENDING':
-            return ApiResponse.error(message='只有待审批状态的申诉才能审批')
+            raise AlreadyProcessedException('只有待审批状态的申诉才能审批')
 
         serializer = AppealApprovalSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -429,12 +433,12 @@ class AppealViewSet(viewsets.ModelViewSet):
         approver_id = request.data.get('approver_id')
 
         if not approver_id:
-            return ApiResponse.error(message='请提供 approver_id（审批人ID）')
+            raise RequiredFieldException('请提供 approver_id（审批人ID）')
 
         try:
             approver = EmployeeProfile.objects.get(id=approver_id)
         except EmployeeProfile.DoesNotExist:
-            return ApiResponse.error(message='审批人不存在')
+            raise EmployeeNotFoundException('审批人不存在')
 
         # 更新申诉状态
         instance.status = 'APPROVED' if approve else 'REJECTED'
@@ -485,7 +489,7 @@ class AppealViewSet(viewsets.ModelViewSet):
         """
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
-            return ApiResponse.error(message='请提供 employee_id 参数')
+            raise RequiredFieldException('请提供 employee_id 参数')
 
         queryset = self.queryset.filter(employee_id=employee_id)
 

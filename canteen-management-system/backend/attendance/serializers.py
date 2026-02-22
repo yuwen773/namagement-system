@@ -106,8 +106,21 @@ class AttendanceRecordListSerializer(serializers.ModelSerializer):
 class ClockInSerializer(serializers.Serializer):
     """签到序列化器"""
 
-    schedule_id = serializers.IntegerField(required=False, allow_null=True)
-    clock_in_location = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    schedule_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        error_messages={
+            'invalid': '排班ID必须是整数',
+        }
+    )
+    clock_in_location = serializers.CharField(
+        max_length=200,
+        required=False,
+        allow_blank=True,
+        error_messages={
+            'max_length': '签到地点最多200个字符',
+        }
+    )
 
     def validate_schedule_id(self, value):
         """验证排班ID"""
@@ -124,15 +137,40 @@ class ClockInSerializer(serializers.Serializer):
 class ClockOutSerializer(serializers.Serializer):
     """签退序列化器"""
 
-    clock_out_location = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    clock_out_location = serializers.CharField(
+        max_length=200,
+        required=False,
+        allow_blank=True,
+        error_messages={
+            'max_length': '签退地点最多200个字符',
+        }
+    )
 
 
 class AttendanceStatisticsSerializer(serializers.Serializer):
     """考勤统计序列化器"""
 
-    start_date = serializers.DateField(required=True)
-    end_date = serializers.DateField(required=True)
-    employee_id = serializers.IntegerField(required=False, allow_null=True)
+    start_date = serializers.DateField(
+        required=True,
+        error_messages={
+            'required': '开始日期不能为空',
+            'invalid': '开始日期格式不正确，请使用 YYYY-MM-DD 格式',
+        }
+    )
+    end_date = serializers.DateField(
+        required=True,
+        error_messages={
+            'required': '结束日期不能为空',
+            'invalid': '结束日期格式不正确，请使用 YYYY-MM-DD 格式',
+        }
+    )
+    employee_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        error_messages={
+            'invalid': '员工ID必须是整数',
+        }
+    )
 
 
 class AttendanceStatisticsResponseSerializer(serializers.Serializer):

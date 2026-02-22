@@ -13,6 +13,10 @@ from .serializers import (
 )
 from utils.response import ApiResponse
 from utils.pagination import StandardPagination
+from utils.exceptions import (
+    RequiredFieldException,
+    AlreadyProcessedException,
+)
 
 
 class LeaveRequestViewSet(viewsets.ModelViewSet):
@@ -94,7 +98,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         employee_id = request.query_params.get('employee_id')
 
         if not employee_id:
-            return ApiResponse.error(message='缺少 employee_id 参数')
+            raise RequiredFieldException('缺少 employee_id 参数')
 
         queryset = self.queryset.filter(employee_id=employee_id)
 
@@ -130,7 +134,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
 
         # 检查状态
         if leave_request.status != LeaveRequest.Status.PENDING:
-            return ApiResponse.error(message='该请假申请已被处理')
+            raise AlreadyProcessedException('该请假申请已被处理')
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

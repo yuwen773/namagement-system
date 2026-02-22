@@ -113,3 +113,159 @@ class InsufficientDataError(BusinessError):
 
     default_detail = '数据不完整'
     default_code = 'insufficient_data'
+
+
+# =====================================================
+# 带错误码的新异常类体系 (E100 系列)
+# =====================================================
+
+class BaseAPIException(APIException):
+    """API 异常基类，带错误码支持"""
+
+    status_code = 400
+    error_code = 'E100'
+    default_message = '操作失败'
+
+    def __init__(self, message=None, detail=None):
+        self.detail = message or self.default_message
+        super().__init__(detail=self.detail)
+
+    @property
+    def error_code_value(self):
+        return self.error_code
+
+
+class ValidationException(BaseAPIException):
+    """参数验证失败异常"""
+
+    status_code = 400
+    error_code = 'E100'
+    default_message = '参数验证失败'
+
+
+class RequiredFieldException(BaseAPIException):
+    """缺少必需参数异常"""
+
+    status_code = 400
+    error_code = 'E101'
+    default_message = '缺少必需参数'
+
+
+class FormatErrorException(BaseAPIException):
+    """参数格式错误异常"""
+
+    status_code = 400
+    error_code = 'E102'
+    default_message = '参数格式错误'
+
+
+class RangeErrorException(BaseAPIException):
+    """参数值范围错误异常"""
+
+    status_code = 400
+    error_code = 'E103'
+    default_message = '参数值范围错误'
+
+
+class AuthenticationException(BaseAPIException):
+    """认证异常"""
+
+    status_code = 401
+    error_code = 'E010'
+    default_message = '未登录或登录已过期'
+
+
+class InvalidCredentialsException(AuthenticationException):
+    """用户名或密码错误异常"""
+
+    error_code = 'E011'
+    default_message = '用户名或密码错误'
+
+
+class PermissionException(BaseAPIException):
+    """权限不足异常"""
+
+    status_code = 403
+    error_code = 'E020'
+    default_message = '权限不足'
+
+
+class NotFoundException(BaseAPIException):
+    """资源不存在异常"""
+
+    status_code = 404
+    error_code = 'E030'
+    default_message = '资源不存在'
+
+
+class EmployeeNotFoundException(NotFoundException):
+    """员工不存在异常"""
+
+    error_code = 'E031'
+    default_message = '员工不存在'
+
+
+class ScheduleNotFoundException(NotFoundException):
+    """排班不存在异常"""
+
+    error_code = 'E032'
+    default_message = '排班不存在'
+
+
+class UserNotFoundException(NotFoundException):
+    """用户不存在异常"""
+
+    error_code = 'E033'
+    default_message = '用户不存在'
+
+
+class DuplicateException(BaseAPIException):
+    """数据已存在异常"""
+
+    status_code = 409
+    error_code = 'E040'
+    default_message = '数据已存在'
+
+
+class UsernameExistsException(DuplicateException):
+    """用户名已存在异常"""
+
+    error_code = 'E041'
+    default_message = '用户名已存在'
+
+
+class StateNotAllowedException(BaseAPIException):
+    """状态不允许异常"""
+
+    status_code = 422
+    error_code = 'E050'
+    default_message = '当前状态不允许此操作'
+
+
+class AlreadyProcessedException(StateNotAllowedException):
+    """申请已被处理异常"""
+
+    error_code = 'E051'
+    default_message = '申请已被处理，无法重复操作'
+
+
+class InvalidStateException(StateNotAllowedException):
+    """状态无效异常"""
+
+    error_code = 'E052'
+    default_message = '只能操作草稿状态的记录'
+
+
+class ServerException(BaseAPIException):
+    """服务器异常"""
+
+    status_code = 500
+    error_code = 'E900'
+    default_message = '服务器内部错误'
+
+
+class DatabaseException(ServerException):
+    """数据库操作失败异常"""
+
+    error_code = 'E901'
+    default_message = '数据操作失败'

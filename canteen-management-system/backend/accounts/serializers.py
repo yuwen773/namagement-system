@@ -28,8 +28,12 @@ class RegisterSerializer(serializers.Serializer):
         'required': '密码不能为空',
         'blank': '密码不能为空'
     })
-    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    email = serializers.EmailField(required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True, error_messages={
+        'max_length': '手机号最多20个字符',
+    })
+    email = serializers.EmailField(required=False, allow_blank=True, error_messages={
+        'invalid': '请输入有效的邮箱地址',
+    })
 
     def validate_username(self, value):
         """
