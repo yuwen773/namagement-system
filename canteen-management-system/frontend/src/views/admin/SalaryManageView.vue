@@ -422,7 +422,8 @@ import {
   publishSalary,
   deleteSalary,
   getPendingAppeals,
-  approveAppeal
+  approveAppeal,
+  exportSalarySheet
 } from '../../api/salary'
 
 // ==================== 状态数据 ====================
@@ -665,7 +666,22 @@ const handleExport = async () => {
     ElMessage.warning('请先选择月份')
     return
   }
-  ElMessage.info('导出功能即将在后续版本中实现')
+
+  try {
+    const response = await exportSalarySheet({ year_month: selectedMonth.value })
+    // 处理 blob 下载
+    const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `薪资表_${selectedMonth.value}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败')
+  }
 }
 
 const handleRowClick = (row) => {
