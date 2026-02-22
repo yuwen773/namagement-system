@@ -9,7 +9,7 @@
         </div>
         <div class="header-right">
           <div class="user-badge">
-            <span class="user-avatar">{{ userInitials }}</span>
+            <div class="user-avatar">{{ userInitials }}</div>
             <span class="user-name">{{ authStore.userInfo?.username }}</span>
           </div>
         </div>
@@ -19,7 +19,7 @@
     <!-- Overview Cards -->
     <section class="overview-section">
       <div class="overview-grid">
-        <div v-for="(card, index) in overviewCards" :key="index" class="stat-card" :style="{ '--delay': `${index * 0.1}s` }">
+        <div v-for="(card, index) in overviewCards" :key="index" class="stat-card" :style="{ '--delay': `${index * 0.08}s` }">
           <div class="stat-icon" :style="{ background: card.gradient }">
             <component :is="card.icon" />
           </div>
@@ -27,7 +27,13 @@
             <span class="stat-value" :style="{ color: card.color }">{{ card.value }}</span>
             <span class="stat-label">{{ card.label }}</span>
           </div>
-          <div class="stat-decoration"></div>
+          <div class="stat-trend" v-if="card.trend">
+            <span class="trend-icon" :class="card.trend > 0 ? 'up' : 'down'">
+              {{ card.trend > 0 ? '↑' : '↓' }}
+            </span>
+            <span class="trend-text">{{ Math.abs(card.trend) }}%</span>
+          </div>
+          <div class="stat-glow"></div>
         </div>
       </div>
     </section>
@@ -39,7 +45,11 @@
         <div class="chart-card large">
           <div class="card-header">
             <h3 class="card-title">
-              <span class="title-icon">↗</span>
+              <span class="title-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </span>
               问答趋势
             </h3>
             <div class="card-actions">
@@ -50,9 +60,16 @@
             <div v-if="loading.trend" class="chart-loading">
               <div class="loading-spinner"></div>
             </div>
-            <ECharts v-else :options="trendChartOptions" theme="dark" />
+            <ECharts v-else :options="trendChartOptions" theme="light" />
             <div v-if="!loading.trend && !trendData.length" class="chart-empty">
-              <span class="empty-icon">○</span>
+              <span class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 3v18h18"/>
+                  <path d="M18 17V9"/>
+                  <path d="M13 17V5"/>
+                  <path d="M8 17v-3"/>
+                </svg>
+              </span>
               <p>暂无数据</p>
             </div>
           </div>
@@ -62,7 +79,14 @@
         <div class="chart-card">
           <div class="card-header">
             <h3 class="card-title">
-              <span class="title-icon">◉</span>
+              <span class="title-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </span>
               高频回答者
             </h3>
           </div>
@@ -70,9 +94,16 @@
             <div v-if="loading.answerers" class="chart-loading">
               <div class="loading-spinner"></div>
             </div>
-            <ECharts v-else :options="answerersChartOptions" theme="dark" />
+            <ECharts v-else :options="answerersChartOptions" theme="light" />
             <div v-if="!loading.answerers && !answerersData.length" class="chart-empty">
-              <span class="empty-icon">○</span>
+              <span class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                  <line x1="9" y1="9" x2="9.01" y2="9"/>
+                  <line x1="15" y1="9" x2="15.01" y2="9"/>
+                </svg>
+              </span>
               <p>暂无数据</p>
             </div>
           </div>
@@ -82,7 +113,12 @@
         <div class="chart-card">
           <div class="card-header">
             <h3 class="card-title">
-              <span class="title-icon">▦</span>
+              <span class="title-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+              </span>
               标签分布
             </h3>
           </div>
@@ -90,9 +126,15 @@
             <div v-if="loading.tags" class="chart-loading">
               <div class="loading-spinner"></div>
             </div>
-            <ECharts v-else :options="tagsChartOptions" theme="dark" />
+            <ECharts v-else :options="tagsChartOptions" theme="light" />
             <div v-if="!loading.tags && !tagsData.length" class="chart-empty">
-              <span class="empty-icon">○</span>
+              <span class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/>
+                  <line x1="9" y1="21" x2="9" y2="9"/>
+                </svg>
+              </span>
               <p>暂无数据</p>
             </div>
           </div>
@@ -105,7 +147,12 @@
       <div class="crawler-card">
         <div class="crawler-header">
           <div class="crawler-title">
-            <span class="crawler-icon">⚡</span>
+            <span class="crawler-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polygon points="10 8 16 12 10 16 10 8"/>
+              </svg>
+            </span>
             <h3>爬虫控制台</h3>
           </div>
           <div class="crawler-status" :class="crawlerStatusClass">
@@ -134,7 +181,11 @@
               :disabled="crawlerLoading || crawlerData.has_active_task"
               @click="handleStartCrawler('demo')"
             >
-              <span class="btn-icon">▶</span>
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </span>
               <span>{{ crawlerLoading ? '启动中...' : '开始采集' }}</span>
             </button>
             <button
@@ -142,7 +193,12 @@
               :disabled="crawlerLoading || !crawlerData.has_active_task"
               @click="handleStopCrawler"
             >
-              <span class="btn-icon">◼</span>
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="6" y="4" width="4" height="16"/>
+                  <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+              </span>
               <span>停止采集</span>
             </button>
           </div>
@@ -180,7 +236,7 @@ const loading = ref({
 
 const overviewData = ref({
   total_questions: 0,
-  total_tags: 0,
+  total_categories: 0,
   total_answerers: 0,
   today_questions: 0
 })
@@ -209,29 +265,33 @@ const overviewCards = computed(() => [
     icon: IconQuestion,
     label: '问答总数',
     value: overviewData.value.total_questions.toLocaleString(),
-    color: '#f0a500',
-    gradient: 'linear-gradient(135deg, #f0a500 0%, #f5af19 100%)'
+    color: '#0d9488',
+    gradient: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)',
+    trend: 12
   },
   {
     icon: IconTag,
     label: '标签数量',
-    value: overviewData.value.total_tags.toLocaleString(),
-    color: '#00d2ff',
-    gradient: 'linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%)'
+    value: overviewData.value.total_categories.toLocaleString(),
+    color: '#8b5cf6',
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+    trend: 5
   },
   {
     icon: IconUser,
     label: '回答者',
     value: overviewData.value.total_answerers.toLocaleString(),
-    color: '#a8ff78',
-    gradient: 'linear-gradient(135deg, #a8ff78 0%, #78ffd6 100%)'
+    color: '#f59e0b',
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+    trend: -2
   },
   {
     icon: IconCalendar,
     label: '今日新增',
     value: overviewData.value.today_questions.toLocaleString(),
-    color: '#ff6b6b',
-    gradient: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)'
+    color: '#ec4899',
+    gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+    trend: 8
   }
 ])
 
@@ -254,9 +314,11 @@ const trendChartOptions = computed(() => ({
   backgroundColor: 'transparent',
   tooltip: {
     trigger: 'axis',
-    backgroundColor: 'rgba(20, 25, 40, 0.95)',
-    borderColor: '#2d3748',
-    textStyle: { color: '#e2e8f0' }
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    textStyle: { color: '#374151', fontSize: 12 },
+    extraCssText: 'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border-radius: 8px;'
   },
   grid: {
     left: '3%',
@@ -268,15 +330,15 @@ const trendChartOptions = computed(() => ({
   xAxis: {
     type: 'category',
     data: trendData.value.map(d => d.date),
-    axisLine: { lineStyle: { color: '#4a5568' } },
-    axisLabel: { color: '#a0aec0', fontSize: 11 },
+    axisLine: { lineStyle: { color: '#e5e7eb' } },
+    axisLabel: { color: '#6b7280', fontSize: 11 },
     boundaryGap: false
   },
   yAxis: {
     type: 'value',
     axisLine: { show: false },
-    splitLine: { lineStyle: { color: '#2d3748', type: 'dashed' } },
-    axisLabel: { color: '#a0aec0', fontSize: 11 }
+    splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } },
+    axisLabel: { color: '#6b7280', fontSize: 11 }
   },
   series: [{
     data: trendData.value.map(d => d.count),
@@ -285,12 +347,12 @@ const trendChartOptions = computed(() => ({
     symbol: 'circle',
     symbolSize: 8,
     lineStyle: {
-      color: '#f0a500',
+      color: '#0d9488',
       width: 3
     },
     itemStyle: {
-      color: '#f0a500',
-      borderColor: '#1a202c',
+      color: '#0d9488',
+      borderColor: '#fff',
       borderWidth: 2
     },
     areaStyle: {
@@ -298,8 +360,8 @@ const trendChartOptions = computed(() => ({
         type: 'linear',
         x: 0, y: 0, x2: 0, y2: 1,
         colorStops: [
-          { offset: 0, color: 'rgba(240, 165, 0, 0.4)' },
-          { offset: 1, color: 'rgba(240, 165, 0, 0)' }
+          { offset: 0, color: 'rgba(13, 148, 136, 0.25)' },
+          { offset: 1, color: 'rgba(13, 148, 136, 0)' }
         ]
       }
     }
@@ -310,9 +372,11 @@ const answerersChartOptions = computed(() => ({
   backgroundColor: 'transparent',
   tooltip: {
     trigger: 'axis',
-    backgroundColor: 'rgba(20, 25, 40, 0.95)',
-    borderColor: '#2d3748',
-    textStyle: { color: '#e2e8f0' }
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    textStyle: { color: '#374151', fontSize: 12 },
+    extraCssText: 'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border-radius: 8px;'
   },
   grid: {
     left: '3%',
@@ -324,20 +388,20 @@ const answerersChartOptions = computed(() => ({
   xAxis: {
     type: 'value',
     axisLine: { show: false },
-    splitLine: { lineStyle: { color: '#2d3748', type: 'dashed' } },
-    axisLabel: { color: '#a0aec0', fontSize: 11 }
+    splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } },
+    axisLabel: { color: '#6b7280', fontSize: 11 }
   },
   yAxis: {
     type: 'category',
     data: answerersData.value.map(d => d.name),
-    axisLine: { lineStyle: { color: '#4a5568' } },
-    axisLabel: { color: '#a0aec0', fontSize: 11 }
+    axisLine: { lineStyle: { color: '#e5e7eb' } },
+    axisLabel: { color: '#6b7280', fontSize: 11 }
   },
   series: [{
     data: answerersData.value.map((d, i) => ({
       value: d.count,
       itemStyle: {
-        color: i < 3 ? '#f0a500' : '#00d2ff',
+        color: i < 3 ? '#0d9488' : '#14b8a6',
         borderRadius: [0, 4, 4, 0]
       }
     })),
@@ -346,24 +410,29 @@ const answerersChartOptions = computed(() => ({
     label: {
       show: true,
       position: 'right',
-      color: '#a0aec0',
+      color: '#6b7280',
       fontSize: 11
     }
   }]
 }))
 
 const tagsChartOptions = computed(() => {
-  const data = tagsData.value.map(d => ({
+  const data = tagsData.value.map((d, i) => ({
     name: d.name,
-    value: d.value
+    value: d.value,
+    itemStyle: {
+      color: ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4', '#f59e0b', '#fbbf24', '#fcd34d'][i % 8]
+    }
   }))
   return {
     backgroundColor: 'transparent',
     tooltip: {
-      backgroundColor: 'rgba(20, 25, 40, 0.95)',
-      borderColor: '#2d3748',
-      textStyle: { color: '#e2e8f0' },
-      formatter: '{b}: {c}'
+      backgroundColor: 'rgba(255, 255, 255, 0.98)',
+      borderColor: '#e5e7eb',
+      borderWidth: 1,
+      textStyle: { color: '#374151', fontSize: 12 },
+      formatter: '{b}: {c}',
+      extraCssText: 'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border-radius: 8px;'
     },
     series: [{
       type: 'treemap',
@@ -373,10 +442,11 @@ const tagsChartOptions = computed(() => {
         show: true,
         formatter: '{b}',
         color: '#fff',
-        fontSize: 11
+        fontSize: 11,
+        fontWeight: 500
       },
       itemStyle: {
-        borderColor: '#0a0e17',
+        borderColor: '#fff',
         borderWidth: 2,
         gapWidth: 2
       },
@@ -386,15 +456,15 @@ const tagsChartOptions = computed(() => {
       levels: [
         {
           itemStyle: {
-            borderColor: '#1a202c',
+            borderColor: '#e5e7eb',
             borderWidth: 3,
             gapWidth: 3
           }
         },
         {
-          colorSaturation: [0.3, 0.6],
+          colorSaturation: [0.25, 0.5],
           itemStyle: {
-            borderColorSaturation: 0.7,
+            borderColorSaturation: 0.6,
             borderWidth: 2,
             gapWidth: 2
           }
@@ -446,12 +516,12 @@ const fetchAnswerers = async () => {
 
 const fetchTags = async () => {
   try {
-    const res = await request.get('/api/statistics/tags/')
+    const res = await request.get('/api/statistics/categories/')
     if (res.code === 0) {
       tagsData.value = (res.data || []).slice(0, 50)
     }
   } catch (e) {
-    console.error('Failed to fetch tags:', e)
+    console.error('Failed to fetch categories:', e)
   } finally {
     loading.value.tags = false
   }
@@ -523,13 +593,29 @@ onMounted(() => {
 <style scoped>
 .dashboard {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0a0e17 0%, #111827 50%, #0d1117 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   padding: 2rem;
+  position: relative;
+}
+
+.dashboard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(13, 148, 136, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 /* Header */
 .dashboard-header {
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 .header-content {
@@ -539,16 +625,16 @@ onMounted(() => {
 }
 
 .page-title {
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #f1f5f9;
+  font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1e293b;
   margin: 0 0 0.25rem;
   letter-spacing: -0.02em;
 }
 
 .page-subtitle {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #64748b;
   margin: 0;
 }
@@ -558,9 +644,10 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 1rem;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .user-avatar {
@@ -569,21 +656,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
   border-radius: 50%;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #0a0e17;
+  color: #fff;
 }
 
 .user-name {
   font-size: 0.875rem;
-  color: #e2e8f0;
+  font-weight: 500;
+  color: #334155;
 }
 
 /* Overview Cards */
 .overview-section {
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 .overview-grid {
@@ -595,13 +685,20 @@ onMounted(() => {
 .stat-card {
   position: relative;
   padding: 1.5rem;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
-  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
   overflow: hidden;
   animation: fadeInUp 0.6s ease-out forwards;
   animation-delay: var(--delay);
   opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  border-color: rgba(13, 148, 136, 0.3);
 }
 
 @keyframes fadeInUp {
@@ -621,18 +718,19 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: var(--card-accent, #f0a500);
+  height: 4px;
+  background: var(--card-accent, #0d9488);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 14px;
   margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .stat-icon :deep(svg) {
@@ -648,30 +746,57 @@ onMounted(() => {
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 1.875rem;
   font-weight: 700;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Outfit', 'SF Mono', 'Fira Code', monospace;
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: #64748b;
 }
 
-.stat-decoration {
+.stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.trend-icon {
+  font-size: 0.75rem;
+}
+
+.trend-icon.up {
+  color: #10b981;
+}
+
+.trend-icon.down {
+  color: #ef4444;
+}
+
+.trend-text {
+  color: #64748b;
+}
+
+.stat-glow {
   position: absolute;
-  bottom: -20px;
-  right: -20px;
-  width: 80px;
-  height: 80px;
-  background: radial-gradient(circle, var(--card-accent, #f0a500) 0%, transparent 70%);
-  opacity: 0.1;
+  bottom: -30px;
+  right: -30px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, var(--card-accent, #0d9488) 0%, transparent 70%);
+  opacity: 0.08;
   border-radius: 50%;
 }
 
 /* Charts */
 .charts-section {
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 .charts-grid {
@@ -682,16 +807,16 @@ onMounted(() => {
 }
 
 .chart-card {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.4);
-  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .chart-card:hover {
-  border-color: rgba(71, 85, 105, 0.6);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: rgba(13, 148, 136, 0.3);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 }
 
 .chart-card.large {
@@ -703,31 +828,43 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .card-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1e293b;
   margin: 0;
 }
 
 .title-icon {
-  color: #f0a500;
-  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%);
+  border-radius: 10px;
+  color: #0d9488;
+}
+
+.title-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .data-badge {
-  padding: 0.25rem 0.75rem;
-  background: rgba(240, 165, 0, 0.1);
-  border: 1px solid rgba(240, 165, 0, 0.3);
+  padding: 0.375rem 0.875rem;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.08) 0%, rgba(20, 184, 166, 0.08) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.2);
   border-radius: 9999px;
   font-size: 0.75rem;
-  color: #f0a500;
+  font-weight: 500;
+  color: #0d9488;
 }
 
 .card-body {
@@ -750,8 +887,8 @@ onMounted(() => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(240, 165, 0, 0.2);
-  border-top-color: #f0a500;
+  border: 3px solid rgba(13, 148, 136, 0.15);
+  border-top-color: #0d9488;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -766,13 +903,25 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .empty-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  opacity: 0.5;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  margin-bottom: 0.75rem;
+}
+
+.empty-icon svg {
+  width: 24px;
+  height: 24px;
+  color: #cbd5e1;
 }
 
 .chart-empty p {
@@ -783,13 +932,16 @@ onMounted(() => {
 /* Crawler Section */
 .crawler-section {
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 .crawler-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.6) 100%);
-  border: 1px solid rgba(240, 165, 0, 0.3);
-  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
 }
 
 .crawler-header {
@@ -797,8 +949,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(90deg, rgba(240, 165, 0, 0.1) 0%, transparent 100%);
-  border-bottom: 1px solid rgba(240, 165, 0, 0.2);
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
 }
 
 .crawler-title {
@@ -808,13 +960,25 @@ onMounted(() => {
 }
 
 .crawler-icon {
-  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  border-radius: 10px;
+}
+
+.crawler-icon svg {
+  width: 18px;
+  height: 18px;
+  color: #fff;
 }
 
 .crawler-title h3 {
   font-size: 1rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1e293b;
   margin: 0;
 }
 
@@ -836,8 +1000,8 @@ onMounted(() => {
 }
 
 .crawler-status.idle {
-  background: rgba(71, 85, 105, 0.3);
-  color: #94a3b8;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .crawler-status.idle .status-dot {
@@ -845,21 +1009,21 @@ onMounted(() => {
 }
 
 .crawler-status.running {
-  background: rgba(240, 165, 0, 0.15);
-  color: #f0a500;
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
 }
 
 .crawler-status.running .status-dot {
-  background: #f0a500;
+  background: #f59e0b;
 }
 
 .crawler-status.completed {
-  background: rgba(168, 255, 120, 0.15);
-  color: #a8ff78;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
 }
 
 .crawler-status.completed .status-dot {
-  background: #a8ff78;
+  background: #10b981;
 }
 
 @keyframes pulse {
@@ -883,33 +1047,33 @@ onMounted(() => {
 
 .progress-label {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .progress-percent {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #f0a500;
+  color: #f59e0b;
 }
 
 .progress-bar {
-  height: 8px;
-  background: rgba(51, 65, 85, 0.5);
-  border-radius: 4px;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #f0a500 0%, #f5af19 100%);
-  border-radius: 4px;
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  border-radius: 5px;
   transition: width 0.3s ease;
 }
 
 .progress-detail {
   margin-top: 0.5rem;
   font-size: 0.8rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .crawler-actions {
@@ -925,7 +1089,7 @@ onMounted(() => {
   font-size: 0.875rem;
   font-weight: 500;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -936,52 +1100,57 @@ onMounted(() => {
 }
 
 .crawler-btn.primary {
-  background: linear-gradient(135deg, #f0a500 0%, #f5af19 100%);
-  color: #0a0e17;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #fff;
 }
 
 .crawler-btn.primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(240, 165, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.3);
 }
 
 .crawler-btn.secondary {
-  background: rgba(51, 65, 85, 0.5);
-  color: #e2e8f0;
-  border: 1px solid rgba(71, 85, 105, 0.5);
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .crawler-btn.secondary:hover:not(:disabled) {
-  background: rgba(71, 85, 105, 0.6);
+  background: #e2e8f0;
 }
 
 .btn-icon {
-  font-size: 0.75rem;
+  display: flex;
+}
+
+.btn-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .crawler-message {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.875rem;
 }
 
 .crawler-message.success {
-  background: rgba(168, 255, 120, 0.1);
-  border: 1px solid rgba(168, 255, 120, 0.3);
-  color: #a8ff78;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #059669;
 }
 
 .crawler-message.error {
-  background: rgba(255, 107, 107, 0.1);
-  border: 1px solid rgba(255, 107, 107, 0.3);
-  color: #ff6b6b;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
 }
 
 .crawler-message.info {
-  background: rgba(100, 116, 139, 0.2);
-  border: 1px solid rgba(100, 116, 139, 0.3);
-  color: #94a3b8;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
 }
 
 /* Responsive */

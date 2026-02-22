@@ -1,27 +1,25 @@
 <template>
-  <div class="user-management-page">
+  <div class="notice-management-page">
     <!-- Header -->
     <header class="page-header">
       <div class="header-content">
         <div class="header-left">
           <div class="header-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/>
+              <path d="m9 9 2 2 4-4"/>
             </svg>
           </div>
           <div class="header-text">
-            <h1 class="page-title">用户管理</h1>
-            <p class="page-subtitle">管理系统用户账户</p>
+            <h1 class="page-title">{{ isAdmin ? '公告管理' : '通知公告' }}</h1>
+            <p class="page-subtitle">{{ isAdmin ? '发布和管理系统公告' : '查看系统公告通知' }}</p>
           </div>
         </div>
         <div class="header-stats">
           <div class="stat-pill">
             <span class="stat-dot"></span>
             <span class="stat-value">{{ total.toLocaleString() }}</span>
-            <span class="stat-label">用户总数</span>
+            <span class="stat-label">公告总数</span>
           </div>
         </div>
       </div>
@@ -39,7 +37,7 @@
             v-model="searchKeyword"
             type="text"
             class="search-input"
-            placeholder="搜索用户名..."
+            placeholder="搜索公告标题..."
             @keyup.enter="handleSearch"
             @input="handleSearchInput"
           />
@@ -57,21 +55,8 @@
         </div>
       </div>
 
-      <!-- 筛选下拉框 -->
+      <!-- 筛选组件 -->
       <div class="filter-container">
-        <!-- 角色筛选 -->
-        <el-select
-          v-model="filters.role"
-          placeholder="角色"
-          clearable
-          class="filter-select"
-          @change="handleFilterChange"
-        >
-          <el-option label="全部" value="" />
-          <el-option label="管理员" value="admin" />
-          <el-option label="普通用户" value="user" />
-        </el-select>
-
         <!-- 状态筛选 -->
         <el-select
           v-model="filters.is_active"
@@ -81,7 +66,7 @@
           @change="handleFilterChange"
         >
           <el-option label="全部" value="" />
-          <el-option label="正常" value="true" />
+          <el-option label="启用" value="true" />
           <el-option label="禁用" value="false" />
         </el-select>
 
@@ -108,28 +93,28 @@
           </svg>
           <span>刷新</span>
         </button>
-        <button class="add-btn" @click="openAddDialog">
+        <button v-if="isAdmin" class="add-btn" @click="openAddDialog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          <span>添加用户</span>
+          <span>添加公告</span>
         </button>
       </div>
     </section>
 
-    <!-- User Table -->
+    <!-- Notice Table -->
     <section class="table-section">
       <div class="table-container">
         <!-- Table Header -->
         <div class="table-header">
           <div class="header-row">
             <div class="header-cell col-id">ID</div>
-            <div class="header-cell col-username">用户名</div>
-            <div class="header-cell col-role">角色</div>
+            <div class="header-cell col-title">标题</div>
+            <div class="header-cell col-content">内容摘要</div>
             <div class="header-cell col-status">状态</div>
             <div class="header-cell col-created">创建时间</div>
-            <div class="header-cell col-actions">操作</div>
+            <div class="header-cell col-actions" v-if="isAdmin">操作</div>
           </div>
         </div>
 
@@ -139,9 +124,9 @@
           <template v-if="tableLoading">
             <div v-for="n in 8" :key="n" class="skeleton-row">
               <div class="skeleton-cell col-id"><div class="skeleton-block" style="width: 30px;"></div></div>
-              <div class="skeleton-cell col-username"><div class="skeleton-block" style="width: 100px;"></div></div>
-              <div class="skeleton-cell col-role"><div class="skeleton-block" style="width: 60px;"></div></div>
-              <div class="skeleton-cell col-status"><div class="skeleton-block" style="width: 50px;"></div></div>
+              <div class="skeleton-cell col-title"><div class="skeleton-block" style="width: 150px;"></div></div>
+              <div class="skeleton-cell col-content"><div class="skeleton-block" style="width: 200px;"></div></div>
+              <div class="skeleton-cell col-status"><div class="skeleton-block" style="width: 60px;"></div></div>
               <div class="skeleton-cell col-created"><div class="skeleton-block" style="width: 120px;"></div></div>
               <div class="skeleton-cell col-actions"><div class="skeleton-block" style="width: 100px;"></div></div>
             </div>
@@ -158,27 +143,22 @@
               <div class="data-cell col-id">
                 <span class="row-id">{{ String(row.id).padStart(4, '0') }}</span>
               </div>
-              <div class="data-cell col-username">
-                <div class="username-cell">
-                  <div class="user-avatar-small">{{ row.username.charAt(0).toUpperCase() }}</div>
-                  <span class="username-text">{{ row.username }}</span>
-                </div>
+              <div class="data-cell col-title">
+                <span class="title-text">{{ row.title }}</span>
               </div>
-              <div class="data-cell col-role">
-                <span class="role-badge" :class="row.role">
-                  {{ row.role === 'admin' ? '管理员' : '普通用户' }}
-                </span>
+              <div class="data-cell col-content">
+                <span class="content-text">{{ getContentPreview(row.content) }}</span>
               </div>
               <div class="data-cell col-status">
                 <span class="status-badge" :class="row.is_active ? 'active' : 'inactive'">
                   <span class="status-dot"></span>
-                  {{ row.is_active ? '正常' : '禁用' }}
+                  {{ row.is_active ? '启用' : '禁用' }}
                 </span>
               </div>
               <div class="data-cell col-created">
                 <span class="time-text">{{ formatDate(row.created_at) }}</span>
               </div>
-              <div class="data-cell col-actions">
+              <div class="data-cell col-actions" v-if="isAdmin">
                 <button class="action-btn edit" @click="openEditDialog(row)" title="编辑">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -188,7 +168,6 @@
                 <button
                   class="action-btn delete"
                   @click="handleDelete(row)"
-                  :disabled="row.id === authStore.userInfo?.id"
                   title="删除"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -203,14 +182,12 @@
             <div v-if="!tableData.length" class="empty-state">
               <div class="empty-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/>
+                  <path d="m9 9 2 2 4-4"/>
                 </svg>
               </div>
-              <h3 class="empty-title">暂无用户</h3>
-              <p class="empty-desc">点击"添加用户"创建新账户</p>
+              <h3 class="empty-title">暂无公告</h3>
+              <p class="empty-desc">{{ isAdmin ? '点击"添加公告"创建新公告' : '暂无系统公告' }}</p>
             </div>
           </template>
         </div>
@@ -238,12 +215,12 @@
       </div>
     </section>
 
-    <!-- Add/Edit User Dialog -->
+    <!-- Add/Edit Notice Dialog -->
     <el-dialog
       v-model="dialogVisible"
-      :title="isEdit ? '编辑用户' : '添加用户'"
-      width="480px"
-      class="user-dialog"
+      :title="isEdit ? '编辑公告' : '添加公告'"
+      width="560px"
+      class="notice-dialog"
       :show-close="true"
       :close-on-click-modal="false"
     >
@@ -251,50 +228,33 @@
         ref="dialogFormRef"
         :model="dialogForm"
         :rules="dialogRules"
-        class="user-form"
+        class="notice-form"
         label-position="top"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item label="标题" prop="title">
           <el-input
-            v-model="dialogForm.username"
-            placeholder="请输入用户名"
-            :disabled="isEdit"
+            v-model="dialogForm.title"
+            placeholder="请输入公告标题"
+            maxlength="200"
+            show-word-limit
           />
         </el-form-item>
 
-        <el-form-item label="密码" :prop="isEdit ? '' : 'password'">
+        <el-form-item label="内容" prop="content">
           <el-input
-            v-model="dialogForm.password"
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="请输入密码"
-          >
-            <template #suffix>
-              <button type="button" class="toggle-btn" @click="showPassword = !showPassword">
-                <svg v-if="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              </button>
-            </template>
-          </el-input>
-          <div class="form-tip" v-if="isEdit">留空则不修改密码</div>
-        </el-form-item>
-
-        <el-form-item label="角色" prop="role">
-          <el-select v-model="dialogForm.role" placeholder="选择角色" class="role-select">
-            <el-option label="普通用户" value="user" />
-            <el-option label="管理员" value="admin" />
-          </el-select>
+            v-model="dialogForm.content"
+            type="textarea"
+            :rows="6"
+            placeholder="请输入公告内容"
+            maxlength="2000"
+            show-word-limit
+          />
         </el-form-item>
 
         <el-form-item label="状态" prop="is_active" v-if="isEdit">
           <el-switch
             v-model="dialogForm.is_active"
-            active-text="正常"
+            active-text="启用"
             inactive-text="禁用"
             class="status-switch"
           />
@@ -318,12 +278,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import request from '@/utils/request'
+import { useAuthStore } from '@/stores/auth'
+import { getNoticeList, createNotice, updateNotice, deleteNotice } from '@/api/notices'
 
 const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.isAdmin)
 
 // Table state
 const tableData = ref([])
@@ -336,7 +297,6 @@ const searchTimer = ref(null)
 
 // 筛选状态
 const filters = reactive({
-  role: '',
   is_active: '',
   dateRange: null
 })
@@ -346,43 +306,22 @@ const dialogVisible = ref(false)
 const dialogFormRef = ref(null)
 const dialogLoading = ref(false)
 const isEdit = ref(false)
-const showPassword = ref(false)
 const editingId = ref(null)
 
 const dialogForm = reactive({
-  username: '',
-  password: '',
-  role: 'user',
+  title: '',
+  content: '',
   is_active: true
 })
 
 // Dialog validation rules
-const validateUsername = (rule, value, callback) => {
-  if (!value || value.length < 3) {
-    callback(new Error('用户名至少3个字符'))
-  } else {
-    callback()
-  }
-}
-
-const validatePassword = (rule, value, callback) => {
-  if (!isEdit.value && (!value || value.length < 6)) {
-    callback(new Error('密码至少6个字符'))
-  } else {
-    callback()
-  }
-}
-
 const dialogRules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { validator: validateUsername, trigger: 'blur' }
+  title: [
+    { required: true, message: '请输入公告标题', trigger: 'blur' },
+    { min: 1, max: 200, message: '标题长度在 1 到 200 个字符', trigger: 'blur' }
   ],
-  password: [
-    { validator: validatePassword, trigger: 'blur' }
-  ],
-  role: [
-    { required: true, message: '请选择角色', trigger: 'change' }
+  content: [
+    { required: true, message: '请输入公告内容', trigger: 'blur' }
   ]
 }
 
@@ -403,6 +342,11 @@ const formatDate = (dateStr) => {
   }
 }
 
+const getContentPreview = (content) => {
+  if (!content) return '-'
+  return content.length > 50 ? content.substring(0, 50) + '...' : content
+}
+
 const fetchData = async () => {
   tableLoading.value = true
   try {
@@ -410,19 +354,18 @@ const fetchData = async () => {
       page: currentPage.value,
       page_size: pageSize.value,
       search: searchKeyword.value || undefined,
-      role: filters.role || undefined,
       is_active: filters.is_active || undefined,
       created_at_after: filters.dateRange?.[0] || undefined,
       created_at_before: filters.dateRange?.[1] || undefined
     }
-    const res = await request.get('/api/auth/users/', { params })
+    const res = await getNoticeList(params)
     if (res.code === 0 || res.code === 200) {
       tableData.value = res.data || []
       total.value = res.total || 0
     }
   } catch (e) {
-    console.error('Failed to fetch users:', e)
-    ElMessage.error('获取用户列表失败')
+    console.error('Failed to fetch notices:', e)
+    ElMessage.error('获取公告列表失败')
   } finally {
     tableLoading.value = false
   }
@@ -442,13 +385,13 @@ const handleSearch = () => {
   fetchData()
 }
 
-const clearSearch = () => {
-  searchKeyword.value = ''
+const handleFilterChange = () => {
   currentPage.value = 1
   fetchData()
 }
 
-const handleFilterChange = () => {
+const clearSearch = () => {
+  searchKeyword.value = ''
   currentPage.value = 1
   fetchData()
 }
@@ -467,9 +410,8 @@ const handlePageChange = (page) => {
 const openAddDialog = () => {
   isEdit.value = false
   editingId.value = null
-  dialogForm.username = ''
-  dialogForm.password = ''
-  dialogForm.role = 'user'
+  dialogForm.title = ''
+  dialogForm.content = ''
   dialogForm.is_active = true
   dialogVisible.value = true
 }
@@ -477,9 +419,8 @@ const openAddDialog = () => {
 const openEditDialog = (row) => {
   isEdit.value = true
   editingId.value = row.id
-  dialogForm.username = row.username
-  dialogForm.password = ''
-  dialogForm.role = row.role
+  dialogForm.title = row.title
+  dialogForm.content = row.content
   dialogForm.is_active = row.is_active
   dialogVisible.value = true
 }
@@ -497,32 +438,25 @@ const handleDialogSubmit = async () => {
 
   try {
     if (isEdit.value) {
-      // Update user
-      const updateData = {
-        username: dialogForm.username,
-        role: dialogForm.role,
+      const res = await updateNotice(editingId.value, {
+        title: dialogForm.title,
+        content: dialogForm.content,
         is_active: dialogForm.is_active
-      }
-      if (dialogForm.password) {
-        updateData.password = dialogForm.password
-      }
-      const res = await request.patch(`/api/auth/users/${editingId.value}/`, updateData)
+      })
       if (res.code === 0 || res.code === 200) {
-        ElMessage.success('用户更新成功')
+        ElMessage.success('公告更新成功')
         dialogVisible.value = false
         fetchData()
       } else {
         ElMessage.error(res.message || '更新失败')
       }
     } else {
-      // Create user
-      const res = await request.post('/api/auth/register/', {
-        username: dialogForm.username,
-        password: dialogForm.password,
-        role: dialogForm.role
+      const res = await createNotice({
+        title: dialogForm.title,
+        content: dialogForm.content
       })
       if (res.code === 0 || res.code === 200) {
-        ElMessage.success('用户创建成功')
+        ElMessage.success('公告创建成功')
         dialogVisible.value = false
         if (tableData.value.length === 0 && currentPage.value > 1) {
           currentPage.value = 1
@@ -540,14 +474,9 @@ const handleDialogSubmit = async () => {
 }
 
 const handleDelete = async (row) => {
-  if (row.id === authStore.userInfo?.id) {
-    ElMessage.warning('不能删除当前登录的用户')
-    return
-  }
-
   try {
     await ElMessageBox.confirm(
-      `确定要删除用户 "${row.username}" 吗？此操作不可恢复。`,
+      `确定要删除公告 "${row.title}" 吗？此操作不可恢复。`,
       '确认删除',
       {
         confirmButtonText: '删除',
@@ -557,7 +486,7 @@ const handleDelete = async (row) => {
       }
     )
     tableLoading.value = true
-    const res = await request.delete(`/api/auth/users/${row.id}/`)
+    const res = await deleteNotice(row.id)
     if (res.code === 0 || res.code === 200) {
       ElMessage.success('删除成功')
       if (tableData.value.length === 1 && currentPage.value > 1) {
@@ -583,14 +512,14 @@ onMounted(() => {
 
 <style scoped>
 /* Page Layout */
-.user-management-page {
+.notice-management-page {
   min-height: 100vh;
   padding: 2rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   position: relative;
 }
 
-.user-management-page::before {
+.notice-management-page::before {
   content: '';
   position: absolute;
   top: 0;
@@ -825,47 +754,52 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
+/* Filter Container */
 .filter-container {
   display: flex;
   gap: 0.75rem;
+  align-items: center;
 }
 
 .filter-select {
   width: 140px;
 }
 
-.filter-select :deep(.el-input__wrapper) {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: none;
-}
-
-.filter-select :deep(.el-input__wrapper:hover) {
-  border-color: rgba(139, 92, 246, 0.5);
-}
-
-.filter-select :deep(.el-input__wrapper.is-focus) {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
 .filter-date-range {
   width: 240px;
 }
 
-.filter-date-range :deep(.el-input__wrapper) {
+/* Element Plus Filter Components */
+.filter-select :deep(.el-select__wrapper) {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: none;
+  height: 44px;
 }
 
-.filter-date-range :deep(.el-input__wrapper:hover) {
+.filter-select :deep(.el-select__wrapper:hover) {
   border-color: rgba(139, 92, 246, 0.5);
 }
 
-.filter-date-range :deep(.el-input__wrapper.is-focus) {
+.filter-select :deep(.el-select__wrapper.is-focused) {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.filter-date-range :deep(.el-range-editor) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: none;
+  height: 44px;
+}
+
+.filter-date-range :deep(.el-range-editor:hover) {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.filter-date-range :deep(.el-range-editor.is-active) {
   border-color: #8b5cf6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
@@ -951,8 +885,8 @@ onMounted(() => {
 }
 
 .col-id { width: 80px; flex-shrink: 0; text-align: center; }
-.col-username { width: 180px; flex-shrink: 0; }
-.col-role { width: 120px; flex-shrink: 0; }
+.col-title { width: 200px; flex-shrink: 0; }
+.col-content { flex: 1; min-width: 200px; }
 .col-status { width: 100px; flex-shrink: 0; }
 .col-created { width: 160px; flex-shrink: 0; }
 .col-actions { width: 120px; flex-shrink: 0; text-align: center; }
@@ -992,8 +926,8 @@ onMounted(() => {
 }
 
 .col-id { justify-content: center; }
-.col-username { justify-content: flex-start; gap: 0.75rem; }
-.col-role { justify-content: flex-start; }
+.col-title { justify-content: flex-start; }
+.col-content { justify-content: flex-start; }
 .col-status { justify-content: flex-start; }
 .col-created { justify-content: flex-start; }
 .col-actions { justify-content: center; gap: 0.5rem; }
@@ -1007,48 +941,18 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-.username-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.user-avatar-small {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.username-text {
+.title-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.role-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
   font-weight: 500;
 }
 
-.role-badge.admin {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
-  border: 1px solid rgba(139, 92, 246, 0.2);
-}
-
-.role-badge.user {
-  background: rgba(13, 148, 136, 0.1);
-  color: #0d9488;
-  border: 1px solid rgba(13, 148, 136, 0.2);
+.content-text {
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-badge {
@@ -1153,8 +1057,8 @@ onMounted(() => {
 }
 
 .col-id { width: 80px; flex-shrink: 0; }
-.col-username { width: 180px; flex-shrink: 0; }
-.col-role { width: 120px; flex-shrink: 0; }
+.col-title { width: 200px; flex-shrink: 0; }
+.col-content { flex: 1; min-width: 200px; }
 .col-status { width: 100px; flex-shrink: 0; }
 .col-created { width: 160px; flex-shrink: 0; }
 .col-actions { width: 120px; flex-shrink: 0; }
@@ -1229,25 +1133,25 @@ onMounted(() => {
 }
 
 /* Dialog Styles */
-.user-dialog :deep(.el-dialog) {
+.notice-dialog :deep(.el-dialog) {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 20px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12);
 }
 
-.user-dialog :deep(.el-dialog__header) {
+.notice-dialog :deep(.el-dialog__header) {
   padding: 1.5rem;
   border-bottom: 1px solid #f1f5f9;
 }
 
-.user-dialog :deep(.el-dialog__title) {
+.notice-dialog :deep(.el-dialog__title) {
   font-size: 1.125rem;
   font-weight: 600;
   color: #1e293b;
 }
 
-.user-dialog :deep(.el-dialog__headerbtn) {
+.notice-dialog :deep(.el-dialog__headerbtn) {
   top: 1rem;
   right: 1rem;
   width: 32px;
@@ -1256,70 +1160,39 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-.user-dialog :deep(.el-dialog__body) {
+.notice-dialog :deep(.el-dialog__body) {
   padding: 1.5rem;
 }
 
-.user-form :deep(.el-form-item__label) {
+.notice-form :deep(.el-form-item__label) {
   color: #475569;
   font-size: 0.875rem;
   font-weight: 500;
 }
 
-.user-form :deep(.el-input__wrapper) {
+.notice-form :deep(.el-input__wrapper) {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: none;
 }
 
-.user-form :deep(.el-input__wrapper:hover) {
+.notice-form :deep(.el-input__wrapper:hover) {
   border-color: rgba(139, 92, 246, 0.5);
 }
 
-.user-form :deep(.el-input__wrapper.is-focus) {
+.notice-form :deep(.el-input__wrapper.is-focus) {
   border-color: #8b5cf6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-.user-form :deep(.el-input__inner) {
+.notice-form :deep(.el-input__inner) {
   color: #1e293b;
   height: 44px;
 }
 
-.user-form :deep(.el-select .el-input__inner) {
-  height: 44px;
-}
-
-.toggle-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-}
-
-.toggle-btn:hover {
-  color: #8b5cf6;
-}
-
-.toggle-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.form-tip {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 0.375rem;
-}
-
-.role-select {
-  width: 100%;
+.notice-form :deep(.el-textarea__inner) {
+  color: #1e293b;
 }
 
 .status-switch :deep(.el-switch__label) {
@@ -1415,7 +1288,7 @@ onMounted(() => {
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .user-management-page {
+  .notice-management-page {
     padding: 1.5rem;
   }
 
@@ -1445,7 +1318,7 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .user-management-page {
+  .notice-management-page {
     padding: 1rem;
   }
 

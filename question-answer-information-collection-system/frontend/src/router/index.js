@@ -4,6 +4,7 @@ import Login from '@/views/Login.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import DataCenter from '@/views/DataCenter.vue'
 import UserManagement from '@/views/UserManagement.vue'
+import NoticeManagement from '@/views/NoticeManagement.vue'
 import Profile from '@/views/Profile.vue'
 
 // Routes with lazy loading
@@ -16,7 +17,12 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/dashboard'
+    redirect: (to) => {
+      // 根据用户角色重定向
+      const isLoggedIn = useAuthStore().isLoggedIn
+      if (!isLoggedIn) return '/login'
+      return useAuthStore().isAdmin ? '/dashboard' : '/overview'
+    }
   },
   // Dashboard - accessible to all authenticated users
   {
@@ -24,6 +30,13 @@ const routes = [
     name: 'Dashboard',
     component: Dashboard,
     meta: { requiresAuth: true, layout: 'admin', title: '仪表盘' }
+  },
+  // User Overview - accessible to regular users (simplified dashboard)
+  {
+    path: '/overview',
+    name: 'Overview',
+    component: Dashboard,
+    meta: { requiresAuth: true, layout: 'user', title: '数据概览' }
   },
   // Data Center - different titles for admin vs regular user
   {
@@ -44,6 +57,13 @@ const routes = [
     name: 'UserManagement',
     component: UserManagement,
     meta: { requiresAuth: true, roles: ['admin'], layout: 'admin', title: '用户管理' }
+  },
+  // Notice Management - accessible to all authenticated users
+  {
+    path: '/notices',
+    name: 'NoticeManagement',
+    component: NoticeManagement,
+    meta: { requiresAuth: true, title: '通知公告' }
   },
   // Profile - accessible to all
   {
@@ -74,16 +94,28 @@ router.beforeEach((to, from, next) => {
 
   // Redirect to dashboard if already logged in and trying to access login
   if (to.name === 'Login' && isLoggedIn) {
-    next({ name: 'Dashboard' })
+    next({ name: authStore.isAdmin ? 'Dashboard' : 'Overview' })
     return
   }
 
   // Check role-based access for admin routes
   if (requiredRoles && requiredRoles.length > 0) {
     if (!authStore.isAdmin) {
-      next({ name: 'Dashboard' })
+      next({ name: 'Overview' })
       return
     }
+  }
+
+  // Redirect admin users away from user-only routes
+  if (to.meta.layout === 'user' && authStore.isAdmin) {
+    next({ name: 'Dashboard' })
+    return
+  }
+
+  // Redirect regular users away from admin-only routes
+  if (to.meta.layout === 'admin' && !authStore.isAdmin) {
+    next({ name: 'Overview' })
+    return
   }
 
   next()

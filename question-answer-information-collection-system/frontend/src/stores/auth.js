@@ -43,16 +43,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    try {
-      await request.post('/api/auth/logout/')
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      clearAuth()
-      token.value = null
-      userInfo.value = null
-      router.push('/login')
-    }
+    // JWT 只需要客户端删除 token 即可，后端无需处理
+    clearAuth()
+    token.value = null
+    userInfo.value = null
+    router.push('/login')
   }
 
   async function fetchUserInfo() {

@@ -13,11 +13,21 @@
           </div>
           <span class="logo-text" v-if="!sidebarCollapsed">问答采集</span>
         </div>
-        <button class="collapse-btn" @click="toggleSidebar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline :points="sidebarCollapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'"/>
-          </svg>
-        </button>
+        <div class="header-actions">
+          <!-- Notice Icon -->
+          <button class="notice-btn" @click="openNoticeDialog" title="公告">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/>
+              <path d="m9 9 2 2 4-4"/>
+            </svg>
+            <span v-if="noticeCount > 0" class="notice-badge">{{ noticeCount > 9 ? '9+' : noticeCount }}</span>
+          </button>
+          <button class="collapse-btn" @click="toggleSidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline :points="sidebarCollapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <nav class="sidebar-nav">
@@ -66,19 +76,74 @@
     <main class="main-content">
       <router-view />
     </main>
+
+    <!-- Notice Dialog -->
+    <el-dialog
+      v-model="noticeDialogVisible"
+      title="公告列表"
+      width="520px"
+      class="notice-dialog"
+      :close-on-click-modal="true"
+    >
+      <div class="notice-list" v-loading="noticeLoading" element-loading-text="加载中...">
+        <div v-if="noticeList.length === 0" class="empty-notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/>
+            <path d="m9 9 2 2 4-4"/>
+          </svg>
+          <p>暂无公告</p>
+        </div>
+        <div
+          v-for="notice in noticeList"
+          :key="notice.id"
+          class="notice-item"
+          @click="viewNoticeDetail(notice)"
+        >
+          <div class="notice-item-header">
+            <h4 class="notice-item-title">{{ notice.title }}</h4>
+            <span class="notice-item-time">{{ formatDate(notice.created_at) }}</span>
+          </div>
+          <p class="notice-item-content">{{ getContentPreview(notice.content) }}</p>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- Notice Detail Dialog -->
+    <el-dialog
+      v-model="noticeDetailVisible"
+      :title="currentNotice?.title"
+      width="600px"
+      class="notice-detail-dialog"
+    >
+      <div class="notice-detail-content" v-if="currentNotice">
+        <p>{{ currentNotice.content }}</p>
+      </div>
+      <div class="notice-detail-footer">
+        <span class="notice-detail-time">发布时间：{{ formatDate(currentNotice?.created_at) }}</span>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { getNoticeList } from '@/api/notices'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
 const sidebarCollapsed = ref(false)
+
+// Notice state
+const noticeDialogVisible = ref(false)
+const noticeDetailVisible = ref(false)
+const noticeLoading = ref(false)
+const noticeList = ref([])
+const noticeCount = ref(0)
+const currentNotice = ref(null)
 
 const userInitials = computed(() => {
   const name = authStore.userInfo?.username || ''
@@ -97,6 +162,53 @@ const handleLogout = async () => {
   await authStore.logout()
 }
 
+// Notice methods
+const openNoticeDialog = async () => {
+  noticeDialogVisible.value = true
+  await fetchNotices()
+}
+
+const fetchNotices = async () => {
+  noticeLoading.value = true
+  try {
+    const res = await getNoticeList({ page_size: 20 })
+    if (res.code === 0 || res.code === 200) {
+      noticeList.value = res.data || []
+      noticeCount.value = res.total || 0
+    }
+  } catch (e) {
+    console.error('Failed to fetch notices:', e)
+  } finally {
+    noticeLoading.value = false
+  }
+}
+
+const viewNoticeDetail = (notice) => {
+  currentNotice.value = notice
+  noticeDetailVisible.value = true
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+const getContentPreview = (content) => {
+  if (!content) return ''
+  return content.length > 80 ? content.substring(0, 80) + '...' : content
+}
+
 const navItems = computed(() => {
   const items = [
     {
@@ -111,11 +223,17 @@ const navItems = computed(() => {
     }
   ]
 
-  if (authStore.isAdmin) {
+  // 公告管理 - 管理员可见
+  if (authStore.userInfo && authStore.userInfo.role === 'admin') {
     items.push({
       path: '/users',
       name: '用户管理',
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    })
+    items.push({
+      path: '/notices',
+      name: '公告管理',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/><path d="m9 9 2 2 4-4"/></svg>'
     })
   }
 
@@ -167,6 +285,54 @@ const navItems = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notice-btn {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(51, 65, 85, 0.3);
+  border: none;
+  border-radius: 6px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notice-btn:hover {
+  background: rgba(71, 85, 105, 0.5);
+  color: #f1f5f9;
+}
+
+.notice-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.notice-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo-icon {
@@ -434,5 +600,109 @@ const navItems = computed(() => {
   .main-content {
     margin-left: 72px;
   }
+}
+
+/* Notice Dialog Styles */
+.notice-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+}
+
+.empty-notice svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: #cbd5e1;
+}
+
+.empty-notice p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.notice-item {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.notice-item:hover {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.notice-item:last-child {
+  border-bottom: none;
+}
+
+.notice-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+.notice-item-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-item-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.notice-item-content {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Notice Detail Dialog */
+.notice-detail-content {
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.notice-detail-content p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.notice-detail-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notice-detail-time {
+  font-size: 0.8rem;
+  color: #94a3b8;
 }
 </style>

@@ -91,7 +91,20 @@ class CrawlerStatusView(APIView):
         """
         try:
             redis_client = get_redis_client()
+            redis_client.ping()  # 测试连接
+        except Exception:
+            # Redis 不可用时返回默认状态
+            return Response(
+                make_response(code=0, data={
+                    "has_active_task": False,
+                    "current_task": None,
+                    "resume_available": False,
+                    "resume_info": None,
+                }),
+                status=status.HTTP_200_OK
+            )
 
+        try:
             # 获取所有活跃任务
             pattern = f'{REDIS_KEY_PREFIX}status:*'
             active_tasks = []
@@ -126,7 +139,7 @@ class CrawlerStatusView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取状态失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -162,26 +175,32 @@ class CrawlerStartView(APIView):
             # 权限检查：仅管理员可启动爬虫
             if not hasattr(request.user, 'role') or request.user.role != 'admin':
                 return Response(
-                    make_response(code=403, message="仅管理员可以启动爬虫任务"),
+                    make_response(code=-1, message="仅管理员可以启动爬虫任务"),
                     status=status.HTTP_403_FORBIDDEN
                 )
 
             # 获取请求参数
             mode = request.data.get('mode', 'demo')
-            limit = int(request.data.get('limit', 20))
+            try:
+                limit = int(request.data.get('limit', 20))
+            except (ValueError, TypeError):
+                return Response(
+                    make_response(code=-1, message="参数 limit 必须是整数"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             api_only = request.data.get('api_only', False)
             resume = request.data.get('resume', False)
 
             # 参数验证
             if mode not in ['demo', 'full']:
                 return Response(
-                    make_response(code=400, message="无效的采集模式，仅支持 'demo' 或 'full'"),
+                    make_response(code=-1, message="参数 mode 无效，仅支持 'demo' 或 'full'"),
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             if limit < 1 or limit > 50000:
                 return Response(
-                    make_response(code=400, message="采集数量应在 1-50000 之间"),
+                    make_response(code=-1, message="参数 limit 超出范围，应为 1-50000"),
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -196,7 +215,7 @@ class CrawlerStartView(APIView):
                     if task_info.get('status') in ['running', 'pending']:
                         return Response(
                             make_response(
-                                code=409,
+                                code=-1,
                                 message=f"已有任务正在运行 (task_id: {task_info.get('task_id')})",
                                 data={"existing_task_id": task_info.get('task_id')}
                             ),
@@ -242,7 +261,7 @@ class CrawlerStartView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"启动任务失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -275,7 +294,7 @@ class CrawlerStopView(APIView):
             # 权限检查：仅管理员可停止爬虫
             if not hasattr(request.user, 'role') or request.user.role != 'admin':
                 return Response(
-                    make_response(code=403, message="仅管理员可以停止爬虫任务"),
+                    make_response(code=-1, message="仅管理员可以停止爬虫任务"),
                     status=status.HTTP_403_FORBIDDEN
                 )
 
@@ -297,7 +316,7 @@ class CrawlerStopView(APIView):
 
                 if not running_task_id:
                     return Response(
-                        make_response(code=404, message="没有正在运行的爬虫任务"),
+                        make_response(code=-1, message="没有正在运行的爬虫任务"),
                         status=status.HTTP_404_NOT_FOUND
                     )
 
@@ -317,7 +336,7 @@ class CrawlerStopView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"停止任务失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -353,7 +372,7 @@ class CrawlerProgressView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取进度失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -386,7 +405,7 @@ class CrawlerLogsView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取日志失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -422,7 +441,7 @@ class CrawlerResumeView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取断点信息失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -469,7 +488,7 @@ class CrawlerOperationLogsView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取操作日志失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -517,7 +536,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     GET /api/questions/<id>/     - 获取问答详情
     DELETE /api/questions/<id>/  - 删除问答（仅管理员）
     """
-    queryset = Question.objects.select_related('answers').all()
+    queryset = Question.objects.prefetch_related('answers').all()
     serializer_class = None  # 在 __init__ 中动态设置
     permission_classes = [IsAdminOrDeleteOnly]
 
@@ -535,6 +554,12 @@ class QuestionViewSet(viewsets.ModelViewSet):
         - page_size: 每页数量（默认20，最大100）
         - search: 搜索关键词（标题模糊搜索）
         - ordering: 排序字段（默认 -created_at）
+        - category: 分类筛选
+        - location: 地理位置筛选
+        - publish_time_after: 发布时间起始（格式：YYYY-MM-DD）
+        - publish_time_before: 发布时间结束（格式：YYYY-MM-DD）
+        - answer_count_min: 回答数量最小值
+        - answer_count_max: 回答数量最大值
         """
         # 获取查询参数
         search = request.query_params.get('search', '')
@@ -546,12 +571,66 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(title__icontains=search)
 
-        # 排序
-        queryset = queryset.order_by(ordering)
+        # 分类筛选
+        category = request.query_params.get('category', '')
+        if category:
+            queryset = queryset.filter(category=category)
+
+        # 地理位置筛选
+        location = request.query_params.get('location', '')
+        if location:
+            queryset = queryset.filter(location=location)
+
+        # 发布时间范围筛选
+        publish_time_after = request.query_params.get('publish_time_after')
+        publish_time_before = request.query_params.get('publish_time_before')
+        if publish_time_after:
+            queryset = queryset.filter(publish_time__gte=publish_time_after)
+        if publish_time_before:
+            queryset = queryset.filter(publish_time__lte=publish_time_before)
+
+        # 回答数量范围筛选
+        answer_count_min = request.query_params.get('answer_count_min')
+        answer_count_max = request.query_params.get('answer_count_max')
+        if answer_count_min:
+            queryset = queryset.filter(answer_count__gte=int(answer_count_min))
+        if answer_count_max:
+            queryset = queryset.filter(answer_count__lte=int(answer_count_max))
+
+        # 排序（添加 answer_count 排序选项）
+        valid_orderings = ['created_at', '-created_at', 'publish_time', '-publish_time', 'answer_count', '-answer_count']
+        if ordering in valid_orderings:
+            queryset = queryset.order_by(ordering)
+        else:
+            queryset = queryset.order_by('-created_at')
 
         # 分页
-        page = int(request.query_params.get('page', 1))
-        page_size = min(int(request.query_params.get('page_size', 20)), 100)
+        try:
+            page = int(request.query_params.get('page', 1))
+            if page < 1:
+                return Response(
+                    make_response(code=-1, message="参数 page 必须是大于 0 的整数"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except (ValueError, TypeError):
+            return Response(
+                make_response(code=-1, message="参数 page 必须是整数"),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            page_size = int(request.query_params.get('page_size', 20))
+            if page_size < 1:
+                return Response(
+                    make_response(code=-1, message="参数 page_size 必须是大于 0 的整数"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            page_size = min(page_size, 100)
+        except (ValueError, TypeError):
+            return Response(
+                make_response(code=-1, message="参数 page_size 必须是整数"),
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # 获取总数
         total = queryset.count()
@@ -635,12 +714,30 @@ class StatisticsTrendView(APIView):
         - days: 返回最近天数（默认30，最大365）
         """
         try:
-            days = min(int(request.query_params.get('days', 30)), 365)
+            days = int(request.query_params.get('days', 30))
+            if days < 1:
+                return Response(
+                    make_response(code=-1, message="参数 days 必须是大于 0 的整数"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if days > 365:
+                return Response(
+                    make_response(code=-1, message="参数 days 不能超过 365"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            days = min(days, 365)
+        except (ValueError, TypeError):
+            return Response(
+                make_response(code=-1, message="参数 days 必须是整数"),
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        try:
             # 按日期分组统计问答数量
             trend_data = (
                 Question.objects
                 .annotate(date=TruncDate('created_at'))
+                .filter(date__isnull=False)
                 .values('date')
                 .annotate(count=Count('id'))
                 .order_by('date')
@@ -659,10 +756,9 @@ class StatisticsTrendView(APIView):
                 make_response(code=0, data=trend_list),
                 status=status.HTTP_200_OK
             )
-
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取趋势数据失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -693,8 +789,25 @@ class StatisticsCategoriesView(APIView):
         - limit: 返回数量（默认50，最大100）
         """
         try:
-            limit = min(int(request.query_params.get('limit', 50)), 100)
+            limit = int(request.query_params.get('limit', 50))
+            if limit < 1:
+                return Response(
+                    make_response(code=-1, message="参数 limit 必须是大于 0 的整数"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if limit > 100:
+                return Response(
+                    make_response(code=-1, message="参数 limit 不能超过 100"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            limit = min(limit, 100)
+        except (ValueError, TypeError):
+            return Response(
+                make_response(code=-1, message="参数 limit 必须是整数"),
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        try:
             # 统计每个分类的问题数量
             category_stats = (
                 Question.objects
@@ -718,10 +831,9 @@ class StatisticsCategoriesView(APIView):
                 make_response(code=0, data=category_list),
                 status=status.HTTP_200_OK
             )
-
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取分类统计失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -752,8 +864,25 @@ class StatisticsAnswerersView(APIView):
         - limit: 返回数量（默认20，最大50）
         """
         try:
-            limit = min(int(request.query_params.get('limit', 20)), 50)
+            limit = int(request.query_params.get('limit', 20))
+            if limit < 1:
+                return Response(
+                    make_response(code=-1, message="参数 limit 必须是大于 0 的整数"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if limit > 50:
+                return Response(
+                    make_response(code=-1, message="参数 limit 不能超过 50"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            limit = min(limit, 50)
+        except (ValueError, TypeError):
+            return Response(
+                make_response(code=-1, message="参数 limit 必须是整数"),
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        try:
             # 统计每个回答者的回答数量（从Answer模型统计）
             answerer_stats = (
                 Answer.objects
@@ -777,10 +906,9 @@ class StatisticsAnswerersView(APIView):
                 make_response(code=0, data=answerer_list),
                 status=status.HTTP_200_OK
             )
-
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取回答者统计失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -869,6 +997,30 @@ class StatisticsOverviewView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message=f"获取总览数据失败: {str(e)}"),
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class QuestionFilterOptionsView(APIView):
+    """获取问答筛选选项"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """获取可选的分类和位置列表"""
+        # 获取所有不同的分类
+        categories = Question.objects.filter(
+            category__isnull=False
+        ).exclude(category='').values_list('category', flat=True).distinct()
+
+        # 获取所有不同的位置
+        locations = Question.objects.filter(
+            location__isnull=False
+        ).exclude(location='').values_list('location', flat=True).distinct()
+
+        return Response(
+            make_response(code=0, data={
+                'categories': list(categories),
+                'locations': list(locations)
+            })
+        )

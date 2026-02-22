@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -49,20 +49,70 @@ class UserDetailView(viewsets.GenericViewSet):
         })
 
 
+class IsAdminRole(permissions.BasePermission):
+    """自定义权限：检查 role 字段是否为 admin"""
+    message = "您没有执行该操作的权限。"
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.role == 'admin'
+
+
 class UserListView(viewsets.GenericViewSet):
     """用户管理视图（仅管理员）"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminRole]
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
     def list(self, request):
-        """GET /api/auth/users/ - 获取用户列表"""
+        """GET /api/auth/users/ - 获取用户列表（支持分页和筛选）"""
         queryset = self.get_queryset()
+
+        # 搜索
+        search = request.query_params.get('search', '')
+        if search:
+            queryset = queryset.filter(username__icontains=search)
+
+        # 角色筛选
+        role = request.query_params.get('role', '')
+        if role:
+            queryset = queryset.filter(role=role)
+
+        # 状态筛选
+        is_active = request.query_params.get('is_active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+
+        # 创建时间范围筛选
+        created_at_after = request.query_params.get('created_at_after')
+        created_at_before = request.query_params.get('created_at_before')
+        if created_at_after:
+            queryset = queryset.filter(date_joined__gte=created_at_after)
+        if created_at_before:
+            queryset = queryset.filter(date_joined__lte=created_at_before)
+
+        # 排序
+        ordering = request.query_params.get('ordering', '-date_joined')
+        if ordering in ['date_joined', '-date_joined', 'username', '-username']:
+            queryset = queryset.order_by(ordering)
+
+        # 分页
+        try:
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 20))
+            page_size = min(page_size, 100)
+        except (ValueError, TypeError):
+            page, page_size = 1, 20
+
+        total = queryset.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        queryset = queryset[start:end]
+
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'code': 0,
             'data': serializer.data,
-            'total': queryset.count()
+            'total': total
         })
 
     def retrieve(self, request, pk=None):
