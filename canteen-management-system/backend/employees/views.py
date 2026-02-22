@@ -1,4 +1,8 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Exists, OuterRef
+from accounts.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
@@ -9,6 +13,7 @@ from .serializers import (
 )
 from utils.response import ApiResponse
 from utils.pagination import StandardPagination
+from utils.exceptions import ValidationException
 
 
 class EmployeeProfileViewSet(viewsets.ModelViewSet):
@@ -65,11 +70,9 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         POST /api/employees/
         """
         serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return ApiResponse.success(data=serializer.data, message='创建成功', code=201)
-
-        return ApiResponse.error(message='创建失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ApiResponse.success(data=serializer.data, message='创建成功', code=201)
 
     def update(self, request, *args, **kwargs):
         """
@@ -78,11 +81,9 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         """
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return ApiResponse.success(data=serializer.data, message='更新成功')
-
-        return ApiResponse.error(message='更新失败', errors=serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ApiResponse.success(data=serializer.data, message='更新成功')
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -92,3 +93,27 @@ class EmployeeProfileViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.delete()
         return ApiResponse.success(message='删除成功')
+
+
+class UnassignedEmployeeViewSet(viewsets.ReadOnlyModelViewSet):
+    """未关联用户系统的员工档案视图集"""
+
+    def get_queryset(self):
+        # 获取所有已关联的 employee_id
+        assigned_ids = User.objects.exclude(
+            employee_id__isnull=True
+        ).values_list('employee_id', flat=True)
+
+        # 返回未关联的员工档案
+        return EmployeeProfile.objects.exclude(
+            id__in=assigned_ids
+        ).order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = EmployeeProfileListSerializer(queryset, many=True)
+        return Response({
+            'code': 200,
+            'message': '获取成功',
+            'data': serializer.data
+        })

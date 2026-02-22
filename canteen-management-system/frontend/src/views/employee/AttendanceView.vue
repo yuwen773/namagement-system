@@ -321,7 +321,6 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('加载考勤数据失败:', error)
-    ElMessage.error('加载考勤数据失败')
   } finally {
     loading.value = false
   }
@@ -421,7 +420,6 @@ const submitAppeal = async () => {
   } catch (error) {
     if (error !== false) {
       console.error('提交异常上报失败:', error)
-      ElMessage.error('提交失败，请重试')
     }
   } finally {
     submitting.value = false

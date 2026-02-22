@@ -342,7 +342,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, markRaw } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Setting,
@@ -364,7 +364,7 @@ import {
   getSystemSettings,
   updateSystemSettings
 } from '@/api/accounts'
-import { getEmployeeList } from '@/api/employee'
+import { getEmployeeList, getUnassignedEmployees } from '@/api/employee'
 
 // 标签页
 const tabs = [
@@ -446,7 +446,6 @@ const loadUserList = async () => {
     }
   } catch (error) {
     console.error('加载用户列表失败:', error)
-    ElMessage.error('加载用户列表失败')
   } finally {
     userLoading.value = false
   }
@@ -455,9 +454,9 @@ const loadUserList = async () => {
 // 加载员工选项
 const loadEmployeeOptions = async () => {
   try {
-    const res = await getEmployeeList({ page_size: 1000, status: 'ACTIVE' })
+    const res = await getUnassignedEmployees()
     if (res.code === 200) {
-      employeeOptions.value = res.data.results || res.data
+      employeeOptions.value = res.data
     }
   } catch (error) {
     console.error('加载员工列表失败:', error)
@@ -513,7 +512,6 @@ const handleDeleteUser = (row) => {
         }
       } catch (error) {
         console.error('删除用户失败:', error)
-        ElMessage.error('删除用户失败')
       }
     })
     .catch(() => {})
@@ -557,7 +555,6 @@ const handleSubmitUser = () => {
       }
     } catch (error) {
       console.error('操作失败:', error)
-      ElMessage.error('操作失败')
     } finally {
       userSubmitting.value = false
     }
@@ -581,7 +578,7 @@ const roleList = ref([
   {
     value: 'ADMIN',
     label: '管理员',
-    icon: Avatar,
+    icon: markRaw(Avatar),
     description: '拥有系统全部管理权限，可进行所有操作',
     permissions: [
       '员工档案管理',
@@ -596,7 +593,7 @@ const roleList = ref([
   {
     value: 'EMPLOYEE',
     label: '普通员工',
-    icon: User,
+    icon: markRaw(User),
     description: '仅可查看和操作个人相关功能',
     permissions: [
       '查看个人信息',
@@ -628,7 +625,17 @@ const loadSystemSettings = async () => {
   try {
     const res = await getSystemSettings()
     if (res.code === 200 && res.data) {
-      Object.assign(settingsForm, res.data)
+      // 转换为数字类型，避免 el-input-number 接收到字符串
+      const data = {
+        grace_period_minutes: Number(res.data.grace_period_minutes) || 5,
+        early_leave_grace_minutes: Number(res.data.early_leave_grace_minutes) || 5,
+        late_deduction: Number(res.data.late_deduction) || 20,
+        missing_deduction: Number(res.data.missing_deduction) || 50,
+        days_per_month: Number(res.data.days_per_month) || 21.75,
+        hours_per_day: Number(res.data.hours_per_day) || 8,
+        overtime_rate: Number(res.data.overtime_rate) || 1.5
+      }
+      Object.assign(settingsForm, data)
     }
   } catch (error) {
     console.error('加载系统设置失败:', error)
@@ -648,7 +655,6 @@ const handleSaveSettings = () => {
     })
     .catch((error) => {
       console.error('保存设置失败:', error)
-      ElMessage.error('保存设置失败')
     })
     .finally(() => {
       settingsSaving.value = false

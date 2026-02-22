@@ -367,7 +367,6 @@ const fetchLeaveList = async () => {
       fetchPendingCount()
     }
   } catch (error) {
-    ElMessage.error('获取请假列表失败')
     console.error('Error fetching leave list:', error)
   } finally {
     loading.value = false
@@ -461,7 +460,6 @@ const handleConfirmApprove = async () => {
     detailDialogVisible.value = false
     fetchLeaveList()
   } catch (error) {
-    ElMessage.error('操作失败')
     console.error('Error approving leave:', error)
   } finally {
     approveLoading.value = false
@@ -483,10 +481,10 @@ const getPositionTagType = (position) => {
     'PASTRY': 'danger',
     'PREP': 'info',
     'CLEANER': 'success',
-    'SERVER': '',
+    'SERVER': 'info',
     'MANAGER': 'primary'
   }
-  return typeMap[position] || ''
+  return typeMap[position] || 'info'
 }
 
 // 获取请假类型标签类型
@@ -496,7 +494,7 @@ const getLeaveTypeTagType = (leaveType) => {
     'PERSONAL': 'warning',
     'COMPENSATORY': 'success'
   }
-  return typeMap[leaveType] || ''
+  return typeMap[leaveType] || 'info'
 }
 
 // 获取状态标签类型
@@ -506,7 +504,7 @@ const getStatusTagType = (status) => {
     'APPROVED': 'success',
     'REJECTED': 'danger'
   }
-  return typeMap[status] || ''
+  return typeMap[status] || 'info'
 }
 
 // 格式化日期

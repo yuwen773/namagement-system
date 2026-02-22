@@ -24,18 +24,25 @@ def custom_exception_handler(exc, context):
         context: 上下文信息，包含 view、request、args 等
 
     Returns:
-        Response: 统一格式的错误响应，或 None（交给 DRF 默认处理）
+        Response: 统一格式的错误响应
     """
-    # 调用 DRF 默认异常处理
-    response = exception_handler(exc, context)
-
     # 获取视图信息
     view = context.get('view')
     view_name = view.__class__.__name__ if view else 'UnknownView'
 
+    # 检查是否是自定义异常
+    if hasattr(exc, 'detail') and hasattr(exc, 'status_code'):
+        logger.warning(f"自定义异常 in {view_name}: {str(exc)}")
+        return Response({
+            'code': exc.status_code,
+            'message': _get_error_message(exc),
+            'data': None
+        }, status=exc.status_code)
+
+    # 调用 DRF 默认异常处理
+    response = exception_handler(exc, context)
+
     if response is not None:
-        # DRF 已处理的异常（如 ValidationError、NotFound 等）
-        # 格式化为统一响应
         return _format_drf_response(exc, response, view_name)
 
     # 处理 Django 特定异常
@@ -43,16 +50,15 @@ def custom_exception_handler(exc, context):
         logger.warning(f"Django 验证错误 in {view_name}: {str(exc)}")
         return Response({
             'code': 400,
-            'message': '数据验证失败',
-            'data': None,
-            'errors': {'detail': str(exc)}
+            'message': _get_error_message(exc),
+            'data': None
         }, status=status.HTTP_400_BAD_REQUEST)
 
     if isinstance(exc, DatabaseError):
         logger.error(f"数据库错误 in {view_name}: {str(exc)}", exc_info=True)
         return Response({
             'code': 500,
-            'message': '数据操作失败',
+            'message': '服务器错误，请稍后重试',
             'data': None
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -63,7 +69,7 @@ def custom_exception_handler(exc, context):
     )
     return Response({
         'code': 500,
-        'message': '服务器内部错误',
+        'message': '服务器内部错误，请稍后重试',
         'data': None
     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -86,36 +92,15 @@ def _format_drf_response(exc, response, view_name: str) -> Response:
     elif response.status_code >= 400:
         logger.warning(f"客户端错误 in {view_name}: {str(exc)}")
 
+    # 获取错误消息
+    error_message = _get_error_message(exc)
+
     # 构建统一响应格式
     custom_response_data = {
         'code': response.status_code,
-        'message': _get_error_message(exc),
+        'message': error_message,
         'data': None
     }
-
-    # 处理错误详情
-    if hasattr(exc, 'detail'):
-        detail = exc.detail
-
-        # 如果 detail 是字典（如字段验证错误），添加到 errors
-        if isinstance(detail, dict):
-            # 格式化字段错误
-            formatted_errors = {}
-            for field, errors in detail.items():
-                if isinstance(errors, list):
-                    formatted_errors[field] = errors[0] if errors else ''
-                else:
-                    formatted_errors[field] = str(errors)
-            custom_response_data['errors'] = formatted_errors
-        # 如果 detail 是列表（如非字段错误）
-        elif isinstance(detail, list):
-            custom_response_data['errors'] = {'detail': detail[0] if detail else ''}
-        # 如果 detail 是字符串
-        elif isinstance(detail, str):
-            if response.status_code == 400:
-                # 对于 400 错误，将 detail 作为 errors
-                custom_response_data['errors'] = {'detail': detail}
-            # 其他情况保持 message 作为错误消息
 
     response.data = custom_response_data
     return response
@@ -131,7 +116,15 @@ def _get_error_message(exc) -> str:
     Returns:
         str: 错误消息
     """
-    # 如果异常有 detail 属性
+    # 辅助函数：从 ErrorDetail 或其他对象中提取字符串
+    def extract_error_message(error):
+        if isinstance(error, str):
+            return error
+        # ErrorDetail 对象有 string 属性，直接返回
+        if hasattr(error, 'string'):
+            return error.string
+        return str(error)
+
     if hasattr(exc, 'detail'):
         detail = exc.detail
 
@@ -139,14 +132,28 @@ def _get_error_message(exc) -> str:
             return detail
 
         if isinstance(detail, dict):
-            # 返回第一个字段的第一个错误
-            for value in detail.values():
-                if isinstance(value, list) and value:
-                    return str(value[0])
-                return str(value)
+            # 遍历字典，返回第一个有意义的错误
+            for field_name, errors in detail.items():
+                if isinstance(errors, list) and errors:
+                    return extract_error_message(errors[0])
+                elif isinstance(errors, str):
+                    return errors
+            # 兜底
+            first_field = list(detail.keys())[0]
+            first_error = detail[first_field]
+            if isinstance(first_error, list) and first_error:
+                return extract_error_message(first_error[0])
+            return extract_error_message(first_error)
 
         if isinstance(detail, list) and detail:
-            return str(detail[0])
+            return extract_error_message(detail[0])
 
-    # 默认错误消息
-    return str(exc)
+    # 没有 detail 属性时，直接提取错误信息
+    def extract_final_message(error):
+        if isinstance(error, str):
+            return error
+        if hasattr(error, 'string'):
+            return error.string
+        return str(error)
+
+    return extract_final_message(exc)

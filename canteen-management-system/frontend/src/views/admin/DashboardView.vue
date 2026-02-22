@@ -289,7 +289,6 @@ const loadOverviewData = async () => {
     }
   } catch (error) {
     console.error('加载总览数据失败:', error)
-    ElMessage.error('加载总览数据失败')
   } finally {
     overviewLoading.value = false
   }

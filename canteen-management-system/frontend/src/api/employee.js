@@ -86,3 +86,14 @@ export function deleteEmployee(id) {
     method: 'delete'
   })
 }
+
+/**
+ * 获取未关联用户系统的员工列表
+ * @returns {Promise}
+ */
+export function getUnassignedEmployees() {
+  return request({
+    url: '/employees/unassigned/',
+    method: 'get'
+  })
+}

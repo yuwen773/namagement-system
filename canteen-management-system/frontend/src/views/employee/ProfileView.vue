@@ -239,7 +239,6 @@ const fetchEmployeeProfile = async () => {
     }
   } catch (error) {
     console.error('获取员工信息错误:', error)
-    ElMessage.error('获取员工信息失败')
   } finally {
     loading.value = false
   }

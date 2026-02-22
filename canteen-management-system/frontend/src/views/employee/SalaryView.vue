@@ -369,7 +369,6 @@ const loadSalaryData = async () => {
     }
   } catch (error) {
     console.error('加载薪资数据失败:', error)
-    ElMessage.error('加载薪资数据失败')
     currentSalary.value = null
     salaryHistory.value = []
   } finally {
@@ -427,7 +426,6 @@ const submitAppeal = async () => {
   } catch (error) {
     if (error !== false) {
       console.error('提交申诉失败:', error)
-      ElMessage.error('提交申诉失败，请重试')
     }
   } finally {
     submitting.value = false

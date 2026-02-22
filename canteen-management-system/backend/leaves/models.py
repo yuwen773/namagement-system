@@ -8,9 +8,13 @@ class LeaveRequest(models.Model):
     """
     class LeaveType(models.TextChoices):
         """请假类型"""
+        ANNUAL = 'ANNUAL', '年假'
         SICK = 'SICK', '病假'
         PERSONAL = 'PERSONAL', '事假'
+        MATERNITY = 'MATERNITY', '产假'
+        PATERNITY = 'PATERNITY', '陪产假'
         COMPENSATORY = 'COMPENSATORY', '调休'
+        OTHER = 'OTHER', '其他'
 
     class Status(models.TextChoices):
         """审批状态"""

@@ -329,6 +329,7 @@ const formRules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   id_card: [
+    { required: true, message: '请输入身份证号', trigger: 'blur' },
     { pattern: /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/, message: '请输入正确的身份证号', trigger: 'blur' }
   ],
   position: [{ required: true, message: '请选择岗位', trigger: 'change' }],
@@ -361,7 +362,6 @@ const loadEmployeeList = async () => {
     }
   } catch (error) {
     console.error('加载员工列表失败:', error)
-    ElMessage.error('加载员工列表失败')
   } finally {
     loading.value = false
   }
@@ -435,7 +435,6 @@ const handleEdit = async (row) => {
     }
   } catch (error) {
     console.error('获取员工详情失败:', error)
-    ElMessage.error('获取员工详情失败')
   }
 }
 
@@ -451,7 +450,6 @@ const handleView = async (row) => {
     }
   } catch (error) {
     console.error('获取员工详情失败:', error)
-    ElMessage.error('获取员工详情失败')
   }
 }
 
@@ -473,7 +471,6 @@ const handleDelete = (row) => {
         }
       } catch (error) {
         console.error('删除员工失败:', error)
-        ElMessage.error('删除员工失败')
       }
     })
     .catch(() => {})
@@ -492,6 +489,11 @@ const handleSubmit = () => {
       const data = { ...formData }
       delete data.id
 
+      // 将空字符串的日期字段转换为 null
+      if (data.health_certificate_expiry === '') {
+        data.health_certificate_expiry = null
+      }
+
       let res
       if (isEdit.value) {
         res = await updateEmployee(formData.id, data)
@@ -507,27 +509,9 @@ const handleSubmit = () => {
         ElMessage.error(res.message || '操作失败')
       }
     } catch (error) {
-      console.error('操作失败:', error)
-      // 处理后端返回的验证错误
-      if (error.response?.data) {
-        const errorData = error.response.data
-        // 如果是字段验证错误，提取错误信息
-        if (typeof errorData === 'object') {
-          const errorMessages = []
-          for (const [field, messages] of Object.entries(errorData)) {
-            if (Array.isArray(messages)) {
-              errorMessages.push(`${field}: ${messages.join(', ')}`)
-            } else {
-              errorMessages.push(`${field}: ${messages}`)
-            }
-          }
-          ElMessage.error(errorMessages.join('\n') || '操作失败')
-        } else {
-          ElMessage.error(errorData.detail || errorData.message || '操作失败')
-        }
-      } else {
-        ElMessage.error('操作失败')
-      }
+      // 使用后端返回的统一错误信息
+      const errorMessage = error.response?.data?.message || '操作失败'
+      ElMessage.error(errorMessage)
     } finally {
       submitting.value = false
     }

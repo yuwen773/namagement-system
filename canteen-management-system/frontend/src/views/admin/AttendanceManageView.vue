@@ -426,7 +426,6 @@ const loadAttendanceList = async () => {
     }
   } catch (error) {
     console.error('加载考勤列表失败:', error)
-    ElMessage.error('加载考勤列表失败，请检查网络连接')
   } finally {
     loading.value = false
   }
@@ -509,7 +508,6 @@ const handleView = async (row) => {
     }
   } catch (error) {
     console.error('获取详情失败:', error)
-    ElMessage.error('获取详情失败')
   }
 }
 
@@ -540,7 +538,7 @@ const handleConfirmCorrect = async () => {
       }
     }
     if (errors.length > 0) {
-      ElMessage.error(errors[0])
+      // 表单验证失败消息由 Element Plus 自动显示
     } else {
       ElMessage.warning('请检查表单填写是否正确')
     }
@@ -564,38 +562,6 @@ const handleConfirmCorrect = async () => {
     }
   } catch (error) {
     console.error('修改失败:', error)
-
-    // 处理后端返回的验证错误
-    if (error.response?.data) {
-      const errorData = error.response.data
-      let errorMessage = ''
-
-      // 处理字段验证错误格式 { correction_remark: [{ message: '...', ... }] }
-      if (typeof errorData === 'object' && !errorData.message) {
-        const errorMessages = []
-        for (const [field, messages] of Object.entries(errorData)) {
-          if (Array.isArray(messages) && messages[0]?.message) {
-            errorMessages.push(messages[0].message)
-          } else if (Array.isArray(messages)) {
-            errorMessages.push(`${field}: ${messages.join(', ')}`)
-          } else if (typeof messages === 'object' && messages.message) {
-            errorMessages.push(messages.message)
-          } else {
-            errorMessages.push(`${field}: ${messages}`)
-          }
-        }
-        errorMessage = errorMessages.join('；')
-      } else {
-        errorMessage = errorData.detail || errorData.message || '修改失败'
-      }
-
-      ElMessage.error(errorMessage)
-    } else if (error.message) {
-      // 网络错误或超时
-      ElMessage.error(`修改失败：${error.message}`)
-    } else {
-      ElMessage.error('修改失败，请稍后重试')
-    }
   } finally {
     correctLoading.value = false
   }
@@ -623,7 +589,6 @@ const handleDelete = (row) => {
       }
     } catch (error) {
       console.error('删除失败:', error)
-      ElMessage.error('删除失败')
     }
   }).catch(() => {
     // 用户取消删除

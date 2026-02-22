@@ -182,7 +182,6 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('加载排班失败:', error)
-    ElMessage.error('加载排班数据失败')
   } finally {
     loading.value = false
   }

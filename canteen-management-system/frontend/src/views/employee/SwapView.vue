@@ -353,7 +353,6 @@ const loadSwapList = async () => {
     }
   } catch (error) {
     console.error('加载调班列表失败:', error)
-    ElMessage.error('加载调班列表失败')
   } finally {
     loading.value = false
   }
@@ -473,7 +472,6 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('提交调班申请失败:', error)
-    ElMessage.error('提交调班申请失败')
   } finally {
     submitting.value = false
   }
@@ -498,7 +496,6 @@ const handleDelete = (item) => {
       }
     } catch (error) {
       console.error('撤销失败:', error)
-      ElMessage.error('撤销失败')
     }
   }).catch(() => {})
 }

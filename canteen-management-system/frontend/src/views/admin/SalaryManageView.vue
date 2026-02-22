@@ -569,7 +569,6 @@ const loadSalaryList = async () => {
     }
   } catch (error) {
     console.error('加载薪资列表失败:', error)
-    ElMessage.error('加载薪资列表失败')
   } finally {
     tableLoading.value = false
   }
@@ -655,7 +654,6 @@ const handleGenerateSalary = async () => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('生成薪资失败:', error)
-      ElMessage.error('生成薪资失败')
     }
   } finally {
     generating.value = false
@@ -706,7 +704,6 @@ const confirmAdjust = async () => {
   } catch (error) {
     if (error !== false) {
       console.error('调整薪资失败:', error)
-      ElMessage.error('调整薪资失败')
     }
   } finally {
     adjusting.value = false
@@ -733,7 +730,6 @@ const handlePublish = async (row) => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('发布薪资失败:', error)
-      ElMessage.error('发布薪资失败')
     }
   }
 }
@@ -747,7 +743,6 @@ const handleDelete = async (row) => {
     }
   } catch (error) {
     console.error('删除失败:', error)
-    ElMessage.error('删除失败')
   }
 }
 
@@ -777,7 +772,6 @@ const confirmAppeal = async () => {
   } catch (error) {
     if (error !== false) {
       console.error('处理申诉失败:', error)
-      ElMessage.error('处理申诉失败')
     }
   } finally {
     appealing.value = false

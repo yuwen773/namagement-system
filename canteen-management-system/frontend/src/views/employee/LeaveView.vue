@@ -199,8 +199,8 @@ const calculatedDays = computed(() => {
 const disableStartDate = (time) => time.getTime() < Date.now() - 8.64e7
 const disableEndDate = (time) => createForm.value.start_time ? time.getTime() < new Date(createForm.value.start_time).getTime() : false
 
-const getLeaveTypeTagType = (type) => ({ ANNUAL: 'success', SICK: 'danger', PERSONAL: 'warning', MATERNITY: 'info', PATERNITY: 'info', OTHER: 'info' }[type] || 'info')
-const getLeaveTypeLabel = (type) => ({ ANNUAL: '年假', SICK: '病假', PERSONAL: '事假', MATERNITY: '产假', PATERNITY: '陪产假', OTHER: '其他' }[type] || type)
+const getLeaveTypeTagType = (type) => ({ ANNUAL: 'success', SICK: 'danger', PERSONAL: 'warning', MATERNITY: 'info', PATERNITY: 'info', COMPENSATORY: 'warning', OTHER: 'info' }[type] || 'info')
+const getLeaveTypeLabel = (type) => ({ ANNUAL: '年假', SICK: '病假', PERSONAL: '事假', MATERNITY: '产假', PATERNITY: '陪产假', COMPENSATORY: '调休', OTHER: '其他' }[type] || type)
 const getStatusTagType = (status) => ({ PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info' }[status] || 'info')
 const getStatusLabel = (status) => ({ PENDING: '审批中', APPROVED: '已通过', REJECTED: '已驳回', CANCELLED: '已取消' }[status] || status)
 const formatLeaveTime = (start, end) => {
@@ -257,7 +257,6 @@ const loadLeaveList = async () => {
     pendingCount.value = (pendingResponse.data || []).length
   } catch (error) {
     console.error('加载请假列表失败:', error)
-    ElMessage.error('加载请假列表失败')
   } finally {
     loading.value = false
   }

@@ -90,8 +90,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="work_date" label="排班日期" width="110" align="center" />
-        <el-table-column prop="start_time" label="开始时间" width="90" align="center" />
-        <el-table-column prop="end_time" label="结束时间" width="90" align="center" />
+        <el-table-column prop="shift_time" label="班次时间" width="120" align="center" />
         <el-table-column prop="is_swapped" label="是否调班" width="90" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.is_swapped" type="warning" size="small">已调班</el-tag>
@@ -200,11 +199,8 @@
         <el-descriptions-item label="排班日期">
           {{ currentSchedule.work_date }}
         </el-descriptions-item>
-        <el-descriptions-item label="开始时间">
-          {{ currentSchedule.start_time }}
-        </el-descriptions-item>
-        <el-descriptions-item label="结束时间">
-          {{ currentSchedule.end_time }}
+        <el-descriptions-item label="班次时间">
+          {{ currentSchedule.shift_time }}
         </el-descriptions-item>
         <el-descriptions-item label="是否调班" :span="2">
           <el-tag v-if="currentSchedule.is_swapped" type="warning">已调班</el-tag>
@@ -544,7 +540,6 @@ async function loadSchedules() {
     scheduleList.value = []
     calendarData.value = {}
     pagination.value.total = 0
-    ElMessage.error('加载排班数据失败: ' + (error.message || '未知错误'))
   } finally {
     loading.value = false
   }
@@ -671,7 +666,7 @@ async function handleConfirmEdit() {
     editFormRef.value.resetFields()
     loadSchedules()
   } catch (error) {
-    ElMessage.error('修改排班失败')
+    console.error('修改排班失败:', error)
   } finally {
     editLoading.value = false
   }
@@ -694,7 +689,7 @@ async function handleDeleteSchedule(schedule) {
     loadSchedules()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除排班失败')
+      console.error('删除排班失败:', error)
     }
   }
 }
@@ -721,7 +716,7 @@ async function handleApprove() {
     approvalFormRef.value.resetFields()
     loadSchedules()
   } catch (error) {
-    ElMessage.error('审批失败')
+    console.error('审批失败:', error)
   } finally {
     approvalLoading.value = false
   }
@@ -743,7 +738,7 @@ async function handleReject() {
     approvalFormRef.value.resetFields()
     loadSchedules()
   } catch (error) {
-    ElMessage.error('审批失败')
+    console.error('审批失败:', error)
   } finally {
     approvalLoading.value = false
   }
@@ -772,13 +767,9 @@ function getShiftTagType(shiftName) {
     '保洁早班': 'success',
     '保洁晚班': 'warning'
   }
-  return typeMap[shiftName] || 'default'
+  return typeMap[shiftName] || 'info'
 }
 
-function formatDate(dateString) {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

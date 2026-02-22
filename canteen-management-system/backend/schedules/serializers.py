@@ -85,11 +85,30 @@ class BatchScheduleSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=False,
-        help_text='员工ID列表'
+        error_messages={
+            'required': '员工ID列表不能为空',
+            'empty': '员工ID列表不能为空',
+            'not_a_list': '员工ID必须是列表格式',
+        }
     )
-    shift_id = serializers.IntegerField(help_text='班次ID')
-    start_date = serializers.DateField(help_text='开始日期')
-    end_date = serializers.DateField(help_text='结束日期')
+    shift_id = serializers.IntegerField(
+        error_messages={
+            'required': '班次ID不能为空',
+            'invalid': '班次ID必须是整数',
+        }
+    )
+    start_date = serializers.DateField(
+        error_messages={
+            'required': '开始日期不能为空',
+            'invalid': '开始日期格式不正确，请使用 YYYY-MM-DD 格式',
+        }
+    )
+    end_date = serializers.DateField(
+        error_messages={
+            'required': '结束日期不能为空',
+            'invalid': '结束日期格式不正确，请使用 YYYY-MM-DD 格式',
+        }
+    )
     force_update = serializers.BooleanField(
         required=False,
         default=True,
@@ -210,7 +229,17 @@ class ShiftSwapRequestListSerializer(serializers.ModelSerializer):
 class ShiftSwapApprovalSerializer(serializers.Serializer):
     """调班审批序列化器"""
     approve = serializers.BooleanField(help_text='是否批准（true=批准，false=拒绝）')
-    approval_remark = serializers.CharField(required=False, allow_blank=True, help_text='审批意见')
+    approval_remark = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        max_length=500,
+        error_messages={
+            'required': '审批意见不能为空',
+            'blank': '审批意见不能为空',
+            'max_length': '审批意见最多500个字符'
+        },
+        help_text='审批意见（必填）'
+    )
 
     def validate_approve(self, value):
         if value:
@@ -220,9 +249,27 @@ class ShiftSwapApprovalSerializer(serializers.Serializer):
 
 class CalendarViewSerializer(serializers.Serializer):
     """日历视图序列化器"""
-    start_date = serializers.DateField(help_text='开始日期')
-    end_date = serializers.DateField(help_text='结束日期')
-    employee_id = serializers.IntegerField(required=False, help_text='员工ID（可选，用于筛选特定员工）')
+    start_date = serializers.DateField(
+        help_text='开始日期',
+        error_messages={
+            'required': '开始日期不能为空',
+            'invalid': '开始日期格式不正确，请使用 YYYY-MM-DD 格式',
+        }
+    )
+    end_date = serializers.DateField(
+        help_text='结束日期',
+        error_messages={
+            'required': '结束日期不能为空',
+            'invalid': '结束日期格式不正确，请使用 YYYY-MM-DD 格式',
+        }
+    )
+    employee_id = serializers.IntegerField(
+        required=False,
+        help_text='员工ID（可选，用于筛选特定员工）',
+        error_messages={
+            'invalid': '员工ID必须是整数',
+        }
+    )
 
     def validate(self, data):
         if data['start_date'] > data['end_date']:

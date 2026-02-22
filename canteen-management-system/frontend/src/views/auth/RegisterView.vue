@@ -283,14 +283,7 @@ const handleRegister = async () => {
       ElMessage.error(response.message || '注册失败，请重试')
     }
   } catch (error) {
-    console.error('注册错误:', error)
-    if (error.response?.data?.message) {
-      ElMessage.error(error.response.data.message)
-    } else if (error.response?.data?.username) {
-      ElMessage.error(error.response.data.username[0] || '用户名已存在')
-    } else {
-      ElMessage.error('注册失败，请检查网络连接')
-    }
+    console.error('注册失败:', error)
   } finally {
     loading.value = false
   }
