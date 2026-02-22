@@ -154,13 +154,14 @@
             <template #default="{ row }">
               <el-button
                 v-if="isAbnormal(row.status)"
-                type="warning"
+                :type="appealedRecordIds.has(row.id) ? 'info' : 'warning'"
+                :disabled="appealedRecordIds.has(row.id)"
                 size="small"
-                plain
+                :plain="!appealedRecordIds.has(row.id)"
                 @click="handleAppeal(row)"
               >
                 <el-icon><EditPen /></el-icon>
-                异常上报
+                {{ appealedRecordIds.has(row.id) ? '已上报' : '异常上报' }}
               </el-button>
               <span v-else class="no-action">-</span>
             </template>
@@ -235,13 +236,15 @@ import {
   EditPen
 } from '@element-plus/icons-vue'
 import { getMyAttendance, getAttendanceStatistics } from '../../api/attendance'
-import { createAppeal } from '../../api/salary'
+import { createAppeal, getMyAppeals } from '../../api/salary'
 import { useUserStore } from '../../stores/user'
 
 const userStore = useUserStore()
 
 // 数据状态
 const loading = ref(false)
+// 已申诉的考勤记录 ID 集合
+const appealedRecordIds = ref(new Set())
 const submitting = ref(false)
 const selectedMonth = ref('')
 const attendanceList = ref([])
@@ -291,8 +294,8 @@ const loadData = async () => {
     const startDate = `${year}-${month}-01`
     const endDate = new Date(year, month, 0).toISOString().split('T')[0]
 
-    // 并行加载考勤记录和统计数据
-    const [attendanceRes, statsRes] = await Promise.all([
+    // 并行加载考勤记录、统计和申诉数据
+    const [attendanceRes, statsRes, appealsRes] = await Promise.all([
       getMyAttendance({
         employee_id: employeeId,
         start_date: startDate,
@@ -302,8 +305,22 @@ const loadData = async () => {
         employee_id: employeeId,
         start_date: startDate,
         end_date: endDate
+      }),
+      getMyAppeals({
+        employee_id: employeeId
       })
     ])
+
+    // 处理申诉数据，标记已申诉的记录
+    if (appealsRes.code === 200 && Array.isArray(appealsRes.data)) {
+      const appealedIds = new Set()
+      appealsRes.data.forEach(appeal => {
+        if (appeal.appeal_type === 'ATTENDANCE' && appeal.target_id) {
+          appealedIds.add(appeal.target_id)
+        }
+      })
+      appealedRecordIds.value = appealedIds
+    }
 
     if (attendanceRes.code === 200) {
       if (Array.isArray(attendanceRes.data)) {
@@ -400,6 +417,11 @@ const getMonth = (dateStr) => {
 
 // 处理异常上报
 const handleAppeal = (record) => {
+  // 检查是否已存在申诉
+  if (appealedRecordIds.value.has(record.id)) {
+    ElMessage.warning('该记录已提交过申诉，请勿重复提交')
+    return
+  }
   currentAppealRecord.value = record
   appealForm.reason = ''
   appealDialogVisible.value = true
@@ -428,6 +450,10 @@ const submitAppeal = async () => {
     })
 
     ElMessage.success('异常上报已提交，等待管理员审核')
+    // 标记该记录已申诉
+    if (currentAppealRecord.value?.id) {
+      appealedRecordIds.value.add(currentAppealRecord.value.id)
+    }
     appealDialogVisible.value = false
     // 重置表单
     appealForm.reason = ''

@@ -158,6 +158,18 @@ export function getPendingAppeals(params) {
 }
 
 /**
+ * 获取我的申诉列表
+ * @param {Object} params - 查询参数 { employee_id }
+ */
+export function getMyAppeals(params) {
+  return request({
+    url: '/salaries/appeals/my-appeals/',
+    method: 'get',
+    params
+  })
+}
+
+/**
  * 导出工资表（导出功能通常由后端生成文件，这里返回下载链接）
  * @param {Object} params - { year_month }
  */
