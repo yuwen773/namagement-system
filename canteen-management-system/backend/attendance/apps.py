@@ -13,8 +13,9 @@ class AttendanceConfig(AppConfig):
 
     def _update_attendance_times(self):
         """更新考勤记录的 created_at 为最近7天内"""
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         import random
+        from django.utils import timezone
 
         from attendance.models import AttendanceRecord
 
@@ -22,7 +23,7 @@ class AttendanceConfig(AppConfig):
         if not records:
             return
 
-        now = datetime.now()
+        now = timezone.now()
 
         for record in records:
             # 生成 0-7 天内的随机偏移
@@ -38,4 +39,7 @@ class AttendanceConfig(AppConfig):
 
         # 批量更新
         AttendanceRecord.objects.bulk_update(records, ['created_at'])
+        import sys
+        sys.stdout.flush()
         print(f"[Attendance] 已更新 {len(records)} 条考勤记录的时间为最近7天内")
+        sys.stdout.flush()
