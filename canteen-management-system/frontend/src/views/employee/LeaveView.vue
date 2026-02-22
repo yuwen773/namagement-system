@@ -91,7 +91,7 @@
 
           <div v-if="leave.status !== 'PENDING'" class="approval-info">
             <el-icon><User /></el-icon>
-            <span v-if="leave.approver">审批人：{{ leave.approver_name || '管理员' }}</span>
+            <span v-if="leave.approver_name">审批人：{{ leave.approver_name }}</span>
             <span v-if="leave.approval_time">{{ formatApprovalTime(leave.approval_time) }}</span>
           </div>
 
@@ -150,7 +150,7 @@
         <div class="detail-item"><span class="detail-label">请假原因：</span><p class="detail-reason">{{ currentLeave.reason || '无' }}</p></div>
         <div class="detail-item"><span class="detail-label">申请状态：</span><el-tag :type="getStatusTagType(currentLeave.status)">{{ getStatusLabel(currentLeave.status) }}</el-tag></div>
         <div v-if="currentLeave.status === 'REJECTED' && currentLeave.approval_remark" class="detail-item"><span class="detail-label">审批意见：</span><p class="detail-remark">{{ currentLeave.approval_remark }}</p></div>
-        <div v-if="currentLeave.approver" class="detail-item"><span class="detail-label">审批人：</span><span>{{ currentLeave.approver_name || '管理员' }}</span></div>
+        <div v-if="currentLeave.approver_name" class="detail-item"><span class="detail-label">审批人：</span><span>{{ currentLeave.approver_name }}</span></div>
         <div v-if="currentLeave.approval_time" class="detail-item"><span class="detail-label">审批时间：</span><span>{{ formatDateTime(currentLeave.approval_time) }}</span></div>
         <div class="detail-item"><span class="detail-label">申请时间：</span><span>{{ formatDateTime(currentLeave.created_at) }}</span></div>
       </div>
