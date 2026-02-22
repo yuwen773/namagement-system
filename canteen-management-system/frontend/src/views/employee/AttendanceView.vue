@@ -312,9 +312,17 @@ const loadData = async () => {
     ])
 
     // 处理申诉数据，标记已申诉的记录
-    if (appealsRes.code === 200 && Array.isArray(appealsRes.data)) {
+    let appealsData = null
+    if (appealsRes.code === 200) {
+      if (Array.isArray(appealsRes.data)) {
+        appealsData = appealsRes.data
+      } else if (appealsRes.data && Array.isArray(appealsRes.data.results)) {
+        appealsData = appealsRes.data.results
+      }
+    }
+    if (appealsData) {
       const appealedIds = new Set()
-      appealsRes.data.forEach(appeal => {
+      appealsData.forEach(appeal => {
         if (appeal.appeal_type === 'ATTENDANCE' && appeal.target_id) {
           appealedIds.add(appeal.target_id)
         }
