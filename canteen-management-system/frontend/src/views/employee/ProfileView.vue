@@ -31,7 +31,7 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="创建时间">
-            <span class="info-value">{{ employeeProfile?.created_at || '-' }}</span>
+            <span class="info-value">{{ formatDate(employeeProfile?.created_at) || '-' }}</span>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -406,13 +406,13 @@ const maskIdCard = (idCard) => {
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 onMounted(() => {
