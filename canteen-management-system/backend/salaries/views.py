@@ -387,7 +387,7 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
             employee = record.employee
             ws.append([
                 idx,
-                employee.real_name if employee else '',
+                employee.name if employee else '',
                 position_map.get(employee.position, employee.position) if employee else '',
                 record.year_month,
                 float(record.base_salary) if record.base_salary else 0,
