@@ -83,13 +83,14 @@
 
     <!-- 薪资列表 -->
     <div class="table-section">
-      <el-table
-        :data="salaryList"
-        v-loading="tableLoading"
-        stripe
-        class="salary-table"
-        @row-click="handleRowClick"
-      >
+      <div class="responsive-table-container">
+        <el-table
+          :data="salaryList"
+          v-loading="tableLoading"
+          stripe
+          class="salary-table"
+          @row-click="handleRowClick"
+        >
         <el-table-column type="index" label="#" width="50" align="center" />
 
         <el-table-column prop="employee_name" label="员工姓名" min-width="100">
@@ -196,6 +197,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <!-- 分页 -->
       <div class="pagination-wrapper">
@@ -1334,6 +1336,25 @@ onMounted(() => {
 
   .page-title {
     font-size: 20px;
+  }
+}
+
+/* 响应式表格容器 */
+.responsive-table-container {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .responsive-table-container :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  .responsive-table-container :deep(.el-table__header th) {
+    padding: 8px 0;
+  }
+
+  .responsive-table-container :deep(.el-table__body td) {
+    padding: 10px 0;
   }
 }
 </style>

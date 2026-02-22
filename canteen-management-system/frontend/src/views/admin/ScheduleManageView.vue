@@ -79,7 +79,8 @@
 
     <!-- 列表视图 -->
     <div v-else class="list-view" v-loading="loading">
-      <el-table :data="scheduleList" stripe class="data-table">
+      <div class="responsive-table-container">
+        <el-table :data="scheduleList" stripe class="data-table">
         <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="employee_name" label="员工姓名" min-width="110" />
         <el-table-column prop="shift_name" label="班次" width="100" align="center">
@@ -105,6 +106,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <!-- 分页组件 -->
       <div class="pagination-wrapper">
@@ -1029,6 +1031,25 @@ function getShiftTagType(shiftName) {
 
   .schedule-item {
     font-size: 11px;
+  }
+}
+
+/* 响应式表格容器 */
+.responsive-table-container {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .responsive-table-container :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  .responsive-table-container :deep(.el-table__header th) {
+    padding: 8px 0;
+  }
+
+  .responsive-table-container :deep(.el-table__body td) {
+    padding: 10px 0;
   }
 }
 </style>

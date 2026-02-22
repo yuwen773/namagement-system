@@ -96,14 +96,15 @@
     </div>
 
     <!-- 考勤记录表格 -->
-    <el-table
-      v-loading="loading"
-      :data="attendanceList"
-      stripe
-      class="data-table"
-      :header-cell-style="{ background: '#FFF8F0', color: '#333' }"
-      :row-class-name="getRowClassName"
-    >
+    <div class="responsive-table-container">
+      <el-table
+        v-loading="loading"
+        :data="attendanceList"
+        stripe
+        class="data-table"
+        :header-cell-style="{ background: '#FFF8F0', color: '#333' }"
+        :row-class-name="getRowClassName"
+      >
       <el-table-column prop="id" label="ID" width="70" align="center" />
       <el-table-column prop="employee_name" label="姓名" min-width="100" />
       <el-table-column prop="work_date" label="工作日期" width="110" align="center" />
@@ -159,6 +160,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <!-- 分页组件 -->
     <div class="pagination-wrapper">
@@ -796,6 +798,25 @@ onMounted(() => {
 
   .statistics-cards {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 响应式表格容器 */
+.responsive-table-container {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .responsive-table-container :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  .responsive-table-container :deep(.el-table__header th) {
+    padding: 8px 0;
+  }
+
+  .responsive-table-container :deep(.el-table__body td) {
+    padding: 10px 0;
   }
 }
 </style>

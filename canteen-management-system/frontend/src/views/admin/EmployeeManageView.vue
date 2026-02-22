@@ -59,13 +59,14 @@
     </div>
 
     <!-- 员工列表表格 -->
-    <el-table
-      v-loading="loading"
-      :data="employeeList"
-      stripe
-      class="data-table"
-      :header-cell-style="{ background: '#FFF8F0', color: '#333' }"
-    >
+    <div class="responsive-table-container">
+      <el-table
+        v-loading="loading"
+        :data="employeeList"
+        stripe
+        class="data-table"
+        :header-cell-style="{ background: '#FFF8F0', color: '#333' }"
+      >
       <el-table-column prop="id" label="ID" width="70" align="center" />
       <el-table-column prop="name" label="姓名" min-width="100" />
       <el-table-column prop="gender_display" label="性别" width="80" align="center">
@@ -106,6 +107,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <!-- 分页组件 -->
     <div class="pagination-wrapper">
@@ -735,5 +737,24 @@ onMounted(() => {
 :deep(.el-descriptions__label) {
   background-color: #fff8f0 !important;
   font-weight: 600;
+}
+
+/* 响应式表格容器 */
+.responsive-table-container {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .responsive-table-container :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  .responsive-table-container :deep(.el-table__header th) {
+    padding: 8px 0;
+  }
+
+  .responsive-table-container :deep(.el-table__body td) {
+    padding: 10px 0;
+  }
 }
 </style>
