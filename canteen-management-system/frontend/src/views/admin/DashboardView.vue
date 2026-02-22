@@ -724,7 +724,80 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
+/* 大桌面 1440px+ */
+@media (min-width: 1440px) {
+  .quick-access-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .overview-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .monthly-cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* 桌面 1200px - 1439px */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .quick-access-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .overview-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .monthly-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 小桌面 992px - 1199px */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .quick-access-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .overview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .overview-card:last-child {
+    grid-column: span 2;
+  }
+
+  .monthly-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 平板 768px - 991px */
+@media (min-width: 768px) and (max-width: 991px) {
+  .quick-access-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .overview-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .monthly-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 手机 < 768px */
+@media (max-width: 767px) {
+  .welcome-title {
+    font-size: 20px;
+  }
+
+  .welcome-subtitle {
+    font-size: 13px;
+  }
+
   .quick-access-grid {
     grid-template-columns: 1fr;
   }
@@ -735,6 +808,24 @@ onMounted(() => {
 
   .monthly-cards {
     grid-template-columns: 1fr;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .stat-value-large {
+    font-size: 28px;
+  }
+
+  .monthly-value {
+    font-size: 20px;
   }
 }
 </style>
