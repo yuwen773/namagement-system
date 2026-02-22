@@ -691,6 +691,24 @@ const handleForgot = () => {
 }
 
 /* ==================== 响应式设计 ==================== */
+/* 超大桌面 1920px+ */
+@media (min-width: 1920px) {
+  .brand-side {
+    width: 58%;
+  }
+
+  .form-wrapper {
+    max-width: 480px;
+  }
+}
+
+/* 大桌面 1440px - 1919px */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .brand-side {
+    width: 54%;
+  }
+}
+
 @media (max-width: 1024px) {
   .brand-side {
     width: 50%;
@@ -846,6 +864,34 @@ const handleForgot = () => {
 
   .form-footer {
     font-size: 14px;
+  }
+}
+
+/* 超小屏幕 < 360px */
+@media (max-width: 360px) {
+  .brand-title {
+    font-size: 22px;
+  }
+
+  .form-header h2 {
+    font-size: 20px;
+  }
+
+  .login-form {
+    padding: 20px 14px;
+  }
+
+  .submit-btn {
+    height: 46px;
+    font-size: 15px;
+  }
+
+  .input-label {
+    font-size: 11px;
+  }
+
+  .login-form :deep(.el-input__inner) {
+    font-size: 13px;
   }
 }
 </style>
