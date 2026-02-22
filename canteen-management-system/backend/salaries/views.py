@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 from django.db.models import Sum, Q, Count
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -342,6 +343,80 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
 
         serializer = SalaryRecordSerializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data, message='查询成功')
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export(self, request):
+        """导出薪资数据为 Excel"""
+        from openpyxl import Workbook
+
+        year_month = request.query_params.get('year_month')
+
+        if not year_month:
+            return ApiResponse.error(message='请指定年份月份')
+
+        # 查询薪资数据
+        queryset = SalaryRecord.objects.filter(year_month=year_month).select_related('employee')
+
+        # 创建 Excel
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "薪资表"
+
+        # 写入表头
+        headers = ['序号', '员工姓名', '岗位', '年月', '基本工资', '岗位津贴', '加班费', '扣款', '实发工资', '状态']
+        ws.append(headers)
+
+        # 状态和岗位映射
+        status_map = {
+            'DRAFT': '草稿',
+            'PUBLISHED': '已发布',
+            'APPEALED': '申诉中',
+            'ADJUSTED': '已调整'
+        }
+        position_map = {
+            'CHEF': '厨师',
+            'PASTRY': '面点',
+            'PREP': '切配',
+            'CLEANER': '保洁',
+            'SERVER': '服务员',
+            'MANAGER': '经理'
+        }
+
+        # 写入数据
+        for idx, record in enumerate(queryset, 1):
+            employee = record.employee
+            ws.append([
+                idx,
+                employee.real_name if employee else '',
+                position_map.get(employee.position, employee.position) if employee else '',
+                record.year_month,
+                float(record.base_salary) if record.base_salary else 0,
+                float(record.position_allowance) if record.position_allowance else 0,
+                float(record.overtime_pay) if record.overtime_pay else 0,
+                float(record.deductions) if record.deductions else 0,
+                float(record.total_salary) if record.total_salary else 0,
+                status_map.get(record.status, record.status)
+            ])
+
+        # 设置列宽
+        ws.column_dimensions['A'].width = 8
+        ws.column_dimensions['B'].width = 12
+        ws.column_dimensions['C'].width = 10
+        ws.column_dimensions['D'].width = 10
+        ws.column_dimensions['E'].width = 12
+        ws.column_dimensions['F'].width = 12
+        ws.column_dimensions['G'].width = 12
+        ws.column_dimensions['H'].width = 12
+        ws.column_dimensions['I'].width = 12
+        ws.column_dimensions['J'].width = 10
+
+        # 返回文件
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename=薪资表_{year_month}.xlsx'
+        wb.save(response)
+        return response
 
 
 class AppealViewSet(viewsets.ModelViewSet):
