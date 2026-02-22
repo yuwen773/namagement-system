@@ -457,11 +457,11 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     const data = {
+      requester: employeeId,
       original_schedule: createForm.original_schedule_id,
       target_date: createForm.target_date,
       target_shift: createForm.target_shift_id,
-      reason: createForm.reason,
-      requester_id: employeeId
+      reason: createForm.reason
     }
 
     const res = await createShiftRequest(data)
