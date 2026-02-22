@@ -465,7 +465,7 @@ const handleSubmit = async () => {
     }
 
     const res = await createShiftRequest(data)
-    if (res.code === 200) {
+    if (res.code === 200 || res.code === 201) {
       ElMessage.success('调班申请提交成功')
       createDialogVisible.value = false
       await loadSwapList()
