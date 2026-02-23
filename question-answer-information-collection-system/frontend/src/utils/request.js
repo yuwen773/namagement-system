@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
+import { clearAuth } from '@/utils/auth'
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -45,13 +46,18 @@ request.interceptors.response.use(
           // 防止重复跳转
           if (!isRedirecting) {
             isRedirecting = true
-            ElMessage.warning('登录已过期，请重新登录')
-            localStorage.removeItem('access_token')
-            localStorage.removeItem('refresh_token')
-            localStorage.removeItem('user_info')
-            router.push('/login')
-            // 1秒后重置标志，允许再次跳转
-            setTimeout(() => { isRedirecting = false }, 1000)
+            ElMessage.warning({
+              message: '登录已过期，请重新登录',
+              duration: 2000,
+              onClose: () => {
+                isRedirecting = false
+              }
+            })
+            clearAuth()
+            // 立即跳转到登录页
+            router.push('/login').catch(() => {
+              isRedirecting = false
+            })
           }
           break
         case 403:
