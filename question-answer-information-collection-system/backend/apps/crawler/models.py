@@ -136,6 +136,11 @@ class Answer(models.Model):
         verbose_name='在源页面中的顺序',
         help_text='用于保持答案在源页面的原始顺序'
     )
+    is_ai_generated = models.BooleanField(
+        default=False,
+        verbose_name='是否AI生成',
+        help_text='标识该回答是否由AI生成'
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='入库时间'
@@ -150,8 +155,83 @@ class Answer(models.Model):
             models.Index(fields=['question'], name='idx_answer_question'),
             models.Index(fields=['answerer'], name='idx_answerer'),
             models.Index(fields=['answer_time'], name='idx_answer_time'),
+            models.Index(fields=['is_ai_generated'], name='idx_ai_generated'),
         ]
         unique_together = [['question', 'source_order']]
 
     def __str__(self):
         return f"Answer for {self.question.question_id}: {self.content[:30]}..."
+
+
+class AnswerGenerationProgress(models.Model):
+    """回答生成进度追踪
+
+    用于跟踪 AI 回答生成任务的进度，支持断点续传。
+    """
+    task_id = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name='任务ID'
+    )
+    total = models.IntegerField(
+        default=0,
+        verbose_name='总问题数'
+    )
+    completed = models.IntegerField(
+        default=0,
+        verbose_name='已完成'
+    )
+    failed = models.IntegerField(
+        default=0,
+        verbose_name='失败数'
+    )
+    skipped = models.IntegerField(
+        default=0,
+        verbose_name='跳过数'
+    )
+    last_question_id = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name='最后处理的问题ID'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', '待处理'),
+            ('running', '进行中'),
+            ('completed', '已完成'),
+            ('failed', '失败'),
+            ('paused', '已暂停'),
+        ],
+        default='pending',
+        verbose_name='状态'
+    )
+    error_message = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='错误信息'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='创建时间'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='更新时间'
+    )
+
+    class Meta:
+        verbose_name = '回答生成进度'
+        verbose_name_plural = '回答生成进度'
+        db_table = 'crawler_answer_generation_progress'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Task {self.task_id}: {self.get_status_display()} ({self.completed}/{self.total})"
+
+    @property
+    def progress_percent(self):
+        """进度百分比"""
+        if self.total == 0:
+            return 0
+        return int((self.completed / self.total) * 100)
