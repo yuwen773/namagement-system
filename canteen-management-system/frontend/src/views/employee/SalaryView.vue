@@ -166,7 +166,7 @@
             {{ currentSalary.missing_count || 0 }} 次
           </el-descriptions-item>
           <el-descriptions-item label="加班时长">
-            {{ currentSalary.overtime_hours?.toFixed(1) || '0.0' }} 小时
+            {{ Number(currentSalary.overtime_hours || 0).toFixed(1) }} 小时
           </el-descriptions-item>
           <el-descriptions-item label="基本工资">
             ¥{{ formatMoney(currentSalary.base_salary) }}
@@ -338,14 +338,13 @@ const loadSalaryData = async () => {
     const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
 
     if (!employeeId) {
-      ElMessage.error('未关联员工档案，无法查询薪资')
+      ElMessage.warning('未关联员工档案，无法查询薪资')
       return
     }
 
-    // 获取薪资列表
+    // 获取薪资列表（不传 year_month，获取所有历史记录）
     const res = await getMySalaries({
-      employee_id: employeeId,
-      year_month: selectedMonth.value
+      employee_id: employeeId
     })
 
     if (res.code === 200) {

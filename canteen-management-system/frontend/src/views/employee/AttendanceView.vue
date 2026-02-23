@@ -285,7 +285,7 @@ const loadData = async () => {
     const employeeId = userStore.userInfo?.employee_id || userStore.userInfo?.employee
 
     if (!employeeId) {
-      ElMessage.error('未关联员工档案，无法查询考勤记录')
+      ElMessage.warning('未关联员工档案，无法查询考勤记录')
       return
     }
 

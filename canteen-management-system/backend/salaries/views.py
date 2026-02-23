@@ -316,21 +316,26 @@ class SalaryRecordViewSet(viewsets.ModelViewSet):
         """
         我的薪资记录接口
         员工查询自己的薪资记录
+        注意：员工无法查询到草稿(DRAFT)状态的薪资记录
         """
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
             raise RequiredFieldException('请提供 employee_id 参数')
 
-        queryset = self.queryset.filter(employee_id=employee_id)
+        # 员工只能查看非草稿状态的薪资记录
+        queryset = self.queryset.filter(
+            employee_id=employee_id,
+            status__in=['PUBLISHED', 'ADJUSTED', 'APPEALED']
+        )
 
         # 支持按年月筛选
         year_month = request.query_params.get('year_month')
         if year_month:
             queryset = queryset.filter(year_month=year_month)
 
-        # 支持按状态筛选
+        # 支持按状态筛选（仅限已发布、已调整、申诉中）
         status_param = request.query_params.get('status')
-        if status_param:
+        if status_param and status_param in ['PUBLISHED', 'ADJUSTED', 'APPEALED']:
             queryset = queryset.filter(status=status_param)
 
         queryset = queryset.order_by('-year_month')
