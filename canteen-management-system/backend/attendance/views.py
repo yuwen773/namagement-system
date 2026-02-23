@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.db.models import Q, F
 from django.utils import timezone
+from datetime import datetime, timedelta
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
@@ -18,6 +19,7 @@ from .serializers import (
 )
 from employees.models import EmployeeProfile
 from schedules.models import Schedule
+from accounts.models import SystemSettings
 from utils.response import ApiResponse
 from utils.pagination import StandardPagination
 from utils.exceptions import (
@@ -25,6 +27,7 @@ from utils.exceptions import (
     EmployeeNotFoundException,
     AlreadyProcessedException,
     StateNotAllowedException,
+    ValidationException,
 )
 
 
@@ -73,6 +76,73 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse.success(data=serializer.data, message='获取成功')
+
+    def _get_system_settings(self):
+        """获取系统设置"""
+        return SystemSettings.get_settings()
+
+    def _validate_clock_in_time(self, schedule, current_time):
+        """验证签到时间是否在允许范围内"""
+        settings = self._get_system_settings()
+
+        # 无排班情况
+        if not schedule:
+            if settings.allow_flexible_clock_in:
+                return True, None
+            return False, '当前没有排班，不允许签到'
+
+        # 有排班情况：检查时间范围
+        shift = schedule.shift
+        work_date = schedule.work_date
+
+        shift_start = timezone.make_aware(datetime.combine(work_date, shift.start_time))
+        shift_end = timezone.make_aware(datetime.combine(work_date, shift.end_time))
+
+        advance_minutes = settings.clock_in_advance_minutes
+        grace_minutes = settings.grace_period_minutes
+
+        earliest_allowed = shift_start - timedelta(minutes=advance_minutes)
+        latest_allowed = shift_end + timedelta(minutes=grace_minutes)
+
+        if current_time < earliest_allowed:
+            wait_minutes = int((earliest_allowed - current_time).total_seconds() / 60)
+            return False, f'距离签到开始还有{wait_minutes}分钟'
+
+        if current_time > latest_allowed:
+            return False, f'已超过签到截止时间（{shift_end.strftime("%H:%M")}）'
+
+        return True, None
+
+    def _validate_clock_out_time(self, schedule, clock_in_time, current_time):
+        """验证签退时间是否在允许范围内"""
+        settings = self._get_system_settings()
+
+        # 无排班情况
+        if not schedule:
+            if current_time > clock_in_time:
+                return True, None
+            return False, '签退时间必须晚于签到时间'
+
+        # 有排班情况：检查时间范围
+        shift = schedule.shift
+        work_date = schedule.work_date
+
+        shift_start = timezone.make_aware(datetime.combine(work_date, shift.start_time))
+        shift_end = timezone.make_aware(datetime.combine(work_date, shift.end_time))
+
+        delay_minutes = settings.clock_out_delay_minutes
+        early_grace_minutes = settings.early_leave_grace_minutes
+
+        earliest_allowed = shift_start + timedelta(minutes=early_grace_minutes)
+        latest_allowed = shift_end + timedelta(minutes=delay_minutes)
+
+        if current_time < earliest_allowed:
+            return False, '签退时间过早，请确认工作已完成'
+
+        if current_time > latest_allowed:
+            return False, f'已超过签退截止时间（班次结束后{delay_minutes}分钟）'
+
+        return True, None
 
     def update(self, request, *args, **kwargs):
         """更新考勤记录"""
@@ -125,6 +195,12 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             except Schedule.DoesNotExist:
                 pass
 
+        # 获取当前时间并验证签到时间
+        current_time = timezone.now()
+        is_valid, message = self._validate_clock_in_time(schedule, current_time)
+        if not is_valid:
+            raise ValidationException(message)
+
         # 检查是否已有今日签到记录
         today = timezone.now().date()
         existing_attendance = AttendanceRecord.objects.filter(
@@ -134,7 +210,8 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             Q(schedule__isnull=True, clock_in_time__date=today)
         ).order_by('-clock_in_time').first()
 
-        if existing_attendance and existing_attendance.clock_in_time:
+        # 如果已签到且未签退，不允许重复签到
+        if existing_attendance and existing_attendance.clock_in_time and not existing_attendance.clock_out_time:
             return ApiResponse.error(
                 message='今日已签到，请勿重复签到',
                 data={
@@ -143,21 +220,36 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 }
             )
 
+        # 如果已签到且已签退，检查是否允许多次签到
+        if existing_attendance and existing_attendance.clock_in_time and existing_attendance.clock_out_time:
+            settings = self._get_system_settings()
+            if not settings.allow_multiple_attendance:
+                return ApiResponse.error(
+                    message='今日已完成考勤，不允许多次签到',
+                    data={
+                        'clock_in_time': existing_attendance.clock_in_time,
+                        'clock_out_time': existing_attendance.clock_out_time,
+                        'status': existing_attendance.get_status_display()
+                    }
+                )
+
         # 创建或更新考勤记录
         clock_in_location = data.get('clock_in_location', '')
 
         if existing_attendance:
-            # 更新已有记录（只有签退的情况）
-            existing_attendance.clock_in_time = timezone.now()
-            existing_attendance.clock_in_location = clock_in_location
-            existing_attendance.save()
-            attendance = existing_attendance
+            # 更新已有记录（只有签退的情况）- 创建新的考勤记录
+            attendance = AttendanceRecord.objects.create(
+                employee=employee,
+                schedule=schedule,
+                clock_in_time=current_time,
+                clock_in_location=clock_in_location
+            )
         else:
             # 创建新记录
             attendance = AttendanceRecord.objects.create(
                 employee=employee,
                 schedule=schedule,
-                clock_in_time=timezone.now(),
+                clock_in_time=current_time,
                 clock_in_location=clock_in_location
             )
 
@@ -209,8 +301,18 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 '今日已签退，请勿重复签退'
             )
 
+        # 获取当前时间并验证签退时间
+        current_time = timezone.now()
+        is_valid, message = self._validate_clock_out_time(
+            attendance.schedule,
+            attendance.clock_in_time,
+            current_time
+        )
+        if not is_valid:
+            raise ValidationException(message)
+
         # 更新签退信息
-        attendance.clock_out_time = timezone.now()
+        attendance.clock_out_time = current_time
         attendance.clock_out_location = data.get('clock_out_location', '')
         attendance.save()
 
