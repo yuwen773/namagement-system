@@ -9,6 +9,26 @@ class SystemSettings(models.Model):
     # 考勤规则
     grace_period_minutes = models.IntegerField(default=5, verbose_name='迟到宽限时间（分钟）')
     early_leave_grace_minutes = models.IntegerField(default=5, verbose_name='早退宽限时间（分钟）')
+    clock_in_advance_minutes = models.IntegerField(
+        default=30,
+        verbose_name='签到提前缓冲时间（分钟）',
+        help_text='允许在班次开始前多少分钟内签到'
+    )
+    clock_out_delay_minutes = models.IntegerField(
+        default=30,
+        verbose_name='签退延后缓冲时间（分钟）',
+        help_text='允许在班次结束后多少分钟内签退'
+    )
+    allow_flexible_clock_in = models.BooleanField(
+        default=True,
+        verbose_name='允许弹性签到',
+        help_text='无排班时是否允许签到'
+    )
+    allow_multiple_attendance = models.BooleanField(
+        default=True,
+        verbose_name='允许多次签到',
+        help_text='同一天是否允许多次签到签退（如早班+晚班）'
+    )
     late_deduction = models.DecimalField(max_digits=10, decimal_places=2, default=20, verbose_name='迟到扣款（元/次）')
     missing_deduction = models.DecimalField(max_digits=10, decimal_places=2, default=50, verbose_name='缺卡扣款（元/次）')
 

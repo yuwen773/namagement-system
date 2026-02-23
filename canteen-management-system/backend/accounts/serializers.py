@@ -116,6 +116,10 @@ class SystemSettingsSerializer(serializers.ModelSerializer):
             'id',
             'grace_period_minutes',
             'early_leave_grace_minutes',
+            'clock_in_advance_minutes',
+            'clock_out_delay_minutes',
+            'allow_flexible_clock_in',
+            'allow_multiple_attendance',
             'late_deduction',
             'missing_deduction',
             'days_per_month',
@@ -139,6 +143,22 @@ class SystemSettingsSerializer(serializers.ModelSerializer):
                 'error_messages': {
                     'min_value': '宽限时间不能小于0分钟',
                     'max_value': '宽限时间不能超过60分钟'
+                }
+            },
+            'clock_in_advance_minutes': {
+                'min_value': 0,
+                'max_value': 120,
+                'error_messages': {
+                    'min_value': '签到提前缓冲时间不能小于0分钟',
+                    'max_value': '签到提前缓冲时间不能超过120分钟'
+                }
+            },
+            'clock_out_delay_minutes': {
+                'min_value': 0,
+                'max_value': 120,
+                'error_messages': {
+                    'min_value': '签退延后缓冲时间不能小于0分钟',
+                    'max_value': '签退延后缓冲时间不能超过120分钟'
                 }
             },
             'late_deduction': {
