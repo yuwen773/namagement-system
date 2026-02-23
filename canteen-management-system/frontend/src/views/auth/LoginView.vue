@@ -236,7 +236,8 @@ const handleForgot = () => {
 /* ==================== 主容器 ==================== */
 .login-page {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   background: var(--bg-cream);
 }
@@ -458,10 +459,11 @@ const handleForgot = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   background: var(--bg-light);
   padding: 48px 40px;
   position: relative;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .form-side::before {
@@ -477,6 +479,7 @@ const handleForgot = () => {
 .form-wrapper {
   width: 100%;
   max-width: 420px;
+  margin: auto;
 }
 
 .form-header {
@@ -649,7 +652,6 @@ const handleForgot = () => {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
-  margin-bottom: 27px;
 }
 
 .footer-text {
@@ -671,10 +673,6 @@ const handleForgot = () => {
 
 /* 底部装饰 */
 .bottom-decoration {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -682,6 +680,7 @@ const handleForgot = () => {
   background: rgba(255, 107, 53, 0.08);
   border-radius: 30px;
   border: 1px solid rgba(255, 107, 53, 0.15);
+  margin-top: 20px;
 }
 
 .decoration-text {

@@ -311,7 +311,8 @@ const handleRegister = async () => {
 /* ==================== 主容器 ==================== */
 .register-page {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   background: var(--bg-cream);
 }
@@ -533,10 +534,10 @@ const handleRegister = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   background: var(--bg-light);
   padding: 48px 40px;
   position: relative;
+  overflow-y: auto;
 }
 
 .form-side::before {
@@ -552,6 +553,7 @@ const handleRegister = async () => {
 .form-wrapper {
   width: 100%;
   max-width: 420px;
+  margin: auto;
 }
 
 .form-header {
@@ -686,7 +688,6 @@ const handleRegister = async () => {
 .form-footer {
   text-align: center;
   margin-top: 8px;
-  margin-bottom: 44px;
   font-size: 14px;
 }
 
@@ -709,10 +710,6 @@ const handleRegister = async () => {
 
 /* 底部装饰 */
 .bottom-decoration {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -720,6 +717,7 @@ const handleRegister = async () => {
   background: rgba(247, 197, 45, 0.1);
   border-radius: 30px;
   border: 1px solid rgba(247, 197, 45, 0.2);
+  margin-top: 20px;
 }
 
 .decoration-text {
