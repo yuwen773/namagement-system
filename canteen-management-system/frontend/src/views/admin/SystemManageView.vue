@@ -196,6 +196,56 @@
                 </span>
               </el-form-item>
 
+              <el-form-item label="签到提前缓冲">
+                <el-input-number
+                  v-model="settingsForm.clock_in_advance_minutes"
+                  :min="0"
+                  :max="120"
+                  :step="5"
+                  controls-position="right"
+                />
+                <span class="unit-text">分钟</span>
+                <span class="help-text">
+                  允许在班次开始前多少分钟内签到
+                </span>
+              </el-form-item>
+
+              <el-form-item label="签退延后缓冲">
+                <el-input-number
+                  v-model="settingsForm.clock_out_delay_minutes"
+                  :min="0"
+                  :max="120"
+                  :step="5"
+                  controls-position="right"
+                />
+                <span class="unit-text">分钟</span>
+                <span class="help-text">
+                  允许在班次结束后多少分钟内签退
+                </span>
+              </el-form-item>
+
+              <el-form-item label="允许弹性签到">
+                <el-switch
+                  v-model="settingsForm.allow_flexible_clock_in"
+                  active-text="允许"
+                  inactive-text="不允许"
+                />
+                <span class="help-text">
+                  无排班时是否允许员工签到
+                </span>
+              </el-form-item>
+
+              <el-form-item label="允许多次签到">
+                <el-switch
+                  v-model="settingsForm.allow_multiple_attendance"
+                  active-text="允许"
+                  inactive-text="不允许"
+                />
+                <span class="help-text">
+                  同一天是否允许多次签到签退（如早班+晚班）
+                </span>
+              </el-form-item>
+
               <el-form-item label="迟到扣款金额">
                 <el-input-number
                   v-model="settingsForm.late_deduction"
@@ -613,6 +663,10 @@ const settingsSaving = ref(false)
 const settingsForm = reactive({
   grace_period_minutes: 5,
   early_leave_grace_minutes: 5,
+  clock_in_advance_minutes: 30,
+  clock_out_delay_minutes: 30,
+  allow_flexible_clock_in: true,
+  allow_multiple_attendance: true,
   late_deduction: 20,
   missing_deduction: 50,
   days_per_month: 21.75,
@@ -629,6 +683,10 @@ const loadSystemSettings = async () => {
       const data = {
         grace_period_minutes: Number(res.data.grace_period_minutes) || 5,
         early_leave_grace_minutes: Number(res.data.early_leave_grace_minutes) || 5,
+        clock_in_advance_minutes: Number(res.data.clock_in_advance_minutes) || 30,
+        clock_out_delay_minutes: Number(res.data.clock_out_delay_minutes) || 30,
+        allow_flexible_clock_in: res.data.allow_flexible_clock_in !== false,
+        allow_multiple_attendance: res.data.allow_multiple_attendance !== false,
         late_deduction: Number(res.data.late_deduction) || 20,
         missing_deduction: Number(res.data.missing_deduction) || 50,
         days_per_month: Number(res.data.days_per_month) || 21.75,
@@ -672,6 +730,10 @@ const handleResetSettings = () => {
       Object.assign(settingsForm, {
         grace_period_minutes: 5,
         early_leave_grace_minutes: 5,
+        clock_in_advance_minutes: 30,
+        clock_out_delay_minutes: 30,
+        allow_flexible_clock_in: true,
+        allow_multiple_attendance: true,
         late_deduction: 20,
         missing_deduction: 50,
         days_per_month: 21.75,
