@@ -649,6 +649,7 @@ const handleForgot = () => {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
+  margin-bottom: 27px;
 }
 
 .footer-text {
