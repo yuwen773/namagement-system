@@ -33,6 +33,16 @@
             <span>{{ location }}</span>
           </div>
 
+          <!-- 时间提示信息 -->
+          <div class="time-notice" v-if="clockInReason && !todayRecord?.clock_in_time">
+            <el-icon><InfoFilled /></el-icon>
+            <span>{{ clockInReason }}</span>
+          </div>
+          <div class="time-notice" v-if="clockOutReason && !canClockOut">
+            <el-icon><InfoFilled /></el-icon>
+            <span>{{ clockOutReason }}</span>
+          </div>
+
           <div class="action-button-wrapper">
             <button
               class="action-button"
@@ -164,13 +174,16 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { clockIn, clockOut, getMyAttendance, getAttendanceStatistics } from '../../api/attendance'
+import { getEmployeeSchedules } from '../../api/schedule'
+import { getSystemSettings } from '../../api/accounts'
 import { ElMessage } from 'element-plus'
 import {
   Clock,
   Location,
   Loading,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  InfoFilled
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
@@ -186,24 +199,35 @@ const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
 const attendanceMap = ref({})
 const monthStats = ref({})
+const todaySchedule = ref(null)
+const systemSettings = ref(null)
+const clockInDisabled = ref(false)
+const clockOutDisabled = ref(false)
+const clockInReason = ref('')
+const clockOutReason = ref('')
 
 let timeTimer = null
+let buttonUpdateTimer = null
 
 // 获取员工ID
 const employeeId = computed(() => userStore.userInfo?.employee_id || userStore.userInfo?.employee)
 
 // 是否可以签到（今日未签到或已签退）
 const canClockIn = computed(() => {
+  if (clockInDisabled.value) return false
   if (!todayRecord.value) return true
   // 如果已签到且未签退，则不能再签到（显示签退）
   if (todayRecord.value.clock_in_time && !todayRecord.value.clock_out_time) return false
-  // 如果已签到且已签退，则不能再签到（显示已完成）
-  if (todayRecord.value.clock_in_time && todayRecord.value.clock_out_time) return false
+  // 如果已签到且已签退，检查是否允许多次签到
+  if (todayRecord.value.clock_in_time && todayRecord.value.clock_out_time) {
+    return systemSettings.value?.allow_multiple_attendance || false
+  }
   return true
 })
 
 // 是否可以签退
 const canClockOut = computed(() => {
+  if (clockOutDisabled.value) return false
   if (!todayRecord.value) return false
   // 只有已签到且未签退时，才可以签退
   return !!todayRecord.value.clock_in_time && !todayRecord.value.clock_out_time
@@ -339,6 +363,8 @@ const loadTodayRecord = async () => {
     if (res.code === 200) {
       const records = res.data.results || res.data || []
       todayRecord.value = records.length > 0 ? records[0] : null
+      // 更新按钮状态
+      updateButtonStates()
     }
   } catch (error) {
     console.error('加载今日考勤记录失败:', error)
@@ -351,6 +377,119 @@ const formatDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+// 加载今日排班
+const loadTodaySchedule = async () => {
+  if (!employeeId.value) return
+  try {
+    const today = new Date()
+    const todayStr = formatDate(today)
+    const res = await getEmployeeSchedules(employeeId.value, todayStr, todayStr)
+    if (res.code === 200) {
+      const schedules = res.data.results || res.data || []
+      todaySchedule.value = schedules.length > 0 ? schedules[0] : null
+    }
+  } catch (error) {
+    console.error('加载今日排班失败:', error)
+  }
+}
+
+// 加载系统设置
+const loadSystemSettings = async () => {
+  try {
+    const res = await getSystemSettings()
+    if (res.code === 200 && res.data) {
+      systemSettings.value = {
+        ...res.data,
+        clock_in_advance_minutes: res.data.clock_in_advance_minutes || 30,
+        clock_out_delay_minutes: res.data.clock_out_delay_minutes || 30,
+        allow_flexible_clock_in: res.data.allow_flexible_clock_in !== false,
+        allow_multiple_attendance: res.data.allow_multiple_attendance !== false
+      }
+    }
+  } catch (error) {
+    // 使用默认值
+    systemSettings.value = {
+      clock_in_advance_minutes: 30,
+      clock_out_delay_minutes: 30,
+      allow_flexible_clock_in: true,
+      allow_multiple_attendance: true
+    }
+  }
+}
+
+// 更新按钮状态
+const updateButtonStates = () => {
+  if (!systemSettings.value) {
+    clockInDisabled.value = false
+    clockOutDisabled.value = false
+    clockInReason.value = ''
+    clockOutReason.value = ''
+    return
+  }
+
+  // 如果今日已签到签退，不需要检查时间
+  if (todayRecord.value && todayRecord.value.clock_in_time && todayRecord.value.clock_out_time) {
+    clockInDisabled.value = !systemSettings.value.allow_multiple_attendance
+    clockInReason.value = clockInDisabled.value ? '今日已完成考勤，不允许多次签到' : ''
+    clockOutDisabled.value = true
+    clockOutReason.value = '今日已完成考勤'
+    return
+  }
+
+  // 如果已签到未签退，只检查签退时间
+  if (todayRecord.value && todayRecord.value.clock_in_time && !todayRecord.value.clock_out_time) {
+    clockInDisabled.value = true
+    clockInReason.value = '请先签退'
+    clockOutDisabled.value = false
+    clockOutReason.value = ''
+    return
+  }
+
+  // 未签到时，检查签到时间窗口
+  if (!todaySchedule.value) {
+    // 无排班情况
+    clockInDisabled.value = !systemSettings.value.allow_flexible_clock_in
+    clockInReason.value = clockInDisabled.value ? '当前没有排班，不允许签到' : ''
+    clockOutDisabled.value = true
+    clockOutReason.value = '请先签到'
+    return
+  }
+
+  // 有排班情况：计算时间窗口
+  const now = new Date()
+  const shift = todaySchedule.value.shift
+  const workDate = new Date(todaySchedule.value.work_date)
+
+  // 解析班次时间
+  const [shiftStartHour, shiftStartMinute] = shift.start_time.split(':').map(Number)
+  const [shiftEndHour, shiftEndMinute] = shift.end_time.split(':').map(Number)
+
+  const shiftStart = new Date(workDate)
+  shiftStart.setHours(shiftStartHour, shiftStartMinute, 0, 0)
+
+  const shiftEnd = new Date(workDate)
+  shiftEnd.setHours(shiftEndHour, shiftEndMinute, 0, 0)
+
+  // 计算允许签到时间范围
+  const earliestAllowed = new Date(shiftStart.getTime() - systemSettings.value.clock_in_advance_minutes * 60000)
+  const latestAllowed = new Date(shiftEnd.getTime() + systemSettings.value.grace_period_minutes * 60000)
+
+  if (now < earliestAllowed) {
+    const waitMinutes = Math.ceil((earliestAllowed - now) / 60000)
+    clockInDisabled.value = true
+    clockInReason.value = `距离签到开始还有${waitMinutes}分钟`
+  } else if (now > latestAllowed) {
+    clockInDisabled.value = true
+    clockInReason.value = `已超过签到截止时间（${shiftEnd.getHours()}:${String(shiftEnd.getMinutes()).padStart(2, '0')}）`
+  } else {
+    clockInDisabled.value = false
+    clockInReason.value = ''
+  }
+
+  clockOutDisabled.value = true
+  clockOutReason.value = '请先签到'
 }
 
 // 加载月度考勤数据
@@ -427,13 +566,20 @@ onMounted(() => {
   updateCurrentTime()
   timeTimer = setInterval(updateCurrentTime, 1000)
   getLocation()
+  loadSystemSettings()
+  loadTodaySchedule()
   loadTodayRecord()
   loadMonthAttendance()
+  updateButtonStates()
+  buttonUpdateTimer = setInterval(updateButtonStates, 60000) // 每分钟更新一次按钮状态
 })
 
 onUnmounted(() => {
   if (timeTimer) {
     clearInterval(timeTimer)
+  }
+  if (buttonUpdateTimer) {
+    clearInterval(buttonUpdateTimer)
   }
 })
 </script>
@@ -539,6 +685,22 @@ onUnmounted(() => {
 
 .location-info .el-icon {
   color: #FF6B35;
+}
+
+.time-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: #fff3e0;
+  border-radius: 8px;
+  color: #e65100;
+  font-size: 14px;
+}
+
+.time-notice .el-icon {
+  flex-shrink: 0;
 }
 
 .action-button-wrapper {
