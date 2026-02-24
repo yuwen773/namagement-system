@@ -360,29 +360,28 @@ CREATE TABLE `em_operation_logs` (
 
 CREATE TABLE `em_energy_forecasts` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `target_type` ENUM('CAMPUS', 'BUILDING', 'METER') NOT NULL,
+  `target_id` VARCHAR(64) NOT NULL,
   `energy_type_id` BIGINT UNSIGNED NOT NULL,
-  `scope_type` ENUM('CAMPUS', 'BUILDING', 'DEVICE') NOT NULL,
-  `dimension_key` VARCHAR(128) NOT NULL,
+  `forecast_date` DATE NOT NULL,
+  `forecast_value` DECIMAL(18, 6) NOT NULL,
+  `horizon_days` INT UNSIGNED NOT NULL DEFAULT 7,
+  `model_version` VARCHAR(64) NOT NULL DEFAULT 'linear-v1',
   `campus_id` BIGINT UNSIGNED DEFAULT NULL,
   `building_id` BIGINT UNSIGNED DEFAULT NULL,
-  `device_id` BIGINT UNSIGNED DEFAULT NULL,
-  `target_date` DATE NOT NULL,
-  `horizon_days` INT UNSIGNED NOT NULL,
-  `forecast_value` DECIMAL(18, 6) NOT NULL,
-  `lower_bound` DECIMAL(18, 6) DEFAULT NULL,
-  `upper_bound` DECIMAL(18, 6) DEFAULT NULL,
-  `model_name` VARCHAR(64) DEFAULT NULL,
-  `generated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `meter_id` BIGINT UNSIGNED DEFAULT NULL,
+  `room_id` BIGINT DEFAULT NULL,
+  `department` VARCHAR(128) DEFAULT NULL,
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_em_energy_forecasts_unique_dimension` (`dimension_key`, `energy_type_id`, `target_date`, `horizon_days`),
-  KEY `idx_em_energy_forecasts_scope_type` (`scope_type`),
-  KEY `idx_em_energy_forecasts_target_date` (`target_date`),
-  KEY `idx_em_energy_forecasts_energy_type_id` (`energy_type_id`),
-  KEY `idx_em_energy_forecasts_campus_id` (`campus_id`),
-  KEY `idx_em_energy_forecasts_building_id` (`building_id`),
-  KEY `idx_em_energy_forecasts_device_id` (`device_id`),
+  UNIQUE KEY `uk_em_energy_forecast_target_type_id_date` (`target_type`, `target_id`, `energy_type_id`, `forecast_date`, `horizon_days`),
+  KEY `idx_forecast_target` (`target_type`, `target_id`),
+  KEY `idx_forecast_date` (`forecast_date`),
+  KEY `idx_forecast_energy_type` (`energy_type_id`),
+  KEY `idx_forecast_campus` (`campus_id`),
+  KEY `idx_forecast_building` (`building_id`),
+  KEY `idx_forecast_meter` (`meter_id`),
   CONSTRAINT `fk_em_energy_forecasts_energy_type_id` FOREIGN KEY (`energy_type_id`) REFERENCES `em_energy_types` (`id`)
     ON UPDATE CASCADE
     ON DELETE RESTRICT,
@@ -392,7 +391,7 @@ CREATE TABLE `em_energy_forecasts` (
   CONSTRAINT `fk_em_energy_forecasts_building_id` FOREIGN KEY (`building_id`) REFERENCES `em_buildings` (`id`)
     ON UPDATE CASCADE
     ON DELETE RESTRICT,
-  CONSTRAINT `fk_em_energy_forecasts_device_id` FOREIGN KEY (`device_id`) REFERENCES `em_devices` (`id`)
+  CONSTRAINT `fk_em_energy_forecasts_meter_id` FOREIGN KEY (`meter_id`) REFERENCES `em_devices` (`id`)
     ON UPDATE CASCADE
     ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

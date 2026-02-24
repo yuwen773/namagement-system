@@ -39,4 +39,6 @@ class ComparisonQuerySerializer(BaseAnalysisQuerySerializer):
 
 class ForecastQuerySerializer(BaseAnalysisQuerySerializer):
     target = serializers.ChoiceField(choices=["campus", "building", "meter"], default="building")
+    target_id = serializers.CharField(required=False)
+    model_version = serializers.CharField(required=False)
     period = serializers.ChoiceField(choices=["7d", "30d"], default="7d")

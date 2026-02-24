@@ -4,16 +4,16 @@
 仅记录：当前阶段、已验收交付、下一步。
 
 ## 当前状态（2026-02-24）
-- 当前阶段：第五阶段完成，待进入第六阶段。
-- 已完成并验收：`1.1` ~ `2.9`、`3.1` ~ `3.10`、`4.1` ~ `4.4`、`5.1` ~ `5.6`。
+- 当前阶段：第六阶段完成，等待进入第七阶段。
+- 已完成并验收：`1.1` ~ `2.9`、`3.1` ~ `3.10`、`4.1` ~ `4.4`、`5.1` ~ `5.6`、`6.1` ~ `6.5`。
 
-## 本次交付（5.1 ~ 5.6）
-- 数据导入脚本框架：`scripts/config.py`、`scripts/data_cleaner.py`、`scripts/data_importer.py`、`scripts/import_config.example.json`。
-- 多格式读取与清洗：支持 CSV/Excel/JSON 读取、字段标准化、异常标记、清洗报告。
-- 批量导入能力：分批导入、进度输出、错误容忍、断点续传（checkpoint）。
-- 管理命令：`import_energy_data` 可用；`generate_statistics`、`check_alarms` 已提供命令入口（阶段六逻辑未实现）。
-- 协议采集：`scripts/protocol_collectors/` 下完成 Modbus/BACnet 采集器与统一调度写入。
+## 本次交付（6.1 ~ 6.5）
+- 统计生成：完成 `scripts/generate_statistics.py` 与 `generate_statistics` 管理命令。
+- 告警检测：完成 `scripts/check_alarms.py` 与 `check_alarms` 管理命令（阈值/突变/离线与去重）。
+- 离线分析：完成 `scripts/spark_offline_analysis.py` 与 `run_spark_analysis` 命令（PySpark 可选，Python 回退）。
+- 定时任务：完成 `scripts/scheduled_tasks.py` 与 `run_scheduled_tasks` 命令；新增 `docs/scheduler.md`。
+- 趋势预测：完成 `scripts/generate_forecast.py`、`generate_forecast` 命令、`em_energy_forecasts` 模型/迁移与 `/api/analysis/forecast/` 读库实现。
 
 ## 下一步
-- 按任务安排启动阶段六 `6.1`。
-- 若需求或实现边界变更，同步更新 `docs/rtm.md`、`memory-bank/architecture.md`。
+- 在收到继续指令后启动第七阶段 `7.1`（前端初始化）。
+- 若需求或架构边界变更，同步更新 `docs/rtm.md` 与 `memory-bank/architecture.md`。

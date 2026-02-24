@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.alarms.models import Alarm, AlarmStatus
+from apps.analysis.models import EnergyForecast, ForecastTargetType
 from apps.analysis.serializers import (
     BaseAnalysisQuerySerializer,
     ComparisonQuerySerializer,
@@ -447,21 +448,61 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         responses={200: OpenApiTypes.OBJECT},
     )
     def forecast(self, request):
-        """基于历史日总量给出 7/30 天线性预测结果。"""
+        """读取 em_energy_forecasts 并返回历史与预测序列。"""
         params = self._validate_query(ForecastQuerySerializer)
         target = params["target"]
         horizon = 7 if params["period"] == "7d" else 30
+        target_id = str(params.get("target_id") or request.query_params.get("target_id") or "").strip()
+        model_version = str(params.get("model_version") or request.query_params.get("model_version") or "").strip()
 
-        energy_queryset = EnergyData.objects.select_related("device", "energy_type")
-        energy_queryset = self._apply_common_filters(energy_queryset, params)
+        forecast_queryset = EnergyForecast.objects.select_related("energy_type")
+        forecast_queryset = forecast_queryset.filter(horizon_days=horizon)
 
-        # target specific aliases
-        target_id = request.query_params.get("target_id")
-        if target == "campus" and target_id:
+        target_type_map = {
+            "campus": ForecastTargetType.CAMPUS,
+            "building": ForecastTargetType.BUILDING,
+            "meter": ForecastTargetType.METER,
+        }
+        forecast_queryset = forecast_queryset.filter(target_type=target_type_map[target])
+
+        energy_type = params.get("energy_type")
+        if energy_type:
+            if str(energy_type).isdigit():
+                forecast_queryset = forecast_queryset.filter(energy_type_id=int(energy_type))
+            else:
+                forecast_queryset = forecast_queryset.filter(energy_type__code__iexact=str(energy_type).strip())
+
+        if target_id:
+            forecast_queryset = forecast_queryset.filter(target_id=target_id)
+        else:
+            hint_fields = {"campus": "campus_id", "building": "building_id", "meter": "target_id"}
+            field_name = hint_fields[target]
+            return Response(
+                {
+                    "target": target,
+                    "period": params["period"],
+                    "history": [],
+                    "forecast": [],
+                    "message": f"缺少 target_id，请指定 `{field_name}`。",
+                }
+            )
+
+        if model_version:
+            forecast_queryset = forecast_queryset.filter(model_version=model_version)
+
+        forecast_rows = list(
+            forecast_queryset.values("forecast_date", "forecast_value", "model_version").order_by("forecast_date")
+        )
+
+        energy_queryset = self._apply_common_filters(
+            EnergyData.objects.select_related("device", "energy_type"),
+            params,
+        )
+        if target == "campus":
             energy_queryset = energy_queryset.filter(device__room__floor__building__campus_id=target_id)
-        if target == "building" and target_id:
+        if target == "building":
             energy_queryset = energy_queryset.filter(device__room__floor__building_id=target_id)
-        if target == "meter" and target_id:
+        if target == "meter":
             if str(target_id).isdigit():
                 energy_queryset = energy_queryset.filter(device_id=int(target_id))
             else:
@@ -469,64 +510,34 @@ class AnalysisViewSet(viewsets.GenericViewSet):
 
         end_date = timezone.localdate()
         start_date = end_date - timedelta(days=max(horizon * 2, 14))
-        energy_queryset = energy_queryset.filter(
-            timestamp__gte=_day_range(start_date)[0],
-            timestamp__lte=_day_range(end_date)[1],
-        )
-
-        daily_rows = (
-            energy_queryset
+        history_rows = (
+            energy_queryset.filter(
+                timestamp__gte=_day_range(start_date)[0],
+                timestamp__lte=_day_range(end_date)[1],
+            )
             .annotate(day=TruncDate("timestamp"))
             .values("day")
             .annotate(total_value=Sum("value"))
             .order_by("day")
         )
-
-        value_map = {row["day"]: float(row["total_value"] or 0) for row in daily_rows}
-        history_days = [end_date - timedelta(days=offset) for offset in range(horizon - 1, -1, -1)]
-        history_values = [value_map.get(day, 0.0) for day in history_days]
-
-        if history_values:
-            baseline = sum(history_values) / len(history_values)
-        else:
-            baseline = 0.0
-
-        # simple linear trend forecast
-        if len(history_values) <= 1:
-            slope = 0.0
-            intercept = baseline
-        else:
-            n = len(history_values)
-            xs = list(range(n))
-            sum_x = sum(xs)
-            sum_y = sum(history_values)
-            sum_x2 = sum(x * x for x in xs)
-            sum_xy = sum(x * y for x, y in zip(xs, history_values))
-            denominator = n * sum_x2 - sum_x * sum_x
-            if denominator == 0:
-                slope = 0.0
-                intercept = baseline
-            else:
-                slope = (n * sum_xy - sum_x * sum_y) / denominator
-                intercept = (sum_y - slope * sum_x) / n
-
-        forecast_items = []
-        n = len(history_values)
-        for step in range(1, horizon + 1):
-            predict_date = end_date + timedelta(days=step)
-            prediction = max(0.0, intercept + slope * (n + step - 1))
-            forecast_items.append({"date": predict_date.isoformat(), "predicted_value": round(prediction, 6)})
-
         history_items = [
-            {"date": day.isoformat(), "value": round(value, 6)}
-            for day, value in zip(history_days, history_values)
+            {"date": row["day"].isoformat(), "value": round(float(row["total_value"] or 0), 6)}
+            for row in history_rows
+            if row["day"] is not None
         ]
+        forecast_items = [
+            {"date": row["forecast_date"].isoformat(), "predicted_value": round(float(row["forecast_value"] or 0), 6)}
+            for row in forecast_rows
+        ]
+        baseline = round(sum(item["value"] for item in history_items) / len(history_items), 6) if history_items else 0
 
         return Response(
             {
                 "target": target,
                 "period": params["period"],
-                "baseline_avg": round(baseline, 6),
+                "target_id": target_id,
+                "baseline_avg": baseline,
+                "model_version": forecast_rows[0]["model_version"] if forecast_rows else model_version or None,
                 "history": history_items,
                 "forecast": forecast_items,
             }
