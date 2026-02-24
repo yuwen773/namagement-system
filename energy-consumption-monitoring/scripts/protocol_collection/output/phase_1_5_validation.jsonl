@@ -1,4 +1,4 @@
-{"device": "DEV-ELEC-001", "energy_type": "ELECTRICITY", "timestamp": "2026-02-16T08:29:24.102560+00:00", "value": 1280.53, "voltage": 221.4, "current": 18.6, "power": 4.12, "flow_rate": null}
-{"device": "DEV-WATER-001", "energy_type": "WATER", "timestamp": "2026-02-16T08:29:24.106981+00:00", "value": 663.74, "voltage": null, "current": null, "power": null, "flow_rate": 2.07}
-{"device": "DEV-ELEC-001", "energy_type": "ELECTRICITY", "timestamp": "2026-02-16T08:29:25.127529+00:00", "value": 1280.53, "voltage": 221.4, "current": 18.6, "power": 4.12, "flow_rate": null}
-{"device": "DEV-WATER-001", "energy_type": "WATER", "timestamp": "2026-02-16T08:29:25.128405+00:00", "value": 663.74, "voltage": null, "current": null, "power": null, "flow_rate": 2.07}
+{"device": "DEV-ELEC-001", "energy_type": "ELECTRICITY", "timestamp": "2026-02-24T05:05:06.905004+00:00", "value": 1280.53, "voltage": 221.4, "current": 18.6, "power": 4.12, "flow_rate": null}
+{"device": "DEV-WATER-001", "energy_type": "WATER", "timestamp": "2026-02-24T05:05:06.985140+00:00", "value": 663.74, "voltage": null, "current": null, "power": null, "flow_rate": 2.07}
+{"device": "DEV-ELEC-001", "energy_type": "ELECTRICITY", "timestamp": "2026-02-24T05:05:07.997213+00:00", "value": 1280.53, "voltage": 221.4, "current": 18.6, "power": 4.12, "flow_rate": null}
+{"device": "DEV-WATER-001", "energy_type": "WATER", "timestamp": "2026-02-24T05:05:07.998767+00:00", "value": 663.74, "voltage": null, "current": null, "power": null, "flow_rate": 2.07}
