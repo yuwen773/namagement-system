@@ -31,8 +31,13 @@ class IsAdminOrReadOnly(BasePermission):
 class IsOwnerOrAdmin(BasePermission):
     message = "仅资源所有者或管理员可访问。"
 
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
     def has_object_permission(self, request, view, obj):
         if is_admin_user(request.user):
+            return True
+        if obj == request.user:
             return True
         owner = getattr(obj, "user", None)
         return owner == request.user

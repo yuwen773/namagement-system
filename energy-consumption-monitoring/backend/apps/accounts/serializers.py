@@ -13,8 +13,20 @@ def _ensure_profile(user):
     if profile is None:
         profile, _ = UserProfile.objects.get_or_create(
             user=user,
-            defaults={"role": UserRole.USER},
+            defaults={
+                "role": UserRole.USER,
+                "alarm_subscriptions": {
+                    "balance_insufficient": True,
+                    "abnormal_usage": True,
+                },
+            },
         )
+    if not profile.alarm_subscriptions:
+        profile.alarm_subscriptions = {
+            "balance_insufficient": True,
+            "abnormal_usage": True,
+        }
+        profile.save(update_fields=["alarm_subscriptions", "updated_at"])
     return profile
 
 
@@ -23,6 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
     phone = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
     bind_rooms = serializers.SerializerMethodField()
+    alarm_subscriptions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -36,6 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "avatar",
             "bind_rooms",
+            "alarm_subscriptions",
             "date_joined",
         )
 
@@ -50,6 +64,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_bind_rooms(self, obj):
         return _ensure_profile(obj).bind_rooms
+
+    def get_alarm_subscriptions(self, obj):
+        return _ensure_profile(obj).alarm_subscriptions
 
 
 class UserRegisterSerializer(serializers.Serializer):
@@ -82,7 +99,13 @@ class UserRegisterSerializer(serializers.Serializer):
         user = User.objects.create_user(password=password, **validated_data)
         profile, _ = UserProfile.objects.get_or_create(
             user=user,
-            defaults={"role": UserRole.USER},
+            defaults={
+                "role": UserRole.USER,
+                "alarm_subscriptions": {
+                    "balance_insufficient": True,
+                    "abnormal_usage": True,
+                },
+            },
         )
         if phone:
             profile.phone = phone

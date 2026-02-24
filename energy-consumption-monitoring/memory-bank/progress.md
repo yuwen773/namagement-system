@@ -1,33 +1,19 @@
 # 项目进度记录（Progress）
 
 ## 文档目的
-只记录里程碑结果、当前状态、下一步，不记录实现细节。
+只记录里程碑结果、当前状态、下一步。
 
 ## 当前状态（2026-02-24）
 - 当前阶段：第三阶段（后端 API 开发）
-- 已完成步骤：`1.1` ~ `2.9`、`3.1` ~ `3.6`
-- 用户验收：`3.1` ~ `3.5` 已通过（你已确认测试通过）
+- 已完成步骤：`1.1` ~ `2.9`、`3.1` ~ `3.10`
+- 用户验收：`3.1` ~ `3.10` 已通过
 
-## 本次更新（阶段 3.4 / 3.5 / 3.6）
-- 完成 `devices` API：
-  - `/api/energy-types/`
-  - `/api/devices/`
-  - `/api/devices/data-status/`
-  - `/api/devices/{id}/bind-room/`
-- 完成 `energy` API：
-  - `/api/energy-data/`
-  - `/api/energy-data/batch-import/`
-  - `/api/energy-data/latest/`
-  - `/api/energy-data/export/`（excel/pdf）
-  - `/api/energy-statistics/`
-- 完成 `analysis` API：
-  - `/api/analysis/dashboard/`
-  - `/api/analysis/trend/`
-  - `/api/analysis/distribution/`
-  - `/api/analysis/ranking/`
-  - `/api/analysis/comparison/`
-  - `/api/analysis/forecast/`
-- 关键检查：`python manage.py check` 通过
+## 本次里程碑
+- 完成 `alarms` 应用 API（规则、记录、处理、统计）
+- 完成 `system` 应用 API（用户、角色、账单、通知、日志、充值、个人中心）
+- 完成权限控制落地（管理员写权限、资源所有者权限、告警处理权限）
+- 完成 CORS 配置（前端开发域名 + 凭据）
+- 基础检查通过：`python manage.py check`
 
 ## 下一步
-- 进入阶段 `3.7`（alarms 应用 API）
+- 进入第四阶段 `4.1`（接口文档工具与文档化）

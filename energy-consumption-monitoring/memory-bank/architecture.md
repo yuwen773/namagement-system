@@ -15,33 +15,33 @@
 3. 持久层：MySQL（约束、索引、迁移）
 4. 展示层：Vue 3 + ECharts（后续阶段）
 
-## 文件职责（核心）
-- `memory-bank/pre-prd.md`：课题原始背景与初始约束
+## 文件职责（最小清单）
+- `memory-bank/pre-prd.md`：课题背景与初始技术约束
 - `memory-bank/PRD.md`：产品需求边界
 - `memory-bank/implementation-plan.md`：实施步骤与验收口径
-- `memory-bank/tech-stack.md`：技术选型基线
-- `memory-bank/progress.md`：里程碑与下一步
+- `memory-bank/tech-stack.md`：技术栈基线
+- `memory-bank/progress.md`：里程碑状态与下一步
 - `memory-bank/architecture.md`：稳定架构边界与职责
-- `backend/manage.py`：Django 管理入口（检查、迁移、命令）
-- `backend/energy_monitoring/settings.py`：全局配置（应用、数据库、DRF、JWT）
-- `backend/energy_monitoring/urls.py`：后端总路由入口
+- `backend/manage.py`：Django 管理入口（迁移、检查、命令）
+- `backend/energy_monitoring/settings.py`：全局配置（应用、数据库、DRF、JWT、CORS）
+- `backend/energy_monitoring/urls.py`：API 总路由入口
 - `backend/energy_monitoring/api.py`：统一响应、分页、异常处理
-- `backend/energy_monitoring/permissions.py`：权限基元（管理员、只读、资源所有者）
-- `backend/apps/accounts/*`：认证与用户信息接口（`/api/auth/*`）
-- `backend/apps/buildings/*`：校区-建筑-楼层-房间模型与树接口
-- `backend/apps/devices/*`：能源类型与设备台账接口
-- `backend/apps/energy/*`：能耗数据录入、批量导入、查询、导出、统计接口
-- `backend/apps/analysis/*`：统计分析接口（dashboard/trend/distribution/ranking/comparison/forecast）
-- `backend/apps/alarms/*`：告警规则与告警记录
-- `backend/apps/system/*`：账单、充值、通知、日志与系统管理
+- `backend/energy_monitoring/permissions.py`：权限基元（管理员/只读/资源所有者）
+- `backend/apps/accounts/`：认证、用户资料与角色来源
+- `backend/apps/buildings/`：校区-建筑-楼层-房间主数据
+- `backend/apps/devices/`：能源类型与设备台账
+- `backend/apps/energy/`：能耗原始数据、导入导出、统计查询
+- `backend/apps/analysis/`：聚合分析与预测接口
+- `backend/apps/alarms/`：告警规则、告警记录、处理与统计
+- `backend/apps/system/`：用户管理、账单、通知、日志、充值、个人中心
 - `backend/apps/*/migrations/`：数据库结构演进记录
-- `sql/init_db.sql`：数据库初始化与种子数据
+- `sql/init_db.sql`：初始化表结构与种子数据
 
-## 架构见解（当前）
-- 通用能力已下沉到框架层：统一响应、异常处理、权限控制，业务视图保持薄控制器。
-- API 组织按业务域分包，便于前后端按域协作和分阶段验收。
-- 分析接口（`analysis`）直接面向展示层输出聚合结果，减少前端二次计算负担。
+## 当前架构结论
+- 共性能力下沉到框架层（统一响应、异常处理、权限控制），业务域按 app 分治。
+- API 按业务域组织，满足分阶段交付与验收。
+- 分析层输出聚合结果，降低前端二次计算复杂度。
 
 ## 维护规则
-- 功能步骤完成后，先更新 `memory-bank/progress.md`。
-- 结构边界变化时，先更新 `memory-bank/architecture.md`，再改代码。
+- 里程碑变化先更新 `memory-bank/progress.md`。
+- 架构边界变化先更新 `memory-bank/architecture.md`。
