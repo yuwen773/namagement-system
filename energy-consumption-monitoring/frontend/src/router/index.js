@@ -17,6 +17,15 @@ const routes = [
     },
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue'),
+    meta: {
+      title: 'Register - Energy Monitoring',
+      requiresAuth: false,
+    },
+  },
+  {
     path: '/admin',
     name: 'AdminLayout',
     component: () => import('@/layouts/AdminLayout.vue'),
@@ -221,8 +230,8 @@ export function setupRouterGuards(pinia) {
         return
       }
 
-      // Check if already on login page and authenticated
-      if (to.path === '/login' && isAuthenticated) {
+      // Check if already on login/register page and authenticated
+      if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
         // Redirect based on role
         const userRole = userStore.role
         if (userRole === 'ADMIN') {
