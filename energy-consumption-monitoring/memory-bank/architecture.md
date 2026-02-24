@@ -44,9 +44,31 @@
 
 **API**：auth、building、device、energy、analysis、alarm、system、recharge、profile
 
-**Views**：Login.vue（完整）、admin/Dashboard（8.3待实现）、admin/Monitoring Analysis Alarms Devices Configuration System、user/Dashboard UsageHistory CostPayment Comparison Notices Profile
+**Views**：
+- Login.vue（完整）
+- AdminLayout.vue（完整）
+- admin/Dashboard.vue（8.3）- 综合监控大屏：指标卡片（总能耗/功率/覆盖率/告警）、ECharts 图表（趋势/分布/功率/2D 地图热力）、告警列表、设备状态概览
+- admin/Monitoring.vue（8.4）- 监测中心：左侧树形导航（校区-楼宇-楼层-房间）、右侧数据看板（实时数据卡片、趋势折线图、时间选择器、设备列表）
+- admin/Analysis.vue（8.5）- 统计分析：筛选区（时间/建筑/能源类型）、图表区（趋势/对比/排名/预测）、导出功能（Excel/PDF）、数据表格
+- admin/Alarms.vue（8.6 待实现）、admin/Devices.vue、admin/Configuration.vue、admin/System.vue
+- UserLayout.vue（待实现）
+- user/Dashboard、UsageHistory、CostPayment、Comparison、Notices、Profile
 
 **Layouts**：AdminLayout.vue（完整）、UserLayout.vue（待实现）
+
+**设计系统（Design System）**：
+- **色彩主题**：温暖色系（Primary #f97316 橙、Success #22c55e 绿、Warning #eab308 黄、Danger #ef4444 红、Water #3b82f6 蓝）
+- **字体**：Orbitron（数字显示）、Noto Sans SC（中文）、Poppins（英文）
+- **组件风格**：卡片式设计（16px 圆角、1px #e5e7eb 边框）、网格背景图案、发光效果、脉冲动画
+- **交互反馈**：hover 上移（translateY -4px）、阴影加深、边框高亮 #f97316
+
+**ECharts 图表规范**：
+- 使用 `shallowRef` 存储图表实例（避免深度响应）
+- `onUnmounted` 时调用 `chart.dispose()` 释放内存
+- 图表主题色与系统一致
+- 自定义 tooltip（半透明深色背景、橙色边框）
+- 自动刷新机制（30秒定时器）
+- 响应式处理（window resize 监听）
 
 ### 文档
 - `memory-bank/implementation-plan.md`：阶段任务与验收口径
