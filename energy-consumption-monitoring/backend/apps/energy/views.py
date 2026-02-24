@@ -8,6 +8,8 @@ from django.db.models import OuterRef, Q, Subquery
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from rest_framework import filters, mixins, serializers, viewsets
 from rest_framework.decorators import action, parser_classes
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -22,6 +24,32 @@ from apps.energy.serializers import (
     EnergyStatisticsSerializer,
 )
 from energy_monitoring.permissions import IsAdminOrReadOnly
+
+
+EnergyBatchImportResponseSerializer = inline_serializer(
+    name="EnergyBatchImportResponse",
+    fields={
+        "imported_count": serializers.IntegerField(),
+        "submitted_count": serializers.IntegerField(),
+        "skipped_count": serializers.IntegerField(),
+        "source_format": serializers.CharField(),
+    },
+)
+EnergyLatestItemSerializer = inline_serializer(
+    name="EnergyLatestItem",
+    fields={
+        "device": serializers.IntegerField(),
+        "device_code": serializers.CharField(),
+        "device_name": serializers.CharField(),
+        "energy_type": serializers.CharField(),
+        "timestamp": serializers.DateTimeField(),
+        "value": serializers.DecimalField(max_digits=20, decimal_places=6),
+        "voltage": serializers.DecimalField(max_digits=20, decimal_places=6, allow_null=True),
+        "current": serializers.DecimalField(max_digits=20, decimal_places=6, allow_null=True),
+        "power": serializers.DecimalField(max_digits=20, decimal_places=6, allow_null=True),
+        "flow_rate": serializers.DecimalField(max_digits=20, decimal_places=6, allow_null=True),
+    },
+)
 
 
 def _as_aware_datetime(value):
@@ -71,7 +99,13 @@ def _pick_value(row, keys):
     return None
 
 
+@extend_schema_view(
+    list=extend_schema(summary="查询能耗原始数据列表"),
+    create=extend_schema(summary="新增单条能耗数据", request=EnergyDataSerializer, responses={201: EnergyDataSerializer}),
+)
 class EnergyDataViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+    """能耗原始数据录入、查询、导入导出接口。"""
+
     queryset = EnergyData.objects.select_related("device", "energy_type").all()
     serializer_class = EnergyDataSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -133,7 +167,13 @@ class EnergyDataViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets
         url_path="batch-import",
         parser_classes=[MultiPartParser, FormParser, JSONParser],
     )
+    @extend_schema(
+        summary="批量导入能耗数据",
+        request=EnergyDataBatchSerializer,
+        responses={200: EnergyBatchImportResponseSerializer},
+    )
     def batch_import(self, request):
+        """批量导入 CSV/Excel/JSON 能耗数据。"""
         serializer = EnergyDataBatchSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -185,8 +225,13 @@ class EnergyDataViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets
             }
         )
 
+    @extend_schema(
+        summary="获取各设备最新能耗数据",
+        responses={200: OpenApiTypes.OBJECT},
+    )
     @action(detail=False, methods=["get"], url_path="latest")
     def latest(self, request):
+        """查询设备维度的最新采样值。"""
         devices = Device.objects.select_related("energy_type").all().order_by("id")
 
         device_id = request.query_params.get("device_id")
@@ -255,8 +300,17 @@ class EnergyDataViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets
         ]
         return Response(payload)
 
+    @extend_schema(
+        summary="导出能耗数据",
+        description="支持 `excel` 和 `pdf` 两种格式。",
+        responses={
+            (200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"): OpenApiTypes.BINARY,
+            (200, "application/pdf"): OpenApiTypes.BINARY,
+        },
+    )
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request):
+        """按指定格式导出当前筛选数据。"""
         export_format = request.query_params.get("format", "excel").lower()
         queryset = self.get_queryset().select_related("device", "energy_type").order_by("timestamp", "id")
         data = list(queryset)
@@ -491,7 +545,12 @@ class EnergyDataViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets
         return response
 
 
+@extend_schema_view(
+    list=extend_schema(summary="查询能耗统计数据列表"),
+)
 class EnergyStatisticsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """能耗统计数据只读接口。"""
+
     queryset = EnergyStatistics.objects.select_related("device", "energy_type").all().order_by(
         "-period_date",
         "-id",

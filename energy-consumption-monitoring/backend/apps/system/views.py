@@ -5,7 +5,8 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from rest_framework import filters, mixins, status, viewsets
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -32,6 +33,28 @@ from energy_monitoring.permissions import IsAdmin, IsOwnerOrAdmin, is_admin_user
 
 User = get_user_model()
 
+SimpleMessageSerializer = inline_serializer(
+    name="SimpleMessage",
+    fields={
+        "message": serializers.CharField(),
+    },
+)
+BindRoomsResponseSerializer = inline_serializer(
+    name="BindRoomsResponse",
+    fields={
+        "bind_rooms": serializers.ListField(child=serializers.IntegerField()),
+    },
+)
+RechargeSimulateResponseSerializer = inline_serializer(
+    name="RechargeSimulateResponse",
+    fields={
+        "record": RechargeRecordSerializer(),
+        "paid_bill_ids": serializers.ListField(child=serializers.IntegerField()),
+        "paid_bill_count": serializers.IntegerField(),
+        "remaining_amount": serializers.CharField(),
+    },
+)
+
 
 def _client_ip(request):
     forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
@@ -57,7 +80,17 @@ def _bound_room_ids(user):
     return [int(item) for item in profile.bind_rooms if str(item).isdigit()]
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取用户列表"),
+    retrieve=extend_schema(summary="获取用户详情"),
+    create=extend_schema(summary="创建用户"),
+    update=extend_schema(summary="更新用户"),
+    partial_update=extend_schema(summary="部分更新用户"),
+    destroy=extend_schema(summary="删除用户"),
+)
 class UserViewSet(viewsets.ModelViewSet):
+    """管理员用户管理接口。"""
+
     queryset = User.objects.all().order_by("id")
     serializer_class = UserManagementSerializer
     permission_classes = [IsAdmin]
@@ -80,7 +113,13 @@ class UserViewSet(viewsets.ModelViewSet):
         _write_operation_log(self.request, "delete_user", f"user:{user_id}")
 
     @action(detail=True, methods=["post"], url_path="reset-password")
+    @extend_schema(
+        summary="重置用户密码",
+        request=ResetPasswordSerializer,
+        responses={200: SimpleMessageSerializer},
+    )
     def reset_password(self, request, pk=None):
+        """重置指定用户密码。"""
         target_user = self.get_object()
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -90,7 +129,17 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({"message": "密码重置成功。"})
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取角色列表"),
+    retrieve=extend_schema(summary="获取角色详情"),
+    create=extend_schema(summary="创建角色"),
+    update=extend_schema(summary="更新角色"),
+    partial_update=extend_schema(summary="部分更新角色"),
+    destroy=extend_schema(summary="删除角色"),
+)
 class RoleViewSet(viewsets.ModelViewSet):
+    """角色管理接口。"""
+
     queryset = Group.objects.all().order_by("id")
     serializer_class = RoleSerializer
     permission_classes = [IsAdmin]
@@ -113,7 +162,12 @@ class RoleViewSet(viewsets.ModelViewSet):
         _write_operation_log(self.request, "delete_role", f"role:{role_id}")
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取账单列表"),
+)
 class BillViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """账单查询接口（管理员全量、用户个人）。"""
+
     queryset = Bill.objects.select_related("room", "room__floor__building", "energy_type").all()
     serializer_class = BillSerializer
     permission_classes = [IsAdmin]
@@ -140,7 +194,12 @@ class BillViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return queryset
 
     @action(detail=False, methods=["get"], url_path="my", permission_classes=[IsAuthenticated])
+    @extend_schema(
+        summary="获取当前用户账单列表",
+        responses={200: BillSerializer(many=True)},
+    )
     def my(self, request):
+        """返回当前用户已绑定房间的账单。"""
         room_ids = _bound_room_ids(request.user)
         queryset = Bill.objects.select_related("room", "room__floor__building", "energy_type").filter(
             room_id__in=room_ids
@@ -157,7 +216,13 @@ class BillViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取通知公告列表"),
+    retrieve=extend_schema(summary="获取通知公告详情"),
+)
 class NoticeViewSet(viewsets.ReadOnlyModelViewSet):
+    """用户可见通知公告只读接口。"""
+
     queryset = Notice.objects.select_related("publisher").all().order_by("-publish_time", "-id")
     serializer_class = UserNoticeSerializer
     permission_classes = [IsAuthenticated]
@@ -177,7 +242,17 @@ class NoticeViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset.filter(target_role__in=[NoticeTargetRole.ALL, NoticeTargetRole.USER])
 
 
+@extend_schema_view(
+    list=extend_schema(summary="管理员获取公告列表"),
+    retrieve=extend_schema(summary="管理员获取公告详情"),
+    create=extend_schema(summary="管理员创建公告"),
+    update=extend_schema(summary="管理员更新公告"),
+    partial_update=extend_schema(summary="管理员部分更新公告"),
+    destroy=extend_schema(summary="管理员删除公告"),
+)
 class AdminNoticeViewSet(viewsets.ModelViewSet):
+    """管理员通知公告管理接口。"""
+
     queryset = Notice.objects.select_related("publisher").all().order_by("-created_at", "-id")
     serializer_class = AdminNoticeSerializer
     permission_classes = [IsAdmin]
@@ -209,7 +284,12 @@ class AdminNoticeViewSet(viewsets.ModelViewSet):
         _write_operation_log(self.request, "delete_notice", f"notice:{notice_id}")
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取操作日志列表"),
+)
 class OperationLogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """操作日志只读列表接口。"""
+
     queryset = OperationLog.objects.select_related("user").all().order_by("-create_time", "-id")
     serializer_class = OperationLogSerializer
     permission_classes = [IsAdmin]
@@ -220,7 +300,12 @@ class OperationLogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     http_method_names = ["get", "head", "options"]
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取充值记录列表"),
+)
 class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """充值记录查询与模拟充值接口。"""
+
     queryset = RechargeRecord.objects.select_related("room", "room__floor__building", "operator").all()
     serializer_class = RechargeRecordSerializer
     permission_classes = [IsAuthenticated]
@@ -241,7 +326,16 @@ class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return queryset
 
     @action(detail=False, methods=["post"], url_path="simulate")
+    @extend_schema(
+        summary="模拟充值并自动冲抵账单",
+        request=RechargeSimulateSerializer,
+        responses={
+            200: RechargeSimulateResponseSerializer,
+            403: OpenApiResponse(description="用户无权限操作该房间"),
+        },
+    )
     def simulate(self, request):
+        """创建模拟充值记录，并按到期顺序结清账单。"""
         serializer = RechargeSimulateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         room_id = serializer.validated_data["room_id"]
@@ -302,20 +396,34 @@ class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 
 class ProfileViewSet(viewsets.GenericViewSet):
+    """个人中心接口。"""
+
     queryset = User.objects.none()
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    serializer_class = ProfileSerializer
 
     def _profile_object(self):
         profile = _ensure_profile(self.request.user)
         self.check_object_permissions(self.request, profile)
         return profile
 
+    @extend_schema(
+        summary="获取当前用户个人资料",
+        responses={200: ProfileSerializer},
+    )
     def retrieve_profile(self, request):
+        """返回当前登录用户的资料与订阅配置。"""
         self._profile_object()
         serializer = ProfileSerializer(request.user)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="更新当前用户个人资料",
+        request=ProfileSerializer,
+        responses={200: ProfileSerializer},
+    )
     def update_profile(self, request):
+        """更新当前登录用户的基础资料。"""
         self._profile_object()
         serializer = ProfileSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -324,7 +432,13 @@ class ProfileViewSet(viewsets.GenericViewSet):
         return Response(ProfileSerializer(request.user).data)
 
     @action(detail=False, methods=["post", "delete"], url_path="bind-rooms")
+    @extend_schema(
+        summary="绑定或解绑房间",
+        request=ProfileBindRoomsSerializer,
+        responses={200: BindRoomsResponseSerializer},
+    )
     def bind_rooms(self, request):
+        """POST 绑定房间；DELETE 解绑房间。"""
         profile = self._profile_object()
         serializer = ProfileBindRoomsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -345,7 +459,13 @@ class ProfileViewSet(viewsets.GenericViewSet):
         return Response({"bind_rooms": updated})
 
     @action(detail=False, methods=["get", "put"], url_path="alarm-subscriptions")
+    @extend_schema(
+        summary="查询或更新告警订阅",
+        request=ProfileAlarmSubscriptionSerializer,
+        responses={200: ProfileAlarmSubscriptionSerializer},
+    )
     def alarm_subscriptions(self, request):
+        """GET 查询订阅；PUT 更新订阅开关。"""
         profile = self._profile_object()
         if request.method.lower() == "get":
             return Response(ProfileAlarmSubscriptionSerializer(profile.alarm_subscriptions).data)

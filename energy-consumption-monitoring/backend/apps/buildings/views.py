@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -13,12 +14,33 @@ from apps.buildings.serializers import (
 from energy_monitoring.permissions import IsAdminOrReadOnly
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取校区列表"),
+    retrieve=extend_schema(summary="获取校区详情"),
+)
 class CampusViewSet(viewsets.ReadOnlyModelViewSet):
+    """校区只读接口。"""
+
     queryset = Campus.objects.all().order_by("id")
     serializer_class = CampusSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取建筑列表"),
+    retrieve=extend_schema(summary="获取建筑详情"),
+    create=extend_schema(summary="创建建筑"),
+    update=extend_schema(summary="更新建筑"),
+    partial_update=extend_schema(summary="部分更新建筑"),
+    destroy=extend_schema(summary="删除建筑"),
+    tree=extend_schema(
+        summary="获取建筑树",
+        description="按校区-楼宇-楼层-房间输出完整树结构。",
+        responses={200: BuildingTreeSerializer(many=True)},
+    ),
+)
 class BuildingViewSet(viewsets.ModelViewSet):
+    """建筑 CRUD 与树形结构接口。"""
+
     queryset = Building.objects.select_related("campus").prefetch_related("floors__rooms")
     serializer_class = BuildingSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -39,12 +61,19 @@ class BuildingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="tree")
     def tree(self, request):
+        """返回校区-建筑-楼层-房间树形数据。"""
         queryset = Campus.objects.prefetch_related("buildings__floors__rooms").order_by("id")
         serializer = BuildingTreeSerializer(queryset, many=True)
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取楼层列表"),
+    create=extend_schema(summary="创建楼层"),
+)
 class FloorViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+    """楼层列表与创建接口。"""
+
     queryset = Floor.objects.select_related("building", "building__campus").prefetch_related("rooms")
     serializer_class = FloorSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -62,7 +91,13 @@ class FloorViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Gene
         return queryset
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取房间列表"),
+    create=extend_schema(summary="创建房间"),
+)
 class RoomViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+    """房间列表与创建接口。"""
+
     queryset = Room.objects.select_related("floor", "floor__building", "floor__building__campus")
     serializer_class = RoomSerializer
     permission_classes = [IsAdminOrReadOnly]

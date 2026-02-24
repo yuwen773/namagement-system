@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "drf_spectacular",
     "apps.accounts.apps.AccountsConfig",
     "apps.buildings.apps.BuildingsConfig",
     "apps.devices.apps.DevicesConfig",
@@ -119,6 +120,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
@@ -135,6 +137,13 @@ REST_FRAMEWORK = {
         "energy_monitoring.api.UnifiedJSONRenderer",
     ),
     "EXCEPTION_HANDLER": "energy_monitoring.api.custom_exception_handler",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Energy Consumption Monitoring API",
+    "DESCRIPTION": "校园智慧后勤能耗监测系统后端 API 文档。",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 

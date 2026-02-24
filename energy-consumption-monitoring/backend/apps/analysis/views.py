@@ -3,7 +3,9 @@ from datetime import date, datetime, time, timedelta
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear
 from django.utils import timezone
-from rest_framework import viewsets
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -58,9 +60,16 @@ def _safe_rate(current_value, previous_value):
     return (float(current_value) - float(previous_value)) / float(previous_value) * 100
 
 
+class AnalysisEmptySerializer(serializers.Serializer):
+    """用于 schema 推断的占位序列化器。"""
+
+
 class AnalysisViewSet(viewsets.GenericViewSet):
+    """统计分析与预测接口。"""
+
     permission_classes = [IsAuthenticated]
     queryset = EnergyData.objects.none()
+    serializer_class = AnalysisEmptySerializer
 
     def _validate_query(self, serializer_class):
         serializer = serializer_class(data=self.request.query_params)
@@ -150,7 +159,13 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         return queryset
 
     @action(detail=False, methods=["get"], url_path="dashboard")
+    @extend_schema(
+        summary="获取综合监控概览",
+        parameters=[BaseAnalysisQuerySerializer],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def dashboard(self, request):
+        """返回能耗总览、覆盖率和告警统计。"""
         params = self._validate_query(BaseAnalysisQuerySerializer)
         energy_queryset = self._apply_common_filters(
             EnergyData.objects.select_related("energy_type", "device"),
@@ -202,7 +217,13 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         )
 
     @action(detail=False, methods=["get"], url_path="trend")
+    @extend_schema(
+        summary="获取能耗趋势",
+        parameters=[TrendQuerySerializer],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def trend(self, request):
+        """按日/月/年粒度返回趋势序列。"""
         params = self._validate_query(TrendQuerySerializer)
         period = params["period"]
 
@@ -246,7 +267,13 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         return Response({"period": period, "series": series})
 
     @action(detail=False, methods=["get"], url_path="distribution")
+    @extend_schema(
+        summary="获取能耗分布",
+        parameters=[DistributionQuerySerializer],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def distribution(self, request):
+        """按区域或能源类型返回能耗占比分布。"""
         params = self._validate_query(DistributionQuerySerializer)
         distribution_type = params["type"]
 
@@ -288,7 +315,13 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         return Response({"type": distribution_type, "items": data})
 
     @action(detail=False, methods=["get"], url_path="ranking")
+    @extend_schema(
+        summary="获取能耗排名",
+        parameters=[RankingQuerySerializer],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def ranking(self, request):
+        """按楼宇/房间/部门返回能耗 TopN 排名。"""
         params = self._validate_query(RankingQuerySerializer)
         ranking_type = params["type"]
         limit = params["limit"]
@@ -349,7 +382,13 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         return Response({"type": ranking_type, "limit": limit, "items": items})
 
     @action(detail=False, methods=["get"], url_path="comparison")
+    @extend_schema(
+        summary="获取同比环比对比",
+        parameters=[ComparisonQuerySerializer],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def comparison(self, request):
+        """返回当前周期与环比、同比的总量与变化率。"""
         params = self._validate_query(ComparisonQuerySerializer)
         period = params["period"]
         anchor_date = params.get("anchor_date", timezone.localdate())
@@ -402,7 +441,13 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         )
 
     @action(detail=False, methods=["get"], url_path="forecast")
+    @extend_schema(
+        summary="获取趋势预测",
+        parameters=[ForecastQuerySerializer],
+        responses={200: OpenApiTypes.OBJECT},
+    )
     def forecast(self, request):
+        """基于历史日总量给出 7/30 天线性预测结果。"""
         params = self._validate_query(ForecastQuerySerializer)
         target = params["target"]
         horizon = 7 if params["period"] == "7d" else 30

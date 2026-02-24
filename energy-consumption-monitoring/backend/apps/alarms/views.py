@@ -1,5 +1,7 @@
 from django.db.models import Count, Q
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +12,17 @@ from apps.alarms.serializers import AlarmHandleSerializer, AlarmRuleSerializer, 
 from energy_monitoring.permissions import IsAdmin, IsAdminOrReadOnly
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取告警规则列表"),
+    retrieve=extend_schema(summary="获取告警规则详情"),
+    create=extend_schema(summary="创建告警规则"),
+    update=extend_schema(summary="更新告警规则"),
+    partial_update=extend_schema(summary="部分更新告警规则"),
+    destroy=extend_schema(summary="删除告警规则"),
+)
 class AlarmRuleViewSet(viewsets.ModelViewSet):
+    """告警规则管理接口。"""
+
     queryset = AlarmRule.objects.select_related("energy_type").all().order_by("id")
     serializer_class = AlarmRuleSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -20,7 +32,22 @@ class AlarmRuleViewSet(viewsets.ModelViewSet):
     ordering = ["id"]
 
 
+@extend_schema_view(
+    list=extend_schema(summary="获取告警列表"),
+    retrieve=extend_schema(summary="获取告警详情"),
+    handle=extend_schema(
+        summary="处理告警",
+        request=AlarmHandleSerializer,
+        responses={200: AlarmSerializer},
+    ),
+    statistics=extend_schema(
+        summary="获取告警统计",
+        responses={200: OpenApiTypes.OBJECT},
+    ),
+)
 class AlarmViewSet(viewsets.ReadOnlyModelViewSet):
+    """告警记录查询与处理接口。"""
+
     queryset = Alarm.objects.select_related("device", "rule", "handler").all().order_by("-alarm_time", "-id")
     serializer_class = AlarmSerializer
     permission_classes = [IsAuthenticated]
@@ -55,6 +82,7 @@ class AlarmViewSet(viewsets.ReadOnlyModelViewSet):
         permission_classes=[IsAdmin],
     )
     def handle(self, request, pk=None):
+        """处理单条告警并记录处理信息。"""
         alarm = self.get_object()
         serializer = AlarmHandleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -67,6 +95,7 @@ class AlarmViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="statistics")
     def statistics(self, request):
+        """返回告警总量、状态分布与设备 Top10。"""
         queryset = self.get_queryset()
         today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
