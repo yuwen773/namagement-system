@@ -192,7 +192,7 @@ import { ref, shallowRef, onMounted, onUnmounted, watch, computed, nextTick } fr
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getBuildingTree } from '@/api/building'
-import { getEnergyData, getLatestEnergyData } from '@/api/energy'
+import { getLatestEnergyData } from '@/api/energy'
 import { getTrendData } from '@/api/analysis'
 import { getDevices } from '@/api/device'
 
@@ -308,38 +308,153 @@ function handleNodeClick(data) {
 // Load data for selected location
 async function loadLocationData(node) {
   try {
-    // Load devices for this location
-    const params = {}
-    if (node.type === 'building') params.building_id = node.id
-    else if (node.type === 'floor') params.floor_id = node.id
-    else if (node.type === 'room') params.room_id = node.id
+    const roomIds = collectRoomIds(node)
+    const devices = await loadDevicesByNode(node, roomIds)
+    const latestItems = await loadLatestDataByNode(node, roomIds)
 
-    const response = await getDevices(params)
-    if (response.code === 0 && response.data) {
-      locationDevices.value = response.data.map(device => ({
+    locationDevices.value = devices.map(device => ({
         id: device.id,
         name: device.name,
-        type: device.energy_type_name,
+        type: device.energy_type_detail?.name || device.energy_type || '--',
         value: device.latest_data?.value || '--',
-        unit: device.unit || '',
+        unit: device.energy_type_detail?.unit || '',
         status: device.status?.toLowerCase() || 'offline',
-        color: getEnergyColor(device.energy_type),
-        icon: getEnergyIcon(device.energy_type),
+        color: getEnergyColor(device.energy_type_detail?.code || device.energy_type),
+        icon: getEnergyIcon(device.energy_type_detail?.code || device.energy_type),
       }))
-    }
+
+    updateDataCards(latestItems)
 
     // Update trend chart
     await updateTrendChart(node)
   } catch (error) {
     console.error('Failed to load location data:', error)
-    // Use mock data
-    locationDevices.value = [
-      { id: 1, name: '电表-001', type: '电', value: '245', unit: 'kW', status: 'online', color: '#eab308', icon: 'icon-ep-lightning' },
-      { id: 2, name: '水表-001', type: '水', value: '12.5', unit: 'm³/h', status: 'online', color: '#3b82f6', icon: 'icon-ep-circle' },
-      { id: 3, name: '气表-001', type: '气', value: '8.2', unit: 'm³/h', status: 'online', color: '#ef4444', icon: 'icon-ep-cpu' },
-    ]
+    ElMessage.warning('部分数据加载失败，已保留最近一次有效卡片数据')
     updateTrendChart(node)
   }
+}
+
+function collectRoomIds(node) {
+  if (!node) return []
+  if (node.type === 'room') return [node.id]
+
+  const roomIds = []
+  const stack = [node]
+  while (stack.length) {
+    const current = stack.pop()
+    if (current.type === 'room') {
+      roomIds.push(current.id)
+      continue
+    }
+    if (Array.isArray(current.children)) {
+      current.children.forEach(child => stack.push(child))
+    }
+  }
+  return roomIds
+}
+
+async function loadDevicesByNode(node, roomIds) {
+  if (node.type === 'room') {
+    const response = await getDevices({ room_id: node.id })
+    return response.code === 0 ? normalizeListData(response.data) : []
+  }
+
+  if (roomIds.length === 0) return []
+
+  const responseList = await Promise.allSettled(roomIds.map(roomId => getDevices({ room_id: roomId })))
+  const deviceMap = new Map()
+  responseList.forEach((result) => {
+    if (result.status !== 'fulfilled') return
+    const response = result.value
+    if (response.code !== 0) return
+    normalizeListData(response.data).forEach((device) => {
+      deviceMap.set(device.id, device)
+    })
+  })
+  return Array.from(deviceMap.values())
+}
+
+async function loadLatestDataByNode(node, roomIds) {
+  if (node.type === 'room') {
+    const response = await getLatestEnergyData({ room_id: node.id })
+    return response.code === 0 ? normalizeListData(response.data) : []
+  }
+
+  if (roomIds.length === 0) return []
+
+  const responseList = await Promise.allSettled(roomIds.map(roomId => getLatestEnergyData({ room_id: roomId })))
+  const latestItems = []
+  responseList.forEach((result) => {
+    if (result.status !== 'fulfilled') return
+    const response = result.value
+    if (response.code !== 0) return
+    latestItems.push(...normalizeListData(response.data))
+  })
+  return latestItems
+}
+
+function normalizeListData(data) {
+  if (Array.isArray(data)) return data
+  if (data && Array.isArray(data.results)) return data.results
+  return []
+}
+
+function updateDataCards(latestItems) {
+  const previous = new Map(dataCards.value.map(card => [card.label, card.value]))
+
+  const totals = {
+    power: 0,
+    electricity: 0,
+    water: 0,
+    gas: 0,
+  }
+
+  latestItems.forEach((item) => {
+    const energyType = String(item.energy_type || '').toUpperCase()
+    const value = Number(item.value) || 0
+    const power = Number(item.power) || 0
+
+    totals.power += power
+    if (energyType === 'ELECTRICITY') totals.electricity += value
+    if (energyType === 'WATER') totals.water += value
+    if (energyType === 'GAS') totals.gas += value
+  })
+
+  dataCards.value = [
+    createDataCard('实时功率', totals.power, 'kW', '#f97316', true, previous.get('实时功率')),
+    createDataCard('今日用电', totals.electricity, 'kWh', '#eab308', false, previous.get('今日用电')),
+    createDataCard('今日用水', totals.water, 'm³', '#3b82f6', false, previous.get('今日用水')),
+    createDataCard('今日用气', totals.gas, 'm³', '#ef4444', false, previous.get('今日用气')),
+  ]
+}
+
+function createDataCard(label, value, unit, color, live, previousValue) {
+  const numericValue = Number.isFinite(value) ? value : 0
+  const diff = Number.isFinite(previousValue) ? numericValue - previousValue : 0
+  const base = previousValue && previousValue !== 0 ? previousValue : 1
+  const ratio = (diff / base) * 100
+  const absRatio = Math.abs(ratio)
+
+  return {
+    label,
+    value: numericValue,
+    unit,
+    change: `${ratio >= 0 ? '+' : '-'}${absRatio.toFixed(1)}%`,
+    trend: diff >= 0 ? 'up' : 'down',
+    color,
+    live,
+    displayValue: numericValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 }),
+    sparkline: buildSparkline(numericValue),
+  }
+}
+
+function buildSparkline(baseValue) {
+  const safeBase = Number.isFinite(baseValue) ? baseValue : 0
+  return Array.from({ length: 10 }, (_, i) => {
+    const wave = Math.sin(i * 0.9) * 4 + Math.cos(i * 0.5) * 2
+    const value = 8 + wave + (safeBase > 0 ? Math.min(safeBase / 200, 8) : 0)
+    return Math.max(2, Math.min(20, Number(value.toFixed(1))))
+  })
 }
 
 // Get energy type color
@@ -366,9 +481,9 @@ function getEnergyIcon(type) {
 async function updateTrendChart(node) {
   await nextTick()
 
-  if (!trendChartRef.value) {
-    initTrendChart()
-  }
+  if (!trendChartRef.value) return
+  if (!trendChart.value) initTrendChart()
+  if (!trendChart.value) return
 
   // Generate mock trend data based on time range
   const chartData = generateTrendData(activeTimeRange.value)
@@ -434,7 +549,7 @@ async function updateTrendChart(node) {
     },
   }
 
-  trendChart.value?.setOption(option, true)
+  trendChart.value.setOption(option, true)
 }
 
 // Generate trend data based on time range
@@ -473,6 +588,10 @@ function generateTrendData(range) {
 // Initialize trend chart
 function initTrendChart() {
   if (!trendChartRef.value) return
+
+  if (trendChart.value) {
+    trendChart.value.dispose()
+  }
 
   trendChart.value = echarts.init(trendChartRef.value)
 }
@@ -563,8 +682,27 @@ async function loadBuildingTree() {
 
 // Build tree structure with type info
 function buildTreeStructure(data) {
-  // Process the tree data and add type information
-  return data
+  const campusList = normalizeListData(data)
+  return campusList.map((campus) => ({
+    id: campus.id,
+    name: campus.name,
+    type: 'campus',
+    children: normalizeListData(campus.buildings).map((building) => ({
+      id: building.id,
+      name: building.name,
+      type: 'building',
+      children: normalizeListData(building.floors).map((floor) => ({
+        id: floor.id,
+        name: floor.name || `${floor.floor_number || ''}层`,
+        type: 'floor',
+        children: normalizeListData(floor.rooms).map((room) => ({
+          id: room.id,
+          name: room.room_number,
+          type: 'room',
+        })),
+      })),
+    })),
+  }))
 }
 
 // Auto refresh timer
