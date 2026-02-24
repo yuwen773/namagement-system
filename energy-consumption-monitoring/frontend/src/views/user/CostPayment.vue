@@ -465,33 +465,7 @@ const bills = ref([])
 const rechargeRecords = ref([])
 const boundRooms = ref([])
 
-// Quick stats - 部分数据从 API 计算，部分需要后端支持
-const quickStats = ref([
-  {
-    label: '本月费用',
-    value: '¥0', // Will be calculated from bills
-    icon: 'icon-ep-wallet',
-    color: '#f97316',
-  },
-  {
-    label: '未支付账单',
-    value: '0', // Will be calculated from bills
-    icon: 'icon-ep-document',
-    color: '#eab308',
-  },
-  {
-    label: '累计充值',
-    value: '¥0', // Will be calculated from recharge records
-    icon: 'icon-ep-coin',
-    color: '#22c55e',
-  },
-  {
-    label: '节能奖励',
-    value: '¥0', // TODO: 需要后端提供节能奖励 API
-    icon: 'icon-ep-medal',
-    color: '#3b82f6',
-  },
-])
+// Quick stats - 静态模拟数据
 const quickStats = ref([
   {
     label: '本月费用',
@@ -518,6 +492,7 @@ const quickStats = ref([
     color: '#3b82f6',
   },
 ])
+
 
 // Calculator
 const energyInputs = ref([
