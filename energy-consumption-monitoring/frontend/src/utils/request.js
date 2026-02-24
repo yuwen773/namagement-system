@@ -52,6 +52,11 @@ service.interceptors.request.use(
  */
 service.interceptors.response.use(
   (response) => {
+    // Binary responses (file export) are not wrapped in { code, data, ... }.
+    if (response.config?.responseType === 'blob' || response.data instanceof Blob) {
+      return response
+    }
+
     const res = response.data
 
     // API returns { code: 0, data: {...}, message: '...' }

@@ -301,12 +301,27 @@ const chartColors = {
   grid: '#e2e8f0',
 }
 
+function initChartWhenReady(containerRef, chartInstanceRef, applyOption, retryCount = 0) {
+  const container = containerRef.value
+  if (!container) return
+
+  if (container.clientWidth === 0 || container.clientHeight === 0) {
+    if (retryCount < 30) {
+      requestAnimationFrame(() => initChartWhenReady(containerRef, chartInstanceRef, applyOption, retryCount + 1))
+    }
+    return
+  }
+
+  if (chartInstanceRef.value) {
+    chartInstanceRef.value.dispose()
+  }
+
+  chartInstanceRef.value = echarts.init(container)
+  applyOption(chartInstanceRef.value)
+}
+
 // Initialize trend chart
 function initTrendChart() {
-  if (!trendChartRef.value) return
-
-  trendChart.value = echarts.init(trendChartRef.value)
-
   const option = {
     grid: {
       left: '3%',
@@ -368,15 +383,11 @@ function initTrendChart() {
     },
   }
 
-  trendChart.value.setOption(option)
+  initChartWhenReady(trendChartRef, trendChart, (chart) => chart.setOption(option))
 }
 
 // Initialize distribution chart
 function initDistributionChart() {
-  if (!distributionChartRef.value) return
-
-  distributionChart.value = echarts.init(distributionChartRef.value)
-
   const option = {
     tooltip: {
       trigger: 'item',
@@ -411,15 +422,11 @@ function initDistributionChart() {
     ],
   }
 
-  distributionChart.value.setOption(option)
+  initChartWhenReady(distributionChartRef, distributionChart, (chart) => chart.setOption(option))
 }
 
 // Initialize power chart
 function initPowerChart() {
-  if (!powerChartRef.value) return
-
-  powerChart.value = echarts.init(powerChartRef.value)
-
   // Generate mock time series data
   const now = new Date()
   const timeData = []
@@ -427,7 +434,7 @@ function initPowerChart() {
   for (let i = 23; i >= 0; i--) {
     const time = new Date(now - i * 3600000)
     timeData.push(`${time.getHours()}:00`)
-    powerData.value = Math.floor(4000 + Math.random() * 2000)
+    powerData.push(Math.floor(4000 + Math.random() * 2000))
   }
 
   const option = {
@@ -480,27 +487,13 @@ function initPowerChart() {
     ],
   }
 
-  powerChart.value.setOption(option)
+  initChartWhenReady(powerChartRef, powerChart, (chart) => chart.setOption(option))
 }
 
 // Initialize 2D map chart
 function initMapChart(retryCount = 0) {
   const mapContainer = mapChartRef.value
   if (!mapContainer) return
-
-  // Route/page transitions can mount this view while the container is still 0x0.
-  // Retry briefly to avoid ECharts init warning: "Can't get DOM width or height".
-  if (mapContainer.clientWidth === 0 || mapContainer.clientHeight === 0) {
-    if (retryCount < 20) {
-      window.setTimeout(() => initMapChart(retryCount + 1), 50)
-    }
-    return
-  }
-
-  if (mapChart.value) {
-    mapChart.value.dispose()
-  }
-  mapChart.value = echarts.init(mapContainer)
 
   // Mock building data with coordinates
   const buildings = [
@@ -584,14 +577,16 @@ function initMapChart(retryCount = 0) {
     ],
   }
 
-  mapChart.value.setOption(option)
+  initChartWhenReady(mapChartRef, mapChart, (chart) => {
+    chart.setOption(option)
 
-  // Add click handler
-  mapChart.value.on('click', (params) => {
-    if (params.data && params.data.name) {
-      ElMessage.info(`已选中: ${params.data.name}`)
-    }
-  })
+    // Add click handler
+    chart.on('click', (params) => {
+      if (params.data && params.data.name) {
+        ElMessage.info(`已选中: ${params.data.name}`)
+      }
+    })
+  }, retryCount)
 }
 
 // Load dashboard data from API
