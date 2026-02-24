@@ -74,6 +74,19 @@ export function updateBuilding(id, data) {
 }
 
 /**
+ * Partial update building
+ * @param {number} id - Building ID
+ * @param {Object} data - Building data
+ */
+export function patchBuilding(id, data) {
+  return request({
+    url: `/buildings/${id}/`,
+    method: 'patch',
+    data,
+  })
+}
+
+/**
  * Delete building
  * @param {number} id - Building ID
  */
@@ -115,5 +128,29 @@ export function getRooms(params) {
     url: '/rooms/',
     method: 'get',
     params,
+  })
+}
+
+/**
+ * Create floor (Admin)
+ * @param {Object} data - Floor data
+ */
+export function createFloor(data) {
+  return request({
+    url: '/floors/',
+    method: 'post',
+    data,
+  })
+}
+
+/**
+ * Create room (Admin)
+ * @param {Object} data - Room data
+ */
+export function createRoom(data) {
+  return request({
+    url: '/rooms/',
+    method: 'post',
+    data,
   })
 }

@@ -29,6 +29,17 @@ export function createAlarmRule(data) {
 }
 
 /**
+ * Get alarm rule detail
+ * @param {number} id - Rule ID
+ */
+export function getAlarmRule(id) {
+  return request({
+    url: `/alarm-rules/${id}/`,
+    method: 'get',
+  })
+}
+
+/**
  * Update alarm rule
  * @param {number} id - Rule ID
  * @param {Object} data - Rule data
@@ -37,6 +48,19 @@ export function updateAlarmRule(id, data) {
   return request({
     url: `/alarm-rules/${id}/`,
     method: 'put',
+    data,
+  })
+}
+
+/**
+ * Partial update alarm rule
+ * @param {number} id - Rule ID
+ * @param {Object} data - Rule data
+ */
+export function patchAlarmRule(id, data) {
+  return request({
+    url: `/alarm-rules/${id}/`,
+    method: 'patch',
     data,
   })
 }

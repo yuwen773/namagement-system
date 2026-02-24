@@ -89,6 +89,66 @@ export function getRoles(params) {
 }
 
 /**
+ * Create role (Admin)
+ * @param {Object} data - Role data
+ */
+export function createRole(data) {
+  return request({
+    url: '/roles/',
+    method: 'post',
+    data,
+  })
+}
+
+/**
+ * Get role detail
+ * @param {number} id - Role ID
+ */
+export function getRole(id) {
+  return request({
+    url: `/roles/${id}/`,
+    method: 'get',
+  })
+}
+
+/**
+ * Update role
+ * @param {number} id - Role ID
+ * @param {Object} data - Role data
+ */
+export function updateRole(id, data) {
+  return request({
+    url: `/roles/${id}/`,
+    method: 'put',
+    data,
+  })
+}
+
+/**
+ * Partial update role
+ * @param {number} id - Role ID
+ * @param {Object} data - Role data
+ */
+export function patchRole(id, data) {
+  return request({
+    url: `/roles/${id}/`,
+    method: 'patch',
+    data,
+  })
+}
+
+/**
+ * Delete role
+ * @param {number} id - Role ID
+ */
+export function deleteRole(id) {
+  return request({
+    url: `/roles/${id}/`,
+    method: 'delete',
+  })
+}
+
+/**
  * Get bills
  * @param {Object} params - Query parameters
  */
