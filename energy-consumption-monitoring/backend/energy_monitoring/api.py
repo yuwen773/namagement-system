@@ -61,6 +61,11 @@ class UnifiedJSONRenderer(JSONRenderer):
         if response is None:
             return super().render(data, accepted_media_type, renderer_context)
 
+        # Skip wrapping for binary responses (file downloads)
+        content_type = response.get("Content-Type", "")
+        if not content_type.startswith("application/json"):
+            return super().render(data, accepted_media_type, renderer_context)
+
         if isinstance(data, Mapping) and "code" in data and "message" in data:
             payload = dict(data)
             payload.setdefault("data", None)

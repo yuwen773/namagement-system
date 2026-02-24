@@ -1,7 +1,7 @@
 <template>
   <div class="analysis-container">
     <!-- Top Filter Section -->
-    <div class="filter-bar">
+    <!-- <div class="filter-bar">
       <div class="filter-group">
         <div class="filter-item">
           <label class="filter-label">时间范围</label>
@@ -97,7 +97,7 @@
           </template>
         </el-dropdown>
       </div>
-    </div>
+    </div> -->
 
     <!-- Charts Grid -->
     <div class="charts-section">
@@ -890,7 +890,43 @@ async function applyFilters() {
 // Handle period change
 function handlePeriodChange(period) {
   activePeriod.value = period
-  // Update trend chart
+  // Update trend chart based on period
+  updateTrendChart(period)
+}
+
+// Update trend chart data based on period
+function updateTrendChart(period) {
+  if (!trendChart.value) return
+
+  // Generate mock data based on period
+  let xAxisData, currentData, previousData
+
+  if (period === 'day') {
+    // Daily data - last 24 hours
+    xAxisData = Array.from({ length: 24 }, (_, i) => `${i}:00`)
+    currentData = Array.from({ length: 24 }, () => Math.floor(Math.random() * 200) + 300)
+    previousData = Array.from({ length: 24 }, () => Math.floor(Math.random() * 200) + 280)
+  } else if (period === 'month') {
+    // Monthly data - last 30 days
+    xAxisData = Array.from({ length: 30 }, (_, i) => `${i + 1}日`)
+    currentData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 500) + 2000)
+    previousData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 500) + 1800)
+  } else {
+    // Yearly data - 12 months
+    xAxisData = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+    currentData = [4200, 4800, 4500, 5200, 4900, 5800, 6200, 5900, 5100, 4800, 5300, 5600]
+    previousData = [3800, 4200, 4000, 4800, 4500, 5200, 5500, 5300, 4600, 4300, 4800, 5100]
+  }
+
+  trendChart.value.setOption({
+    xAxis: {
+      data: xAxisData
+    },
+    series: [
+      { data: currentData },
+      { data: previousData }
+    ]
+  })
 }
 
 // Handle export
@@ -900,12 +936,12 @@ async function handleExport(format) {
 
     // Call export API
     const response = await exportEnergyData({
-      format: format,
+      file_format: format,
       ...filters.value,
     })
 
     // Create download link
-    const url = window.URL.createObjectURL(new Blob([response]))
+    const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
     link.setAttribute('download', `能耗数据_${new Date().toISOString().slice(0, 10)}.${format === 'excel' ? 'xlsx' : 'pdf'}`)

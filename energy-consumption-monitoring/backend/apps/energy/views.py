@@ -311,7 +311,9 @@ class EnergyDataViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request):
         """按指定格式导出当前筛选数据。"""
-        export_format = request.query_params.get("format", "excel").lower()
+        # 优先使用 file_format，兼容 format 参数
+        export_format = request.query_params.get("file_format") or request.query_params.get("format", "excel")
+        export_format = export_format.lower()
         queryset = self.get_queryset().select_related("device", "energy_type").order_by("timestamp", "id")
         data = list(queryset)
 

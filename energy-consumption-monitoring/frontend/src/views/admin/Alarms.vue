@@ -332,8 +332,8 @@
       <el-form :model="handleDialog.form" label-width="80px">
         <el-form-item label="处理状态">
           <el-radio-group v-model="handleDialog.form.status">
-            <el-radio label="PROCESSED">已处理</el-radio>
-            <el-radio label="IGNORED">已忽略</el-radio>
+            <el-radio value="PROCESSED">已处理</el-radio>
+            <el-radio value="IGNORED">已忽略</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="处理备注">

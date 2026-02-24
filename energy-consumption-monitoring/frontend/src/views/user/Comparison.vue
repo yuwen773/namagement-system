@@ -103,9 +103,9 @@
               节能排行榜
             </h3>
             <el-radio-group v-model="rankingType" size="small" @change="loadRankingData">
-              <el-radio-button label="week">本周</el-radio-button>
-              <el-radio-button label="month">本月</el-radio-button>
-              <el-radio-button label="semester">学期</el-radio-button>
+              <el-radio-button value="week">本周</el-radio-button>
+              <el-radio-button value="month">本月</el-radio-button>
+              <el-radio-button value="semester">学期</el-radio-button>
             </el-radio-group>
           </div>
 

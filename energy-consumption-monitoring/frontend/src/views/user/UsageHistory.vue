@@ -642,8 +642,8 @@ async function handleExport() {
   try {
     const format = 'excel'
     ElMessage.info('正在导出数据...')
-    const response = await exportEnergyData({ format })
-    const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const response = await exportEnergyData({ file_format: format })
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

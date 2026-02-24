@@ -136,6 +136,8 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "energy_monitoring.api.UnifiedJSONRenderer",
     ),
+    # Avoid conflict with business query parameters like `?format=excel`.
+    "URL_FORMAT_OVERRIDE": None,
     "EXCEPTION_HANDLER": "energy_monitoring.api.custom_exception_handler",
 }
 
