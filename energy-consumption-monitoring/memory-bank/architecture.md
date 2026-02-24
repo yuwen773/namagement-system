@@ -1,80 +1,48 @@
-# ¼Ü¹¹ËµÃ÷£¨Architecture£©
+# æ¶æ„è¯´æ˜ï¼ˆArchitectureï¼‰
 
-## ÎÄµµÄ¿µÄ
-¶¨Òå³¤ÆÚÎÈ¶¨µÄ¼Ü¹¹±ß½ç¡¢·Ö²ãÖ°ÔğÓëÎÄ¼şÖ°Ôğ¡£
-²»¼ÇÂ¼Ò»´ÎĞÔ²Ù×÷¡¢ÃüÁîÊä³öºÍÁÙÊ±ÅÅÕÏ¹ı³Ì¡£
+## æ–‡æ¡£ç›®çš„
+æ²‰æ·€ç¨³å®šçš„æ¶æ„è¾¹ç•Œä¸æ–‡ä»¶èŒè´£ï¼›ä¸è®°å½•è¿‡ç¨‹æ€§å†…å®¹ã€‚
 
-## µ±Ç°¼Ü¹¹»ùÏß£¨2026-02-16£©
-- ¿ª·¢²ßÂÔ£ººó¶ËÓÅÏÈ£¬Ç°¶ËºóÖÃ
-- ¼¼Êõ»ùÏß£ºDjango + DRF + MySQL£¨`utf8mb4`£©£»Spark Îª¿ÉÑ¡ÔöÇ¿
-- Êı¾İ²ßÂÔ£ºµ¥¿â MySQL£»Ô­Ê¼Êı¾İÓëÍ³¼ÆÊı¾İ·Ö²ã£¨`em_energy_data` / `em_energy_statistics`£©
-- ÁìÓò»®·Ö£º`accounts`¡¢`buildings`¡¢`devices`¡¢`energy`¡¢`analysis`¡¢`alarms`¡¢`system`
-- µ±Ç°½ø¶È»ùÏß£º½×¶Î `2.5` ÒÑÍê³É²¢Í¨¹ı²âÊÔ£¬`2.6` Î´¿ªÊ¼
+## å½“å‰æ¶æ„åŸºçº¿ï¼ˆ2026-02-24ï¼‰
+- å¼€å‘ç­–ç•¥ï¼šåç«¯ä¼˜å…ˆï¼Œå‰ç«¯åç½®
+- æŠ€æœ¯åŸºçº¿ï¼šDjango + DRF + MySQLï¼ˆ`utf8mb4`ï¼‰ï¼ŒSpark ä¸ºå¯é€‰å¢å¼º
+- æ•°æ®ç­–ç•¥ï¼šMySQL å•åº“ï¼›åŸå§‹æ•°æ®ä¸ç»Ÿè®¡æ•°æ®åˆ†å±‚
+- é¢†åŸŸè¾¹ç•Œï¼š`accounts`ã€`buildings`ã€`devices`ã€`energy`ã€`analysis`ã€`alarms`ã€`system`
+- è¿›åº¦åŸºçº¿ï¼šé˜¶æ®µä¸‰ `3.1`ã€`3.2`ã€`3.3` å·²å®Œæˆ
 
-## ·Ö²ãÖ°Ôğ
-1. Êı¾İ½ÓÈë²ã£ºCSV/Excel µ¼ÈëÓë Modbus/BACnet Ğ­Òé²É¼¯Èë¿Ú
-2. ÒµÎñ·şÎñ²ã£ºDjango Apps£¨Ä£ĞÍ¡¢·şÎñ¡¢API£©
-3. Êı¾İ³Ö¾Ã²ã£ºMySQL ±í½á¹¹¡¢Ô¼Êø¡¢Ë÷ÒıÓëÇ¨ÒÆ
-4. Õ¹Ê¾²ã£ºVue 3 + ECharts£¨ºóĞø½×¶ÎÊµÏÖ£©
+## åˆ†å±‚èŒè´£
+1. æ•°æ®æ¥å…¥å±‚ï¼šæ•°æ®é›†å¯¼å…¥ã€åè®®é‡‡é›†æ¥å…¥ï¼ˆModbus/BACnetï¼‰
+2. ä¸šåŠ¡æœåŠ¡å±‚ï¼šDjango appsï¼ˆæ¨¡å‹ã€ä¸šåŠ¡è§„åˆ™ã€APIï¼‰
+3. æŒä¹…åŒ–å±‚ï¼šMySQL è¡¨ç»“æ„ã€çº¦æŸã€ç´¢å¼•ã€è¿ç§»
+4. å±•ç¤ºå±‚ï¼šVue 3 + EChartsï¼ˆåç»­é˜¶æ®µå®ç°ï¼‰
 
-## ¹Ø¼üÎÄ¼şÖ°Ôğ
+## å…³é”®æ–‡ä»¶èŒè´£
+- `memory-bank/pre-prd.md`ï¼šåŸå§‹è¯¾é¢˜èƒŒæ™¯ä¸çº¦æŸæ¥æº
+- `memory-bank/PRD.md`ï¼šäº§å“éœ€æ±‚è¾¹ç•Œ
+- `memory-bank/implementation-plan.md`ï¼šå®æ–½æ­¥éª¤ä¸éªŒæ”¶æ ‡å‡†
+- `memory-bank/tech-stack.md`ï¼šæŠ€æœ¯é€‰å‹ä¸ç‰ˆæœ¬åŸºçº¿
+- `memory-bank/progress.md`ï¼šé‡Œç¨‹ç¢‘ç»“æœä¸ä¸‹ä¸€æ­¥
+- `memory-bank/architecture.md`ï¼šç¨³å®šæ¶æ„è¾¹ç•Œä¸èŒè´£
+- `backend/manage.py`ï¼šDjango ç®¡ç†å…¥å£ï¼ˆæ£€æŸ¥/è¿ç§»/å‘½ä»¤ï¼‰
+- `backend/energy_monitoring/settings.py`ï¼šå…¨å±€é…ç½®ï¼ˆåº”ç”¨ã€æ•°æ®åº“ã€DRFã€JWTï¼‰
+- `backend/energy_monitoring/urls.py`ï¼šå…¨å±€ API è·¯ç”±å…¥å£
+- `backend/energy_monitoring/api.py`ï¼šç»Ÿä¸€å“åº”æ ¼å¼ã€åˆ†é¡µã€å¼‚å¸¸å¤„ç†
+- `backend/energy_monitoring/permissions.py`ï¼šé€šç”¨æƒé™ç±»ï¼ˆç®¡ç†å‘˜/åªè¯»/èµ„æºæ‰€æœ‰è€…ï¼‰
+- `backend/apps/accounts/serializers.py`ï¼šæ³¨å†Œ/ç™»å½•/ç”¨æˆ·ä¿¡æ¯/æ”¹å¯†åºåˆ—åŒ–
+- `backend/apps/accounts/views.py`ï¼šè®¤è¯æ¥å£å®ç°
+- `backend/apps/accounts/urls.py`ï¼š`/api/auth/*` è·¯ç”±
+- `backend/apps/buildings/serializers.py`ï¼šæ ¡åŒº-å»ºç­‘-æ¥¼å±‚-æˆ¿é—´åŠæ ‘ç»“æ„åºåˆ—åŒ–
+- `backend/apps/buildings/views.py`ï¼šå»ºç­‘åŸŸæŸ¥è¯¢ä¸ç®¡ç†æ¥å£ï¼ˆå« `tree`ï¼‰
+- `backend/apps/buildings/urls.py`ï¼š`/api/campuses|buildings|floors|rooms` è·¯ç”±
+- `backend/apps/*/models.py`ï¼šé¢†åŸŸæ¨¡å‹ä¸çº¦æŸ
+- `backend/apps/*/migrations/`ï¼šæ•°æ®åº“ç»“æ„æ¼”è¿›è®°å½•
+- `sql/init_db.sql`ï¼šæ•°æ®åº“åˆå§‹åŒ–ä¸ç§å­æ•°æ®è„šæœ¬
 
-### `memory-bank/`£¨ÏîÄ¿¼ÇÒä£©
-- `memory-bank/pre-prd.md`£º¿ÎÌâÔ­Ê¼±³¾°ÓëÔ¼ÊøÀ´Ô´
-- `memory-bank/PRD.md`£º²úÆ·ĞèÇóÓë¹¦ÄÜ±ß½ç
-- `memory-bank/implementation-plan.md`£º½×¶Î»®·Ö¡¢Ö´ĞĞ²½ÖèÓëÑéÊÕ±ê×¼
-- `memory-bank/tech-stack.md`£º¼¼ÊõÑ¡ĞÍÓë°æ±¾Ô¼Êø
-- `memory-bank/progress.md`£ºÊÂÊµ½ø¶È¡¢ÑéÊÕ×´Ì¬ÓëÏÂÒ»²½
-- `memory-bank/architecture.md`£ºÎÈ¶¨¼Ü¹¹±ß½çÓëÎÄ¼şÖ°Ôğ
+## æ¶æ„è§è§£
+- ç»Ÿä¸€å“åº”ä¸ç»Ÿä¸€å¼‚å¸¸å¤„ç†å·²ä¸‹æ²‰åˆ°æ¡†æ¶å±‚ï¼Œä¸šåŠ¡è§†å›¾ä¿æŒè–„æ§åˆ¶å™¨ã€‚
+- API æƒé™æ¨¡å‹å·²å½¢æˆé€šç”¨åŸºå…ƒï¼ˆ`IsAdmin`ã€`IsAdminOrReadOnly`ã€`IsOwnerOrAdmin`ï¼‰ï¼Œåç»­åº”ç”¨å¯å¤ç”¨ã€‚
+- å»ºç­‘åŸŸé‡‡ç”¨â€œåˆ—è¡¨/è¯¦æƒ… + æ ‘ç»“æ„â€åŒè¾“å‡ºå£å¾„ï¼Œå…¼å®¹ç®¡ç†é¡µå’Œç›‘æµ‹æ ‘åœºæ™¯ã€‚
 
-### `backend/`£¨ºó¶ËÃªµã£©
-- `backend/manage.py`£ºDjango ¹ÜÀíÈë¿Ú£¨ÔËĞĞ¡¢Ç¨ÒÆ¡¢¼ì²é¡¢¹ÜÀíÃüÁî£©
-- `backend/requirements.txt`£ººó¶ËÒÀÀµ»ùÏß
-- `backend/energy_monitoring/settings.py`£ºÈ«¾ÖÅäÖÃÖĞĞÄ£¨Ó¦ÓÃ×¢²á¡¢Êı¾İ¿â¡¢ÖĞ¼ä¼şµÈ£©
-- `backend/energy_monitoring/urls.py`£ºÈ«¾ÖÂ·ÓÉ¾ÛºÏÈë¿Ú
-- `backend/energy_monitoring/asgi.py`£ºASGI Èë¿Ú
-- `backend/energy_monitoring/wsgi.py`£ºWSGI Èë¿Ú
-- `backend/energy_monitoring/__init__.py`£ºÏîÄ¿°ü³õÊ¼»¯Èë¿Ú
-
-### `backend/apps/accounts/`£¨ÕË»§Óò£©
-- `backend/apps/accounts/models.py`£ºÕË»§ÓòÄ£ĞÍ¶¨Òå£¨`UserProfile`¡¢½ÇÉ«×Ö¶Î£©
-- `backend/apps/accounts/admin.py`£ºÕË»§ÓòºóÌ¨¹ÜÀí×¢²á
-- `backend/apps/accounts/migrations/0001_initial.py`£ºÕË»§ÓòÇ¨ÒÆ»ùÏß
-- `backend/apps/accounts/serializers.py`£ºÕË»§ÓòĞòÁĞ»¯²ãÎ»µã
-- `backend/apps/accounts/views.py`£ºÕË»§Óò API Î»µã
-- `backend/apps/accounts/urls.py`£ºÕË»§ÓòÂ·ÓÉÎ»µã
-- `backend/apps/accounts/tests.py`£ºÕË»§Óò²âÊÔÎ»µã
-
-### `backend/apps/buildings/`£¨¿Õ¼äÓò£©
-- `backend/apps/buildings/models.py`£º¿Õ¼ä²ã¼¶Ä£ĞÍ£¨Campus/Building/Floor/Room£©
-- `backend/apps/buildings/admin.py`£º¿Õ¼äÓòºóÌ¨¹ÜÀí×¢²á
-- `backend/apps/buildings/migrations/0001_initial.py`£º¿Õ¼äÓòÇ¨ÒÆ»ùÏß
-- `backend/apps/buildings/serializers.py`£º¿Õ¼äÓòĞòÁĞ»¯²ãÎ»µã
-- `backend/apps/buildings/views.py`£º¿Õ¼äÓò API Î»µã
-- `backend/apps/buildings/urls.py`£º¿Õ¼äÓòÂ·ÓÉÎ»µã
-- `backend/apps/buildings/tests.py`£º¿Õ¼äÓò²âÊÔÎ»µã
-
-### `backend/apps/devices/`£¨Éè±¸Óò£©
-- `backend/apps/devices/models.py`£ºÉè±¸ÓòÄ£ĞÍ£¨`EnergyType`¡¢`Device`£©Óë×´Ì¬Ã¶¾Ù
-- `backend/apps/devices/admin.py`£ºÉè±¸ÓòºóÌ¨¹ÜÀí×¢²á
-- `backend/apps/devices/migrations/0001_initial.py`£ºÉè±¸ÓòÇ¨ÒÆ»ùÏß
-- `backend/apps/devices/serializers.py`£ºÉè±¸ÓòĞòÁĞ»¯²ãÎ»µã
-- `backend/apps/devices/views.py`£ºÉè±¸Óò API Î»µã
-- `backend/apps/devices/urls.py`£ºÉè±¸ÓòÂ·ÓÉÎ»µã
-- `backend/apps/devices/tests.py`£ºÉè±¸Óò²âÊÔÎ»µã
-
-### `backend/apps/`£¨ÆäÓàÁìÓòÄ£¿é£©
-- `backend/apps/energy/`£ºÄÜºÄÔ­Ê¼Êı¾İÓëÍ³¼Æ
-- `backend/apps/analysis/`£ºÍ³¼Æ·ÖÎö¡¢¶Ô±È¡¢Ô¤²â
-- `backend/apps/alarms/`£º¸æ¾¯¹æÔòÓë´¦ÖÃ
-- `backend/apps/system/`£ºÕËµ¥¡¢³äÖµ¡¢Í¨Öª¡¢²Ù×÷ÈÕÖ¾
-
-## ¼Ü¹¹¼û½â£¨½×¶Î 2.5 ºó£©
-- ÁìÓòÖ÷¸ÉÇåÎú£º`buildings` Ìá¹©¿Õ¼ä²ã¼¶£¬`devices` ³ĞÔØÉè±¸Ö÷Êı¾İ£¬ºóĞø `energy` Ö±½Ó¸´ÓÃÁ½Õß¹ØÁª¡£
-- Éè±¸Ä£ĞÍ²ÉÓÃ¡°·¿¼ä¿É¿Õ¡±Éè¼Æ£¬Ö§³ÖÊÒÍâÉè±¸ÓëÍø¹Ø²àÉè±¸£¬±ÜÃâÇ¿ÖÆ°ó¶¨µ¼ÖÂµÄÊı¾İÂäµØ×èÈû¡£
-- `device_id` ×÷ÎªÍâ²¿²É¼¯±êÊ¶±£³ÖÎ¨Ò»£¬¿ÉÎÈ¶¨Ó³ÉäÊı¾İ¼¯ÓëĞ­Òé²É¼¯²à±êÊ¶¡£
-- Ç¨ÒÆ²ßÂÔÍ³Ò»£ºÔÚÒÑÓĞÒµÎñ±í»·¾³ÖĞ¼ÌĞøÍ¨¹ı `--fake-initial` ¶ÔÆëÀúÊ·£¬ºóĞøÖ»×·¼ÓÔöÁ¿Ç¨ÒÆ¡£
-
-## Ñİ½ø¹æÔò
-- Ã¿Íê³ÉÒ»¸öÊµÊ©²½Öè£¬Í¬²½¸üĞÂ `memory-bank/progress.md`
-- ¼Ü¹¹±ß½ç±ä»¯Ê±£¬ÏÈ¸üĞÂ `memory-bank/architecture.md`£¬ÔÙ¸Ä´úÂë
+## æ¼”è¿›è§„åˆ™
+- å®æ–½æ­¥éª¤å®Œæˆåï¼Œå…ˆæ›´æ–° `memory-bank/progress.md`ã€‚
+- æ¶æ„è¾¹ç•Œå˜åŒ–æ—¶ï¼Œå…ˆæ›´æ–° `memory-bank/architecture.md`ï¼Œå†è°ƒæ•´ä»£ç å®ç°ã€‚

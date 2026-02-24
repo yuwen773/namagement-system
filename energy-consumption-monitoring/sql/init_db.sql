@@ -396,3 +396,130 @@ CREATE TABLE `em_energy_forecasts` (
     ON UPDATE CASCADE
     ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ------------------------------------------------------------
+-- 初始化数据（阶段 2.9）
+-- ------------------------------------------------------------
+
+INSERT INTO `em_roles` (`id`, `code`, `name`, `description`, `is_active`)
+VALUES
+  (1, 'ADMIN', '管理员', '系统管理员角色', 1),
+  (2, 'USER', '普通用户', '普通用户角色', 1);
+
+INSERT INTO `em_users` (
+  `id`, `username`, `password`, `email`, `real_name`, `phone`, `avatar`,
+  `role_id`, `is_active`, `last_login_at`
+)
+VALUES
+  (1, 'admin', 'admin123', 'admin@example.com', '系统管理员', NULL, NULL, 1, 1, NULL),
+  (2, 'demo_user', 'demo123', 'demo_user@example.com', '示例用户', NULL, NULL, 2, 1, NULL);
+
+-- 校区示例数据：与 dataSource/campus_meta.csv 对齐
+INSERT INTO `em_campuses` (`id`, `name`, `code`, `capacity`, `description`)
+VALUES
+  (1, 'Bundoora', 'BUNDOORA', 26000, '来自 campus_meta.csv'),
+  (2, 'Albury-Wodonga', 'ALBURY_WODONGA', 800, '来自 campus_meta.csv'),
+  (3, 'Bendigo', 'BENDIGO', 5000, '来自 campus_meta.csv'),
+  (4, 'Mildura', 'MILDURA', 500, '来自 campus_meta.csv'),
+  (5, 'Shepparton', 'SHEPPARTON', 700, '来自 campus_meta.csv');
+
+INSERT INTO `em_energy_types` (`id`, `name`, `code`, `unit`, `icon`, `description`)
+VALUES
+  (1, '水', 'WATER', 'm3', 'water-drop', '用水计量'),
+  (2, '电', 'ELECTRICITY', 'kWh', 'bolt', '用电计量'),
+  (3, '气', 'GAS', 'm3', 'flame', '燃气计量');
+
+INSERT INTO `em_buildings` (
+  `id`, `campus_id`, `name`, `code`, `area_type`, `address`, `floors_count`,
+  `built_year`, `gross_floor_area`, `room_area`, `capacity`
+)
+VALUES
+  (1, 1, 'Bundoora-Teaching-01', 'BUN-T-01', 'TEACHING', 'Bundoora Campus', 3, 1967, 145558.14, 1790.17, 79),
+  (2, 1, 'Bundoora-Residence-01', 'BUN-R-01', 'LIVING', 'Bundoora Campus', 2, 1972, 42646.40, 871.42, 120),
+  (3, 2, 'Albury-Teaching-01', 'ALB-T-01', 'TEACHING', 'Albury-Wodonga Campus', 2, 1998, 2395.00, NULL, NULL);
+
+INSERT INTO `em_floors` (`id`, `building_id`, `floor_number`, `name`)
+VALUES
+  (1, 1, 1, '1F'),
+  (2, 1, 2, '2F'),
+  (3, 1, 3, '3F'),
+  (4, 2, 1, '1F'),
+  (5, 3, 1, '1F');
+
+INSERT INTO `em_rooms` (`id`, `floor_id`, `room_number`, `room_type`, `area`, `department`, `capacity`)
+VALUES
+  (1, 1, '101', 'CLASSROOM', 80.00, '信息中心', 50),
+  (2, 2, '201', 'CLASSROOM', 86.00, '信息中心', 55),
+  (3, 3, '301', 'OFFICE', 45.00, '后勤处', 12),
+  (4, 4, 'A101', 'DORMITORY', 28.00, '学生公寓', 6),
+  (5, 5, 'B101', 'CLASSROOM', 70.00, '教务处', 45);
+
+INSERT INTO `em_devices` (
+  `id`, `device_id`, `name`, `energy_type_id`, `room_id`, `model`, `status`,
+  `protocol`, `gateway_mode`, `last_data_time`, `installed_at`
+)
+VALUES
+  (1, 'ELEC-001', '教学楼1层电表', 2, 1, 'DDSU666', 'ONLINE', 'MODBUS', 'DIRECT_METER', NOW(6), NOW(6)),
+  (2, 'WATER-001', '教学楼2层水表', 1, 2, 'LXSY-15', 'ONLINE', 'MODBUS', 'DIRECT_METER', NOW(6), NOW(6)),
+  (3, 'GAS-001', '后勤办公区气表', 3, 3, 'G4', 'OFFLINE', 'BACNET', 'GATEWAY_FORWARD', NULL, NOW(6));
+
+INSERT INTO `em_alarm_rules` (
+  `id`, `name`, `energy_type_id`, `condition_type`, `threshold_value`,
+  `comparison_operator`, `is_active`, `description`
+)
+VALUES
+  (1, '日用电量 > 100 kWh', 2, 'THRESHOLD', 100.000000, 'GT', 1, '电量阈值告警规则');
+
+-- 可选示例告警记录
+INSERT INTO `em_alarms` (
+  `id`, `device_id`, `rule_id`, `alarm_type`, `alarm_value`, `alarm_time`,
+  `status`, `handler_user_id`, `handle_time`, `remark`
+)
+VALUES
+  (1, 1, 1, 'THRESHOLD', 132.500000, NOW(6), 'PENDING', NULL, NULL, '示例告警记录');
+
+-- Django Admin 管理员账号（admin/admin123）
+-- 说明：
+-- 1) 若已执行 `python manage.py migrate`，会存在 `auth_user` 表并插入/更新管理员账号；
+-- 2) 若 `auth_user` 不存在，则跳过该步骤，不影响业务表初始化。
+SET @has_auth_user := (
+  SELECT COUNT(1)
+  FROM information_schema.tables
+  WHERE table_schema = DATABASE() AND table_name = 'auth_user'
+);
+
+SET @seed_admin_sql := IF(
+  @has_auth_user = 1,
+  'INSERT INTO auth_user (password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined)
+   VALUES (''pbkdf2_sha256$1000000$lcrzHdHXaDFc7gYK0QEPGy$ADwxpd6W5suiAE8+ZHDZx4kVzLxmVql3ICZQh0ctX+s='', NULL, 1, ''admin'', '''', '''', ''admin@example.com'', 1, 1, NOW())
+   ON DUPLICATE KEY UPDATE
+     password = VALUES(password),
+     is_superuser = 1,
+     is_staff = 1,
+     is_active = 1',
+  'SELECT ''skip auth_user seed'''
+);
+
+PREPARE stmt_seed_admin FROM @seed_admin_sql;
+EXECUTE stmt_seed_admin;
+DEALLOCATE PREPARE stmt_seed_admin;
+
+SET @has_user_profile := (
+  SELECT COUNT(1)
+  FROM information_schema.tables
+  WHERE table_schema = DATABASE() AND table_name = 'em_user_profiles'
+);
+
+SET @seed_profile_sql := IF(
+  @has_user_profile = 1,
+  'INSERT INTO em_user_profiles (user_id, phone, avatar, role, bind_rooms, created_at, updated_at)
+   SELECT id, NULL, NULL, ''ADMIN'', JSON_ARRAY(), NOW(6), NOW(6)
+   FROM auth_user
+   WHERE username = ''admin''
+   ON DUPLICATE KEY UPDATE role = ''ADMIN'', updated_at = NOW(6)',
+  'SELECT ''skip em_user_profiles seed'''
+);
+
+PREPARE stmt_seed_profile FROM @seed_profile_sql;
+EXECUTE stmt_seed_profile;
+DEALLOCATE PREPARE stmt_seed_profile;
