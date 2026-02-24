@@ -474,6 +474,11 @@ const buildingStats = ref({
 const energyTypes = ref([])
 
 // Rate settings
+// TODO: 这些费率数据目前是静态的，需要后端提供费率管理 API
+// 后端需要添加:
+// - GET/POST /api/rates/electricity/ - 电价管理
+// - GET/POST /api/rates/water/ - 水价管理
+// - GET/POST /api/rates/gas/ - 气价管理
 const electricityRates = ref({
   peak: 1.2,
   flat: 0.8,

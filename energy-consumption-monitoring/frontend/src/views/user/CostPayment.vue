@@ -449,6 +449,10 @@ import { getMyBindRooms } from '@/api/profile'
 
 // Data
 const activeTab = ref('bills')
+// TODO: 用户余额目前是静态数据，需要后端提供余额管理 API
+// 后端需要在 UserProfile 模型中添加 balance 字段，并提供:
+// - GET /api/profile/balance/ - 获取余额
+// - POST /api/recharges/ - 充值接口（已存在）
 const balance = ref('358.60')
 const billStatus = ref('')
 const billMonth = ref('')
@@ -461,7 +465,33 @@ const bills = ref([])
 const rechargeRecords = ref([])
 const boundRooms = ref([])
 
-// Quick stats
+// Quick stats - 部分数据从 API 计算，部分需要后端支持
+const quickStats = ref([
+  {
+    label: '本月费用',
+    value: '¥0', // Will be calculated from bills
+    icon: 'icon-ep-wallet',
+    color: '#f97316',
+  },
+  {
+    label: '未支付账单',
+    value: '0', // Will be calculated from bills
+    icon: 'icon-ep-document',
+    color: '#eab308',
+  },
+  {
+    label: '累计充值',
+    value: '¥0', // Will be calculated from recharge records
+    icon: 'icon-ep-coin',
+    color: '#22c55e',
+  },
+  {
+    label: '节能奖励',
+    value: '¥0', // TODO: 需要后端提供节能奖励 API
+    icon: 'icon-ep-medal',
+    color: '#3b82f6',
+  },
+])
 const quickStats = ref([
   {
     label: '本月费用',

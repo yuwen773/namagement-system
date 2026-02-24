@@ -409,7 +409,20 @@ async function loadTrendData() {
       if (trendChart.value && response.data.series) {
         const option = trendChart.value.getOption()
         option.series = response.data.series
+        if (response.data.labels) {
+          option.xAxis.data = response.data.labels
+        }
         trendChart.value.setOption(option)
+      }
+
+      // Update today's consumption metrics if available
+      if (response.data.today) {
+        if (response.data.today.electricity !== undefined) {
+          metrics.value[1].value = String(response.data.today.electricity)
+        }
+        if (response.data.today.water !== undefined) {
+          metrics.value[2].value = String(response.data.today.water)
+        }
       }
     }
   } catch (error) {
@@ -420,7 +433,7 @@ async function loadTrendData() {
 // Load composition data
 async function loadCompositionData() {
   try {
-    const response = await getDistributionData({ type: 'energy' })
+    const response = await getDistributionData({ type: 'energy_type' })
     if (response.code === 0 && response.data) {
       compositionData.value = response.data.map(item => ({
         ...item,

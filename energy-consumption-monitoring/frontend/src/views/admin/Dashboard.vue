@@ -595,11 +595,100 @@ async function loadDashboardData() {
     const response = await getDashboardData()
     if (response.code === 0 && response.data) {
       // Update metrics with real data
-      // metrics.value = { ...response.data.metrics }
+      if (response.data.total_consumption) {
+        metrics.value[0].value = response.data.total_consumption.value || metrics.value[0].value
+        metrics.value[0].displayValue = formatNumber(response.data.total_consumption.value || metrics.value[0].value)
+        metrics.value[0].change = response.data.total_consumption.change || metrics.value[0].change
+        metrics.value[0].trend = response.data.total_consumption.trend || metrics.value[0].trend
+      }
+      if (response.data.avg_power) {
+        metrics.value[1].value = response.data.avg_power.value || metrics.value[1].value
+        metrics.value[1].displayValue = formatNumber(response.data.avg_power.value || metrics.value[1].value)
+        metrics.value[1].change = response.data.avg_power.change || metrics.value[1].change
+        metrics.value[1].trend = response.data.avg_power.trend || metrics.value[1].trend
+      }
+      if (response.data.coverage_rate) {
+        metrics.value[2].value = response.data.coverage_rate.value || metrics.value[2].value
+        metrics.value[2].displayValue = response.data.coverage_rate.value || metrics.value[2].displayValue
+        metrics.value[2].change = response.data.coverage_rate.change || metrics.value[2].change
+      }
+      if (response.data.today_alarms) {
+        metrics.value[3].value = response.data.today_alarms.value || metrics.value[3].value
+        metrics.value[3].displayValue = String(response.data.today_alarms.value || metrics.value[3].value)
+        metrics.value[3].change = response.data.today_alarms.change || metrics.value[3].change
+        metrics.value[3].trend = response.data.today_alarms.trend || metrics.value[3].trend
+      }
     }
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
   }
+
+  // Load trend data for trend chart
+  await loadTrendData()
+
+  // Load distribution data
+  await loadDistributionData()
+}
+
+// Load trend data from API
+async function loadTrendData() {
+  try {
+    const response = await getTrendData({ period: 'day' })
+    if (response.code === 0 && response.data && trendChart.value) {
+      const labels = response.data.labels || ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+      const electricityData = response.data.electricity || [3200, 3800, 3500, 4200, 3900, 3100, 2800]
+      const waterData = response.data.water || [2100, 2400, 2200, 2800, 2600, 2000, 1800]
+
+      trendChart.value.setOption({
+        xAxis: { data: labels },
+        series: [
+          { data: electricityData },
+          { data: waterData },
+        ],
+      })
+    }
+  } catch (error) {
+    console.error('Failed to load trend data:', error)
+  }
+}
+
+// Load distribution data from API
+async function loadDistributionData() {
+  try {
+    const response = await getDistributionData({ type: 'energy_type' })
+    if (response.code === 0 && response.data) {
+      const data = Array.isArray(response.data) ? response.data : (response.data.items || [])
+      if (data.length > 0) {
+        distributionData.value = data.map((item, index) => ({
+          name: item.name || ['电', '水', '气'][index] || `能源${index + 1}`,
+          value: item.value || 0,
+          percent: item.percent || Math.round(item.value || 0),
+          color: item.color || ['#eab308', '#3b82f6', '#ef4444'][index] || '#f97316',
+        }))
+
+        // Update distribution chart
+        if (distributionChart.value) {
+          distributionChart.value.setOption({
+            series: [{
+              data: distributionData.value.map(d => ({
+                value: d.value,
+                name: d.name,
+                itemStyle: { color: d.color },
+              })),
+            }],
+          })
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load distribution data:', error)
+  }
+}
+
+// Format number helper
+function formatNumber(num) {
+  if (typeof num !== 'number') return String(num)
+  return num.toLocaleString('en-US')
 }
 
 // Load alarms data
@@ -633,8 +722,39 @@ async function loadDeviceStatus() {
   try {
     const response = await getDeviceDataStatus()
     if (response.code === 0 && response.data) {
-      // Update device stats
-      // deviceStats.value = response.data.stats
+      // Update device stats with API data
+      const stats = response.data.stats || response.data
+      if (Array.isArray(stats)) {
+        deviceStats.value = stats.map(stat => ({
+          label: stat.label || stat.status || '未知',
+          count: stat.count || 0,
+          percent: stat.percent || 0,
+          color: stat.color || '#94a3b8',
+        }))
+      } else if (stats.online !== undefined || stats.total !== undefined) {
+        // Handle different response format
+        const total = stats.total || (stats.online || 0) + (stats.offline || 0) + (stats.fault || 0)
+        deviceStats.value = [
+          {
+            label: '在线',
+            count: stats.online || 0,
+            percent: total > 0 ? Math.round((stats.online || 0) / total * 100) : 0,
+            color: '#22c55e',
+          },
+          {
+            label: '离线',
+            count: stats.offline || 0,
+            percent: total > 0 ? Math.round((stats.offline || 0) / total * 100) : 0,
+            color: '#94a3b8',
+          },
+          {
+            label: '故障',
+            count: stats.fault || 0,
+            percent: total > 0 ? Math.round((stats.fault || 0) / total * 100) : 0,
+            color: '#ef4444',
+          },
+        ]
+      }
     }
   } catch (error) {
     console.error('Failed to load device status:', error)
@@ -647,14 +767,14 @@ async function loadDeviceStatus() {
       deviceList.value = response.data.map(device => ({
         id: device.id,
         name: device.name,
-        location: device.room_name || '未绑定',
-        value: device.latest_data?.value || '--',
-        status: device.status.toLowerCase(),
+        location: device.room_name || device.building_name || '未绑定',
+        value: device.latest_data?.value ? `${device.latest_data.value} ${device.energy_type_unit || ''}` : '--',
+        status: device.status?.toLowerCase() || 'offline',
       }))
     }
   } catch (error) {
     console.error('Failed to load devices:', error)
-    // Use mock data
+    // Use mock data only when API fails
     deviceList.value = [
       { id: 1, name: '电表-001', location: '教学楼A-301', value: '245 kWh', status: 'online' },
       { id: 2, name: '水表-003', location: '实验楼-201', value: '12.5 m³', status: 'online' },

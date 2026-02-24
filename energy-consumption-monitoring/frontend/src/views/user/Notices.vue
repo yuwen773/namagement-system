@@ -212,7 +212,10 @@ const tipCategories = [
 // Data
 const notices = ref([])
 
-// Tips data (static for now, could come from API)
+// Tips data - 节能知识文章目前是静态数据
+// TODO: 如果需要动态管理节能知识，需要后端提供 API:
+// - GET /api/tips/ - 获取节能知识列表
+// - POST /api/admin/tips/ - 创建节能知识 (管理员)
 const tips = ref([
   {
     title: '随手关灯，每月省电10度',

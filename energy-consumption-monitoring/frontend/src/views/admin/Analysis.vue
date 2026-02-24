@@ -473,104 +473,31 @@ function initComparisonChart() {
 
   comparisonChart.value = echarts.init(comparisonChartRef.value)
 
-  const option = {
-    grid: {
-      left: '3%',
-      right: '3%',
-      bottom: '3%',
-      top: '8%',
-      containLabel: true,
-    },
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-      borderColor: '#f97316',
-      borderWidth: 1,
-      textStyle: { color: '#fff' },
-      axisPointer: { type: 'shadow' },
-    },
-    legend: {
-      bottom: 0,
-      textStyle: { color: chartColors.text },
-    },
-    xAxis: {
-      type: 'category',
-      data: ['教学楼A', '教学楼B', '实验楼', '图书馆', '行政楼'],
-      axisLine: { lineStyle: { color: chartColors.grid } },
-      axisLabel: { color: chartColors.text, fontSize: 10, rotate: 30 },
-    },
-    yAxis: {
-      type: 'value',
-      axisLine: { show: false },
-      axisLabel: { color: chartColors.text, fontSize: 11 },
-      splitLine: { lineStyle: { color: chartColors.grid, type: 'dashed' } },
-    },
-    series: [
-      {
-        name: '本期',
-        type: 'bar',
-        data: [12500, 9800, 8600, 7200, 5400],
-        itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#f97316' },
-            { offset: 1, color: '#ea580c' },
-          ]),
-          borderRadius: [4, 4, 0, 0],
-        },
-      },
-      {
-        name: '同期',
-        type: 'bar',
-        data: [11200, 9200, 8100, 6800, 5100],
-        itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#94a3b8' },
-            { offset: 1, color: '#64748b' },
-          ]),
-          borderRadius: [4, 4, 0, 0],
-        },
-      },
-    ],
+  // Load comparison data from API
+  loadComparisonData()
+}
+
+// Load comparison data from API
+async function loadComparisonData() {
+  try {
+    const response = await getComparisonData({ type: 'building' })
+    if (response.code === 0 && response.data) {
+      updateComparisonChartWithData(response.data)
+    }
+  } catch (error) {
+    console.error('Failed to load comparison data:', error)
+    // Initialize with default chart
+    updateComparisonChartWithFallback()
   }
-
-  comparisonChart.value.setOption(option)
 }
 
-// Initialize ranking chart
-function initRankingChart() {
-  if (!rankingChartRef.value) return
+// Update comparison chart with API data
+function updateComparisonChartWithData(data) {
+  if (!comparisonChart.value || !data) return
 
-  rankingChart.value = echarts.init(rankingChartRef.value)
-
-  updateRankingChart()
-}
-
-function updateRankingChart() {
-  const data = rankingType.value === 'building'
-    ? [
-        { name: '教学楼A', value: 12500 },
-        { name: '教学楼B', value: 9800 },
-        { name: '实验楼', value: 8600 },
-        { name: '图书馆', value: 7200 },
-        { name: '行政楼', value: 5400 },
-        { name: '食堂', value: 4800 },
-        { name: '体育馆', value: 3200 },
-        { name: '宿舍A', value: 8900 },
-        { name: '宿舍B', value: 8200 },
-        { name: '活动中心', value: 2800 },
-      ]
-    : [
-        { name: '计算机学院', value: 15600 },
-        { name: '物理学院', value: 12300 },
-        { name: '化学学院', value: 10800 },
-        { name: '图书馆', value: 7200 },
-        { name: '行政部', value: 5400 },
-        { name: '后勤部', value: 4800 },
-        { name: '学生会', value: 3200 },
-        { name: '教务处', value: 2800 },
-      ]
-
-  const sortedData = [...data].sort((a, b) => b.value - a.value)
+  const categories = data.labels || data.buildings || []
+  const currentData = data.current || []
+  const previousData = data.previous || []
 
   const option = {
     grid: {
@@ -635,6 +562,30 @@ function initDistributionChart() {
 
   distributionChart.value = echarts.init(distributionChartRef.value)
 
+  // Load distribution data from API
+  loadDistributionData()
+}
+
+// Load distribution data from API
+async function loadDistributionData() {
+  try {
+    const response = await getDistributionData({ type: 'area' })
+    if (response.code === 0 && response.data) {
+      updateDistributionChartWithData(response.data)
+    }
+  } catch (error) {
+    console.error('Failed to load distribution data:', error)
+    // Initialize with default chart
+    updateDistributionChartWithFallback()
+  }
+}
+
+// Update distribution chart with API data
+function updateDistributionChartWithData(data) {
+  if (!distributionChart.value || !data) return
+
+  const chartData = Array.isArray(data) ? data : (data.items || data.distribution || [])
+
   const option = {
     tooltip: {
       trigger: 'item',
@@ -679,18 +630,24 @@ function initDistributionChart() {
             shadowColor: 'rgba(0, 0, 0, 0.2)',
           },
         },
-        data: [
-          { value: 45, name: '教学楼', itemStyle: { color: '#f97316' } },
-          { value: 20, name: '宿舍楼', itemStyle: { color: '#eab308' } },
-          { value: 15, name: '实验楼', itemStyle: { color: '#3b82f6' } },
-          { value: 10, name: '图书馆', itemStyle: { color: '#22c55e' } },
-          { value: 10, name: '其他', itemStyle: { color: '#64748b' } },
-        ],
+        data: chartData,
       },
     ],
   }
 
   distributionChart.value.setOption(option)
+}
+
+// Fallback for distribution chart
+function updateDistributionChartWithFallback() {
+  const data = [
+    { value: 45, name: '教学楼', itemStyle: { color: '#f97316' } },
+    { value: 20, name: '宿舍楼', itemStyle: { color: '#eab308' } },
+    { value: 15, name: '实验楼', itemStyle: { color: '#3b82f6' } },
+    { value: 10, name: '图书馆', itemStyle: { color: '#22c55e' } },
+    { value: 10, name: '其他', itemStyle: { color: '#64748b' } },
+  ]
+  updateDistributionChartWithData(data)
 }
 
 // Initialize forecast chart
@@ -702,30 +659,32 @@ function initForecastChart() {
   updateForecastChart()
 }
 
-function updateForecastChart() {
-  const days = forecastDays.value
-  const categories = []
-  const historicalData = []
-  const forecastData = []
+async function updateForecastChart() {
+  // Load forecast data from API
+  await loadForecastData()
+}
 
-  const today = new Date()
-  for (let i = days; i > 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    categories.push(`${date.getMonth() + 1}/${date.getDate()}`)
-    historicalData.push(Math.floor(4000 + Math.random() * 2000))
-  }
-
-  for (let i = 0; i < Math.min(days, 7); i++) {
-    const date = new Date(today)
-    date.setDate(date.getDate() + i)
-    if (i === 0 && categories.length > 0) {
-      // Today is already in categories
-    } else {
-      categories.push(`${date.getMonth() + 1}/${date.getDate()}`)
+// Load forecast data from API
+async function loadForecastData() {
+  try {
+    const response = await getForecastData({ days: forecastDays.value })
+    if (response.code === 0 && response.data) {
+      updateForecastChartWithData(response.data)
     }
-    forecastData.push(Math.floor(4500 + Math.random() * 2000))
+  } catch (error) {
+    console.error('Failed to load forecast data:', error)
+    // Fallback to generated data
+    updateForecastChartWithFallback()
   }
+}
+
+// Update forecast chart with API data
+function updateForecastChartWithData(data) {
+  if (!forecastChart.value || !data) return
+
+  const categories = data.labels || data.dates || []
+  const historicalData = data.historical || []
+  const forecastData = data.forecast || []
 
   const option = {
     grid: {
@@ -766,7 +725,7 @@ function updateForecastChart() {
       {
         name: '历史数据',
         type: 'line',
-        data: historicalData.concat(Array(Math.min(days, 7)).fill(null)),
+        data: historicalData,
         smooth: true,
         lineStyle: { width: 2, color: chartColors.primary },
         itemStyle: { color: chartColors.primary },
@@ -774,7 +733,7 @@ function updateForecastChart() {
       {
         name: '预测趋势',
         type: 'line',
-        data: Array(historicalData.length - 1).fill(null).concat(historicalData[historicalData.length - 1]).concat(forecastData),
+        data: forecastData,
         smooth: true,
         lineStyle: { width: 2, color: chartColors.green, type: 'dashed' },
         itemStyle: { color: chartColors.green },
@@ -789,6 +748,41 @@ function updateForecastChart() {
   }
 
   forecastChart.value?.setOption(option, true)
+}
+
+// Fallback for forecast chart
+function updateForecastChartWithFallback() {
+  const days = forecastDays.value
+  const categories = []
+  const historicalData = []
+  const forecastData = []
+
+  const today = new Date()
+  for (let i = days; i > 0; i--) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    categories.push(`${date.getMonth() + 1}/${date.getDate()}`)
+    historicalData.push(Math.floor(4000 + Math.random() * 2000))
+  }
+
+  for (let i = 0; i < Math.min(days, 7); i++) {
+    const date = new Date(today)
+    date.setDate(date.getDate() + i)
+    if (i === 0 && categories.length > 0) {
+      // Today is already in categories
+    } else {
+      categories.push(`${date.getMonth() + 1}/${date.getDate()}`)
+    }
+    forecastData.push(Math.floor(4500 + Math.random() * 2000))
+  }
+
+  const data = {
+    labels: categories,
+    historical: historicalData,
+    forecast: Array(historicalData.length - 1).fill(null).concat(historicalData[historicalData.length - 1]).concat(forecastData)
+  }
+
+  updateForecastChartWithData(data)
 }
 
 // Get energy type color
@@ -888,35 +882,33 @@ async function applyFilters() {
 }
 
 // Handle period change
-function handlePeriodChange(period) {
+async function handlePeriodChange(period) {
   activePeriod.value = period
-  // Update trend chart based on period
-  updateTrendChart(period)
+  // Update trend chart based on period - load from API
+  await loadTrendData(period)
 }
 
-// Update trend chart data based on period
-function updateTrendChart(period) {
-  if (!trendChart.value) return
-
-  // Generate mock data based on period
-  let xAxisData, currentData, previousData
-
-  if (period === 'day') {
-    // Daily data - last 24 hours
-    xAxisData = Array.from({ length: 24 }, (_, i) => `${i}:00`)
-    currentData = Array.from({ length: 24 }, () => Math.floor(Math.random() * 200) + 300)
-    previousData = Array.from({ length: 24 }, () => Math.floor(Math.random() * 200) + 280)
-  } else if (period === 'month') {
-    // Monthly data - last 30 days
-    xAxisData = Array.from({ length: 30 }, (_, i) => `${i + 1}日`)
-    currentData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 500) + 2000)
-    previousData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 500) + 1800)
-  } else {
-    // Yearly data - 12 months
-    xAxisData = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-    currentData = [4200, 4800, 4500, 5200, 4900, 5800, 6200, 5900, 5100, 4800, 5300, 5600]
-    previousData = [3800, 4200, 4000, 4800, 4500, 5200, 5500, 5300, 4600, 4300, 4800, 5100]
+// Load trend data from API
+async function loadTrendData(period = activePeriod.value) {
+  try {
+    const response = await getTrendData({ period })
+    if (response.code === 0 && response.data) {
+      updateTrendChartWithData(response.data)
+    }
+  } catch (error) {
+    console.error('Failed to load trend data:', error)
+    // Fallback to initial chart if API fails
   }
+}
+
+// Update trend chart with API data
+function updateTrendChartWithData(data) {
+  if (!trendChart.value || !data) return
+
+  // Process API response data
+  const xAxisData = data.labels || []
+  const currentData = data.current || []
+  const previousData = data.previous || []
 
   trendChart.value.setOption({
     xAxis: {
@@ -985,14 +977,15 @@ function handleResize() {
 onMounted(async () => {
   await nextTick()
 
-  // Initialize all charts
+  // Initialize all charts (they will load data from API)
   initTrendChart()
   initComparisonChart()
   initRankingChart()
   initDistributionChart()
   initForecastChart()
 
-  // Load data
+  // Load initial data from API
+  loadTrendData(activePeriod.value)
   loadBuildingOptions()
   loadTableData()
 

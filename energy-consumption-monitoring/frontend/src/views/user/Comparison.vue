@@ -226,12 +226,16 @@ const trendChart = shallowRef(null)
 const historyChart = shallowRef(null)
 
 // Data
-const myRank = ref(15)
-const rankTrend = ref(3)
+// TODO: 部分数据需要从 API 获取:
+// - myRank, rankTrend 需要从排名 API 获取
+// - comparisonStats 需要从对比分析 API 获取
+// - achievements 成就系统需要后端支持
+const myRank = ref(15) // Should come from API: getMyRanking()
+const rankTrend = ref(3) // Should come from API
 const radarCompareTarget = ref('school')
 const rankingType = ref('week')
 
-// Comparison stats
+// Comparison stats - 需要从 API 获取对比数据
 const comparisonStats = ref([
   {
     label: 'vs 全校平均',

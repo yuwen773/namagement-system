@@ -485,8 +485,34 @@ async function updateTrendChart(node) {
   if (!trendChart.value) initTrendChart()
   if (!trendChart.value) return
 
-  // Generate mock trend data based on time range
-  const chartData = generateTrendData(activeTimeRange.value)
+  // Try to load trend data from API first
+  let chartData
+  try {
+    const params = { period: activeTimeRange.value }
+    if (node.type === 'room') {
+      params.room_id = node.id
+    } else if (node.type === 'floor') {
+      params.floor_id = node.id
+    } else if (node.type === 'building') {
+      params.building_id = node.id
+    }
+
+    const response = await getTrendData(params)
+    if (response.code === 0 && response.data) {
+      chartData = {
+        categories: response.data.labels || response.data.categories || [],
+        electricity: response.data.electricity || response.data.current || [],
+        water: response.data.water || [],
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load trend data from API:', error)
+  }
+
+  // Fall back to generated data if API fails
+  if (!chartData || !chartData.categories.length) {
+    chartData = generateTrendData(activeTimeRange.value)
+  }
 
   const option = {
     grid: {
