@@ -1,0 +1,39 @@
+{
+  "default_batch_size": 1000,
+  "preview_rows": 5,
+  "timezone": "Asia/Shanghai",
+  "required_columns": ["device", "energy_type", "timestamp", "value"],
+  "column_aliases": {
+    "device": ["device_id", "meter_id", "nmi_id"],
+    "energy_type": ["energy_type_id", "energy_type_code", "type", "type_code"],
+    "timestamp": ["time", "datetime", "record_time"],
+    "value": ["consumption", "usage", "reading"],
+    "voltage": ["voltage_v"],
+    "current": ["current_a"],
+    "power": ["power_kw", "power_w"],
+    "flow_rate": ["flow", "flow_rate_m3h", "flow_rate_lps"]
+  },
+  "numeric_ranges": {
+    "value": { "min_value": 0, "max_value": null },
+    "voltage": { "min_value": 0, "max_value": 1000 },
+    "current": { "min_value": 0, "max_value": 5000 },
+    "power": { "min_value": 0, "max_value": 50000 },
+    "flow_rate": { "min_value": 0, "max_value": 50000 }
+  },
+  "device_mapping": {
+    "1": "ELEC-001",
+    "2": "WATER-001"
+  },
+  "energy_type_mapping": {
+    "E": "ELECTRICITY",
+    "W": "WATER",
+    "G": "GAS"
+  },
+  "api": {
+    "base_url": "http://127.0.0.1:8000",
+    "endpoint": "/api/energy-data/batch-import/",
+    "timeout_sec": 60,
+    "token": null
+  }
+}
+

@@ -1,0 +1,52 @@
+{
+  "policy": {
+    "sample_interval_sec": 5,
+    "request_timeout_sec": 2,
+    "retry_times": 3,
+    "retry_backoff_sec": 1,
+    "reconnect_interval_sec": 2
+  },
+  "output": {
+    "batch_size": 200,
+    "write_jsonl": true,
+    "jsonl_path": "scripts/protocol_collectors/output/collected_energy_data.jsonl",
+    "write_database": true
+  },
+  "modbus_collectors": [
+    {
+      "meter_id": "METER-MODBUS-001",
+      "device": "ELEC-001",
+      "room": "101",
+      "host": "127.0.0.1",
+      "port": 15020,
+      "energy_type": "ELECTRICITY",
+      "gateway_mode": "direct_meter",
+      "point_map": {
+        "value": "total_kwh",
+        "voltage": "voltage_v",
+        "current": "current_a",
+        "power": "power_kw",
+        "flow_rate": null
+      }
+    }
+  ],
+  "bacnet_collectors": [
+    {
+      "meter_id": "METER-BACNET-001",
+      "device": "WATER-001",
+      "room": "201",
+      "host": "127.0.0.1",
+      "port": 14780,
+      "energy_type": "WATER",
+      "gateway_mode": "gateway_forward",
+      "point_map": {
+        "value": "total_m3",
+        "voltage": null,
+        "current": null,
+        "power": null,
+        "flow_rate": "flow_rate_m3h"
+      }
+    }
+  ]
+}
+
