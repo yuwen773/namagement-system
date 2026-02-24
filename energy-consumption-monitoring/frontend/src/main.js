@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import router from './router'
+import router, { setupRouterGuards } from './router'
 import ElementPlus from 'element-plus'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
@@ -20,12 +20,25 @@ const app = createApp(App)
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 
-// Register all Element Plus icons
+// Register all Element Plus icons with both original name and icon-ep- prefix
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  // Register with original name (e.g., User, Lock)
   app.component(key, component)
+  // Register with icon-ep- prefix (e.g., icon-ep-user, icon-ep-lock)
+  app.component(`icon-ep-${kebabCase(key)}`, component)
+}
+
+// Helper function to convert PascalCase to kebab-case
+function kebabCase(str) {
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/[\s_]+/g, '-')
+    .toLowerCase()
 }
 
 app.use(pinia)
+// Setup router guards after Pinia is installed
+setupRouterGuards(pinia)
 app.use(router)
 app.use(ElementPlus, {
   // Element Plus global configuration

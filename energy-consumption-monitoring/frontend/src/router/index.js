@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUserStore } from '@/stores/user'
 
 /**
  * Vue Router configuration
@@ -197,51 +196,57 @@ const router = createRouter({
 })
 
 /**
- * Navigation guard: Check authentication
+ * Setup navigation guards (called after Pinia is installed)
+ * @param {import('pinia').Pinia} pinia - The Pinia instance
  */
-router.beforeEach((to, from, next) => {
-  const userStore = useUserStore()
-  const isAuthenticated = !!userStore.token
-  const requiresAuth = to.meta.requiresAuth !== false
-  const allowedRoles = to.meta.roles || []
+export function setupRouterGuards(pinia) {
+  // Dynamic import to use store only after Pinia is installed
+  import('@/stores/user').then(({ useUserStore }) => {
+    router.beforeEach((to, from, next) => {
+      const userStore = useUserStore(pinia)
+      const isAuthenticated = !!userStore.token
+      const requiresAuth = to.meta.requiresAuth !== false
+      const allowedRoles = to.meta.roles || []
 
-  // Update page title
-  document.title = to.meta.title || 'Energy Monitoring System'
+      // Update page title
+      document.title = to.meta.title || 'Energy Monitoring System'
 
-  // Check if route requires authentication
-  if (requiresAuth && !isAuthenticated) {
-    // Redirect to login with return URL
-    next({
-      path: '/login',
-      query: { redirect: to.fullPath },
+      // Check if route requires authentication
+      if (requiresAuth && !isAuthenticated) {
+        // Redirect to login with return URL
+        next({
+          path: '/login',
+          query: { redirect: to.fullPath },
+        })
+        return
+      }
+
+      // Check if already on login page and authenticated
+      if (to.path === '/login' && isAuthenticated) {
+        // Redirect based on role
+        const userRole = userStore.role
+        if (userRole === 'ADMIN') {
+          next('/admin/dashboard')
+        } else {
+          next('/user/dashboard')
+        }
+        return
+      }
+
+      // Check role-based access
+      if (requiresAuth && isAuthenticated && allowedRoles.length > 0) {
+        const userRole = userStore.role
+        if (!allowedRoles.includes(userRole)) {
+          // User doesn't have required role
+          next('/403')
+          return
+        }
+      }
+
+      next()
     })
-    return
-  }
-
-  // Check if already on login page and authenticated
-  if (to.path === '/login' && isAuthenticated) {
-    // Redirect based on role
-    const userRole = userStore.role
-    if (userRole === 'ADMIN') {
-      next('/admin/dashboard')
-    } else {
-      next('/user/dashboard')
-    }
-    return
-  }
-
-  // Check role-based access
-  if (requiresAuth && isAuthenticated && allowedRoles.length > 0) {
-    const userRole = userStore.role
-    if (!allowedRoles.includes(userRole)) {
-      // User doesn't have required role
-      next('/403')
-      return
-    }
-  }
-
-  next()
-})
+  })
+}
 
 /**
  * Navigation guard: Update page title and handle errors

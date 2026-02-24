@@ -1,20 +1,11 @@
-@import "tailwindcss";
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Custom base styles for the application */
-@theme {
-  /* Custom font families */
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "Fira Code", Consolas, monospace;
-
-  /* Custom colors for energy monitoring theme */
-  --color-energy-water: #3b82f6;
-  --color-energy-electricity: #f59e0b;
-  --color-energy-gas: #ef4444;
-
-  /* Spacing scale adjustments */
-  --spacing-header: 60px;
-  --spacing-sidebar: 240px;
-}
+/* Custom font families */
+/* Custom colors for energy monitoring theme - these are defined in tailwind.config.js */
 
 /* Base styles */
 * {
@@ -26,7 +17,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: var(--font-sans);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -80,7 +71,7 @@ body {
 /* Loading spinner */
 .spinner {
   border: 3px solid #f3f3f3;
-  border-top: 3px solid var(--color-primary-500);
+  border-top: 3px solid #f97316;
   border-radius: 50%;
   width: 40px;
   height: 40px;
