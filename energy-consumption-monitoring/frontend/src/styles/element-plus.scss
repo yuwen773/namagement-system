@@ -1,0 +1,74 @@
+/* Element Plus theme customization with warm colors */
+
+/* Override primary color with warm orange */
+@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+  $colors: (
+    'primary': (
+      'base': #f97316,
+    ),
+    'success': (
+      'base': #22c55e,
+    ),
+    'warning': (
+      'base': #eab308,
+    ),
+    'danger': (
+      'base': #ef4444,
+    ),
+    'info': (
+      'base': #3b82f6,
+    ),
+  ),
+  // Border radius
+  $border-radius: (
+    'base': 6px,
+    'small': 4px,
+    'large': 8px,
+    'round': 20px,
+    'circle': 100%,
+  ),
+);
+
+/* Energy type specific colors */
+.el-tag--water {
+  --el-tag-bg-color: #eff6ff;
+  --el-tag-border-color: #3b82f6;
+  --el-tag-text-color: #1d4ed8;
+}
+
+.el-tag--electricity {
+  --el-tag-bg-color: #fef3c7;
+  --el-tag-border-color: #f59e0b;
+  --el-tag-text-color: #b45309;
+}
+
+.el-tag--gas {
+  --el-tag-bg-color: #fef2f2;
+  --el-tag-border-color: #ef4444;
+  --el-tag-text-color: #b91c1c;
+}
+
+/* Custom component styles */
+.el-menu {
+  border-right: none;
+}
+
+.el-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.el-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Dashboard card enhancement */
+.dashboard-card {
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
