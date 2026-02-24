@@ -4,18 +4,50 @@
 仅记录：当前阶段、已验收交付、下一步。
 
 ## 当前状态（2026-02-24）
-- 当前阶段：第七阶段进行中（`7.1`~`7.5` 已完成，待 `7.6`）。
-- 已完成并验收：`1.1` ~ `2.9`、`3.1` ~ `3.10`、`4.1` ~ `4.4`、`5.1` ~ `5.6`、`6.1` ~ `6.5`、`7.1` ~ `7.5`。
+- 当前阶段：第八阶段进行中（`8.1`~`8.2` 已完成，待 `8.3`）。
+- 已完成并验收：`1.1` ~ `2.9`、`3.1` ~ `3.10`、`4.1` ~ `4.4`、`5.1` ~ `5.6`、`6.1` ~ `6.5`、`7.1` ~ `7.5`、`8.1` ~ `8.2`。
 
-## 本次交付（7.1 ~ 7.5）
-- **7.1 项目创建**：Vite + Vue 3 + 依赖安装（vue-router、pinia、element-plus、echarts、axios、tailwindcss）。
-- **7.2 目录结构**：`api/`、`layouts/`、`router/`、`stores/`、`utils/`、`views/`（含 admin/ 与 user/ 子目录）。
-- **7.3 Tailwind CSS**：`tailwind.config.js`、`postcss.config.js`、温暖色系主题（橙/绿/警告/危险）。
-- **7.4 Element Plus**：自动按需引入（unplugin-auto-import、unplugin-vue-components）、`element-plus.scss` 主题定制、图标注册。
-- **7.5 Axios 配置**：`utils/request.js`（请求/响应拦截器、token 注入、401 处理）、9 个 API 模块、3 个 Pinia stores（user/building/energy）、路由守卫。
+## 本次交付（8.1 ~ 8.2）
+- **8.1 登录页面** (`frontend/src/views/Login.vue`)：
+  - 温暖渐变背景配合浮动几何形状动画
+  - 玻璃拟态效果登录卡片，带入场动画
+  - 用户名/密码输入框（带验证规则和图标）
+  - 密码显示/隐藏切换功能
+  - 记住我复选框（状态持久化）
+  - 登录按钮带加载状态和动画
+  - 错误消息带过渡动画展示
+  - 集成 auth.js API 和 user store
+  - 根据用户角色跳转（ADMIN → /admin/dashboard，USER → /user/dashboard）
+  - 响应式设计（移动端适配）
+
+- **8.2 管理端布局** (`frontend/src/layouts/AdminLayout.vue`)：
+  - 深色渐变侧边栏（可折叠，状态持久化到 localStorage）
+  - Logo 区域带折叠按钮
+  - 7 个导航菜单项（综合监控/监测中心/统计分析/异常告警/设备管理/基础配置/系统管理）
+  - 告警数量徽章显示
+  - 系统运行状态指示（脉冲动画）
+  - 顶部栏面包屑导航
+  - 通知中心按钮（带徽章计数）
+  - 快捷操作下拉菜单（添加设备/告警规则/生成报告）
+  - 用户下拉菜单（头像/用户名/角色/退出登录）
+  - 退出登录确认对话框
+  - 通知抽屉组件（支持按类型筛选）
+  - 页面切换淡入淡出过渡动画
+
+## 配置修复
+- **Pinia 初始化顺序**：重构 `router/index.js`，将路由守卫移至 `setupRouterGuards(pinia)` 函数，在 `main.js` 中 Pinia 安装后调用
+- **图标注册**：更新 `main.js`，为 Element Plus 图标注册 `icon-ep-` 前缀格式（如 `icon-ep-user`、`icon-ep-lock`）
+- **Tailwind CSS**：降级到 v3.3.3（稳定版本），移除 v4 实验性特性
+- **PostCSS 配置**：重命名 `postcss.config.js` 为 `postcss.config.cjs`（ES module 兼容性）
 
 ## 下一步
-- **7.6 路由配置**：完善 `src/router/index.js` 路由守卫与角色权限跳转。
-- **7.7 Pinia Store**：完善 user/building/energy stores 的持久化配置。
-- **7.8 API 模块**：联调后端 API，确保响应格式一致。
+- **8.3 综合监控大屏**：实现 `frontend/src/views/admin/Dashboard.vue`
+  - 顶部指标卡片（总能耗、平均功率、数据覆盖率、今日告警数）
+  - 中部图表（能耗趋势折线图、能耗分布饼图、实时功率柱状图、校园 2D 地图热力分布）
+  - 底部表格（最新告警列表、设备状态概览）
+  - 数据自动刷新（每 30 秒）
+  - ECharts 实例释放（防止内存泄漏）
+
+- **8.4 监测中心页面**：实现 `frontend/src/views/admin/Monitoring.vue`
+
 - 若需求或架构边界变更，同步更新 `docs/rtm.md` 与 `memory-bank/architecture.md`。

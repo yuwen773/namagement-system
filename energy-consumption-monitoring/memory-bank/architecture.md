@@ -14,7 +14,7 @@
 1. **接入层**：文件导入（Pandas）与 Modbus/BACnet 协议采集，统一写入原始能耗表。
 2. **业务层**：Django apps 承载模型、规则、任务命令与 REST API。
 3. **持久层**：MySQL 承载实体数据、统计数据、预测数据及索引约束。
-4. **展示层**：Vue 3 + Pinia + Element Plus + ECharts + Tailwind CSS。
+4. **展示层**：Vue 3 + Pinia + Element Plus + ECharts + Tailwind CSS v3.3.3。
 
 ## 关键文件职责
 
@@ -56,9 +56,10 @@
 - `scripts/spark_offline_analysis.py`：Spark 可选离线分析与 Python 回退。
 
 ### 前端（Frontend）
-- `frontend/vite.config.js`：Vite 配置（自动导入、代理、路径别名）。
-- `frontend/tailwind.config.js`：Tailwind 主题（温暖色系）。
-- `frontend/src/main.js`：应用入口（Element Plus、Router、Pinia、图标）。
+- `frontend/vite.config.js`：Vite 配置（Element Plus 自动导入、代理、路径别名）。
+- `frontend/tailwind.config.js`：Tailwind v3.3.3 主题（温暖色系：primary 橙色、success 绿色、warning 黄色、danger 红色）。
+- `frontend/postcss.config.cjs`：PostCSS 配置（Tailwind、Autoprefixer），使用 .cjs 扩展名以兼容 ES module 项目。
+- `frontend/src/main.js`：应用入口（Element Plus、Router、Pinia setup、图标注册）。
 
 **Stores（Pinia）**：
 - `frontend/src/stores/user.js`：用户状态（token、userInfo、role、持久化）。
@@ -66,7 +67,7 @@
 - `frontend/src/stores/energy.js`：能耗查询状态（设备、日期范围、能源类型）。
 
 **Router**：
-- `frontend/src/router/index.js`：路由配置、认证守卫、角色权限控制。
+- `frontend/src/router/index.js`：路由配置、`setupRouterGuards(pinia)` 函数用于在 Pinia 安装后设置认证守卫和角色权限控制。
 
 **Utils**：
 - `frontend/src/utils/request.js`：Axios 实例、请求/响应拦截器、token 注入、401 处理。
@@ -82,14 +83,22 @@
 - `frontend/src/api/recharge.js`：充值记录/模拟充值。
 - `frontend/src/api/profile.js`：个人中心/绑定房间/告警订阅。
 
+**Views**：
+- `frontend/src/views/Login.vue`：登录页（完整实现，带动画、表单验证、API 集成）。
+
 **Layouts**：
-- `frontend/src/layouts/AdminLayout.vue`：管理端布局（侧边栏/顶栏/内容区）。
-- `frontend/src/layouts/UserLayout.vue`：用户端布局（顶栏/内容区）。
+- `frontend/src/layouts/AdminLayout.vue`：管理端布局（侧边栏/顶栏/内容区、通知抽屉、完整交互）。
+- `frontend/src/layouts/UserLayout.vue`：用户端布局（顶栏/内容区，待实现）。
 
 **Views（占位，待实现）**：
-- `frontend/src/views/Login.vue`：登录页。
-- `frontend/src/views/admin/`：Dashboard、Monitoring、Analysis、Alarms、Devices、Configuration、System（7 页）。
-- `frontend/src/views/user/`：Dashboard、UsageHistory、CostPayment、Comparison、Notices、Profile（6 页）。
+- `frontend/src/views/admin/`：Dashboard（8.3）、Monitoring、Analysis、Alarms、Devices、Configuration、System。
+- `frontend/src/views/user/`：Dashboard、UsageHistory、CostPayment、Comparison、Notices、Profile。
+
+### 图标注册
+- 在 `main.js` 中，为所有 Element Plus 图标注册两个版本：
+  - 原始 PascalCase 名称（如 `User`、`Lock`）
+  - `icon-ep-` 前缀 + kebab-case 名称（如 `icon-ep-user`、`icon-ep-lock`）
+- 模板中统一使用 `icon-ep-xxx` 格式以保持命名一致性
 
 ### 文档
 - `docs/scheduler.md`：cron 调度说明。
