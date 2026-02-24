@@ -335,7 +335,7 @@ async function loadLocationData(node) {
     // Use mock data
     locationDevices.value = [
       { id: 1, name: '电表-001', type: '电', value: '245', unit: 'kW', status: 'online', color: '#eab308', icon: 'icon-ep-lightning' },
-      { id: 2, name: '水表-001', type: '水', value: '12.5', unit: 'm³/h', status: 'online', color: '#3b82f6', icon: 'icon-ep-water-drop' },
+      { id: 2, name: '水表-001', type: '水', value: '12.5', unit: 'm³/h', status: 'online', color: '#3b82f6', icon: 'icon-ep-circle' },
       { id: 3, name: '气表-001', type: '气', value: '8.2', unit: 'm³/h', status: 'online', color: '#ef4444', icon: 'icon-ep-cpu' },
     ]
     updateTrendChart(node)
@@ -356,7 +356,7 @@ function getEnergyColor(type) {
 function getEnergyIcon(type) {
   const icons = {
     'ELECTRICITY': 'icon-ep-lightning',
-    'WATER': 'icon-ep-water-drop',
+    'WATER': 'icon-ep-circle',
     'GAS': 'icon-ep-cpu',
   }
   return icons[type] || 'icon-ep-cpu'

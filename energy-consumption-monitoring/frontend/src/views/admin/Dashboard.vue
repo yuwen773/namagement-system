@@ -484,10 +484,23 @@ function initPowerChart() {
 }
 
 // Initialize 2D map chart
-function initMapChart() {
-  if (!mapChartRef.value) return
+function initMapChart(retryCount = 0) {
+  const mapContainer = mapChartRef.value
+  if (!mapContainer) return
 
-  mapChart.value = echarts.init(mapChartRef.value)
+  // Route/page transitions can mount this view while the container is still 0x0.
+  // Retry briefly to avoid ECharts init warning: "Can't get DOM width or height".
+  if (mapContainer.clientWidth === 0 || mapContainer.clientHeight === 0) {
+    if (retryCount < 20) {
+      window.setTimeout(() => initMapChart(retryCount + 1), 50)
+    }
+    return
+  }
+
+  if (mapChart.value) {
+    mapChart.value.dispose()
+  }
+  mapChart.value = echarts.init(mapContainer)
 
   // Mock building data with coordinates
   const buildings = [

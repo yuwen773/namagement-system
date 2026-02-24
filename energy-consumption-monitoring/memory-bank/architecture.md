@@ -1,80 +1,186 @@
-# 架构说明（Architecture）
+# 架构说明
 
-## 文档目的
-仅记录稳定边界、分层职责、关键文件职责。
+## 技术栈
 
-## 架构边界（2026-02-24）
-- 开发策略：后端优先，前端后置
-- 技术基线：Django + DRF + MySQL（utf8mb4）+ Vue 3 + Element Plus + ECharts + Tailwind v3.3.3
-- 存储策略：MySQL 单库；em_energy_data（原始）/em_energy_statistics（统计）/em_energy_forecasts（预测）分层
-- 业务域：accounts、buildings、devices、energy、analysis、alarms、system
-- 统一规范：API 返回 code/data/message/total
+**后端**：Django 5.2 + DRF + MySQL 8.0
+**前端**：Vue 3 + Element Plus + ECharts + Pinia
+**开发策略**：后端优先，前端后置
 
-## 分层职责
-1. **接入层**：文件导入（Pandas）与 Modbus/BACnet 采集
-2. **业务层**：Django apps 承载模型、规则、任务命令与 REST API
-3. **持久层**：MySQL 承载实体数据、统计数据、预测数据
-4. **展示层**：Vue 3 + Pinia + Element Plus + ECharts
+---
 
-## 关键文件职责
+## 分层架构
 
-### 后端
-- `backend/energy_monitoring/settings.py`：全局配置
-- `backend/energy_monitoring/permissions.py`：权限类（IsAdmin、IsAdminOrReadOnly、IsOwnerOrAdmin）
+```
+┌─────────────────────────────────────┐
+│  展示层 (Vue 3)                      │
+│  layouts/ + views/ + stores/        │
+└─────────────────────────────────────┘
+              ↕ HTTP/REST
+┌─────────────────────────────────────┐
+│  业务层 (Django Apps)                │
+│  accounts │ buildings │ devices     │
+│  energy │ analysis │ alarms │ system │
+└─────────────────────────────────────┘
+              ↕ ORM
+┌─────────────────────────────────────┐
+│  持久层 (MySQL 8.0 utf8mb4)          │
+│  em_* 表：用户/建筑/设备/能耗/告警/系统 │
+└─────────────────────────────────────┘
+```
 
-**Models**：accounts/`UserProfile`、buildings/`Campus Building Floor Room`、devices/`EnergyType Device`、energy/`EnergyData EnergyStatistics`、alarms/`AlarmRule Alarm`、system/`Bill RechargeRecord Notice OperationLog`、analysis/`EnergyForecast`
+---
 
-**Views**：accounts/登录注册刷新Token用户信息修改密码、analysis/Dashboard趋势分布排名对比预测
+## 关键文件
 
-**管理命令**：import_energy_data、generate_statistics、check_alarms、generate_forecast、run_scheduled_tasks
+| 类型 | 文件 | 职责 |
+|:---|:---|:---|
+| 后端 | `settings.py` | 全局配置 |
+| 后端 | `permissions.py` | 权限类 |
+| 后端 | `apps/*/models.py` | 数据模型 |
+| 后端 | `apps/*/views.py` | API 视图 |
+| 前端 | `router/index.js` | 路由 + 守卫 |
+| 前端 | `stores/*.js` | 状态管理 |
+| 前端 | `api/*.js` | API 封装 |
+| 前端 | `layouts/*.vue` | 布局组件 |
+| 前端 | `views/**/*.vue` | 页面组件 |
 
-**脚本**：data_importer.py、generate_statistics.py、check_alarms.py、generate_forecast.py、scheduled_tasks.py、spark_offline_analysis.py
+---
 
-### 前端
-- `frontend/vite.config.js`：Vite 配置（自动导入、代理、别名）
-- `frontend/tailwind.config.js`：温暖色系主题（primary橙/success绿/warning黄/danger红）
-- `frontend/postcss.config.cjs`：PostCSS 配置（.cjs 扩展名兼容 ES module）
-- `frontend/src/main.js`：入口（Element Plus、Router、Pinia、图标注册 icon-ep-xxx）
+## 页面清单
 
-**Stores**：user（token userInfo role 持久化）、building（树形结构 当前选中）、energy（设备 日期范围 能源类型）
+### 管理端 `/admin` (7个)
+- Dashboard - 综合监控
+- Monitoring - 监测中心
+- Analysis - 统计分析
+- Alarms - 异常告警
+- Devices - 设备管理
+- Configuration - 基础配置
+- System - 系统管理
 
-**Router**：`setupRouterGuards(pinia)` 在 Pinia 安装后设置认证守卫和角色权限
+### 用户端 `/user` (6个)
+- Dashboard - 个人首页 ✅
+- UsageHistory - 用能查询 ✅
+- CostPayment - 费用充值 ✅
+- Comparison - 能耗对比 ✅
+- Notices - 节能公告 ✅
+- Profile - 个人中心 ✅
 
-**Utils**：request.js（Axios 拦截器 token 401处理）
+---
 
-**API**：auth、building、device、energy、analysis、alarm、system、recharge、profile
+## 数据模型
 
-**Views**：
-- Login.vue（完整）
-- AdminLayout.vue（完整）
-- admin/Dashboard.vue（8.3）- 综合监控大屏：指标卡片（总能耗/功率/覆盖率/告警）、ECharts 图表（趋势/分布/功率/2D 地图热力）、告警列表、设备状态概览
-- admin/Monitoring.vue（8.4）- 监测中心：左侧树形导航（校区-楼宇-楼层-房间）、右侧数据看板（实时数据卡片、趋势折线图、时间选择器、设备列表）
-- admin/Analysis.vue（8.5）- 统计分析：筛选区（时间/建筑/能源类型）、图表区（趋势/对比/排名/预测）、导出功能（Excel/PDF）、数据表格
-- admin/Alarms.vue（8.6 待实现）、admin/Devices.vue、admin/Configuration.vue、admin/System.vue
-- UserLayout.vue（待实现）
-- user/Dashboard、UsageHistory、CostPayment、Comparison、Notices、Profile
+| 模块 | 表 |
+|:---|:---|
+| accounts | em_users, em_roles |
+| buildings | em_campuses, em_buildings, em_floors, em_rooms |
+| devices | em_energy_types, em_devices |
+| energy | em_energy_data, em_energy_statistics |
+| alarms | em_alarm_rules, em_alarms |
+| system | em_bills, em_recharge_records, em_notices, em_operation_logs |
+| analysis | em_energy_forecasts |
 
-**Layouts**：AdminLayout.vue（完整）、UserLayout.vue（待实现）
+---
 
-**设计系统（Design System）**：
-- **色彩主题**：温暖色系（Primary #f97316 橙、Success #22c55e 绿、Warning #eab308 黄、Danger #ef4444 红、Water #3b82f6 蓝）
-- **字体**：Orbitron（数字显示）、Noto Sans SC（中文）、Poppins（英文）
-- **组件风格**：卡片式设计（16px 圆角、1px #e5e7eb 边框）、网格背景图案、发光效果、脉冲动画
-- **交互反馈**：hover 上移（translateY -4px）、阴影加深、边框高亮 #f97316
+## 设计规范
 
-**ECharts 图表规范**：
-- 使用 `shallowRef` 存储图表实例（避免深度响应）
-- `onUnmounted` 时调用 `chart.dispose()` 释放内存
-- 图表主题色与系统一致
-- 自定义 tooltip（半透明深色背景、橙色边框）
-- 自动刷新机制（30秒定时器）
-- 响应式处理（window resize 监听）
+| 类别 | 规范 |
+|:---|:---|
+| 色彩 | #f97316 橙 / #eab308 黄 / #22c55e 绿 / #ef4444 红 / #3b82f6 蓝 |
+| 字体 | Orbitron（数字）、Noto Sans SC（中文） |
+| 组件 | 16px 圆角、1px 边框、hover 上移 |
+| 图表 | shallowRef + dispose、响应式 |
 
-### 文档
-- `memory-bank/implementation-plan.md`：阶段任务与验收口径
-- `docs/scheduler.md`：cron 调度说明
-- `docs/rtm.md`：需求追踪矩阵
+---
 
-## 维护规则
-- 里程碑变化更新 progress.md
-- 架构边界变化更新 architecture.md
+## API 响应格式
+
+```json
+{
+  "code": 0,
+  "data": {},
+  "message": "",
+  "total": 0
+}
+```
+
+---
+
+## 用户端页面架构详解
+
+### Notices.vue - 节能公告页面
+
+**文件路径**：`frontend/src/views/user/Notices.vue`
+
+**职责**：
+- 展示通知公告列表（支持按优先级、已读状态筛选）
+- 提供节能知识卡片展示
+- 支持通知详情查看和已读标记
+
+**架构特点**：
+1. **Tab 切换模式**：使用 `v-if` + `transition` 实现 Tab 切换动画
+2. **筛选逻辑**：使用 `computed` 实现响应式数据过滤
+3. **状态管理**：本地状态管理，通过 `getNotices()` API 获取数据
+4. **时间格式化**：`formatTime()` 函数实现相对时间显示
+
+**API 对接**：
+- `getNotices(params)` - 获取通知列表
+- `getNotice(id)` - 获取通知详情（预留）
+
+**样式规范**：
+- 使用渐变背景 `.page-header` 增强视觉冲击
+- 未读通知使用黄色渐变背景 `.notice-card.unread`
+- 节能知识卡片使用 5 种颜色主题轮换
+
+---
+
+### Profile.vue - 个人中心页面
+
+**文件路径**：`frontend/src/views/user/Profile.vue`
+
+**职责**：
+- 基本资料编辑（头像上传、表单验证）
+- 房间绑定管理（添加/解绑）
+- 告警订阅设置（开关控制）
+
+**架构特点**：
+1. **三 Tab 布局**：基本资料 | 账号绑定 | 告警订阅
+2. **表单验证**：使用 Element Plus `el-form` + `rules` 实现
+3. **级联选择**：建筑 → 楼层 → 房间三级联动
+4. **头像上传**：使用 `FormData` + `multipart/form-data`
+
+**API 对接**：
+- `getMyProfile()` - 获取个人资料
+- `updateMyProfile(data)` - 更新个人资料
+- `getMyBindRooms()` - 获取已绑定房间
+- `bindRoom(data)` - 绑定房间
+- `unbindRoom(roomId)` - 解绑房间
+- `getMyAlarmSubscriptions()` - 获取告警订阅
+- `updateAlarmSubscriptions(data)` - 更新告警订阅
+- `uploadAvatar(data)` - 上传头像
+
+**数据流**：
+```
+API 响应 → 更新本地状态 → 同步 Pinia Store → UI 自动更新
+```
+
+**样式规范**：
+- 头像区域使用渐变背景和阴影突出显示
+- 表单区域使用浅灰背景区分
+- 房间卡片 hover 效果增强交互反馈
+
+---
+
+## 前端组件复用模式
+
+| 组件 | 位置 | 用途 |
+|:---|:---|:---|
+| UserLayout | `layouts/UserLayout.vue` | 用户端统一布局（顶部导航） |
+| Dashboard | `views/user/Dashboard.vue` | 个人首页（指标卡片 + 趋势图） |
+| Notices | `views/user/Notices.vue` | 通知公告（Tab 切换） |
+| Profile | `views/user/Profile.vue` | 个人中心（表单验证） |
+
+**共享模式**：
+- 所有页面使用相同的 `.page-header` 渐变样式
+- 统一使用 16px 圆角和 1px 边框
+- Tab 导航使用相同的基础样式
+

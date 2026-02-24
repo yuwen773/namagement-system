@@ -176,11 +176,11 @@ async function handleLogin() {
 
     // Check response format
     if (response.code === 0 && response.data) {
-      const { access, refresh, user_info } = response.data
+      const { access, refresh, user } = response.data
 
       // Save token and user info to store
       userStore.setToken(access)
-      userStore.setUserInfo(user_info)
+      userStore.setUserInfo(user)
 
       // Save refresh token if remember me is checked
       if (loginForm.remember) {
@@ -192,7 +192,7 @@ async function handleLogin() {
 
       // Redirect based on role
       const redirectPath = route.query.redirect || '/'
-      if (user_info.role === 'ADMIN') {
+      if (user.role === 'ADMIN') {
         router.push(redirectPath.startsWith('/admin') ? redirectPath : '/admin/dashboard')
       } else {
         router.push(redirectPath.startsWith('/user') ? redirectPath : '/user/dashboard')

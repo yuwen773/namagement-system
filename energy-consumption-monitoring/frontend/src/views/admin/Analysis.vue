@@ -147,7 +147,7 @@
         <div class="chart-card half-width">
           <div class="card-header">
             <h3 class="card-title">
-              <span class="title-icon"><icon-ep- Histogram /></span>
+              <span class="title-icon"><icon-ep-histogram /></span>
               能耗排名
               <el-select v-model="rankingType" size="small" style="width: 100px;" @change="updateRankingChart">
                 <el-option label="建筑" value="building"></el-option>
@@ -542,7 +542,7 @@ function initRankingChart() {
 
   rankingChart.value = echarts.init(rankingChartRef.value)
 
-  updateRankingChartData()
+  updateRankingChart()
 }
 
 function updateRankingChart() {
@@ -699,7 +699,7 @@ function initForecastChart() {
 
   forecastChart.value = echarts.init(forecastChartRef.value)
 
-  updateForecastChartData()
+  updateForecastChart()
 }
 
 function updateForecastChart() {
