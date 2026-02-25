@@ -32,6 +32,13 @@
               </svg>
               账户信息
             </h2>
+            <button class="edit-btn" @click="openEditDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              编辑资料
+            </button>
           </div>
           <div class="card-body">
             <div class="user-avatar-section">
@@ -229,6 +236,53 @@
         </section>
       </div>
     </main>
+
+    <!-- Edit Profile Dialog -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑资料"
+      width="500px"
+      :close-on-click-modal="false"
+      class="edit-dialog"
+    >
+      <el-form
+        ref="editFormRef"
+        :model="editForm"
+        :rules="editRules"
+        label-position="top"
+        class="edit-form"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input
+            v-model="editForm.username"
+            placeholder="请输入用户名"
+            maxlength="50"
+            show-word-limit
+          />
+        </el-form-item>
+
+        <el-form-item label="邮箱" prop="email">
+          <el-input
+            v-model="editForm.email"
+            placeholder="请输入邮箱（可选）"
+            type="email"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <button class="cancel-btn" @click="editDialogVisible = false">取消</button>
+          <button class="confirm-btn" @click="handleEditSubmit" :disabled="editLoading">
+            <span v-if="!editLoading">保存修改</span>
+            <span v-else class="loading-text">
+              <span class="spinner"></span>
+              保存中...
+            </span>
+          </button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -258,6 +312,16 @@ const passwordForm = reactive({
 
 // Submit loading state
 const submitLoading = ref(false)
+
+// Edit profile dialog
+const editDialogVisible = ref(false)
+const editFormRef = ref(null)
+const editLoading = ref(false)
+
+const editForm = reactive({
+  username: '',
+  email: ''
+})
 
 // Computed
 const userInitials = computed(() => {
@@ -299,6 +363,13 @@ const passwordRules = {
 // Methods
 const togglePassword = (field) => {
   showPasswords[field] = !showPasswords[field]
+}
+
+const openEditDialog = () => {
+  // Pre-fill form with current user info
+  editForm.username = authStore.userInfo?.username || ''
+  editForm.email = authStore.userInfo?.email || ''
+  editDialogVisible = true
 }
 
 const handlePasswordSubmit = async () => {
@@ -852,5 +923,153 @@ const handlePasswordSubmit = async () => {
     align-items: flex-start;
     gap: 0.5rem;
   }
+}
+
+/* Edit Button */
+.edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(13, 148, 136, 0.1);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  border-radius: 8px;
+  color: #0d9488;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.edit-btn:hover {
+  background: rgba(13, 148, 136, 0.15);
+  border-color: rgba(13, 148, 136, 0.3);
+  transform: translateY(-1px);
+}
+
+.edit-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Dialog Styles */
+.edit-dialog :deep(.el-dialog__header) {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.edit-dialog :deep(.el-dialog__title) {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.edit-dialog :deep(.el-dialog__body) {
+  padding: 1.5rem;
+}
+
+.edit-dialog :deep(.el-dialog__footer) {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Edit Form */
+.edit-form :deep(.el-form-item__label) {
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding-bottom: 0.5rem;
+}
+
+.edit-form :deep(.el-input__wrapper) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: none;
+  padding: 0.5rem 0.75rem;
+  height: 44px;
+}
+
+.edit-form :deep(.el-input__wrapper:hover) {
+  border-color: rgba(13, 148, 136, 0.5);
+}
+
+.edit-form :deep(.el-input__wrapper.is-focus) {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.edit-form :deep(.el-input__inner) {
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.edit-form :deep(.el-input__inner::placeholder) {
+  color: #94a3b8;
+}
+
+/* Dialog Footer */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.cancel-btn {
+  padding: 0.625rem 1.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.confirm-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.confirm-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loading-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-text .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 </style>
