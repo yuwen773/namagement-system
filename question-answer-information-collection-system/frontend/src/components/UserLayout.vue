@@ -65,7 +65,7 @@
       <div class="footer-content">
         <span class="footer-text">问答信息采集系统</span>
         <span class="footer-divider">|</span>
-        <span class="footer-copyright">© 2024</span>
+        <span class="footer-copyright">© 2026</span>
       </div>
     </footer>
 
