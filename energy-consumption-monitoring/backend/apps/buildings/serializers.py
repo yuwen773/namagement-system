@@ -94,3 +94,9 @@ class BuildingTreeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campus
         fields = ("id", "name", "code", "buildings")
+
+
+class BuildingHeatmapQuerySerializer(serializers.Serializer):
+    campus_id = serializers.IntegerField(required=False, min_value=1)
+    energy_type = serializers.CharField(required=False)
+    days = serializers.IntegerField(required=False, min_value=1, max_value=365, default=7)

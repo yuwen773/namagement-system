@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta
 
+from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear
 from django.utils import timezone
@@ -18,6 +19,7 @@ from apps.analysis.serializers import (
     DistributionQuerySerializer,
     ForecastQuerySerializer,
     RankingQuerySerializer,
+    RealTimePowerQuerySerializer,
     TrendQuerySerializer,
 )
 from apps.devices.models import Device
@@ -59,6 +61,11 @@ def _safe_rate(current_value, previous_value):
     if not previous_value:
         return None
     return (float(current_value) - float(previous_value)) / float(previous_value) * 100
+
+
+def _floor_time_to_interval(dt: datetime, interval_minutes: int):
+    minute = (dt.minute // interval_minutes) * interval_minutes
+    return dt.replace(minute=minute, second=0, microsecond=0)
 
 
 class AnalysisEmptySerializer(serializers.Serializer):
@@ -168,6 +175,20 @@ class AnalysisViewSet(viewsets.GenericViewSet):
     def dashboard(self, request):
         """返回能耗总览、覆盖率和告警统计。"""
         params = self._validate_query(BaseAnalysisQuerySerializer)
+
+        # Generate cache key based on filters
+        cache_key = (
+            f"dashboard:"
+            f"{params.get('campus_id') or 'all'}:"
+            f"{params.get('building_id') or 'all'}:"
+            f"{params.get('room_id') or 'all'}:"
+            f"{params.get('energy_type') or 'all'}:"
+            f"{params.get('device_id') or 'all'}"
+        )
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
         energy_queryset = self._apply_common_filters(
             EnergyData.objects.select_related("energy_type", "device"),
             params,
@@ -202,20 +223,21 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             today=Count("id", filter=Q(alarm_time__gte=today_start)),
         )
 
-        return Response(
-            {
-                "summary": {
-                    "total_energy": overall["total_value"] or 0,
-                    "average_power": overall["avg_power"] or 0,
-                    "data_coverage_rate": round(coverage_rate, 2),
-                    "total_records": overall["records"],
-                    "devices_with_data": covered_devices,
-                    "devices_total": total_devices,
-                },
-                "energy_totals": list(totals),
-                "alarm_statistics": alarm_stats,
-            }
-        )
+        payload = {
+            "summary": {
+                "total_energy": overall["total_value"] or 0,
+                "average_power": overall["avg_power"] or 0,
+                "data_coverage_rate": round(coverage_rate, 2),
+                "total_records": overall["records"],
+                "devices_with_data": covered_devices,
+                "devices_total": total_devices,
+            },
+            "energy_totals": list(totals),
+            "alarm_statistics": alarm_stats,
+        }
+        # Cache for 30 seconds
+        cache.set(cache_key, payload, timeout=30)
+        return Response(payload)
 
     @action(detail=False, methods=["get"], url_path="trend")
     @extend_schema(
@@ -542,3 +564,96 @@ class AnalysisViewSet(viewsets.GenericViewSet):
                 "forecast": forecast_items,
             }
         )
+
+    @action(detail=False, methods=["get"], url_path="real-time-power")
+    @extend_schema(
+        summary="获取实时功率序列",
+        parameters=[RealTimePowerQuerySerializer],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def real_time_power(self, request):
+        params = self._validate_query(RealTimePowerQuerySerializer)
+        hours = int(params["hours"])
+        interval_minutes = int(params["interval_minutes"])
+        cache_key = (
+            "real_time_power:"
+            f"{hours}:{interval_minutes}:"
+            f"{params.get('campus_id') or 'all'}:{params.get('building_id') or 'all'}:"
+            f"{params.get('room_id') or 'all'}:{params.get('energy_type') or 'all'}:"
+            f"{params.get('device_id') or 'all'}"
+        )
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        end_time = timezone.now()
+        start_time = end_time - timedelta(hours=hours)
+
+        queryset = self._apply_common_filters(EnergyData.objects.all(), params)
+        queryset = queryset.filter(timestamp__gte=start_time, timestamp__lte=end_time).exclude(power__isnull=True)
+
+        buckets = {}
+        for ts, power, device_id in queryset.values_list("timestamp", "power", "device_id").iterator(chunk_size=2000):
+            bucket = _floor_time_to_interval(ts, interval_minutes)
+            item = buckets.setdefault(
+                bucket,
+                {
+                    "timestamp": bucket,
+                    "total_power": 0.0,
+                    "sample_count": 0,
+                    "devices": set(),
+                },
+            )
+            item["total_power"] += float(power or 0)
+            item["sample_count"] += 1
+            item["devices"].add(device_id)
+
+        series = [
+            {
+                "timestamp": item["timestamp"].isoformat(),
+                "total_power": round(item["total_power"], 3),
+                "avg_power": round(item["total_power"] / item["sample_count"], 3) if item["sample_count"] else 0,
+                "device_count": len(item["devices"]),
+            }
+            for item in sorted(buckets.values(), key=lambda val: val["timestamp"])
+        ]
+
+        latest_record = queryset.values(
+            "timestamp", "power", "device_id", "device__device_id", "device__name"
+        ).order_by("-timestamp", "-id").first()
+        peak_record = queryset.values(
+            "timestamp", "power", "device_id", "device__device_id", "device__name"
+        ).order_by("-power", "-timestamp").first()
+
+        latest_snapshot = None
+        if latest_record:
+            latest_snapshot = {
+                "timestamp": latest_record["timestamp"].isoformat(),
+                "power": float(latest_record["power"] or 0),
+                "device_id": latest_record["device_id"],
+                "device_code": latest_record["device__device_id"],
+                "device_name": latest_record["device__name"],
+            }
+
+        peak_snapshot = None
+        if peak_record:
+            peak_snapshot = {
+                "timestamp": peak_record["timestamp"].isoformat(),
+                "power": float(peak_record["power"] or 0),
+                "device_id": peak_record["device_id"],
+                "device_code": peak_record["device__device_id"],
+                "device_name": peak_record["device__name"],
+            }
+
+        payload = {
+            "hours": hours,
+            "interval_minutes": interval_minutes,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "points": len(series),
+            "series": series,
+            "latest": latest_snapshot,
+            "peak": peak_snapshot,
+        }
+        cache.set(cache_key, payload, timeout=30)
+        return Response(payload)

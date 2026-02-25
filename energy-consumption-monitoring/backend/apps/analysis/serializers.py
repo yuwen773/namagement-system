@@ -42,3 +42,8 @@ class ForecastQuerySerializer(BaseAnalysisQuerySerializer):
     target_id = serializers.CharField(required=False)
     model_version = serializers.CharField(required=False)
     period = serializers.ChoiceField(choices=["7d", "30d"], default="7d")
+
+
+class RealTimePowerQuerySerializer(BaseAnalysisQuerySerializer):
+    hours = serializers.IntegerField(required=False, min_value=1, max_value=168, default=24)
+    interval_minutes = serializers.ChoiceField(choices=[5, 10, 15, 30, 60], default=15)
