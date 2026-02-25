@@ -73,3 +73,12 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email']
+
+    def update(self, instance, validated_data):
+        """处理用户更新，捕获用户名重复错误"""
+        try:
+            return super().update(instance, validated_data)
+        except IntegrityError:
+            raise serializers.ValidationError({
+                "username": "该用户名已被使用"
+            })
