@@ -32,7 +32,7 @@
               </svg>
               账户信息
             </h2>
-            <button class="edit-btn" @click="openEditDialog">
+            <button class="edit-btn" @click="openEditDialog" aria-label="编辑个人资料">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -272,7 +272,7 @@
 
       <template #footer>
         <div class="dialog-footer">
-          <button class="cancel-btn" @click="editDialogVisible = false">取消</button>
+          <button class="cancel-btn" @click="closeEditDialog">取消</button>
           <button class="confirm-btn" @click="handleEditSubmit" :disabled="editLoading">
             <span v-if="!editLoading">保存修改</span>
             <span v-else class="loading-text">
@@ -370,6 +370,15 @@ const openEditDialog = () => {
   editForm.username = authStore.userInfo?.username || ''
   editForm.email = authStore.userInfo?.email || ''
   editDialogVisible = true
+}
+
+const closeEditDialog = () => {
+  editDialogVisible = false
+  // Reset form
+  editForm.username = authStore.userInfo?.username || ''
+  editForm.email = authStore.userInfo?.email || ''
+  // Clear validation errors
+  editFormRef.value?.clearValidate()
 }
 
 const handlePasswordSubmit = async () => {
