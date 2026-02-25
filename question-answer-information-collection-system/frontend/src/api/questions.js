@@ -26,3 +26,25 @@ export function getQuestionDetail(id) {
 export function deleteQuestion(id) {
   return request.delete(`/api/questions/${id}/`)
 }
+
+/**
+ * 获取地理位置分布
+ */
+export function getLocationStats() {
+  return request.get('/api/statistics/locations/')
+}
+
+/**
+ * 获取热门问题
+ * @param {number} limit - 返回数量限制，默认10
+ */
+export function getHotQuestions(limit = 10) {
+  return request.get('/api/statistics/hot-questions/', { params: { limit } })
+}
+
+/**
+ * 获取回答数量分布
+ */
+export function getAnswerDistribution() {
+  return request.get('/api/statistics/answer-distribution/')
+}
