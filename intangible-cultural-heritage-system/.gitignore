@@ -1,0 +1,208 @@
+# ================================
+# Python / Django
+# ================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+.env/
+virtualenv/
+
+# Django specific
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/static/
+/media/
+/collected_static/
+
+# ================================
+# Vue 3 / Node.js / Vite
+# ================================
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Production build
+dist/
+dist-ssr/
+build/
+
+# Local development
+*.local
+.devlocal
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ================================
+# IDE & Editors
+# ================================
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw*
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ================================
+# OS generated files
+# ================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ================================
+# Environment & Secrets
+# ================================
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.key
+*.pem
+secrets/
+credentials/
+
+# ================================
+# Database & Data
+# ================================
+*.sql.gz
+*.dump
+*.bak
+*.backup
+data/
+backups/
+
+# MySQL
+*.myd
+*.myi
+*.ibd
+
+# ================================
+# Testing & Coverage
+# ================================
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.cache
+
+# ================================
+# Documentation / Generated
+# ================================
+docs/_build/
+docs/.doctrees/
+site/
+.sphinx-cache/
+
+# ================================
+# Spark (Optional)
+# ================================
+spark-warehouse/
+metastore_db/
+*.checkpoint
+
+# ================================
+# Logs & Temporary
+# ================================
+logs/
+*.log
+*.log.*
+tmp/
+temp/
+*.tmp
+*.cache
+.cache/
+
+# ================================
+# Project Specific
+# ================================
+# Uploaded media files
+uploads/
+media/
+
+# CSV imports (excluding dataSource/)
+import_*.csv
+*_import.csv
+
+# Export files
+exports/
+*.xlsx
+*.xls
+!dataSource/*.csv
+
+
+dataSource/
