@@ -56,7 +56,7 @@ export function unbindRoom(roomId) {
   return request({
     url: '/profile/bind-rooms/',
     method: 'delete',
-    data: { room_id: roomId },
+    data: { room_ids: [roomId] },
   })
 }
 

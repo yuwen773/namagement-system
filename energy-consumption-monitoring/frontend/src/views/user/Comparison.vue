@@ -103,9 +103,9 @@
               节能排行榜
             </h3>
             <el-radio-group v-model="rankingType" size="small" @change="loadRankingData">
-              <el-radio-button value="week">本周</el-radio-button>
-              <el-radio-button value="month">本月</el-radio-button>
-              <el-radio-button value="semester">学期</el-radio-button>
+              <el-radio-button value="building">楼宇</el-radio-button>
+              <el-radio-button value="room">房间</el-radio-button>
+              <el-radio-button value="department">部门</el-radio-button>
             </el-radio-group>
           </div>
 
@@ -233,7 +233,7 @@ const historyChart = shallowRef(null)
 const myRank = ref(null) // 从排名 API 获取
 const rankTrend = ref(0) // 从排名 API 获取
 const radarCompareTarget = ref('school')
-const rankingType = ref('week')
+const rankingType = ref('building')
 
 // Comparison stats - 从 API 获取对比数据 (待后端实现完整接口)
 const comparisonStats = ref([])
@@ -525,18 +525,18 @@ async function loadRankingData() {
       type: rankingType.value,
       limit: 20,
     })
-    if (response.code === 0 && response.data) {
-      rankingList.value = response.data.map((user, index) => ({
-        id: user.id || index,
-        name: user.name || `用户${index + 1}`,
-        room: user.room || '301宿舍',
-        score: user.score || Math.floor(70 + Math.random() * 30),
-        saving: user.saving || `${Math.floor(Math.random() * 50)} kWh`,
-        trend: user.trend || Math.floor(Math.random() * 5) - 2,
-        trend_text: user.trend_text || `${Math.floor(Math.random() * 5) - 2} 位`,
-        trend_class: user.trend_class || (Math.random() > 0.5 ? 'trend-up' : 'trend-down'),
-        avatar: user.avatar || null,
-        is_me: user.is_me || false,
+    if (response.code === 0 && response.data && response.data.items) {
+      rankingList.value = response.data.items.map((item, index) => ({
+        id: item.target_id || index,
+        name: item.target_name || `未知`,
+        room: item.target_name || '未知',
+        score: item.total_value || 0,
+        saving: `${item.total_value || 0} kWh`,
+        trend: 0,
+        trend_text: '—',
+        trend_class: 'trend-neutral',
+        avatar: null,
+        is_me: false,
       }))
 
       // Update my rank

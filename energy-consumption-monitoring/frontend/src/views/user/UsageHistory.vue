@@ -589,7 +589,7 @@ async function loadData() {
       tableData.value = (response.data || []).map(item => ({
         date: item.timestamp?.split('T')[0] || '',
         type: item.energy_type || 'ELECTRICITY',
-        value: item.value?.toFixed(2) || '0',
+        value: typeof item.value === 'number' ? item.value.toFixed(2) : String(item.value || '0'),
         unit: getEnergyUnit(item.energy_type),
         cost: item.cost || 0,
         room: item.room_name || '301宿舍',

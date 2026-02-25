@@ -27,7 +27,7 @@ profile_view = ProfileViewSet.as_view(
         "put": "update_profile",
     }
 )
-profile_bind_rooms_view = ProfileViewSet.as_view({"post": "bind_rooms", "delete": "bind_rooms"})
+profile_bind_rooms_view = ProfileViewSet.as_view({"get": "bind_rooms", "post": "bind_rooms", "delete": "bind_rooms"})
 profile_alarm_subscriptions_view = ProfileViewSet.as_view(
     {
         "get": "alarm_subscriptions",

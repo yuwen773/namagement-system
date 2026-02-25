@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import UserRole
+from apps.buildings.models import Room
 from apps.system.models import Bill, BillStatus, Notice, NoticeTargetRole, OperationLog, RechargeRecord
 from apps.system.serializers import (
     AdminNoticeSerializer,
@@ -431,7 +432,7 @@ class ProfileViewSet(viewsets.GenericViewSet):
         _write_operation_log(request, "update_profile", f"user:{request.user.id}")
         return Response(ProfileSerializer(request.user).data)
 
-    @action(detail=False, methods=["post", "delete"], url_path="bind-rooms")
+    @action(detail=False, methods=["get", "post", "delete"], url_path="bind-rooms")
     @extend_schema(
         summary="绑定或解绑房间",
         request=ProfileBindRoomsSerializer,
@@ -440,6 +441,32 @@ class ProfileViewSet(viewsets.GenericViewSet):
     def bind_rooms(self, request):
         """POST 绑定房间；DELETE 解绑房间。"""
         profile = self._profile_object()
+        if request.method.lower() == "get":
+            current_room_ids = sorted(set(int(item) for item in profile.bind_rooms if str(item).isdigit()))
+            if not current_room_ids:
+                return Response([])
+            room_map = {
+                room.id: room
+                for room in Room.objects.select_related("floor", "floor__building").filter(id__in=current_room_ids)
+            }
+            rooms = []
+            for room_id in current_room_ids:
+                room = room_map.get(room_id)
+                if room is None:
+                    continue
+                rooms.append(
+                    {
+                        "id": room.id,
+                        "room_number": room.room_number,
+                        "name": room.room_number,
+                        "building_name": room.floor.building.name,
+                        "building": room.floor.building.name,
+                        "floor_name": room.floor.name,
+                        "floor": room.floor.name,
+                        "department": room.department,
+                    }
+                )
+            return Response(rooms)
         serializer = ProfileBindRoomsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         room_ids = serializer.validated_data["room_ids"]

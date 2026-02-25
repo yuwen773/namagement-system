@@ -207,7 +207,7 @@
               <!-- Input Section -->
               <div class="calculator-inputs">
                 <h3 class="section-title">
-                  <span class="title-icon"><icon-ep-calculator /></span>
+                  <span class="title-icon"><icon-ep-edit /></span>
                   输入用量
                 </h3>
 

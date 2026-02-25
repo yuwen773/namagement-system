@@ -339,6 +339,7 @@ async function handleRegister() {
     const response = await register({
       username: registerForm.username,
       password: registerForm.password,
+      confirm_password: registerForm.confirmPassword,
       real_name: registerForm.realName,
       phone: registerForm.phone,
       email: registerForm.email || undefined,
@@ -347,11 +348,11 @@ async function handleRegister() {
 
     // Check response format
     if (response.code === 0 && response.data) {
-      const { access, refresh, user_info } = response.data
+      const { access, refresh, user } = response.data
 
       // Save token and user info to store (auto-login)
       userStore.setToken(access)
-      userStore.setUserInfo(user_info)
+      userStore.setUserInfo(user)
 
       // Save refresh token
       localStorage.setItem('refreshToken', refresh)

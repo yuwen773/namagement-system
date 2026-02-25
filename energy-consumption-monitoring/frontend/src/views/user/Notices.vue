@@ -131,7 +131,7 @@
                 <div class="bg-pattern"></div>
               </div>
               <div class="tip-icon">
-                <el-icon><icon-ep-lightbulb /></el-icon>
+                <el-icon><icon-ep-opportunity /></el-icon>
               </div>
               <h3 class="tip-title">{{ tip.title }}</h3>
               <p class="tip-description">{{ tip.content }}</p>
@@ -190,7 +190,7 @@ const selectedNotice = ref(null)
 // Tab configuration
 const tabs = [
   { key: 'notices', label: '通知公告', icon: 'icon-ep-bell', badge: null },
-  { key: 'tips', label: '节能知识', icon: 'icon-ep-lightbulb', badge: null },
+  { key: 'tips', label: '节能知识', icon: 'icon-ep-opportunity', badge: null },
 ]
 
 // Notice filters

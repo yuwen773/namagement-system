@@ -101,7 +101,7 @@
         <div class="tips-list">
           <div v-for="(tip, index) in tips" :key="index" class="tip-item">
             <div class="tip-icon" :class="`tip-${index + 1}`">
-              <el-icon><icon-ep-lightbulb /></el-icon>
+              <el-icon><icon-ep-opportunity /></el-icon>
             </div>
             <div class="tip-content">
               <h4 class="tip-title">{{ tip.title }}</h4>
@@ -162,11 +162,11 @@ const compositionChart = shallowRef(null)
 
 // Period selector
 const periods = [
-  { key: 'week', label: '本周' },
+  { key: 'day', label: '本周' },
   { key: 'month', label: '本月' },
   { key: 'year', label: '本年' },
 ]
-const activePeriod = ref('week')
+const activePeriod = ref('day')
 
 // Metrics data
 const metrics = ref([
@@ -434,20 +434,24 @@ async function loadTrendData() {
 async function loadCompositionData() {
   try {
     const response = await getDistributionData({ type: 'energy_type' })
-    if (response.code === 0 && response.data) {
-      compositionData.value = response.data.map(item => ({
+    if (response.code === 0 && response.data && response.data.items) {
+      const items = response.data.items
+      // Calculate total for percentage
+      const total = items.reduce((sum, item) => sum + item.value, 0)
+      compositionData.value = items.map(item => ({
         ...item,
-        percent: Math.round(item.percent),
+        percent: total > 0 ? Math.round((item.value / total) * 100) : 0,
       }))
       // Update chart
       if (compositionChart.value) {
         const option = compositionChart.value.getOption()
-        option.series[0].data = response.data.map(item => ({
-          value: item.value,
-          name: item.name,
-          itemStyle: { color: item.color },
-        }))
-        compositionChart.value.setOption(option)
+        if (option && option.series && option.series[0]) {
+          option.series[0].data = items.map(item => ({
+            value: item.value,
+            name: item.label || item.name,
+          }))
+          compositionChart.value.setOption(option)
+        }
       }
     }
   } catch (error) {
