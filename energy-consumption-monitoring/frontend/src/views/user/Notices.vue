@@ -177,7 +177,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getNotices, getNotice } from '@/api/system'
+import { getNotices, getNotice, getTips } from '@/api/system'
 
 // State
 const activeTab = ref('notices')
@@ -212,52 +212,20 @@ const tipCategories = [
 // Data
 const notices = ref([])
 
-// Tips data - 节能知识文章目前是静态数据
-// TODO: 如果需要动态管理节能知识，需要后端提供 API:
-// - GET /api/tips/ - 获取节能知识列表
-// - POST /api/admin/tips/ - 创建节能知识 (管理员)
-const tips = ref([
-  {
-    title: '随手关灯，每月省电10度',
-    content: '离开房间时记得关闭不必要的灯具。每节约1度电相当于减少0.8公斤碳排放。一个普通家庭每月可节省约10度电。',
-    category: 'electricity',
-  },
-  {
-    title: '空调26℃最节能',
-    content: '夏季空调温度设置在26℃最舒适且节能。每调高1℃可节约约6%的电力消耗，全年可节省电费数百元。',
-    category: 'electricity',
-  },
-  {
-    title: '一水多用，节约资源',
-    content: '洗菜水可以用来浇花，洗衣服的最后一道漂洗水可以用来拖地。一水多用，既环保又经济。',
-    category: 'water',
-  },
-  {
-    title: '及时关闭水龙头',
-    content: '洗手刷牙时及时关闭水龙头，一个漏水的龙头一天可浪费数十升水，相当于一个人一天的饮水量。',
-    category: 'water',
-  },
-  {
-    title: '使用节能灯具',
-    content: 'LED灯比普通白炽灯节能80%以上，寿命长达10年以上。更换家中老旧灯具，长期来看可节省大量电费。',
-    category: 'electricity',
-  },
-  {
-    title: '冰箱节能技巧',
-    content: '冰箱内部食物不要塞得太满，保持冷空气流通。定期清理霜层可省电30%。避免热食直接放入冰箱。',
-    category: 'daily',
-  },
-  {
-    title: '合理使用燃气',
-    content: '做饭时火焰不要超出锅底，使用节能灶具可节省燃气20%以上。定期检查燃气管道，避免泄漏浪费。',
-    category: 'gas',
-  },
-  {
-    title: '电视机节能',
-    content: '电视亮度不要开得太亮，音量适中。不看电视时记得关闭电源而非待机，待机功率约为正常功率的10%。',
-    category: 'electricity',
-  },
-])
+// Tips data - 从API获取
+const tips = ref([])
+
+// Load tips from API
+async function loadTips() {
+  try {
+    const response = await getTips()
+    if (response.code === 0 && response.data) {
+      tips.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to load tips:', error)
+  }
+}
 
 // Computed
 const filteredNotices = computed(() => {
@@ -399,8 +367,11 @@ async function loadNotices() {
 }
 
 // Lifecycle
-onMounted(() => {
-  loadNotices()
+onMounted(async () => {
+  await Promise.all([
+    loadNotices(),
+    loadTips(),
+  ])
 })
 </script>
 

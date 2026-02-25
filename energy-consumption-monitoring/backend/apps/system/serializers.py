@@ -50,6 +50,7 @@ class UserManagementSerializer(serializers.ModelSerializer):
         required=False,
         allow_empty=True,
     )
+    balance = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
     alarm_subscriptions = serializers.DictField(
         child=serializers.BooleanField(),
         required=False,
@@ -69,6 +70,7 @@ class UserManagementSerializer(serializers.ModelSerializer):
             "phone",
             "avatar",
             "bind_rooms",
+            "balance",
             "alarm_subscriptions",
             "date_joined",
         )
@@ -101,6 +103,7 @@ class UserManagementSerializer(serializers.ModelSerializer):
         data["phone"] = profile.phone
         data["avatar"] = profile.avatar
         data["bind_rooms"] = profile.bind_rooms
+        data["balance"] = profile.balance
         data["alarm_subscriptions"] = profile.alarm_subscriptions or DEFAULT_ALARM_SUBSCRIPTIONS.copy()
         return data
 
@@ -110,6 +113,7 @@ class UserManagementSerializer(serializers.ModelSerializer):
             "phone": validated_data.pop("phone", None),
             "avatar": validated_data.pop("avatar", None),
             "bind_rooms": validated_data.pop("bind_rooms", []),
+            "balance": validated_data.pop("balance", Decimal("0.00")),
             "alarm_subscriptions": validated_data.pop(
                 "alarm_subscriptions",
                 DEFAULT_ALARM_SUBSCRIPTIONS.copy(),
@@ -124,7 +128,7 @@ class UserManagementSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         profile_data = {}
-        for field_name in ("role", "phone", "avatar", "bind_rooms", "alarm_subscriptions"):
+        for field_name in ("role", "phone", "avatar", "bind_rooms", "balance", "alarm_subscriptions"):
             if field_name in validated_data:
                 profile_data[field_name] = validated_data.pop(field_name)
 
@@ -192,6 +196,7 @@ class UserNoticeSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "content",
+            "category",
             "notice_type",
             "priority",
             "publish_time",
@@ -213,6 +218,7 @@ class AdminNoticeSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "content",
+            "category",
             "notice_type",
             "priority",
             "publish_time",
@@ -224,6 +230,36 @@ class AdminNoticeSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "publisher", "created_at", "updated_at")
+
+
+class TipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notice
+        fields = (
+            "id",
+            "title",
+            "content",
+            "category",
+            "publish_time",
+        )
+        read_only_fields = fields
+
+
+class AdminTipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notice
+        fields = (
+            "id",
+            "title",
+            "content",
+            "category",
+            "publish_time",
+            "is_published",
+            "target_role",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at")
 
 
 class OperationLogSerializer(serializers.ModelSerializer):
@@ -299,6 +335,7 @@ class ProfileSerializer(serializers.Serializer):
         child=serializers.IntegerField(min_value=1),
         read_only=True,
     )
+    balance = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
     alarm_subscriptions = serializers.DictField(child=serializers.BooleanField(), read_only=True)
 
     def to_representation(self, instance):
@@ -313,6 +350,7 @@ class ProfileSerializer(serializers.Serializer):
             "phone": profile.phone,
             "avatar": profile.avatar,
             "bind_rooms": profile.bind_rooms,
+            "balance": profile.balance,
             "alarm_subscriptions": profile.alarm_subscriptions or DEFAULT_ALARM_SUBSCRIPTIONS.copy(),
         }
 

@@ -240,3 +240,15 @@ export function getOperationLogs(params) {
     params,
   })
 }
+
+/**
+ * Get energy saving tips
+ * @param {Object} params - Query parameters
+ */
+export function getTips(params) {
+  return request({
+    url: '/tips/',
+    method: 'get',
+    params,
+  })
+}

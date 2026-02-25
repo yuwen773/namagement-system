@@ -127,6 +127,7 @@ class RechargeRecord(models.Model):
 class Notice(models.Model):
     title = models.CharField(max_length=200, verbose_name="title")
     content = models.TextField(verbose_name="content")
+    category = models.CharField(max_length=32, blank=True, null=True, verbose_name="category")
     notice_type = models.CharField(
         max_length=16,
         choices=NoticeType.choices,

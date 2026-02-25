@@ -34,6 +34,12 @@ class UserProfile(models.Model):
         verbose_name="告警订阅设置",
         help_text="用户告警订阅偏好（如余额不足提醒、异常用能提醒）。",
     )
+    balance = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        verbose_name="账户余额",
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 

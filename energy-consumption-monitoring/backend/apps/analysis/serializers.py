@@ -1,6 +1,7 @@
 
 from rest_framework import serializers
 
+from apps.analysis.models import Achievement, UserAchievement
 
 class BaseAnalysisQuerySerializer(serializers.Serializer):
     start_date = serializers.DateField(required=False)
@@ -35,6 +36,12 @@ class RankingQuerySerializer(BaseAnalysisQuerySerializer):
 class ComparisonQuerySerializer(BaseAnalysisQuerySerializer):
     period = serializers.ChoiceField(choices=["day", "month", "year"], default="month")
     anchor_date = serializers.DateField(required=False)
+    view = serializers.ChoiceField(
+        choices=["summary", "radar", "trend", "history_rank"],
+        default="summary",
+        required=False,
+    )
+    type = serializers.ChoiceField(choices=["school", "building", "similar"], required=False)
 
 
 class ForecastQuerySerializer(BaseAnalysisQuerySerializer):
@@ -47,3 +54,47 @@ class ForecastQuerySerializer(BaseAnalysisQuerySerializer):
 class RealTimePowerQuerySerializer(BaseAnalysisQuerySerializer):
     hours = serializers.IntegerField(required=False, min_value=1, max_value=168, default=24)
     interval_minutes = serializers.ChoiceField(choices=[5, 10, 15, 30, 60], default=15)
+
+
+class HourlyDistributionQuerySerializer(BaseAnalysisQuerySerializer):
+    pass
+
+
+class AchievementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Achievement
+        fields = [
+            "id",
+            "code",
+            "name",
+            "description",
+            "icon",
+            "points",
+            "is_active",
+            "sort_order",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class UserAchievementSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="achievement.id", read_only=True)
+    code = serializers.CharField(source="achievement.code", read_only=True)
+    name = serializers.CharField(source="achievement.name", read_only=True)
+    desc = serializers.CharField(source="achievement.description", read_only=True)
+    icon = serializers.CharField(source="achievement.icon", read_only=True)
+
+    class Meta:
+        model = UserAchievement
+        fields = [
+            "id",
+            "code",
+            "name",
+            "desc",
+            "icon",
+            "unlocked",
+            "progress",
+            "unlocked_at",
+            "metadata",
+        ]

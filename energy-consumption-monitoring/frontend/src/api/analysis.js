@@ -63,6 +63,16 @@ export function getComparisonData(params) {
 }
 
 /**
+ * Get user achievements
+ */
+export function getAchievements() {
+  return request({
+    url: '/analysis/achievements/',
+    method: 'get',
+  })
+}
+
+/**
  * Get forecast data
  * @param {Object} params - Query parameters
  */
@@ -81,6 +91,18 @@ export function getForecastData(params) {
 export function getRealTimePowerData(params) {
   return request({
     url: '/analysis/real-time-power/',
+    method: 'get',
+    params,
+  })
+}
+
+/**
+ * Get hourly energy distribution
+ * @param {Object} params - Query parameters
+ */
+export function getHourlyDistribution(params) {
+  return request({
+    url: '/analysis/hourly-distribution/',
     method: 'get',
     params,
   })

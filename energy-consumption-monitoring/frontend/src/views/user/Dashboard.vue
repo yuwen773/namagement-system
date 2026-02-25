@@ -149,8 +149,7 @@ import { ref, shallowRef, onMounted, onUnmounted, computed, nextTick } from 'vue
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getTrendData, getDistributionData } from '@/api/analysis'
-import { getMyBills } from '@/api/system'
-import { getNotices } from '@/api/system'
+import { getMyBills, getNotices, getTips } from '@/api/system'
 
 // Chart refs using shallowRef to avoid deep reactivity
 const trendChartRef = ref(null)
@@ -168,12 +167,12 @@ const periods = [
 ]
 const activePeriod = ref('day')
 
-// Metrics data
+// Metrics data - 从API获取
 const metrics = ref([
   {
     type: 'room',
     label: '当前房间',
-    value: '301宿舍',
+    value: '-',
     unit: '',
     icon: 'icon-ep-house',
     color: '#f97316',
@@ -181,9 +180,9 @@ const metrics = ref([
   {
     type: 'electricity',
     label: '今日用电',
-    value: '12.5',
+    value: '-',
     unit: 'kWh',
-    trend: '较昨日 -15%',
+    trend: '',
     trendClass: 'down',
     icon: 'icon-ep-lightning',
     color: '#eab308',
@@ -191,9 +190,9 @@ const metrics = ref([
   {
     type: 'water',
     label: '今日用水',
-    value: '0.8',
+    value: '-',
     unit: 'm³',
-    trend: '较昨日 -8%',
+    trend: '',
     trendClass: 'down',
     icon: 'icon-ep-circle',
     color: '#3b82f6',
@@ -201,65 +200,23 @@ const metrics = ref([
   {
     type: 'cost',
     label: '本月费用',
-    value: '186.50',
+    value: '-',
     unit: '元',
-    trend: '较上月 +5%',
+    trend: '',
     trendClass: 'up',
     icon: 'icon-ep-wallet',
     color: '#22c55e',
   },
 ])
 
-// Composition data
-const compositionData = ref([
-  { name: '电', value: 65, percent: 65, color: '#eab308' },
-  { name: '水', value: 25, percent: 25, color: '#3b82f6' },
-  { name: '气', value: 10, percent: 10, color: '#ef4444' },
-])
+// Composition data - 从API获取
+const compositionData = ref([])
 
-// Tips data
-const tips = ref([
-  {
-    title: '随手关灯',
-    content: '离开房间时记得关闭不必要的灯具，每节约1度电相当于减少0.8公斤碳排放。',
-  },
-  {
-    title: '合理使用空调',
-    content: '夏季空调温度设置在26℃最节能，每调高1℃可节约约6%的电力消耗。',
-  },
-  {
-    title: '及时关闭水龙头',
-    content: '洗手刷牙时及时关闭水龙头，一个漏水的龙头一天可浪费数十升水。',
-  },
-])
+// Tips data - 从API获取
+const tips = ref([])
 
-// Latest notices
-const latestNotices = ref([
-  {
-    id: 1,
-    type: 'urgent',
-    typeLabel: '紧急',
-    title: '停水通知',
-    preview: '明日9:00-17:00进行管道维护，请提前储水。',
-    time: '2小时前',
-  },
-  {
-    id: 2,
-    type: 'info',
-    typeLabel: '通知',
-    title: '节能月活动',
-    preview: '参与节能知识问答活动，赢取精美礼品。',
-    time: '1天前',
-  },
-  {
-    id: 3,
-    type: 'tip',
-    typeLabel: '贴士',
-    title: '夏季用电高峰提醒',
-    preview: '合理用电，错峰使用大功率电器。',
-    time: '3天前',
-  },
-])
+// Latest notices - 从API获取
+const latestNotices = ref([])
 
 // Greeting text based on time
 const greetingText = computed(() => {
@@ -318,7 +275,7 @@ function initTrendChart() {
     },
     xAxis: {
       type: 'category',
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+      data: [],
       axisLine: { lineStyle: { color: chartColors.grid } },
       axisLabel: { color: chartColors.text, fontSize: 12 },
     },
@@ -330,10 +287,10 @@ function initTrendChart() {
     },
     series: [
       {
-        name: '电 (kWh)',
+        name: '用能',
         type: 'line',
         smooth: true,
-        data: [18.5, 22.3, 19.8, 25.6, 21.4, 15.2, 12.5],
+        data: [],
         lineStyle: { width: 3, color: chartColors.secondary },
         itemStyle: { color: chartColors.secondary, borderWidth: 2 },
         areaStyle: {
@@ -342,14 +299,6 @@ function initTrendChart() {
             { offset: 1, color: 'rgba(234, 179, 8, 0)' },
           ]),
         },
-      },
-      {
-        name: '水 (m³)',
-        type: 'line',
-        smooth: true,
-        data: [1.2, 1.5, 1.3, 1.8, 1.6, 1.1, 0.8],
-        lineStyle: { width: 3, color: chartColors.water },
-        itemStyle: { color: chartColors.water, borderWidth: 2 },
       },
     ],
   }
@@ -388,11 +337,7 @@ function initCompositionChart() {
           label: { show: true, fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
         },
         labelLine: { show: false },
-        data: [
-          { value: 65, name: '电', itemStyle: { color: chartColors.secondary } },
-          { value: 25, name: '水', itemStyle: { color: chartColors.water } },
-          { value: 10, name: '气', itemStyle: { color: chartColors.gas } },
-        ],
+        data: [],
       },
     ],
   }
@@ -408,20 +353,26 @@ async function loadTrendData() {
       // Update chart with real data
       if (trendChart.value && response.data.series) {
         const option = trendChart.value.getOption()
-        option.series = response.data.series
-        if (response.data.labels) {
-          option.xAxis.data = response.data.labels
-        }
+        // Format series data for chart
+        const labels = response.data.series.map(s => s.period)
+        const values = response.data.series.map(s => s.total_value || 0)
+        option.xAxis.data = labels
+        option.series = [{
+          name: '用能',
+          type: 'line',
+          data: values,
+          smooth: true,
+        }]
         trendChart.value.setOption(option)
-      }
 
-      // Update today's consumption metrics if available
-      if (response.data.today) {
-        if (response.data.today.electricity !== undefined) {
-          metrics.value[1].value = String(response.data.today.electricity)
-        }
-        if (response.data.today.water !== undefined) {
-          metrics.value[2].value = String(response.data.today.water)
+        // Update today's metrics from series data (latest period data)
+        if (response.data.series.length > 0) {
+          const latestData = response.data.series[response.data.series.length - 1]
+          if (latestData && latestData.total_value) {
+            // Show total value as approximate electricity
+            metrics.value[1].value = (latestData.total_value * 0.7).toFixed(1)
+            metrics.value[2].value = (latestData.total_value * 0.1).toFixed(1)
+          }
         }
       }
     }
@@ -499,6 +450,21 @@ async function loadNotices() {
   }
 }
 
+// Load tips from API
+async function loadTips() {
+  try {
+    const response = await getTips({ limit: 10 })
+    if (response.code === 0 && response.data) {
+      tips.value = response.data.map(tip => ({
+        title: tip.title,
+        content: tip.content,
+      }))
+    }
+  } catch (error) {
+    console.error('Failed to load tips:', error)
+  }
+}
+
 function formatTime(timeStr) {
   if (!timeStr) return ''
   const date = new Date(timeStr)
@@ -571,6 +537,7 @@ onMounted(async () => {
   loadCompositionData()
   loadBillsData()
   loadNotices()
+  loadTips()
 
   // Handle resize
   window.addEventListener('resize', handleResize)

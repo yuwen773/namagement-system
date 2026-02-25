@@ -445,15 +445,11 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyBills } from '@/api/system'
 import { getRechargeRecords, simulateRecharge } from '@/api/recharge'
-import { getMyBindRooms } from '@/api/profile'
+import { getMyBindRooms, getMyBalance } from '@/api/profile'
 
 // Data
 const activeTab = ref('bills')
-// TODO: 用户余额目前是静态数据，需要后端提供余额管理 API
-// 后端需要在 UserProfile 模型中添加 balance 字段，并提供:
-// - GET /api/profile/balance/ - 获取余额
-// - POST /api/recharges/ - 充值接口（已存在）
-const balance = ref('358.60')
+const balance = ref('0.00')
 const billStatus = ref('')
 const billMonth = ref('')
 const currentPage = ref(1)
@@ -465,29 +461,29 @@ const bills = ref([])
 const rechargeRecords = ref([])
 const boundRooms = ref([])
 
-// Quick stats - 静态模拟数据
+// Quick stats - 从API获取
 const quickStats = ref([
   {
     label: '本月费用',
-    value: '¥186.50',
+    value: '-',
     icon: 'icon-ep-wallet',
     color: '#f97316',
   },
   {
     label: '未支付账单',
-    value: '2',
+    value: '-',
     icon: 'icon-ep-document',
     color: '#eab308',
   },
   {
     label: '累计充值',
-    value: '¥1,200',
+    value: '-',
     icon: 'icon-ep-coin',
     color: '#22c55e',
   },
   {
-    label: '节能奖励',
-    value: '¥25',
+    label: '账户余额',
+    value: '-',
     icon: 'icon-ep-medal',
     color: '#3b82f6',
   },
@@ -568,6 +564,20 @@ const energyTips = computed(() => {
   return tips
 })
 
+// Load balance
+async function loadBalance() {
+  try {
+    const response = await getMyBalance()
+    if (response.code === 0 && response.data) {
+      balance.value = response.data.balance || '0.00'
+      // 更新余额显示
+      quickStats.value[3].value = `¥${balance.value}`
+    }
+  } catch (error) {
+    console.error('Failed to load balance:', error)
+  }
+}
+
 // Load bills
 async function loadBills() {
   try {
@@ -586,6 +596,11 @@ async function loadBills() {
           { name: '气', usage: `${(bill.amount * 0.15 / 2.8).toFixed(1)} m³`, cost: bill.amount * 0.15, color: '#ef4444' },
         ],
       }))
+      // 更新本月费用和未支付账单统计
+      const totalUnpaid = bills.value.filter(b => b.status === 'unpaid').reduce((sum, b) => sum + b.amount, 0)
+      const unpaidCount = bills.value.filter(b => b.status === 'unpaid').length
+      quickStats.value[0].value = `¥${totalUnpaid.toFixed(2)}`
+      quickStats.value[1].value = unpaidCount.toString()
     }
   } catch (error) {
     console.error('Failed to load bills:', error)
@@ -611,6 +626,9 @@ async function loadRechargeRecords() {
         order_no: record.order_no || `RCH${Date.now()}`,
       }))
       rechargeTotal.value = response.total || rechargeRecords.value.length
+      // 更新累计充值统计
+      const totalRecharge = rechargeRecords.value.reduce((sum, r) => sum + r.amount, 0)
+      quickStats.value[2].value = `¥${totalRecharge.toFixed(2)}`
     }
   } catch (error) {
     console.error('Failed to load recharge records:', error)
@@ -779,6 +797,7 @@ function getPaymentLabel(method) {
 // Lifecycle
 onMounted(async () => {
   await Promise.all([
+    loadBalance(),
     loadBills(),
     loadRechargeRecords(),
     loadBoundRooms(),

@@ -96,3 +96,13 @@ export function uploadAvatar(data) {
     },
   })
 }
+
+/**
+ * Get my balance
+ */
+export function getMyBalance() {
+  return request({
+    url: '/profile/balance/',
+    method: 'get',
+  })
+}

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from apps.buildings.models import Building, Campus
@@ -83,3 +84,62 @@ class EnergyForecast(models.Model):
 
     def __str__(self) -> str:
         return f"{self.target_type}:{self.target_id}@{self.forecast_date}"
+
+
+class Achievement(models.Model):
+    code = models.CharField(max_length=64, unique=True, verbose_name="achievement code")
+    name = models.CharField(max_length=128, verbose_name="achievement name")
+    description = models.CharField(max_length=255, blank=True, default="", verbose_name="description")
+    icon = models.CharField(max_length=64, blank=True, default="", verbose_name="icon")
+    points = models.PositiveIntegerField(default=0, verbose_name="points")
+    is_active = models.BooleanField(default=True, verbose_name="is active")
+    sort_order = models.PositiveIntegerField(default=0, verbose_name="sort order")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="created at")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="updated at")
+
+    class Meta:
+        db_table = "em_achievements"
+        verbose_name = "achievement"
+        verbose_name_plural = "achievements"
+        ordering = ["sort_order", "id"]
+        indexes = [
+            models.Index(fields=["is_active", "sort_order"], name="idx_achievement_active_sort"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.code}:{self.name}"
+
+
+class UserAchievement(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_achievements",
+        verbose_name="user",
+    )
+    achievement = models.ForeignKey(
+        Achievement,
+        on_delete=models.CASCADE,
+        related_name="user_achievements",
+        verbose_name="achievement",
+    )
+    unlocked = models.BooleanField(default=False, verbose_name="unlocked")
+    progress = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="progress")
+    unlocked_at = models.DateTimeField(blank=True, null=True, verbose_name="unlocked at")
+    metadata = models.JSONField(default=dict, blank=True, verbose_name="metadata")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="created at")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="updated at")
+
+    class Meta:
+        db_table = "em_user_achievements"
+        verbose_name = "user achievement"
+        verbose_name_plural = "user achievements"
+        constraints = [
+            models.UniqueConstraint(fields=["user", "achievement"], name="uk_user_achv_user_achv"),
+        ]
+        indexes = [
+            models.Index(fields=["user", "unlocked"], name="idx_user_achv_user_unlock"),
+        ]
+
+    def __str__(self) -> str:
+        return f"user={self.user_id},achievement={self.achievement_id},unlocked={self.unlocked}"

@@ -147,32 +147,33 @@ service.interceptors.response.use(
  * Handle unauthorized access (401)
  * - Clear user token and info
  * - Redirect to login page
+ * - Use flag to prevent multiple dialogs
  */
+let isHandlingUnauthorized = false
+
 function handleUnauthorized() {
+  // Prevent multiple dialogs
+  if (isHandlingUnauthorized) return
+  isHandlingUnauthorized = true
+
   const userStore = useUserStore()
 
-  ElMessageBox.confirm(
-    'Your session has expired. Please log in again.',
-    'Session Expired',
-    {
-      confirmButtonText: 'Re-login',
-      cancelButtonText: 'Cancel',
-      type: 'warning',
-    }
-  )
-    .then(() => {
-      userStore.logout()
-      router.push({
-        path: '/login',
-        query: {
-          redirect: router.currentRoute.value.fullPath,
-        },
-      })
+  // Clear token first to prevent further API calls
+  userStore.logout()
+
+  // Show message and redirect directly
+  ElMessage.warning('Session expired, redirecting to login...')
+
+  // Small delay to ensure message is shown
+  setTimeout(() => {
+    router.push({
+      path: '/login',
+      query: {
+        redirect: router.currentRoute.value.fullPath,
+      },
     })
-    .catch(() => {
-      userStore.logout()
-      router.push('/login')
-    })
+    isHandlingUnauthorized = false
+  }, 500)
 }
 
 /**

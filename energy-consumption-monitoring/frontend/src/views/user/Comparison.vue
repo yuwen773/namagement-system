@@ -213,7 +213,7 @@
 import { ref, shallowRef, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
-import { getComparisonData, getRankingData } from '@/api/analysis'
+import { getComparisonData, getRankingData, getAchievements } from '@/api/analysis'
 
 // Chart refs
 const radarChartRef = ref(null)
@@ -241,15 +241,29 @@ const comparisonStats = ref([])
 // Ranking list
 const rankingList = ref([])
 
-// Achievements - 静态数据，待后端实现成就系统API
-const achievements = ref([
-  { id: 1, name: '节能先锋', desc: '连续7天低于平均', icon: '🌟', unlocked: true },
-  { id: 2, name: '节水达人', desc: '用水量低于平均30%', icon: '💧', unlocked: true },
-  { id: 3, name: '低碳生活', desc: '碳排放减少50kg', icon: '🌿', unlocked: true },
-  { id: 4, name: '月度冠军', desc: '月度排名前10', icon: '🏆', unlocked: false },
-  { id: 5, name: '百日坚持', desc: '连续100天记录', icon: '🔥', unlocked: false },
-  { id: 6, name: '能源管家', desc: '绑定3个房间', icon: '🏠', unlocked: true },
-])
+// Achievements - 从API获取
+const achievements = ref([])
+
+// Load achievements from API
+async function loadAchievements() {
+  try {
+    const response = await getAchievements()
+    if (response.code === 0 && response.data) {
+      // Handle both {data: {items: [...]}} and {data: [...]} formats
+      const items = response.data.items || response.data
+      achievements.value = items.map(achievement => ({
+        id: achievement.id,
+        name: achievement.name,
+        desc: achievement.description || achievement.desc,
+        icon: achievement.icon || '🏆',
+        unlocked: achievement.unlocked || false,
+      }))
+    }
+  } catch (error) {
+    console.error('Failed to load achievements:', error)
+    // Keep empty array on error, no need to show message
+  }
+}
 
 const achievementCount = computed(() => achievements.value.filter(a => a.unlocked).length)
 const totalAchievements = computed(() => achievements.value.length)
@@ -322,32 +336,7 @@ function initRadarChart() {
       {
         name: '能耗对比',
         type: 'radar',
-        data: [
-          {
-            value: [65, 70, 80, 60, 75, 82],
-            name: '我的数据',
-            itemStyle: { color: chartColors.primary },
-            areaStyle: {
-              color: new echarts.graphic.RadialGradient(0.5, 0.5, 1, [
-                { offset: 0, color: 'rgba(249, 115, 22, 0.4)' },
-                { offset: 1, color: 'rgba(249, 115, 22, 0.1)' },
-              ]),
-            },
-            lineStyle: { width: 2, color: chartColors.primary },
-          },
-          {
-            value: [75, 75, 75, 75, 75, 70],
-            name: '全校平均',
-            itemStyle: { color: chartColors.water },
-            areaStyle: {
-              color: new echarts.graphic.RadialGradient(0.5, 0.5, 1, [
-                { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
-                { offset: 1, color: 'rgba(59, 130, 246, 0.05)' },
-              ]),
-            },
-            lineStyle: { width: 2, color: chartColors.water, type: 'dashed' },
-          },
-        ],
+        data: [],
       },
     ],
   }
@@ -360,8 +349,6 @@ function initTrendChart() {
   if (!trendChartRef.value) return
 
   trendChart.value = echarts.init(trendChartRef.value)
-
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月']
 
   const option = {
     grid: {
@@ -389,7 +376,7 @@ function initTrendChart() {
     },
     xAxis: {
       type: 'category',
-      data: months,
+      data: [],
       axisLine: { lineStyle: { color: chartColors.grid } },
       axisLabel: { color: chartColors.text, fontSize: 11 },
     },
@@ -408,7 +395,7 @@ function initTrendChart() {
         name: '同比',
         type: 'line',
         smooth: true,
-        data: [-15, -12, -18, -10, -8, -5],
+        data: [],
         lineStyle: { width: 3, color: chartColors.green },
         itemStyle: { color: chartColors.green, borderWidth: 2 },
         areaStyle: {
@@ -422,7 +409,7 @@ function initTrendChart() {
         name: '环比',
         type: 'line',
         smooth: true,
-        data: [5, -3, 8, -5, 2, -8],
+        data: [],
         lineStyle: { width: 3, color: chartColors.secondary },
         itemStyle: { color: chartColors.secondary, borderWidth: 2 },
       },
@@ -437,8 +424,6 @@ function initHistoryChart() {
   if (!historyChartRef.value) return
 
   historyChart.value = echarts.init(historyChartRef.value)
-
-  const weeks = ['第1周', '第2周', '第3周', '第4周', '第5周', '第6周']
 
   const option = {
     grid: {
@@ -458,7 +443,7 @@ function initHistoryChart() {
     },
     xAxis: {
       type: 'category',
-      data: weeks,
+      data: [],
       axisLine: { lineStyle: { color: chartColors.grid } },
       axisLabel: { color: chartColors.text, fontSize: 10 },
     },
@@ -476,7 +461,7 @@ function initHistoryChart() {
         name: '排名',
         type: 'line',
         smooth: true,
-        data: [25, 22, 18, 15, 12, 15],
+        data: [],
         lineStyle: { width: 3, color: chartColors.primary },
         itemStyle: { color: chartColors.primary, borderWidth: 2 },
         areaStyle: {
@@ -484,10 +469,6 @@ function initHistoryChart() {
             { offset: 0, color: 'rgba(249, 115, 22, 0.3)' },
             { offset: 1, color: 'rgba(249, 115, 22, 0)' },
           ]),
-        },
-        markLine: {
-          data: [{ yAxis: 15, label: { formatter: '当前排名' } }],
-          lineStyle: { color: chartColors.secondary, type: 'dashed' },
         },
       },
     ],
@@ -500,12 +481,16 @@ function initHistoryChart() {
 async function loadRadarData() {
   try {
     const response = await getComparisonData({
+      view: 'radar',
       type: radarCompareTarget.value,
     })
     if (response.code === 0 && response.data) {
       // Update radar chart with real data
-      if (radarChart.value && response.data.series) {
+      if (radarChart.value && response.data.indicators) {
         radarChart.value.setOption({
+          radar: {
+            indicator: response.data.indicators,
+          },
           series: [{
             data: response.data.series,
           }],
@@ -513,8 +498,57 @@ async function loadRadarData() {
       }
     }
   } catch (error) {
-    console.error('Failed to load comparison data:', error)
-    ElMessage.error('加载对比数据失败，请稍后重试')
+    console.error('Failed to load radar data:', error)
+  }
+}
+
+// Load trend chart data
+async function loadTrendData() {
+  try {
+    const response = await getComparisonData({
+      view: 'trend',
+      type: rankingType.value,
+    })
+    if (response.code === 0 && response.data && response.data.series) {
+      if (trendChart.value) {
+        const months = response.data.series.map(s => s.period?.substring(5) + '月' || '')
+        const yoyData = response.data.series.map(s => s.yoy_change || 0)
+        const momData = response.data.series.map(s => s.mom_change || 0)
+
+        trendChart.value.setOption({
+          xAxis: { data: months },
+          series: [
+            { data: yoyData },
+            { data: momData },
+          ],
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load trend data:', error)
+  }
+}
+
+// Load history rank data
+async function loadHistoryRankData() {
+  try {
+    const response = await getComparisonData({
+      view: 'history_rank',
+      type: rankingType.value,
+    })
+    if (response.code === 0 && response.data && response.data.series) {
+      if (historyChart.value) {
+        const weeks = response.data.series.map(s => s.period || '')
+        const rankData = response.data.series.map(s => s.rank || 0)
+
+        historyChart.value.setOption({
+          xAxis: { data: weeks },
+          series: [{ data: rankData }],
+        })
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load history rank data:', error)
   }
 }
 
@@ -526,23 +560,26 @@ async function loadRankingData() {
       limit: 20,
     })
     if (response.code === 0 && response.data && response.data.items) {
-      rankingList.value = response.data.items.map((item, index) => ({
-        id: item.target_id || index,
+      rankingList.value = response.data.items.map((item) => ({
+        id: item.target_id,
         name: item.target_name || `未知`,
         room: item.target_name || '未知',
         score: item.total_value || 0,
         saving: `${item.total_value || 0} kWh`,
-        trend: 0,
-        trend_text: '—',
-        trend_class: 'trend-neutral',
+        trend: item.rank_change || 0,
+        trend_text: item.rank_change > 0 ? `↑${item.rank_change}` : item.rank_change < 0 ? `↓${Math.abs(item.rank_change)}` : '—',
+        trend_class: item.rank_change > 0 ? 'trend-up' : item.rank_change < 0 ? 'trend-down' : 'trend-neutral',
         avatar: null,
-        is_me: false,
+        is_me: item.is_me || false,
       }))
 
-      // Update my rank
-      const meIndex = rankingList.value.findIndex(u => u.is_me)
-      if (meIndex !== -1) {
-        myRank.value = meIndex + 1
+      // Update my rank from API response
+      if (response.data.my_rank) {
+        myRank.value = response.data.my_rank
+      }
+      // Update rank trend
+      if (response.data.my_rank_change) {
+        rankTrend.value = response.data.my_rank_change
       }
     }
   } catch (error) {
@@ -568,7 +605,10 @@ onMounted(async () => {
   ])
 
   loadRadarData()
+  loadTrendData()
+  loadHistoryRankData()
   loadRankingData()
+  loadAchievements()
 
   window.addEventListener('resize', handleResize)
 })

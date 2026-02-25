@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view, inline_serializer
 from rest_framework import filters, mixins, serializers, status, viewsets
@@ -11,11 +11,12 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.models import UserRole
+from apps.accounts.models import UserProfile, UserRole
 from apps.buildings.models import Room
-from apps.system.models import Bill, BillStatus, Notice, NoticeTargetRole, OperationLog, RechargeRecord
+from apps.system.models import Bill, BillStatus, Notice, NoticeTargetRole, NoticeType, OperationLog, RechargeRecord
 from apps.system.serializers import (
     AdminNoticeSerializer,
+    AdminTipSerializer,
     BillSerializer,
     OperationLogSerializer,
     ProfileAlarmSubscriptionSerializer,
@@ -25,6 +26,7 @@ from apps.system.serializers import (
     RechargeSimulateSerializer,
     ResetPasswordSerializer,
     RoleSerializer,
+    TipSerializer,
     UserManagementSerializer,
     UserNoticeSerializer,
     _ensure_profile,
@@ -53,6 +55,7 @@ RechargeSimulateResponseSerializer = inline_serializer(
         "paid_bill_ids": serializers.ListField(child=serializers.IntegerField()),
         "paid_bill_count": serializers.IntegerField(),
         "remaining_amount": serializers.CharField(),
+        "account_balance": serializers.CharField(),
     },
 )
 
@@ -216,6 +219,39 @@ class BillViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         serializer = BillSerializer(queryset, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["get"], url_path="my/summary", permission_classes=[IsAuthenticated])
+    @extend_schema(
+        summary="获取当前用户账单汇总",
+        responses={200: OpenApiResponse(description="账单汇总信息")},
+    )
+    def my_summary(self, request):
+        room_ids = _bound_room_ids(request.user)
+        month_key = timezone.localdate().strftime("%Y-%m")
+        bill_queryset = Bill.objects.filter(room_id__in=room_ids)
+        month_cost = (
+            bill_queryset.filter(bill_period=month_key).aggregate(total=Sum("amount")).get("total")
+            or Decimal("0.00")
+        )
+        unpaid_bill_count = bill_queryset.filter(status=BillStatus.UNPAID).count()
+        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        total_recharge = (
+            RechargeRecord.objects.filter(
+                room_id__in=room_ids,
+                recharge_time__gte=month_start,
+                recharge_time__lte=timezone.now(),
+            ).aggregate(total=Sum("amount")).get("total")
+            or Decimal("0.00")
+        )
+        return Response(
+            {
+                "month": month_key,
+                "month_cost": f"{month_cost:.2f}",
+                "unpaid_bill_count": unpaid_bill_count,
+                "total_recharge": f"{total_recharge:.2f}",
+                "energy_saving_reward": "0.00",
+            }
+        )
+
 
 @extend_schema_view(
     list=extend_schema(summary="获取通知公告列表"),
@@ -241,6 +277,84 @@ class NoticeViewSet(viewsets.ReadOnlyModelViewSet):
         if profile.role == UserRole.ADMIN:
             return queryset
         return queryset.filter(target_role__in=[NoticeTargetRole.ALL, NoticeTargetRole.USER])
+
+
+class TipsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """节能知识只读接口。"""
+
+    queryset = Notice.objects.select_related("publisher").all().order_by("-publish_time", "-id")
+    serializer_class = TipSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "head", "options"]
+
+    def get_queryset(self):
+        queryset = (
+            super()
+            .get_queryset()
+            .filter(
+                notice_type=NoticeType.KNOWLEDGE,
+                is_published=True,
+            )
+        )
+        now = timezone.now()
+        queryset = queryset.filter(Q(publish_time__lte=now) | Q(publish_time__isnull=True))
+        profile = _ensure_profile(self.request.user)
+        if profile.role != UserRole.ADMIN:
+            queryset = queryset.filter(target_role__in=[NoticeTargetRole.ALL, NoticeTargetRole.USER])
+        category = self.request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category__iexact=str(category).strip())
+        limit = self.request.query_params.get("limit")
+        if limit and str(limit).isdigit():
+            queryset = queryset[: int(limit)]
+        return queryset
+
+
+@extend_schema_view(
+    list=extend_schema(summary="管理员获取节能知识列表"),
+    retrieve=extend_schema(summary="管理员获取节能知识详情"),
+    create=extend_schema(summary="管理员创建节能知识"),
+    update=extend_schema(summary="管理员更新节能知识"),
+    partial_update=extend_schema(summary="管理员部分更新节能知识"),
+    destroy=extend_schema(summary="管理员删除节能知识"),
+)
+class AdminTipsViewSet(viewsets.ModelViewSet):
+    queryset = Notice.objects.filter(notice_type=NoticeType.KNOWLEDGE).order_by("-created_at", "-id")
+    serializer_class = AdminTipSerializer
+    permission_classes = [IsAdmin]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["title", "content", "category"]
+    ordering_fields = ["id", "publish_time", "is_published", "created_at"]
+    ordering = ["-created_at", "-id"]
+
+    def perform_create(self, serializer):
+        publish_time = serializer.validated_data.get("publish_time")
+        is_published = serializer.validated_data.get("is_published", False)
+        if is_published and publish_time is None:
+            publish_time = timezone.now()
+        tip = serializer.save(
+            publisher=self.request.user,
+            publish_time=publish_time,
+            notice_type=NoticeType.KNOWLEDGE,
+        )
+        _write_operation_log(self.request, "create_tip", f"notice:{tip.id}")
+
+    def perform_update(self, serializer):
+        publish_time = serializer.validated_data.get("publish_time")
+        is_published = serializer.validated_data.get("is_published")
+        instance = serializer.instance
+        if is_published is True and publish_time is None and instance.publish_time is None:
+            publish_time = timezone.now()
+        tip = serializer.save(
+            publish_time=publish_time if publish_time is not None else instance.publish_time,
+            notice_type=NoticeType.KNOWLEDGE,
+        )
+        _write_operation_log(self.request, "update_tip", f"notice:{tip.id}")
+
+    def perform_destroy(self, instance):
+        tip_id = instance.id
+        super().perform_destroy(instance)
+        _write_operation_log(self.request, "delete_tip", f"notice:{tip_id}")
 
 
 @extend_schema_view(
@@ -351,8 +465,10 @@ class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         now = timezone.now()
         payment_method = serializer.validated_data.get("payment_method") or "SIMULATED"
         remark = serializer.validated_data.get("remark", "")
+        profile = _ensure_profile(request.user)
 
         with transaction.atomic():
+            profile = UserProfile.objects.select_for_update().get(pk=profile.pk)
             record = RechargeRecord.objects.create(
                 room_id=room_id,
                 amount=amount,
@@ -362,7 +478,7 @@ class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                 remark=remark,
             )
 
-            remaining = amount
+            account_balance = Decimal(profile.balance or 0) + amount
             paid_bill_ids = []
             unpaid_bills = (
                 Bill.objects.select_for_update()
@@ -377,13 +493,16 @@ class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                     bill.save(update_fields=["status", "paid_time", "updated_at"])
                     paid_bill_ids.append(bill.id)
                     continue
-                if remaining < bill_amount:
+                if account_balance < bill_amount:
                     continue
-                remaining -= bill_amount
+                account_balance -= bill_amount
                 bill.status = BillStatus.PAID
                 bill.paid_time = now
                 bill.save(update_fields=["status", "paid_time", "updated_at"])
                 paid_bill_ids.append(bill.id)
+
+            profile.balance = account_balance
+            profile.save(update_fields=["balance", "updated_at"])
 
         _write_operation_log(request, "simulate_recharge", f"room:{room_id}")
         return Response(
@@ -391,7 +510,8 @@ class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                 "record": RechargeRecordSerializer(record).data,
                 "paid_bill_ids": paid_bill_ids,
                 "paid_bill_count": len(paid_bill_ids),
-                "remaining_amount": f"{remaining:.2f}",
+                "remaining_amount": f"{account_balance:.2f}",
+                "account_balance": f"{account_balance:.2f}",
             }
         )
 
@@ -431,6 +551,20 @@ class ProfileViewSet(viewsets.GenericViewSet):
         serializer.save()
         _write_operation_log(request, "update_profile", f"user:{request.user.id}")
         return Response(ProfileSerializer(request.user).data)
+
+    @action(detail=False, methods=["get"], url_path="balance")
+    @extend_schema(
+        summary="获取账户余额",
+        responses={200: OpenApiResponse(description="账户余额")},
+    )
+    def balance(self, request):
+        profile = self._profile_object()
+        return Response(
+            {
+                "balance": f"{Decimal(profile.balance or 0):.2f}",
+                "currency": "CNY",
+            }
+        )
 
     @action(detail=False, methods=["get", "post", "delete"], url_path="bind-rooms")
     @extend_schema(

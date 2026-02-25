@@ -306,6 +306,7 @@ import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getEnergyData, getEnergyStatistics, exportEnergyData } from '@/api/energy'
 import { getMyBindRooms } from '@/api/profile'
+import { getHourlyDistribution } from '@/api/analysis'
 
 // Chart refs
 const trendChartRef = ref(null)
@@ -331,38 +332,38 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const totalRecords = ref(0)
 
-// Summary stats
+// Summary stats - 从API获取
 const summaryStats = ref([
   {
     label: '总用量',
-    value: '0',
+    value: '-',
     unit: 'kWh',
     icon: 'icon-ep-lightning',
     color: '#eab308',
-    change: '-12%',
+    change: '',
     changeClass: 'down',
   },
   {
     label: '总费用',
-    value: '0',
+    value: '-',
     unit: '元',
     icon: 'icon-ep-wallet',
     color: '#22c55e',
-    change: '+5%',
+    change: '',
     changeClass: 'up',
   },
   {
     label: '日均用量',
-    value: '0',
+    value: '-',
     unit: 'kWh/天',
     icon: 'icon-ep-trend-charts',
     color: '#3b82f6',
-    change: '-8%',
+    change: '',
     changeClass: 'down',
   },
   {
     label: '数据记录',
-    value: '0',
+    value: '-',
     unit: '条',
     icon: 'icon-ep-document',
     color: '#f97316',
@@ -442,11 +443,23 @@ function initTrendChart() {
   trendChart.value.setOption(option)
 }
 
-// Initialize hourly chart
-function initHourlyChart() {
+// Initialize hourly chart with API data
+async function initHourlyChart() {
   if (!hourlyChartRef.value) return
 
   hourlyChart.value = echarts.init(hourlyChartRef.value)
+
+  // Default data in case API fails
+  let hourlyData = [0, 0, 0, 0, 0, 0]
+
+  try {
+    const response = await getHourlyDistribution({})
+    if (response.code === 0 && response.data && response.data.buckets) {
+      hourlyData = response.data.buckets.map(bucket => parseFloat(bucket.total_value.toFixed(2)))
+    }
+  } catch (error) {
+    console.error('Failed to load hourly distribution:', error)
+  }
 
   const option = {
     grid: {
@@ -482,7 +495,7 @@ function initHourlyChart() {
       {
         name: '用量',
         type: 'bar',
-        data: [5, 8, 25, 30, 35, 20],
+        data: hourlyData,
         itemStyle: {
           borderRadius: [6, 6, 0, 0],
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
