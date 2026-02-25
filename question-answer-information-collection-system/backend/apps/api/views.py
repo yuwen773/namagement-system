@@ -1024,3 +1024,51 @@ class QuestionFilterOptionsView(APIView):
                 'locations': list(locations)
             })
         )
+
+
+class StatisticsLocationView(APIView):
+    """
+    统计分析 API - 地理位置分布
+
+    GET /api/statistics/locations/
+
+    返回格式:
+    {
+        "code": 0,
+        "data": [
+            {"name": "广东", "value": 150},
+            {"name": "北京", "value": 120},
+            ...
+        ]
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            limit = int(request.query_params.get('limit', 20))
+            limit = min(limit, 50)
+        except (ValueError, TypeError):
+            limit = 20
+
+        try:
+            location_data = (
+                Question.objects
+                .exclude(location__isnull=True)
+                .exclude(location='')
+                .values('location')
+                .annotate(value=Count('id'))
+                .order_by('-value')[:limit]
+            )
+
+            data = [
+                {"name": item['location'], "value": item['value']}
+                for item in location_data
+            ]
+
+            return Response(make_response(code=0, data=data))
+        except Exception as e:
+            return Response(
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

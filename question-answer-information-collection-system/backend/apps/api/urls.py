@@ -20,6 +20,7 @@ from .views import (
     StatisticsCategoriesView,
     StatisticsAnswerersView,
     StatisticsOverviewView,
+    StatisticsLocationView,
 )
 
 app_name = 'crawler'
@@ -55,6 +56,7 @@ urlpatterns = [
     path('statistics/trend/', StatisticsTrendView.as_view(), name='statistics-trend'),
     path('statistics/categories/', StatisticsCategoriesView.as_view(), name='statistics-categories'),
     path('statistics/answerers/', StatisticsAnswerersView.as_view(), name='statistics-answerers'),
+    path('statistics/locations/', StatisticsLocationView.as_view(), name='statistics-locations'),
 
     # 问答筛选选项 API
     path('questions/filter-options/', QuestionFilterOptionsView.as_view(), name='question-filter-options'),
