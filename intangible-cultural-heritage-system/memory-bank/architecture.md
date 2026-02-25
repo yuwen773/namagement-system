@@ -1,57 +1,73 @@
-# System Architecture
+# Architecture
 
-## 1. Goal
-- Intangible cultural heritage management + visualization system.
-- Roles: `admin` (CRUD/manage) and `user` (read-only).
+## Scope
+- System: intangible cultural heritage management + visualization.
+- Roles: `admin` (write/manage), `user` (read-only).
+- API prefix: `/api/v1`.
 
-## 2. Stack
-- Backend: Django 5.2 + DRF + SimpleJWT + MySQL 8.0+
-- Frontend (planned): Vue 3 + TypeScript + Element Plus + ECharts + Tailwind CSS
-- API base: `/api/v1`
+## Tech Stack
+- Backend: Django 5.2, DRF, SimpleJWT, MySQL 8+.
+- Frontend (planned): Vue 3 + TypeScript + Element Plus + ECharts.
 
-## 3. Backend file map (what each file does)
-- `backend/manage.py`: Django command entry.
-- `backend/heritage_system/settings.py`: app registration, DB, DRF/JWT/CORS, global defaults.
-- `backend/heritage_system/urls.py`: root URL routing, mounts versioned APIs.
-- `backend/utils/response.py`: unified response envelope + DRF exception handler.
-- `backend/apps/users/models.py`: `UserProfile` and role utilities (`admin|user`).
-- `backend/apps/users/permissions.py`: `IsAdmin`, `IsAdminOrReadOnly`.
-- `backend/apps/users/serializers.py`: auth request/response serialization.
-- `backend/apps/users/views.py`: login/refresh/logout/me endpoints.
-- `backend/apps/users/urls.py`: auth route table.
-- `backend/apps/users/admin.py`: admin-side role management.
-- `backend/apps/categories/models.py`: `Category` tree dictionary (`parent`, `level`, `code`).
-- `backend/apps/categories/admin.py`: category admin list/filter/search.
-- `backend/apps/regions/models.py`: `Region` with ISO code, country name, lat/lon, continent.
-- `backend/apps/regions/admin.py`: region admin list/filter/search.
-- `backend/apps/heritage/models.py`: `HeritageItem` core domain model.
-- `backend/apps/heritage/admin.py`: heritage item admin management.
-- `backend/apps/inheritors/models.py`: `Inheritor` model, linked to heritage + region, unique per item/name.
-- `backend/apps/inheritors/admin.py`: inheritor admin management.
-- `backend/apps/importer/models.py`: `ImportJob` + `ImportError` for import tracking.
-- `backend/apps/importer/admin.py`: import job/error inspection in admin.
-- `backend/apps/*/migrations/0001_initial.py`: schema snapshots for each domain.
-- `sql/init_db.sql`: base DB bootstrap and seed script.
+## File Responsibilities
+- Core
+  - `backend/manage.py`: Django command entry.
+  - `backend/heritage_system/settings.py`: app registry, DB, auth, middleware, CORS.
+  - `backend/heritage_system/urls.py`: root routing for versioned API modules.
+- Shared utils
+  - `backend/utils/response.py`: unified response `{code, message, data, total?}` and exception mapping.
+  - `backend/utils/pagination.py`: unified list pagination (`page_size=20`).
+- Auth (`users`)
+  - `backend/apps/users/models.py`: `UserProfile` and role helpers.
+  - `backend/apps/users/permissions.py`: `IsAdmin`, `IsAdminOrReadOnly`.
+  - `backend/apps/users/serializers.py`: auth serializers.
+  - `backend/apps/users/views.py`: login/refresh/logout/me endpoints.
+  - `backend/apps/users/urls.py`: auth routes.
+  - `backend/apps/users/admin.py`: user/profile admin config.
+- Heritage items (`heritage`)
+  - `backend/apps/heritage/models.py`: `HeritageItem` model.
+  - `backend/apps/heritage/serializers.py`: read/write serializers.
+  - `backend/apps/heritage/views.py`: CRUD + filters + pagination + permission.
+  - `backend/apps/heritage/urls.py`: heritage routes.
+  - `backend/apps/heritage/admin.py`: admin config.
+- Inheritors (`inheritors`)
+  - `backend/apps/inheritors/models.py`: `Inheritor` model.
+  - `backend/apps/inheritors/serializers.py`: read/write serializers and heritage brief fields.
+  - `backend/apps/inheritors/views.py`: CRUD + filters + pagination + permission.
+  - `backend/apps/inheritors/urls.py`: inheritor routes.
+  - `backend/apps/inheritors/admin.py`: admin config.
+- Categories (`categories`)
+  - `backend/apps/categories/models.py`: category dictionary with parent-child structure.
+  - `backend/apps/categories/serializers.py`: read/write serializers and parent brief fields.
+  - `backend/apps/categories/views.py`: CRUD + `tree` action + filters + permission.
+  - `backend/apps/categories/urls.py`: category routes.
+  - `backend/apps/categories/admin.py`: admin config.
+- Regions (`regions`)
+  - `backend/apps/regions/models.py`: region model (ISO code, name, coordinates, continent).
+  - `backend/apps/regions/serializers.py`: read/write serializers.
+  - `backend/apps/regions/views.py`: CRUD + `search` (name/code) + permission.
+  - `backend/apps/regions/urls.py`: region routes.
+  - `backend/apps/regions/admin.py`: admin config.
+- Import (`importer`)
+  - `backend/apps/importer/models.py`: `ImportJob`, `ImportError`.
+  - `backend/apps/importer/admin.py`: import job/error admin inspection.
+- DB lifecycle
+  - `backend/apps/*/migrations/*.py`: schema evolution history.
+  - `sql/init_db.sql`: initial DB bootstrap data/script.
 
-## 4. Current data-model relationships
+## Data Model Relationships
 - `Category` 1:N `HeritageItem`
 - `Region` 1:N `HeritageItem`
 - `HeritageItem` 1:N `Inheritor`
 - `Region` 1:N `Inheritor`
 - `ImportJob` 1:N `ImportError`
-- `User` 1:N `ImportJob` (`created_by`)
+- `User` 1:N `ImportJob`
 
-## 5. Current architecture decisions
-- Unified response format: `{ code, message, data, total? }`
-- Default auth: JWT Bearer
-- Permission baseline: authenticated by default; write operations role-restricted
-- Domain integrity: FK constraints + practical indexes + uniqueness for key business rule
-
-## 6. Milestone
-- Phase 1: done
-- Phase 2: done
-- Phase 3 (3.1~3.4): done and test-passed
-- Next: Phase 4.1 (heritage CRUD APIs)
+## Architecture Insights
+- API contract is unified, so frontend only handles one success/error envelope shape.
+- Permission model is centralized (`IsAdminOrReadOnly`) and reused across resource apps.
+- Resource APIs follow one implementation pattern (ModelViewSet + filters + pagination), reducing maintenance cost.
+- Category tree endpoint keeps hierarchical reads simple without changing relational schema.
 
 ---
 Last updated: 2026-02-25
