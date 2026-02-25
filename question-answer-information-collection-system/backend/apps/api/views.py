@@ -1072,3 +1072,94 @@ class StatisticsLocationView(APIView):
                 make_response(code=-1, message="系统繁忙，请稍后重试"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class StatisticsHotQuestionsView(APIView):
+    """
+    统计分析 API - 热门问题
+
+    GET /api/statistics/hot-questions/
+
+    返回格式:
+    {
+        "code": 0,
+        "data": [
+            {"title": "问题标题", "answer_count": 25, "category": "影视"},
+            ...
+        ]
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            limit = int(request.query_params.get('limit', 10))
+            limit = min(limit, 20)
+        except (ValueError, TypeError):
+            limit = 10
+
+        try:
+            hot_questions = (
+                Question.objects
+                .filter(answer_count__gt=0)
+                .values('title', 'answer_count', 'category')
+                .order_by('-answer_count')[:limit]
+            )
+
+            data = [
+                {
+                    "title": item['title'][:50] + '...' if len(item['title']) > 50 else item['title'],
+                    "answer_count": item['answer_count'],
+                    "category": item['category'] or '未分类'
+                }
+                for item in hot_questions
+            ]
+
+            return Response(make_response(code=0, data=data))
+        except Exception as e:
+            return Response(
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StatisticsAnswerDistributionView(APIView):
+    """
+    统计分析 API - 回答数量分布
+
+    GET /api/statistics/answer-distribution/
+
+    返回格式:
+    {
+        "code": 0,
+        "data": [
+            {"range": "0", "count": 150, "label": "无回答"},
+            {"range": "1-3", "count": 80, "label": "1-3个"},
+            {"range": "4-10", "count": 45, "label": "4-10个"},
+            {"range": "10+", "count": 25, "label": "10个以上"}
+        ]
+    }
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # 统计各回答数区间的数量
+            zero = Question.objects.filter(answer_count=0).count()
+            one_three = Question.objects.filter(answer_count__gte=1, answer_count__lte=3).count()
+            four_ten = Question.objects.filter(answer_count__gte=4, answer_count__lte=10).count()
+            over_ten = Question.objects.filter(answer_count__gt=10).count()
+
+            data = [
+                {"range": "0", "count": zero, "label": "无回答"},
+                {"range": "1-3", "count": one_three, "label": "1-3个"},
+                {"range": "4-10", "count": four_ten, "label": "4-10个"},
+                {"range": "10+", "count": over_ten, "label": "10个以上"}
+            ]
+
+            return Response(make_response(code=0, data=data))
+        except Exception as e:
+            return Response(
+                make_response(code=-1, message="系统繁忙，请稍后重试"),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
