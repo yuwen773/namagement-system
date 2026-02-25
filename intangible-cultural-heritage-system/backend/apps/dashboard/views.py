@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.db.models import Count, Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -65,6 +67,93 @@ class DashboardMapDistributionView(APIView):
                 "inheritor_count": region.inheritor_count,
             }
             for region in queryset
+        ]
+
+        return success_response(data=data, message="获取成功")
+
+
+class DashboardCategoryDistributionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        categories = list(
+            Category.objects.annotate(
+            heritage_count=Count("heritage_items", distinct=True),
+            ).order_by("-heritage_count", "name")
+        )
+
+        total_heritage = HeritageItem.objects.count()
+        if total_heritage == 0:
+            data = [
+                {
+                    "category_name": category.name,
+                    "heritage_count": category.heritage_count,
+                    "percentage": 0.0,
+                }
+                for category in categories
+            ]
+            return success_response(data=data, message="获取成功")
+
+        total_decimal = Decimal(total_heritage)
+        percentages = []
+        rounded_sum = Decimal("0.00")
+        last_non_zero_index = None
+
+        for index, category in enumerate(categories):
+            count = category.heritage_count
+            if count > 0:
+                last_non_zero_index = index
+            percentage = (
+                Decimal(count) * Decimal("100") / total_decimal
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            percentages.append(percentage)
+            rounded_sum += percentage
+
+        if last_non_zero_index is not None and rounded_sum != Decimal("100.00"):
+            percentages[last_non_zero_index] += Decimal("100.00") - rounded_sum
+
+        data = [
+            {
+                "category_name": category.name,
+                "heritage_count": category.heritage_count,
+                "percentage": float(percentages[index]),
+            }
+            for index, category in enumerate(categories)
+        ]
+
+        return success_response(data=data, message="获取成功")
+
+
+class DashboardCountryRankingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        limit_param = (request.query_params.get("limit") or "").strip()
+        limit = 20
+        if limit_param:
+            try:
+                limit = int(limit_param)
+            except ValueError:
+                limit = 20
+        if limit <= 0:
+            limit = 20
+        limit = min(limit, 100)
+
+        regions = list(
+            Region.objects.annotate(
+                heritage_count=Count("heritage_items", distinct=True),
+            )
+            .filter(heritage_count__gt=0)
+            .order_by("-heritage_count", "country_name")[:limit]
+        )
+
+        data = [
+            {
+                "rank": index + 1,
+                "country_name": region.country_name,
+                "heritage_count": region.heritage_count,
+            }
+            for index, region in enumerate(regions)
         ]
 
         return success_response(data=data, message="获取成功")
