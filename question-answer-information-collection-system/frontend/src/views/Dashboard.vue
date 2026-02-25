@@ -139,6 +139,94 @@
             </div>
           </div>
         </div>
+
+        <!-- Locations Pie Chart -->
+        <div class="chart-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <span class="title-icon" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.1) 100%); color: #f59e0b;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+              地理位置分布
+            </h3>
+          </div>
+          <div class="card-body">
+            <div v-if="loading.locations" class="chart-loading">
+              <div class="loading-spinner"></div>
+            </div>
+            <ECharts v-else :options="locationsChartOptions" theme="light" />
+            <div v-if="!loading.locations && !locationsData.length" class="chart-empty">
+              <span class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+              <p>暂无数据</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Answer Distribution Chart -->
+        <div class="chart-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <span class="title-icon" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(252, 129, 129, 0.1) 100%); color: #ef4444;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </span>
+              回答数量分布
+            </h3>
+          </div>
+          <div class="card-body">
+            <div v-if="loading.answerDistribution" class="chart-loading">
+              <div class="loading-spinner"></div>
+            </div>
+            <ECharts v-else :options="answerDistributionChartOptions" theme="light" />
+            <div v-if="!loading.answerDistribution && !answerDistributionData.length" class="chart-empty">
+              <span class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </span>
+              <p>暂无数据</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hot Questions Chart -->
+        <div class="chart-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <span class="title-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(167, 139, 250, 0.1) 100%); color: #8b5cf6;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                </svg>
+              </span>
+              热门问题 TOP10
+            </h3>
+          </div>
+          <div class="card-body">
+            <div v-if="loading.hotQuestions" class="chart-loading">
+              <div class="loading-spinner"></div>
+            </div>
+            <ECharts v-else :options="hotQuestionsChartOptions" theme="light" />
+            <div v-if="!loading.hotQuestions && !hotQuestionsData.length" class="chart-empty">
+              <span class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                </svg>
+              </span>
+              <p>暂无数据</p>
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -231,7 +319,10 @@ const loading = ref({
   overview: true,
   trend: true,
   answerers: true,
-  tags: true
+  tags: true,
+  locations: true,
+  hotQuestions: true,
+  answerDistribution: true
 })
 
 const overviewData = ref({
@@ -244,6 +335,9 @@ const overviewData = ref({
 const trendData = ref([])
 const answerersData = ref([])
 const tagsData = ref([])
+const locationsData = ref([])
+const hotQuestionsData = ref([])
+const answerDistributionData = ref([])
 
 const crawlerLoading = ref(false)
 const crawlerData = ref({
@@ -474,6 +568,154 @@ const tagsChartOptions = computed(() => {
   }
 })
 
+// 地理位置饼图配置
+const locationsChartOptions = computed(() => ({
+  backgroundColor: 'transparent',
+  tooltip: {
+    trigger: 'item',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    textStyle: { color: '#374151', fontSize: 12 },
+    extraCssText: 'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border-radius: 8px;'
+  },
+  legend: {
+    orient: 'vertical',
+    right: '5%',
+    top: 'center',
+    textStyle: { color: '#6b7280', fontSize: 11 }
+  },
+  series: [{
+    type: 'pie',
+    radius: ['45%', '70%'],
+    center: ['35%', '50%'],
+    avoidLabelOverlap: false,
+    itemStyle: {
+      borderRadius: 8,
+      borderColor: '#fff',
+      borderWidth: 2
+    },
+    label: {
+      show: false,
+      position: 'center'
+    },
+    emphasis: {
+      label: {
+        show: true,
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#374151'
+      }
+    },
+    labelLine: { show: false },
+    data: locationsData.value.map((d, i) => ({
+      value: d.value,
+      name: d.name,
+      itemStyle: {
+        color: ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#f59e0b', '#fbbf24', '#fcd34d', '#8b5cf6', '#a78bfa', '#ec4899'][i % 10]
+      }
+    }))
+  }]
+}))
+
+// 回答数量分布柱状图配置
+const answerDistributionChartOptions = computed(() => ({
+  backgroundColor: 'transparent',
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    textStyle: { color: '#374151', fontSize: 12 },
+    extraCssText: 'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border-radius: 8px;'
+  },
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    top: '10%',
+    containLabel: true
+  },
+  xAxis: {
+    type: 'category',
+    data: answerDistributionData.value.map(d => d.label),
+    axisLine: { lineStyle: { color: '#e5e7eb' } },
+    axisLabel: { color: '#6b7280', fontSize: 11 }
+  },
+  yAxis: {
+    type: 'value',
+    axisLine: { show: false },
+    splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } },
+    axisLabel: { color: '#6b7280', fontSize: 11 }
+  },
+  series: [{
+    data: answerDistributionData.value.map((d, i) => ({
+      value: d.count,
+      itemStyle: {
+        color: i === 0 ? '#ef4444' : i === 1 ? '#f59e0b' : i === 2 ? '#10b981' : '#0d9488',
+        borderRadius: [8, 8, 0, 0]
+      }
+    })),
+    type: 'bar',
+    barWidth: '50%',
+    label: {
+      show: true,
+      position: 'top',
+      color: '#6b7280',
+      fontSize: 11
+    }
+  }]
+}))
+
+// 热门问题配置
+const hotQuestionsChartOptions = computed(() => ({
+  backgroundColor: 'transparent',
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    textStyle: { color: '#374151', fontSize: 12 },
+    extraCssText: 'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border-radius: 8px;'
+  },
+  grid: {
+    left: '3%',
+    right: '8%',
+    bottom: '3%',
+    top: '10%',
+    containLabel: true
+  },
+  xAxis: {
+    type: 'value',
+    axisLine: { show: false },
+    splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } },
+    axisLabel: { color: '#6b7280', fontSize: 11 }
+  },
+  yAxis: {
+    type: 'category',
+    data: hotQuestionsData.value.map(d => d.title),
+    axisLine: { lineStyle: { color: '#e5e7eb' } },
+    axisLabel: { color: '#6b7280', fontSize: 10, width: 150, overflow: 'truncate' }
+  },
+  series: [{
+    data: hotQuestionsData.value.map((d, i) => ({
+      value: d.answer_count,
+      itemStyle: {
+        color: i < 3 ? '#f59e0b' : '#fbbf24',
+        borderRadius: [0, 4, 4, 0]
+      }
+    })),
+    type: 'bar',
+    barWidth: '60%',
+    label: {
+      show: true,
+      position: 'right',
+      color: '#6b7280',
+      fontSize: 11
+    }
+  }]
+}))
+
 // Methods
 const fetchOverview = async () => {
   try {
@@ -524,6 +766,45 @@ const fetchTags = async () => {
     console.error('Failed to fetch categories:', e)
   } finally {
     loading.value.tags = false
+  }
+}
+
+const fetchLocations = async () => {
+  try {
+    const res = await request.get('/api/statistics/locations/')
+    if (res.code === 0) {
+      locationsData.value = (res.data || []).slice(0, 10)
+    }
+  } catch (e) {
+    console.error('Failed to fetch locations:', e)
+  } finally {
+    loading.value.locations = false
+  }
+}
+
+const fetchHotQuestions = async () => {
+  try {
+    const res = await request.get('/api/statistics/hot-questions/')
+    if (res.code === 0) {
+      hotQuestionsData.value = (res.data || []).slice(0, 10)
+    }
+  } catch (e) {
+    console.error('Failed to fetch hot questions:', e)
+  } finally {
+    loading.value.hotQuestions = false
+  }
+}
+
+const fetchAnswerDistribution = async () => {
+  try {
+    const res = await request.get('/api/statistics/answer-distribution/')
+    if (res.code === 0) {
+      answerDistributionData.value = res.data || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch answer distribution:', e)
+  } finally {
+    loading.value.answerDistribution = false
   }
 }
 
@@ -586,6 +867,9 @@ onMounted(() => {
   fetchTrend()
   fetchAnswerers()
   fetchTags()
+  fetchLocations()
+  fetchHotQuestions()
+  fetchAnswerDistribution()
   fetchCrawlerStatus()
 })
 </script>
@@ -801,9 +1085,14 @@ onMounted(() => {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   grid-template-rows: auto auto;
   gap: 1.5rem;
+}
+
+.chart-card.large {
+  grid-column: span 2;
+  grid-row: span 1;
 }
 
 .chart-card {
