@@ -46,10 +46,17 @@ class UserCreateSerializer(serializers.ModelSerializer):
     """用户创建序列化器（注册用）- 明文密码存储"""
 
     password = serializers.CharField(write_only=True, min_length=6)
+    email = serializers.EmailField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password']
+
+    def validate_username(self, value):
+        """验证用户名唯一性"""
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("该用户名已被使用")
+        return value
 
     def create(self, validated_data):
         # 明文存储密码，不使用 create_user() 的哈希处理
