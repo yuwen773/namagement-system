@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db import IntegrityError
 from .models import User
 
 
@@ -52,20 +53,18 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'email', 'password']
 
-    def validate_username(self, value):
-        """验证用户名唯一性"""
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("该用户名已被使用")
-        return value
-
     def create(self, validated_data):
-        # 明文存储密码，不使用 create_user() 的哈希处理
-        user = User(**validated_data)
-        # 直接设置密码，不哈希
-        user.password = validated_data['password']
-        user.role = validated_data.get('role', 'user')
-        user.save()
-        return user
+        """处理用户创建，捕获 IntegrityError 防止并发情况下的用户名重复"""
+        try:
+            user = User(**validated_data)
+            user.password = validated_data['password']
+            user.role = validated_data.get('role', 'user')
+            user.save()
+            return user
+        except IntegrityError:
+            raise serializers.ValidationError({
+                "username": "该用户名已被使用"
+            })
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
