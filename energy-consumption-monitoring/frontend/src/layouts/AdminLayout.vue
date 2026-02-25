@@ -239,15 +239,24 @@ const isCollapsed = ref(false)
 
 // UI state
 const showNotifications = ref(false)
-const alarmCount = ref(3)
-const notificationCount = ref(5)
+const alarmCount = ref(0) // TODO: 从告警API获取待处理告警数量
+const notificationCount = ref(0) // TODO: 从通知API获取未读通知数量
 
-// Mock notifications
-const notifications = ref([
-  { id: 1, type: 'warning', title: '告警通知', message: '教学楼A-301用电量超标', time: '5分钟前', read: false },
-  { id: 2, type: 'success', title: '系统消息', message: '数据导入成功', time: '1小时前', read: false },
-  { id: 3, type: 'info', title: '系统通知', message: '系统维护计划于今晚进行', time: '2小时前', read: true },
-])
+// Notifications - 从API获取通知列表 (待实现)
+const notifications = ref([])
+
+// Load notification counts (待实现API)
+async function loadNotificationCounts() {
+  try {
+    // TODO: 调用API获取告警和通知数量
+    // const alarmResponse = await getAlarmStatistics()
+    // if (alarmResponse.code === 0) {
+    //   alarmCount.value = alarmResponse.data.pending || 0
+    // }
+  } catch (error) {
+    console.error('Failed to load notification counts:', error)
+  }
+}
 
 // Computed properties
 const activeMenu = computed(() => route.path)
@@ -342,6 +351,9 @@ async function handleLogout() {
 
 // Lifecycle
 onMounted(() => {
+  // Load notification counts
+  loadNotificationCounts()
+
   // Restore sidebar state
   const savedState = localStorage.getItem('sidebarCollapsed')
   if (savedState !== null) {

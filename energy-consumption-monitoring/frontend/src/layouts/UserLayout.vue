@@ -270,14 +270,8 @@ async function loadBoundRooms() {
     }
   } catch (error) {
     console.error('Failed to load bound rooms:', error)
-    // Use mock data for development
-    boundRooms.value = [
-      { id: 1, name: '301宿舍', building: '学生宿舍A栋', floor: '3层' },
-      { id: 2, name: '实验室201', building: '实验楼B栋', floor: '2层' },
-    ]
-    if (boundRooms.value.length > 0 && !currentRoomId.value) {
-      currentRoomId.value = boundRooms.value[0].id
-    }
+    boundRooms.value = []
+    ElMessage.error('加载绑定房间失败，请稍后重试')
   }
 }
 
@@ -297,11 +291,8 @@ async function loadNotices() {
     }
   } catch (error) {
     console.error('Failed to load notices:', error)
-    // Use mock data
-    notices.value = [
-      { id: 1, title: '停水通知', content: '明日9:00-17:00进行管道维护', type: 'warning', time: '2小时前', read: false },
-      { id: 2, title: '节能月活动', content: '参与节能活动赢取奖励', type: 'info', time: '1天前', read: true },
-    ]
+    notices.value = []
+    // Don't show error message for notices as it's not critical
   }
 }
 

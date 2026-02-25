@@ -226,47 +226,22 @@ const trendChart = shallowRef(null)
 const historyChart = shallowRef(null)
 
 // Data
-// TODO: 部分数据需要从 API 获取:
-// - myRank, rankTrend 需要从排名 API 获取
-// - comparisonStats 需要从对比分析 API 获取
-// - achievements 成就系统需要后端支持
-const myRank = ref(15) // Should come from API: getMyRanking()
-const rankTrend = ref(3) // Should come from API
+// NOTE: 以下数据从 API 获取:
+// - myRank, rankTrend 从排名 API 获取
+// - comparisonStats 从对比分析 API 获取 (待后端实现)
+// - achievements 成就系统需要后端支持 (暂为静态数据)
+const myRank = ref(null) // 从排名 API 获取
+const rankTrend = ref(0) // 从排名 API 获取
 const radarCompareTarget = ref('school')
 const rankingType = ref('week')
 
-// Comparison stats - 需要从 API 获取对比数据
-const comparisonStats = ref([
-  {
-    label: 'vs 全校平均',
-    value: '-18%',
-    icon: 'icon-ep-trend-charts',
-    color: '#22c55e',
-    indicator: '优于平均',
-    indicatorClass: 'good',
-  },
-  {
-    label: '节能指数',
-    value: '82分',
-    icon: 'icon-ep-data-analysis',
-    color: '#eab308',
-    indicator: '良好',
-    indicatorClass: 'good',
-  },
-  {
-    label: '碳排放',
-    value: '-12kg',
-    icon: 'icon-ep-leaf',
-    color: '#3b82f6',
-    indicator: '减少排放',
-    indicatorClass: 'good',
-  },
-])
+// Comparison stats - 从 API 获取对比数据 (待后端实现完整接口)
+const comparisonStats = ref([])
 
 // Ranking list
 const rankingList = ref([])
 
-// Achievements
+// Achievements - 静态数据，待后端实现成就系统API
 const achievements = ref([
   { id: 1, name: '节能先锋', desc: '连续7天低于平均', icon: '🌟', unlocked: true },
   { id: 2, name: '节水达人', desc: '用水量低于平均30%', icon: '💧', unlocked: true },
@@ -539,6 +514,7 @@ async function loadRadarData() {
     }
   } catch (error) {
     console.error('Failed to load comparison data:', error)
+    ElMessage.error('加载对比数据失败，请稍后重试')
   }
 }
 
@@ -571,29 +547,9 @@ async function loadRankingData() {
     }
   } catch (error) {
     console.error('Failed to load ranking data:', error)
-    // Use mock data
-    generateMockRanking()
+    ElMessage.error('加载排名数据失败，请稍后重试')
+    rankingList.value = []
   }
-}
-
-function generateMockRanking() {
-  const mockData = []
-  for (let i = 0; i < 20; i++) {
-    mockData.push({
-      id: i,
-      name: i === 4 ? '我' : `用户${i + 1}`,
-      room: `${Math.floor(i / 5) + 1}0${(i % 5) + 1}宿舍`,
-      score: Math.floor(95 - i * 2 + Math.random() * 10),
-      saving: `${Math.floor(50 - i * 1.5)} kWh`,
-      trend: Math.floor(Math.random() * 5) - 2,
-      trend_text: `${Math.floor(Math.random() * 5) - 2} 位`,
-      trend_class: Math.random() > 0.5 ? 'trend-up' : 'trend-down',
-      avatar: null,
-      is_me: i === 4,
-    })
-  }
-  rankingList.value = mockData
-  myRank.value = 5
 }
 
 // Handle resize

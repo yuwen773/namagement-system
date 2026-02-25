@@ -817,7 +817,8 @@ async function loadUsers() {
     }
   } catch (error) {
     console.error('Failed to load users:', error)
-    users.value = generateMockUsers()
+    ElMessage.error('加载用户数据失败，请稍后重试')
+    users.value = []
     updateUserStats()
   } finally {
     userLoading.value = false
@@ -830,19 +831,7 @@ function updateUserStats() {
   userStats.value.admins = users.value.filter(u => u.role === 'ADMIN').length
 }
 
-function generateMockUsers() {
-  return Array.from({ length: 25 }, (_, i) => ({
-    id: i + 1,
-    username: `user${i + 1}`,
-    real_name: ['张三', '李四', '王五', '赵六', '钱七'][i % 5] + (i > 4 ? i : ''),
-    email: `user${i + 1}@example.com`,
-    phone: `138${String(i).padStart(8, '0')}`,
-    role: i === 0 ? 'ADMIN' : 'USER',
-    is_active: true,
-    last_login: i % 3 === 0 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : null,
-    created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-  }))
-}
+// Mock function removed - using real API
 
 function debounceUserSearch() {
   setTimeout(() => {
@@ -907,23 +896,7 @@ async function submitUser() {
     }
   } catch (error) {
     console.error('Failed to save user:', error)
-    // Mock success
-    if (userDialog.isEdit) {
-      const index = users.value.findIndex(u => u.id === userDialog.form.id)
-      if (index !== -1) {
-        users.value[index] = { ...userDialog.form }
-      }
-    } else {
-      users.value.unshift({
-        ...userDialog.form,
-        id: Date.now(),
-        is_active: true,
-        created_at: new Date().toISOString(),
-      })
-    }
-    ElMessage.success(userDialog.isEdit ? '用户更新成功' : '用户创建成功')
-    userDialog.visible = false
-    updateUserStats()
+    ElMessage.error('用户保存失败，请稍后重试')
   } finally {
     userDialog.loading = false
   }
@@ -955,8 +928,7 @@ async function submitPasswordReset() {
     }
   } catch (error) {
     console.error('Failed to reset password:', error)
-    ElMessage.success('密码重置成功')
-    passwordDialog.visible = false
+    ElMessage.error('密码重置失败，请稍后重试')
   } finally {
     passwordDialog.loading = false
   }
@@ -1110,28 +1082,14 @@ async function loadLogs() {
     }
   } catch (error) {
     console.error('Failed to load logs:', error)
-    logs.value = generateMockLogs()
+    ElMessage.error('加载日志数据失败，请稍后重试')
+    logs.value = []
   } finally {
     logLoading.value = false
   }
 }
 
-function generateMockLogs() {
-  const actions = ['LOGIN', 'LOGOUT', 'CREATE', 'UPDATE', 'DELETE']
-  const resources = ['USER', 'ROLE', 'DEVICE', 'ALARM', 'BUILDING']
-  const users = ['admin', 'user1', 'user2', 'manager']
-
-  return Array.from({ length: 50 }, (_, i) => ({
-    id: i + 1,
-    user_name: users[Math.floor(Math.random() * users.length)],
-    action: actions[Math.floor(Math.random() * actions.length)],
-    resource: resources[Math.floor(Math.random() * resources.length)],
-    description: `用户执行了${getActionLabel(actions[Math.floor(Math.random() * actions.length)])}操作`,
-    ip_address: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
-    create_time: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-  }))
-}
+// Mock function removed - using real API
 
 function applyLogFilters() {
   logPagination.page = 1

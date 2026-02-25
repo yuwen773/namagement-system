@@ -498,33 +498,64 @@ function initHourlyChart() {
   hourlyChart.value.setOption(option)
 }
 
-// Generate calendar days
+// Generate calendar days from actual energy data
 function generateCalendarDays() {
   const days = []
   const today = new Date()
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
 
+  // Group data by date
+  const dataByDate = {}
+  tableData.value.forEach(item => {
+    if (!dataByDate[item.date]) {
+      dataByDate[item.date] = { total: 0, count: 0, byType: {} }
+    }
+    const value = parseFloat(item.value) || 0
+    dataByDate[item.date].total += value
+    dataByDate[item.date].count += 1
+    if (!dataByDate[item.date].byType[item.type]) {
+      dataByDate[item.date].byType[item.type] = 0
+    }
+    dataByDate[item.date].byType[item.type] += value
+  })
+
   for (let i = 1; i <= daysInMonth; i++) {
     const date = new Date(today.getFullYear(), today.getMonth(), i)
     const isToday = i === today.getDate()
+    const dateStr = date.toISOString().split('T')[0]
     const dayOfWeek = date.getDay()
 
-    // Simulate data
-    const value = dayOfWeek !== 0 ? Math.floor(Math.random() * 50) + 5 : 0
+    // Get actual value from data
+    const dayData = dataByDate[dateStr]
+    const value = dayData ? dayData.total : (dayOfWeek === 0 ? 0 : 0)
     const level = value === 0 ? 0 : value < 15 ? 1 : value < 30 ? 2 : value < 45 ? 3 : 4
+
+    // Build breakdown from actual data
+    const breakdown = []
+    if (dayData && dayData.byType) {
+      if (dayData.byType.ELECTRICITY) {
+        breakdown.push({ label: '电', value: dayData.byType.ELECTRICITY.toFixed(1), color: '#eab308' })
+      }
+      if (dayData.byType.WATER) {
+        breakdown.push({ label: '水', value: dayData.byType.WATER.toFixed(1), color: '#3b82f6' })
+      }
+      if (dayData.byType.GAS) {
+        breakdown.push({ label: '气', value: dayData.byType.GAS.toFixed(1), color: '#ef4444' })
+      }
+    }
 
     days.push({
       date: `${i}日`,
-      fullDate: date.toISOString().split('T')[0],
+      fullDate: dateStr,
       value,
       unit: 'kWh',
       cost: value * 0.52,
       isToday,
       level,
-      breakdown: [
-        { label: '电', value: (value * 0.65).toFixed(1), color: '#eab308' },
-        { label: '水', value: (value * 0.25).toFixed(1), color: '#3b82f6' },
-        { label: '气', value: (value * 0.10).toFixed(1), color: '#ef4444' },
+      breakdown: breakdown.length > 0 ? breakdown : [
+        { label: '电', value: '0', color: '#eab308' },
+        { label: '水', value: '0', color: '#3b82f6' },
+        { label: '气', value: '0', color: '#ef4444' },
       ],
     })
   }
@@ -578,35 +609,13 @@ async function loadData() {
     }
   } catch (error) {
     console.error('Failed to load energy data:', error)
-    // Use mock data
-    generateMockData()
+    ElMessage.error('加载能耗数据失败，请稍后重试')
+    tableData.value = []
+    totalRecords.value = 0
   }
 }
 
-function generateMockData() {
-  const mockData = []
-  for (let i = 0; i < 30; i++) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    mockData.push({
-      date: date.toISOString().split('T')[0],
-      type: ['ELECTRICITY', 'WATER', 'GAS'][Math.floor(Math.random() * 3)],
-      value: (Math.random() * 30 + 5).toFixed(2),
-      unit: 'kWh',
-      cost: Math.random() * 20,
-      room: '301宿舍',
-      status: 'normal',
-    })
-  }
-  tableData.value = mockData
-  totalRecords.value = mockData.length
-  summaryStats.value[0].value = '245.8'
-  summaryStats.value[1].value = '127.82'
-  summaryStats.value[2].value = '8.2'
-  summaryStats.value[3].value = '30'
-
-  updateChartsWithData(mockData)
-}
+// Mock function removed - using real API
 
 function updateChartsWithData(data) {
   if (trendChart.value && data.length > 0) {

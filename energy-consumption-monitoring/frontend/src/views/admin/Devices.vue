@@ -603,10 +603,9 @@ async function loadDevices() {
     }
   } catch (error) {
     console.error('Failed to load devices:', error)
-    // Generate mock data
-    devices.value = generateMockDevices()
-    pagination.total = devices.value.length
-    updateStats()
+    ElMessage.error('加载设备数据失败，请稍后重试')
+    devices.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
@@ -686,37 +685,7 @@ function updateStats() {
   deviceStats.value[3].percent = total > 0 ? Math.round((fault / total) * 100) : 0
 }
 
-function generateMockDevices() {
-  const energyTypes = ['ELECTRICITY', 'WATER', 'GAS']
-  const statuses = ['ONLINE', 'OFFLINE', 'FAULT']
-  const buildings = ['教学楼A', '实验楼', '图书馆', '行政楼', '宿舍楼1']
-  const models = ['EM-2000', 'SM-100', 'GW-500', 'DL-300', 'MK-800']
-
-  return Array.from({ length: 50 }, (_, i) => {
-    const status = statuses[Math.floor(Math.random() * statuses.length)]
-    const energyType = energyTypes[Math.floor(Math.random() * energyTypes.length)]
-    const building = buildings[Math.floor(Math.random() * buildings.length)]
-
-    return {
-      id: i + 1,
-      name: `${getEnergyTypeLabel(energyType)}表-${String(i + 1).padStart(3, '0')}`,
-      device_id: `DEV${String(i + 1).padStart(6, '0')}`,
-      energy_type: energyType,
-      model: models[Math.floor(Math.random() * models.length)],
-      status: status,
-      building_id: Math.floor(Math.random() * 5) + 1,
-      building_name: building,
-      floor_id: Math.floor(Math.random() * 6) + 1,
-      floor_name: `${Math.floor(Math.random() * 6) + 1}层`,
-      room_id: Math.random() > 0.3 ? Math.floor(Math.random() * 20) + 1 : null,
-      room_name: Math.random() > 0.3 ? `${Math.floor(Math.random() * 5) + 1}0${Math.floor(Math.random() * 9) + 1}室` : null,
-      latest_data: status === 'ONLINE' ? { value: Math.random() * 500 + 50 } : null,
-      last_data_time: status === 'ONLINE' ? new Date(Date.now() - Math.random() * 3600000).toISOString() : null,
-      created_at: new Date(Date.now() - Math.random() * 90 * 24 * 3600000).toISOString(),
-      description: Math.random() > 0.7 ? '用于监测区域的能耗数据' : '',
-    }
-  })
-}
+// Mock function removed - using real API
 
 // Actions
 function refreshDevices() {
@@ -811,22 +780,7 @@ async function submitDevice() {
     }
   } catch (error) {
     console.error('Failed to save device:', error)
-    // Mock success
-    if (deviceDialog.isEdit) {
-      const index = devices.value.findIndex(d => d.id === deviceDialog.form.id)
-      if (index !== -1) {
-        devices.value[index] = { ...deviceDialog.form }
-      }
-    } else {
-      devices.value.unshift({
-        ...deviceDialog.form,
-        id: Date.now(),
-        created_at: new Date().toISOString(),
-      })
-    }
-    ElMessage.success(deviceDialog.isEdit ? '设备更新成功' : '设备创建成功')
-    deviceDialog.visible = false
-    updateStats()
+    ElMessage.error('操作失败，请稍后重试')
   } finally {
     deviceDialog.loading = false
   }
@@ -848,10 +802,7 @@ async function handleDeleteDevice(device) {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('Failed to delete device:', error)
-      // Mock success
-      devices.value = devices.value.filter(d => d.id !== device.id)
-      ElMessage.success('设备删除成功')
-      updateStats()
+      ElMessage.error('删除失败，请稍后重试')
     }
   }
 }
@@ -886,20 +837,7 @@ async function submitBind() {
     }
   } catch (error) {
     console.error('Failed to bind room:', error)
-    // Mock success
-    const index = devices.value.findIndex(d => d.id === bindDialog.device.id)
-    if (index !== -1) {
-      if (bindDialog.room_cascade && bindDialog.room_cascade.length === 3) {
-        // In real app, would fetch room details
-        devices.value[index].room_id = bindDialog.room_cascade[2]
-        devices.value[index].room_name = '已绑定房间'
-      } else {
-        devices.value[index].room_id = null
-        devices.value[index].room_name = null
-      }
-    }
-    ElMessage.success('绑定成功')
-    bindDialog.visible = false
+    ElMessage.error('绑定失败，请稍后重试')
   } finally {
     bindDialog.loading = false
   }

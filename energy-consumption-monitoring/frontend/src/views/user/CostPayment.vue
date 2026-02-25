@@ -589,35 +589,8 @@ async function loadBills() {
     }
   } catch (error) {
     console.error('Failed to load bills:', error)
-    // Mock data
-    bills.value = [
-      {
-        id: 1,
-        period: '2024-01',
-        room: '301宿舍',
-        amount: 186.50,
-        status: 'unpaid',
-        is_overdue: false,
-        items: [
-          { name: '电', usage: '215.2 kWh', cost: 111.90, color: '#eab308' },
-          { name: '水', usage: '13.3 m³', cost: 46.55, color: '#3b82f6' },
-          { name: '气', usage: '10.0 m³', cost: 28.05, color: '#ef4444' },
-        ],
-      },
-      {
-        id: 2,
-        period: '2023-12',
-        room: '301宿舍',
-        amount: 165.80,
-        status: 'paid',
-        is_overdue: false,
-        items: [
-          { name: '电', usage: '192.5 kWh', cost: 100.10, color: '#eab308' },
-          { name: '水', usage: '11.5 m³', cost: 40.25, color: '#3b82f6' },
-          { name: '气', usage: '9.0 m³', cost: 25.45, color: '#ef4444' },
-        ],
-      },
-    ]
+    ElMessage.error('加载账单数据失败，请稍后重试')
+    bills.value = []
   }
 }
 
@@ -641,26 +614,9 @@ async function loadRechargeRecords() {
     }
   } catch (error) {
     console.error('Failed to load recharge records:', error)
-    // Mock data
-    rechargeRecords.value = [
-      {
-        time: '2024-01-15 14:32:05',
-        method: 'wechat',
-        amount: 100,
-        room: '301宿舍',
-        status: 'success',
-        order_no: 'RCH20240115143205',
-      },
-      {
-        time: '2024-01-08 09:15:22',
-        method: 'alipay',
-        amount: 200,
-        room: '301宿舍',
-        status: 'success',
-        order_no: 'RCH20240108091522',
-      },
-    ]
-    rechargeTotal.value = 2
+    ElMessage.error('加载充值记录失败，请稍后重试')
+    rechargeRecords.value = []
+    rechargeTotal.value = 0
   }
 }
 
@@ -705,25 +661,29 @@ async function handleRecharge() {
     })
 
     if (response.code === 0) {
-      // Update balance
-      const currentBalance = parseFloat(balance.value)
-      balance.value = (currentBalance + rechargeAmount.value).toFixed(2)
+      // Update balance from response if available
+      if (response.data && response.data.remaining_amount !== undefined) {
+        balance.value = response.data.remaining_amount
+      } else {
+        // Fallback: add recharge amount to current balance
+        const currentBalance = parseFloat(balance.value)
+        balance.value = (currentBalance + rechargeAmount.value).toFixed(2)
+      }
 
       ElMessage.success(`充值成功！已充值 ¥${rechargeAmount.value}`)
       showRechargeDialog.value = false
 
       // Reload records
       loadRechargeRecords()
+
+      // Reload bills if any were paid
+      loadBills()
     } else {
       ElMessage.error(response.message || '充值失败，请重试')
     }
   } catch (error) {
     console.error('Recharge failed:', error)
-    // Simulate success for demo
-    const currentBalance = parseFloat(balance.value)
-    balance.value = (currentBalance + rechargeAmount.value).toFixed(2)
-    ElMessage.success(`模拟充值成功！已充值 ¥${rechargeAmount.value}`)
-    showRechargeDialog.value = false
+    ElMessage.error('充值失败，请稍后重试')
   } finally {
     recharging.value = false
   }
@@ -742,13 +702,8 @@ async function payBill(bill) {
       }
     )
 
-    // Simulate payment
-    bill.status = 'paid'
-    ElMessage.success('支付成功！')
-
-    // Update balance
-    const currentBalance = parseFloat(balance.value)
-    balance.value = (currentBalance - bill.amount).toFixed(2)
+    // TODO: 实现真实的支付API调用
+    ElMessage.info('支付功能开发中，请联系管理员')
   } catch {
     // User cancelled
   }
@@ -770,13 +725,8 @@ async function payAllBills() {
       }
     )
 
-    // Simulate payment
-    unpaidBills.forEach(b => b.status = 'paid')
-    ElMessage.success(`支付成功！共支付 ¥${total.toFixed(2)}`)
-
-    // Update balance
-    const currentBalance = parseFloat(balance.value)
-    balance.value = (currentBalance - total).toFixed(2)
+    // TODO: 实现真实的批量支付API调用
+    ElMessage.info('支付功能开发中，请联系管理员')
   } catch {
     // User cancelled
   }

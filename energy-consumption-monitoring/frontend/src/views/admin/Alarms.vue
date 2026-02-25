@@ -664,9 +664,9 @@ async function loadAlarms() {
     }
   } catch (error) {
     console.error('Failed to load alarms:', error)
-    // Use mock data for development
-    alarms.value = generateMockAlarms()
-    pagination.total = alarms.value.length
+    ElMessage.error('加载告警数据失败，请稍后重试')
+    alarms.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
@@ -680,12 +680,7 @@ async function loadAlarmRules() {
     }
   } catch (error) {
     console.error('Failed to load alarm rules:', error)
-    // Use mock data
-    alarmRules.value = [
-      { id: 1, name: '用电超限告警', energy_type: 'ELECTRICITY', condition_type: 'THRESHOLD', threshold_value: 100, is_active: true },
-      { id: 2, name: '用水突变告警', energy_type: 'WATER', condition_type: 'SUDDEN_CHANGE', threshold_value: 50, is_active: true },
-      { id: 3, name: '设备离线告警', energy_type: 'ELECTRICITY', condition_type: 'OFFLINE', threshold_value: 24, is_active: true },
-    ]
+    alarmRules.value = []
   }
 }
 
@@ -712,26 +707,7 @@ async function loadStatistics() {
   alarmStats.value[3].value = alarms.value.filter(a => new Date(a.alarm_time) >= today).length
 }
 
-function generateMockAlarms() {
-  const types = ['THRESHOLD', 'SUDDEN_CHANGE', 'OFFLINE']
-  const statuses = ['PENDING', 'PROCESSED', 'IGNORED']
-  const energyTypes = ['ELECTRICITY', 'WATER', 'GAS']
-  const locations = ['教学楼A-301', '实验楼-201', '宿舍楼1-102', '行政楼-301', '图书馆-101']
-
-  return Array.from({ length: 25 }, (_, i) => ({
-    id: i + 1,
-    alarm_type: types[Math.floor(Math.random() * types.length)],
-    energy_type: energyTypes[Math.floor(Math.random() * energyTypes.length)],
-    device_name: `设备-${String(i + 1).padStart(3, '0')}`,
-    location: locations[Math.floor(Math.random() * locations.length)],
-    alarm_value: Math.random() > 0.3 ? Math.floor(50 + Math.random() * 200) : null,
-    threshold_value: Math.random() > 0.3 ? 100 : null,
-    alarm_time: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-    status: statuses[Math.floor(Math.random() * statuses.length)],
-    rule_name: '默认规则',
-    description: '能耗数据超过设定阈值，请及时检查设备状态。',
-  }))
-}
+// Mock function removed - using real API
 
 // Actions
 function refreshAlarms() {
@@ -808,20 +784,7 @@ async function submitHandle() {
     }
   } catch (error) {
     console.error('Failed to handle alarm:', error)
-    // Update local for development
-    const index = alarms.value.findIndex(a => a.id === handleDialog.alarm.id)
-    if (index !== -1) {
-      alarms.value[index] = {
-        ...alarms.value[index],
-        status: handleDialog.form.status,
-        remark: handleDialog.form.remark,
-        handler: '当前用户',
-        handle_time: new Date().toISOString(),
-      }
-    }
-    ElMessage.success('告警处理成功')
-    handleDialog.visible = false
-    loadStatistics()
+    ElMessage.error('告警处理失败，请稍后重试')
   } finally {
     handleDialog.loading = false
   }
@@ -865,20 +828,7 @@ async function submitRule() {
     }
   } catch (error) {
     console.error('Failed to save rule:', error)
-    // Mock success for development
-    if (ruleDialog.isEdit) {
-      const index = alarmRules.value.findIndex(r => r.id === ruleDialog.form.id)
-      if (index !== -1) {
-        alarmRules.value[index] = { ...ruleDialog.form }
-      }
-    } else {
-      alarmRules.value.push({
-        ...ruleDialog.form,
-        id: Date.now(),
-      })
-    }
-    ElMessage.success(ruleDialog.isEdit ? '规则更新成功' : '规则创建成功')
-    ruleDialog.visible = false
+    ElMessage.error('规则保存失败，请稍后重试')
   } finally {
     ruleDialog.loading = false
   }
@@ -900,9 +850,7 @@ async function deleteRule(rule) {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('Failed to delete rule:', error)
-      // Mock success
-      alarmRules.value = alarmRules.value.filter(r => r.id !== rule.id)
-      ElMessage.success('规则删除成功')
+      ElMessage.error('规则删除失败，请稍后重试')
     }
   }
 }
