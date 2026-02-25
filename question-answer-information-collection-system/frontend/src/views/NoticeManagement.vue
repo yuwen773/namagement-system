@@ -1,10 +1,10 @@
 <template>
-  <div class="notice-management-page">
+  <div class="notice-management-page" :class="{ 'user-view': !isAdmin }">
     <!-- Header -->
     <header class="page-header">
       <div class="header-content">
         <div class="header-left">
-          <div class="header-icon">
+          <div class="header-icon" :class="{ 'user-icon': !isAdmin }">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/>
               <path d="m9 9 2 2 4-4"/>
@@ -15,7 +15,7 @@
             <p class="page-subtitle">{{ isAdmin ? '发布和管理系统公告' : '查看系统公告通知' }}</p>
           </div>
         </div>
-        <div class="header-stats">
+        <div class="header-stats" v-if="isAdmin">
           <div class="stat-pill">
             <span class="stat-dot"></span>
             <span class="stat-value">{{ total.toLocaleString() }}</span>
@@ -25,8 +25,8 @@
       </div>
     </header>
 
-    <!-- Control Bar -->
-    <section class="control-bar">
+    <!-- Admin Control Bar -->
+    <section class="control-bar" v-if="isAdmin">
       <div class="search-container">
         <div class="search-wrapper">
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -94,7 +94,7 @@
           </svg>
           <span>刷新</span>
         </button>
-        <button v-if="isAdmin" class="add-btn" @click="openAddDialog">
+        <button class="add-btn" @click="openAddDialog">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -104,8 +104,8 @@
       </div>
     </section>
 
-    <!-- Notice Table -->
-    <section class="table-section">
+    <!-- Admin Table View -->
+    <section class="table-section" v-if="isAdmin">
       <div class="table-container">
         <!-- Table Header -->
         <div class="table-header">
@@ -115,7 +115,7 @@
             <div class="header-cell col-content">内容摘要</div>
             <div class="header-cell col-status">状态</div>
             <div class="header-cell col-created">创建时间</div>
-            <div class="header-cell col-actions" v-if="isAdmin">操作</div>
+            <div class="header-cell col-actions">操作</div>
           </div>
         </div>
 
@@ -159,7 +159,7 @@
               <div class="data-cell col-created">
                 <span class="time-text">{{ formatDate(row.created_at) }}</span>
               </div>
-              <div class="data-cell col-actions" v-if="isAdmin">
+              <div class="data-cell col-actions">
                 <button class="action-btn edit" @click="openEditDialog(row)" title="编辑">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -188,11 +188,80 @@
                 </svg>
               </div>
               <h3 class="empty-title">暂无公告</h3>
-              <p class="empty-desc">{{ isAdmin ? '点击"添加公告"创建新公告' : '暂无系统公告' }}</p>
+              <p class="empty-desc">点击"添加公告"创建新公告</p>
             </div>
           </template>
         </div>
       </div>
+
+      <!-- Pagination -->
+      <div class="pagination-wrapper" v-if="total > 0">
+        <div class="pagination-info">
+          显示第 <span class="info-highlight">{{ (currentPage - 1) * pageSize + 1 }}</span> 到
+          <span class="info-highlight">{{ Math.min(currentPage * pageSize, total) }}</span> 条，
+          共 <span class="info-highlight">{{ total }}</span> 条
+        </div>
+        <div class="pagination-controls">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="total"
+            layout="prev, pager, next, sizes, jumper"
+            background
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- User Card View -->
+    <section class="notices-container" v-else>
+      <div v-if="tableLoading" class="loading-container">
+        <div v-for="n in 3" :key="n" class="notice-card-skeleton">
+          <div class="skeleton-title"><div class="skeleton-block"></div></div>
+          <div class="skeleton-content"><div class="skeleton-block"></div></div>
+          <div class="skeleton-date"><div class="skeleton-block"></div></div>
+        </div>
+      </div>
+
+      <div v-else-if="tableData.length" class="notices-list">
+        <div
+          v-for="(notice, index) in tableData"
+          :key="notice.id"
+          class="notice-card"
+          :style="{ animationDelay: `${index * 0.08}s` }"
+        >
+          <div class="notice-card-header">
+            <h3 class="notice-title">{{ notice.title }}</h3>
+            <span class="notice-date">{{ formatUserDate(notice.created_at) }}</span>
+          </div>
+          <p class="notice-content">{{ notice.content }}</p>
+        </div>
+      </div>
+
+      <div v-else class="empty-user">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/>
+          </svg>
+        </div>
+        <p class="empty-text">暂无公告</p>
+      </div>
+
+      <!-- User Pagination -->
+      <div class="user-pagination" v-if="total > pageSize">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="prev, pager, next"
+          background
+          @current-change="handlePageChange"
+        />
+      </div>
+    </section>
 
       <!-- Pagination -->
       <div class="pagination-wrapper" v-if="total > 0">
@@ -343,6 +412,32 @@ const formatDate = (dateStr) => {
   }
 }
 
+const formatUserDate = (dateStr) => {
+  if (!dateStr) return ''
+  try {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diff = now - date
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+    if (days === 0) {
+      return '今天'
+    } else if (days === 1) {
+      return '昨天'
+    } else if (days < 7) {
+      return `${days}天前`
+    } else {
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+    }
+  } catch {
+    return dateStr
+  }
+}
+
 const getContentPreview = (content) => {
   if (!content) return '-'
   return content.length > 50 ? content.substring(0, 50) + '...' : content
@@ -355,7 +450,8 @@ const fetchData = async () => {
       page: currentPage.value,
       page_size: pageSize.value,
       search: searchKeyword.value || undefined,
-      is_active: filters.is_active || undefined,
+      // 用户端只看启用的公告，管理员看所有公告
+      is_active: isAdmin.value ? (filters.is_active || undefined) : 'true',
       created_at_after: filters.dateRange?.[0] || undefined,
       created_at_before: filters.dateRange?.[1] || undefined
     }
@@ -1344,6 +1440,239 @@ onMounted(() => {
   .refresh-btn,
   .add-btn {
     justify-content: center;
+  }
+}
+
+/* User View Styles */
+.notice-management-page.user-view {
+  padding: 1.5rem;
+  background: #f8fafc;
+}
+
+.notice-management-page.user-view::before {
+  background-image: none;
+}
+
+.notice-management-page.user-view .header-icon.user-icon {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.12) 0%, rgba(20, 184, 166, 0.12) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+.notice-management-page.user-view .header-icon svg {
+  color: #0d9488;
+}
+
+.notice-management-page.user-view .page-header {
+  margin-bottom: 1.5rem;
+}
+
+.notice-management-page.user-view .page-title {
+  color: #0f766e;
+}
+
+/* User Notices Container */
+.notices-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.notices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Notice Card */
+.notice-card {
+  background: #ffffff;
+  border: 1px solid #e0f2f1;
+  border-radius: 16px;
+  padding: 1.5rem;
+  animation: cardFadeIn 0.5s ease-out forwards;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.notice-card:hover {
+  border-color: rgba(13, 148, 136, 0.3);
+  box-shadow: 0 8px 30px rgba(13, 148, 136, 0.08);
+}
+
+.notice-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.notice-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0f766e;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.notice-date {
+  font-size: 0.8rem;
+  color: #64748b;
+  white-space: nowrap;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.notice-content {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Loading Skeleton for User View */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notice-card-skeleton {
+  background: #ffffff;
+  border: 1px solid #e0f2f1;
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.notice-card-skeleton .skeleton-title,
+.notice-card-skeleton .skeleton-content,
+.notice-card-skeleton .skeleton-date {
+  margin-bottom: 0.75rem;
+}
+
+.notice-card-skeleton .skeleton-title .skeleton-block {
+  height: 20px;
+  width: 60%;
+  background: linear-gradient(90deg, #e0f2f1 25%, #b2dfdb 50%, #e0f2f1 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.notice-card-skeleton .skeleton-content .skeleton-block {
+  height: 16px;
+  width: 100%;
+  background: linear-gradient(90deg, #e0f2f1 25%, #b2dfdb 50%, #e0f2f1 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.notice-card-skeleton .skeleton-date .skeleton-block {
+  height: 14px;
+  width: 80px;
+  background: linear-gradient(90deg, #e0f2f1 25%, #b2dfdb 50%, #e0f2f1 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Empty State for User View */
+.empty-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  min-height: 240px;
+}
+
+.empty-user .empty-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.empty-user .empty-icon svg {
+  width: 32px;
+  height: 32px;
+  color: #99f6e4;
+}
+
+.empty-user .empty-text {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* User Pagination */
+.user-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.user-pagination :deep(.el-pagination) {
+  --el-pagination-bg-color: #ffffff;
+  --el-pagination-text-color: #475569;
+  --el-pagination-hover-color: #0d9488;
+  --el-pagination-font-size: 0.875rem;
+}
+
+.user-pagination :deep(.el-pagination .el-pager li) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin: 0 0.25rem;
+  min-width: 36px;
+  height: 36px;
+  line-height: 36px;
+}
+
+.user-pagination :deep(.el-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: #fff;
+  border-color: #0d9488;
+}
+
+.user-pagination :deep(.el-pagination button) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+/* Responsive for User View */
+@media (max-width: 768px) {
+  .notice-management-page.user-view {
+    padding: 1rem;
+  }
+
+  .notice-card {
+    padding: 1.25rem;
+  }
+
+  .notice-card-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .notice-title {
+    font-size: 1rem;
+  }
+
+  .notice-content {
+    font-size: 0.9rem;
   }
 }
 </style>
