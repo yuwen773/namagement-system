@@ -5,7 +5,7 @@
 | 模块 | 状态 | 说明 |
 |------|------|------|
 | 后端基础架构 | ✅ | Django 5.2 + DRF + MySQL + Redis |
-| 用户认证 | ✅ | JWT登录、注册、UserViewSet、角色(admin/user) |
+| 用户认证 | ✅ | JWT登录、注册（UI+验证）、UserViewSet、角色(admin/user) |
 | 爬虫模块 | ✅ | Scrapy + Playwright + Celery异步任务 + 断点续传 |
 | 数据API | ✅ | Question CRUD、统计接口、爬虫控制接口 |
 | 前端页面 | ✅ | 登录、仪表盘、数据中心、用户管理、个人中心 |
