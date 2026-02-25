@@ -93,6 +93,10 @@
         </form>
 
         <div class="form-footer">
+          <p class="register-link">
+            还没有账号？
+            <router-link to="/register" class="link">立即注册</router-link>
+          </p>
           <p class="demo-hint">
             <span class="hint-icon">●</span>
             演示账号: <code>admin</code> / <code>admin123</code>
@@ -626,10 +630,33 @@ onMounted(() => {
 .demo-hint {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.8rem;
   color: #718096;
+}
+
+.register-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #718096;
+  margin-bottom: 0.75rem;
+}
+
+.register-link .link {
+  color: #1a365d;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition-fast);
+}
+
+.register-link .link:hover {
+  color: #c9a227;
 }
 
 .hint-icon {
