@@ -6,6 +6,7 @@ import DataCenter from '@/views/DataCenter.vue'
 import UserManagement from '@/views/UserManagement.vue'
 import NoticeManagement from '@/views/NoticeManagement.vue'
 import Profile from '@/views/Profile.vue'
+import Register from '@/views/Register.vue'
 
 // Routes with lazy loading
 const routes = [
@@ -13,6 +14,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: Register,
     meta: { requiresAuth: false }
   },
   {
@@ -92,8 +99,8 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // Redirect to dashboard if already logged in and trying to access login
-  if (to.name === 'Login' && isLoggedIn) {
+  // Redirect to dashboard if already logged in and trying to access login or register
+  if ((to.name === 'Login' || to.name === 'Register') && isLoggedIn) {
     next({ name: authStore.isAdmin ? 'Dashboard' : 'Overview' })
     return
   }
