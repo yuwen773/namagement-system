@@ -290,7 +290,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { changePassword } from '@/api/users'
+import { changePassword, updateUserInfo } from '@/api/users'
 import router from '@/router'
 
 const authStore = useAuthStore()
@@ -360,6 +360,44 @@ const passwordRules = {
   ]
 }
 
+// Edit form validation rules
+const validateUsername = (rule, value, callback) => {
+  if (!value || value.trim() === '') {
+    callback(new Error('用户名不能为空'))
+  } else if (value.length < 2) {
+    callback(new Error('用户名至少2个字符'))
+  } else if (value.length > 50) {
+    callback(new Error('用户名不能超过50个字符'))
+  } else if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(value)) {
+    callback(new Error('用户名只能包含字母、数字、下划线和中文'))
+  } else {
+    callback()
+  }
+}
+
+const validateEmail = (rule, value, callback) => {
+  if (!value || value.trim() === '') {
+    // Email is optional
+    callback()
+  } else {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(value)) {
+      callback(new Error('请输入有效的邮箱地址'))
+    } else {
+      callback()
+    }
+  }
+}
+
+const editRules = {
+  username: [
+    { required: true, validator: validateUsername, trigger: 'blur' }
+  ],
+  email: [
+    { validator: validateEmail, trigger: 'blur' }
+  ]
+}
+
 // Methods
 const togglePassword = (field) => {
   showPasswords[field] = !showPasswords[field]
@@ -379,6 +417,38 @@ const closeEditDialog = () => {
   editForm.email = authStore.userInfo?.email || ''
   // Clear validation errors
   editFormRef.value?.clearValidate()
+}
+
+const handleEditSubmit = async () => {
+  if (!editFormRef.value) return
+
+  try {
+    await editFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  editLoading.value = true
+
+  try {
+    const res = await updateUserInfo({
+      username: editForm.username.trim(),
+      email: editForm.email.trim() || undefined
+    })
+
+    if (res.code === 0 || res.code === 200) {
+      ElMessage.success('资料修改成功')
+      // Update user info in store
+      await authStore.fetchUserInfo()
+      closeEditDialog()
+    } else {
+      ElMessage.error(res.message || '修改失败，请稍后重试')
+    }
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '修改失败，请稍后重试')
+  } finally {
+    editLoading.value = false
+  }
 }
 
 const handlePasswordSubmit = async () => {
