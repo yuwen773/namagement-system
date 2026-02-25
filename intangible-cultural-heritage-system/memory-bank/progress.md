@@ -2,28 +2,21 @@
 
 ## 2026-02-25
 
-### Completed
-- Phase 1 (1.1~1.4): backend scaffold, MySQL config, dependencies, bootstrap SQL.
-- Phase 2 (2.1~2.3): auth/permission baseline and unified response format.
+### Done
+- Phase 1 (1.1~1.4): backend scaffold, MySQL, dependencies, bootstrap SQL.
+- Phase 2 (2.1~2.3): auth, role permissions, JWT APIs, unified response/exception handling.
+- Phase 3 (3.1~3.4): core data models + admin registration:
+  - `Category`, `Region`
+  - `HeritageItem`
+  - `Inheritor` (unique: same `heritage_item` + same `name`)
+  - `ImportJob`, `ImportError`
 
-### Phase 2 details
-- 2.1 User model and permissions
-  - Added `UserProfile` (`role=admin|user`) and auto-create logic.
-  - Added permission classes: `IsAdmin`, `IsAdminOrReadOnly`.
-  - Added admin integration for role management.
-- 2.2 JWT auth APIs
-  - Added routes: `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`.
-  - Added `GET /api/v1/auth/me` for authenticated profile checks.
-  - Configured JWT lifetime: access 2h, refresh 7d.
-- 2.3 Unified response and exception handling
-  - Added response envelope helpers: `{ code, message, data, total? }`.
-  - Added custom DRF exception handler and wired it in settings.
-
-### Verification
-- `python manage.py makemigrations users`: passed
+### Migration / Checks
+- `python manage.py makemigrations categories regions heritage inheritors importer`: passed
 - `python manage.py migrate`: passed
 - `python manage.py check`: passed
-- JWT login/refresh/logout/me smoke test: passed
+- User-provided Phase 3 tests: passed
 
 ### Current status
-- Do not start Phase 3 Step 3.1 until further instruction.
+- Phase 3 complete.
+- Ready to start Phase 4 Step 4.1.
