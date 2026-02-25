@@ -89,12 +89,14 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+# ⚠️ 警告：明文密码存储 - 仅用于开发/演示环境！
+# 生产环境必须使用加密存储！
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.plaintext_auth.PlainTextBackend",
 ]
+
+# 禁用密码验证（因为使用明文存储）
+AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = "zh-hans"
 

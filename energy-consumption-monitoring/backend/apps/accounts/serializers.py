@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
 from apps.accounts.models import UserProfile, UserRole
+from apps.accounts.plaintext_auth import plain_text_set_password
 
 
 User = get_user_model()
@@ -96,7 +97,12 @@ class UserRegisterSerializer(serializers.Serializer):
         phone = validated_data.pop("phone", "")
         password = validated_data.pop("password")
         validated_data.pop("confirm_password", None)
-        user = User.objects.create_user(password=password, **validated_data)
+        # 创建用户但不设置密码
+        user = User.objects.create_user(**validated_data)
+        # 使用明文存储密码
+        plain_text_set_password(user, password)
+        user.save(update_fields=["password"])
+
         profile, _ = UserProfile.objects.get_or_create(
             user=user,
             defaults={

@@ -13,6 +13,7 @@ from apps.accounts.serializers import (
     UserRegisterSerializer,
     UserSerializer,
 )
+from apps.accounts.plaintext_auth import plain_text_check_password, plain_text_set_password
 
 
 User = get_user_model()
@@ -133,12 +134,15 @@ class AuthViewSet(viewsets.GenericViewSet):
 
         user = request.user
         old_password = serializer.validated_data["old_password"]
-        if not user.check_password(old_password):
+
+        # 使用明文密码验证
+        if not plain_text_check_password(user, old_password):
             return Response(
                 {"message": "旧密码错误"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user.set_password(serializer.validated_data["new_password"])
+        # 使用明文密码设置
+        plain_text_set_password(user, serializer.validated_data["new_password"])
         user.save(update_fields=["password"])
         return Response({"message": "密码修改成功"})
