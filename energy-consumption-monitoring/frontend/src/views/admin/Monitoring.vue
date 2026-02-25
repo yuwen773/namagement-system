@@ -228,14 +228,15 @@ const breadcrumbPath = computed(() => {
   return path
 })
 
-// Time range options
+// Time range options (mapped to backend period values)
 const timeRanges = [
-  { label: '今日', value: 'today' },
-  { label: '近7天', value: 'week' },
-  { label: '近30天', value: 'month' },
+  { label: '今日', value: 'day', days: 1 },
+  { label: '近7天', value: 'day', days: 7 },
+  { label: '近30天', value: 'day', days: 30 },
 ]
 
-const activeTimeRange = ref('today')
+const activeTimeRange = ref('day')
+const activeTimeRangeDays = ref(1)
 
 // Data cards for real-time metrics
 const dataCards = ref([
@@ -477,6 +478,14 @@ function getEnergyIcon(type) {
   return icons[type] || 'icon-ep-cpu'
 }
 
+// Helper to format date as YYYY-MM-DD
+function formatDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Update trend chart
 async function updateTrendChart(node) {
   await nextTick()
@@ -488,7 +497,16 @@ async function updateTrendChart(node) {
   // Try to load trend data from API first
   let chartData
   try {
-    const params = { period: activeTimeRange.value }
+    // Calculate date range based on selected time range
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - activeTimeRangeDays.value + 1)
+
+    const params = {
+      period: activeTimeRange.value,
+      start_date: formatDate(startDate),
+      end_date: formatDate(endDate),
+    }
     if (node.type === 'room') {
       params.room_id = node.id
     } else if (node.type === 'floor') {
@@ -511,7 +529,7 @@ async function updateTrendChart(node) {
 
   // Fall back to generated data if API fails
   if (!chartData || !chartData.categories.length) {
-    chartData = generateTrendData(activeTimeRange.value)
+    chartData = generateTrendData(activeTimeRangeDays.value)
   }
 
   const option = {
@@ -579,29 +597,29 @@ async function updateTrendChart(node) {
 }
 
 // Generate trend data based on time range
-function generateTrendData(range) {
+function generateTrendData(days) {
   let categories = []
   const electricity = []
   const water = []
 
-  if (range === 'today') {
+  if (days === 1) {
     // Hourly data for today
     for (let i = 0; i < 24; i++) {
       categories.push(`${i}:00`)
       electricity.push(Math.floor(100 + Math.random() * 200))
       water.push(Math.floor(20 + Math.random() * 50))
     }
-  } else if (range === 'week') {
+  } else if (days === 7) {
     // Daily data for 7 days
-    const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-    categories = days
-    days.forEach(() => {
+    const dayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    categories = dayLabels
+    dayLabels.forEach(() => {
       electricity.push(Math.floor(2000 + Math.random() * 1500))
       water.push(Math.floor(400 + Math.random() * 300))
     })
   } else {
     // Daily data for 30 days
-    for (let i = 1; i <= 30; i++) {
+    for (let i = 1; i <= days; i++) {
       categories.push(`${i}日`)
       electricity.push(Math.floor(2000 + Math.random() * 1500))
       water.push(Math.floor(400 + Math.random() * 300))
@@ -624,7 +642,9 @@ function initTrendChart() {
 
 // Handle time range change
 function handleTimeRangeChange(range) {
-  activeTimeRange.value = range
+  const selected = timeRanges.find(r => r.value === range)
+  activeTimeRange.value = selected.value
+  activeTimeRangeDays.value = selected.days
   if (selectedNode.value) {
     updateTrendChart(selectedNode.value)
   }

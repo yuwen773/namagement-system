@@ -108,6 +108,18 @@ export function getBuildingTree() {
 }
 
 /**
+ * Get building heatmap data
+ * @param {Object} params - Query parameters
+ */
+export function getBuildingHeatmap(params) {
+  return request({
+    url: '/buildings/heatmap/',
+    method: 'get',
+    params,
+  })
+}
+
+/**
  * Get floors
  * @param {Object} params - Query parameters
  */

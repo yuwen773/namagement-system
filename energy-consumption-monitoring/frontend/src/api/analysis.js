@@ -73,3 +73,15 @@ export function getForecastData(params) {
     params,
   })
 }
+
+/**
+ * Get real-time power data
+ * @param {Object} params - Query parameters
+ */
+export function getRealTimePowerData(params) {
+  return request({
+    url: '/analysis/real-time-power/',
+    method: 'get',
+    params,
+  })
+}

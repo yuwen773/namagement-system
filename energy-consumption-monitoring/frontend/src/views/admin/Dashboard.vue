@@ -193,9 +193,10 @@
 import { ref, shallowRef, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
-import { getDashboardData, getTrendData, getDistributionData } from '@/api/analysis'
+import { getDashboardData, getTrendData, getDistributionData, getRealTimePowerData } from '@/api/analysis'
+import { getBuildingHeatmap } from '@/api/building'
 import { getAlarms } from '@/api/alarm'
-import { getDeviceDataStatus, getDevices } from '@/api/device'
+import { getDevices } from '@/api/device'
 
 // Chart refs using shallowRef to avoid deep reactivity
 const trendChartRef = ref(null)
@@ -222,71 +223,63 @@ const energyTypes = [
 
 const activeTrendType = ref('all')
 
-// Metrics data
+// Metrics data (placeholder, will be replaced by API data)
 const metrics = ref([
   {
     label: '总能耗',
-    value: 128456,
+    value: 0,
     unit: 'kWh',
-    change: '+12.5%',
+    change: '--',
     trend: 'up',
     color: '#f97316',
     icon: 'icon-ep-lightning',
     pulse: true,
-    displayValue: '128,456',
+    displayValue: '--',
   },
   {
     label: '平均功率',
-    value: 5234,
+    value: 0,
     unit: 'kW',
-    change: '+3.2%',
+    change: '--',
     trend: 'up',
     color: '#eab308',
     icon: 'icon-ep-odometer',
     pulse: true,
-    displayValue: '5,234',
+    displayValue: '--',
   },
   {
     label: '数据覆盖率',
-    value: 98.5,
+    value: 0,
     unit: '%',
-    change: '+0.5%',
+    change: '--',
     trend: 'up',
     color: '#22c55e',
     icon: 'icon-ep-circle-check',
     pulse: false,
-    displayValue: '98.5',
+    displayValue: '--',
   },
   {
     label: '今日告警',
-    value: 23,
+    value: 0,
     unit: '条',
-    change: '-15%',
+    change: '--',
     trend: 'down',
     color: '#ef4444',
     icon: 'icon-ep-warning',
     pulse: true,
-    displayValue: '23',
+    displayValue: '--',
   },
 ])
 
-// Distribution data
-const distributionData = ref([
-  { name: '电', value: 45, percent: 45, color: '#eab308' },
-  { name: '水', value: 30, percent: 30, color: '#3b82f6' },
-  { name: '气', value: 25, percent: 25, color: '#ef4444' },
-])
+// Distribution data (empty, will be filled by API data)
+const distributionData = ref([])
 
 // Alarms data
 const recentAlarms = ref([])
 const alarmCount = computed(() => recentAlarms.value.length)
 
-// Device data
-const deviceStats = ref([
-  { label: '在线', count: 142, percent: 94, color: '#22c55e' },
-  { label: '离线', count: 6, percent: 4, color: '#94a3b8' },
-  { label: '故障', count: 3, percent: 2, color: '#ef4444' },
-])
+// Device data (empty, will be filled by API data)
+const deviceStats = ref([])
 
 const deviceList = ref([])
 
@@ -306,8 +299,10 @@ function initChartWhenReady(containerRef, chartInstanceRef, applyOption, retryCo
   if (!container) return
 
   if (container.clientWidth === 0 || container.clientHeight === 0) {
-    if (retryCount < 30) {
-      requestAnimationFrame(() => initChartWhenReady(containerRef, chartInstanceRef, applyOption, retryCount + 1))
+    if (retryCount < 10) {
+      setTimeout(() => initChartWhenReady(containerRef, chartInstanceRef, applyOption, retryCount + 1), 16)
+    } else {
+      console.warn('Chart container still has no size after retries')
     }
     return
   }
@@ -320,7 +315,7 @@ function initChartWhenReady(containerRef, chartInstanceRef, applyOption, retryCo
   applyOption(chartInstanceRef.value)
 }
 
-// Initialize trend chart
+// Initialize trend chart (empty, will be filled by API data)
 function initTrendChart() {
   const option = {
     grid: {
@@ -343,7 +338,7 @@ function initTrendChart() {
     },
     xAxis: {
       type: 'category',
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+      data: [],
       axisLine: { lineStyle: { color: chartColors.grid } },
       axisLabel: { color: chartColors.text, fontSize: 12 },
     },
@@ -358,7 +353,7 @@ function initTrendChart() {
         name: '电',
         type: 'line',
         smooth: true,
-        data: [3200, 3800, 3500, 4200, 3900, 3100, 2800],
+        data: [],
         lineStyle: { width: 3, color: chartColors.secondary },
         itemStyle: { color: chartColors.secondary, borderWidth: 2 },
         areaStyle: {
@@ -372,7 +367,7 @@ function initTrendChart() {
         name: '水',
         type: 'line',
         smooth: true,
-        data: [2100, 2400, 2200, 2800, 2600, 2000, 1800],
+        data: [],
         lineStyle: { width: 3, color: chartColors.water },
         itemStyle: { color: chartColors.water, borderWidth: 2 },
       },
@@ -386,7 +381,7 @@ function initTrendChart() {
   initChartWhenReady(trendChartRef, trendChart, (chart) => chart.setOption(option))
 }
 
-// Initialize distribution chart
+// Initialize distribution chart (empty, will be filled by API data)
 function initDistributionChart() {
   const option = {
     tooltip: {
@@ -395,7 +390,7 @@ function initDistributionChart() {
       borderColor: '#f97316',
       borderWidth: 1,
       textStyle: { color: '#fff' },
-      formatter: '{b}: {c}% ({d}%)',
+      formatter: (params) => `${params.name}: ${formatNumber(params.value)} (${params.percent}%)`,
     },
     series: [
       {
@@ -413,11 +408,7 @@ function initDistributionChart() {
           label: { show: true, fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
         },
         labelLine: { show: false },
-        data: [
-          { value: 45, name: '电', itemStyle: { color: chartColors.secondary } },
-          { value: 30, name: '水', itemStyle: { color: chartColors.water } },
-          { value: 25, name: '气', itemStyle: { color: chartColors.gas } },
-        ],
+        data: [],
       },
     ],
   }
@@ -425,18 +416,8 @@ function initDistributionChart() {
   initChartWhenReady(distributionChartRef, distributionChart, (chart) => chart.setOption(option))
 }
 
-// Initialize power chart
+// Initialize power chart (empty, will be filled by API data)
 function initPowerChart() {
-  // Generate mock time series data
-  const now = new Date()
-  const timeData = []
-  const powerData = []
-  for (let i = 23; i >= 0; i--) {
-    const time = new Date(now - i * 3600000)
-    timeData.push(`${time.getHours()}:00`)
-    powerData.push(Math.floor(4000 + Math.random() * 2000))
-  }
-
   const option = {
     grid: {
       left: '3%',
@@ -458,13 +439,13 @@ function initPowerChart() {
     },
     xAxis: {
       type: 'category',
-      data: timeData,
+      data: [],
       axisLine: { lineStyle: { color: chartColors.grid } },
       axisLabel: { color: chartColors.text, fontSize: 10 },
     },
     yAxis: {
       type: 'value',
-      max: 7000,
+      max: 100,
       axisLine: { show: false },
       axisLabel: { color: chartColors.text, fontSize: 12, formatter: '{value} kW' },
       splitLine: { lineStyle: { color: chartColors.grid, type: 'dashed' } },
@@ -472,7 +453,7 @@ function initPowerChart() {
     series: [
       {
         type: 'bar',
-        data: powerData,
+        data: [],
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: '#f97316' },
@@ -492,53 +473,27 @@ function initPowerChart() {
 
 // Initialize 2D map chart
 function initMapChart(retryCount = 0) {
-  const mapContainer = mapChartRef.value
-  if (!mapContainer) return
-
-  // Mock building data with coordinates
-  const buildings = [
-    { name: '教学楼A', value: 85, x: [100, 150], y: [80, 150], status: 'high' },
-    { name: '教学楼B', value: 62, x: [180, 230], y: [80, 150], status: 'normal' },
-    { name: '实验楼', value: 45, x: [260, 310], y: [80, 150], status: 'normal' },
-    { name: '图书馆', value: 38, x: [100, 150], y: [180, 250], status: 'low' },
-    { name: '行政楼', value: 28, x: [180, 230], y: [180, 250], status: 'low' },
-    { name: '学生宿舍1', value: 72, x: [260, 310], y: [180, 250], status: 'high' },
-    { name: '学生宿舍2', value: 68, x: [100, 150], y: [280, 350], status: 'normal' },
-    { name: '食堂', value: 55, x: [180, 230], y: [280, 350], status: 'normal' },
-    { name: '体育馆', value: 42, x: [260, 310], y: [280, 350], status: 'normal' },
-  ]
-
-  const getColor = (status) => {
-    switch (status) {
-      case 'high': return '#ef4444'
-      case 'normal': return '#f97316'
-      case 'low': return '#22c55e'
-      default: return '#94a3b8'
-    }
-  }
-
   const option = {
     grid: { top: 10, bottom: 10, left: 10, right: 10 },
-    xAxis: { show: false, min: 50, max: 360 },
-    yAxis: { show: false, min: 50, max: 370 },
+    xAxis: { show: false, min: -1, max: 8 },
+    yAxis: { show: false, min: -1, max: 8 },
     tooltip: {
       backgroundColor: 'rgba(15, 23, 42, 0.9)',
       borderColor: '#f97316',
       borderWidth: 1,
       textStyle: { color: '#fff' },
       formatter: (params) => {
-        return `${params.data.name}<br/>能耗指数: ${params.data.value}`
+        const data = params.data || {}
+        const indexValue = data.heat_index || 0
+        const latestPower = data.latest_power == null ? '-' : `${data.latest_power} kW`
+        return `${data.name || ''}<br/>热力指数: ${indexValue}<br/>最新功率: ${latestPower}`
       },
     },
     series: [
       {
         type: 'scatter',
-        symbolSize: (data) => data.value * 1.5,
-        data: buildings.map(b => ({
-          name: b.name,
-          value: [((b.x[0] + b.x[1]) / 2), ((b.y[0] + b.y[1]) / 2), b.value],
-          itemStyle: { color: getColor(b.status) },
-        })),
+        symbolSize: 18,
+        data: [],
         itemStyle: {
           shadowBlur: 10,
           shadowColor: 'rgba(249, 115, 22, 0.5)',
@@ -559,21 +514,6 @@ function initMapChart(retryCount = 0) {
           scale: 1.2,
         },
       },
-      // Building outlines
-      ...buildings.map(b => ({
-        type: 'scatter',
-        symbol: 'rect',
-        symbolSize: [b.x[1] - b.x[0], b.y[1] - b.y[0]],
-        data: [{ value: [(b.x[0] + b.x[1]) / 2, (b.y[0] + b.y[1]) / 2] }],
-        itemStyle: {
-          color: 'transparent',
-          borderColor: getColor(b.status),
-          borderWidth: 2,
-          borderType: 'solid',
-        },
-        silent: true,
-        z: 0,
-      })),
     ],
   }
 
@@ -591,43 +531,50 @@ function initMapChart(retryCount = 0) {
 
 // Load dashboard data from API
 async function loadDashboardData() {
-  try {
-    const response = await getDashboardData()
-    if (response.code === 0 && response.data) {
-      // Update metrics with real data
-      if (response.data.total_consumption) {
-        metrics.value[0].value = response.data.total_consumption.value || metrics.value[0].value
-        metrics.value[0].displayValue = formatNumber(response.data.total_consumption.value || metrics.value[0].value)
-        metrics.value[0].change = response.data.total_consumption.change || metrics.value[0].change
-        metrics.value[0].trend = response.data.total_consumption.trend || metrics.value[0].trend
+  const summaryTask = (async () => {
+    try {
+      const response = await getDashboardData()
+      if (response.code === 0 && response.data) {
+        const summary = response.data.summary || {}
+        const alarmStats = response.data.alarm_statistics || {}
+
+        // 总能耗 - use total_energy
+        if (summary.total_energy !== undefined) {
+          metrics.value[0].value = summary.total_energy
+          metrics.value[0].displayValue = formatNumber(summary.total_energy)
+        }
+
+        // 平均功率 - use average_power
+        if (summary.average_power !== undefined) {
+          metrics.value[1].value = summary.average_power
+          metrics.value[1].displayValue = formatNumber(summary.average_power)
+        }
+
+        // 数据覆盖率 - use data_coverage_rate
+        if (summary.data_coverage_rate !== undefined) {
+          metrics.value[2].value = summary.data_coverage_rate
+          metrics.value[2].displayValue = String(summary.data_coverage_rate)
+        }
+
+        // 今日告警 - use alarm_statistics.today
+        if (alarmStats.today !== undefined) {
+          metrics.value[3].value = alarmStats.today
+          metrics.value[3].displayValue = String(alarmStats.today)
+        }
       }
-      if (response.data.avg_power) {
-        metrics.value[1].value = response.data.avg_power.value || metrics.value[1].value
-        metrics.value[1].displayValue = formatNumber(response.data.avg_power.value || metrics.value[1].value)
-        metrics.value[1].change = response.data.avg_power.change || metrics.value[1].change
-        metrics.value[1].trend = response.data.avg_power.trend || metrics.value[1].trend
-      }
-      if (response.data.coverage_rate) {
-        metrics.value[2].value = response.data.coverage_rate.value || metrics.value[2].value
-        metrics.value[2].displayValue = response.data.coverage_rate.value || metrics.value[2].displayValue
-        metrics.value[2].change = response.data.coverage_rate.change || metrics.value[2].change
-      }
-      if (response.data.today_alarms) {
-        metrics.value[3].value = response.data.today_alarms.value || metrics.value[3].value
-        metrics.value[3].displayValue = String(response.data.today_alarms.value || metrics.value[3].value)
-        metrics.value[3].change = response.data.today_alarms.change || metrics.value[3].change
-        metrics.value[3].trend = response.data.today_alarms.trend || metrics.value[3].trend
-      }
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error)
     }
-  } catch (error) {
-    console.error('Failed to load dashboard data:', error)
-  }
+  })()
 
-  // Load trend data for trend chart
-  await loadTrendData()
-
-  // Load distribution data
-  await loadDistributionData()
+  // Start chart requests immediately, avoid waiting for summary API first.
+  await Promise.all([
+    summaryTask,
+    loadTrendData(),
+    loadDistributionData(),
+    loadRealTimePowerData(),
+    loadBuildingHeatmapData(),
+  ])
 }
 
 // Load trend data from API
@@ -659,12 +606,19 @@ async function loadDistributionData() {
     if (response.code === 0 && response.data) {
       const data = Array.isArray(response.data) ? response.data : (response.data.items || [])
       if (data.length > 0) {
+        const totalValue = data.reduce((sum, item) => sum + Number(item.value || 0), 0)
         distributionData.value = data.map((item, index) => ({
-          name: item.name || ['电', '水', '气'][index] || `能源${index + 1}`,
-          value: item.value || 0,
-          percent: item.percent || Math.round(item.value || 0),
+          name: item.label || item.name || ['电', '水', '气'][index] || `能源${index + 1}`,
+          value: Number(item.value || 0),
+          percent: item.percent !== undefined
+            ? (Number(item.percent) <= 1 ? Number(item.percent) * 100 : Number(item.percent))
+            : (totalValue > 0 ? (Number(item.value || 0) / totalValue) * 100 : 0),
           color: item.color || ['#eab308', '#3b82f6', '#ef4444'][index] || '#f97316',
         }))
+
+        distributionData.value.forEach((item) => {
+          item.percent = Number(item.percent.toFixed(2))
+        })
 
         // Update distribution chart
         if (distributionChart.value) {
@@ -682,6 +636,68 @@ async function loadDistributionData() {
     }
   } catch (error) {
     console.error('Failed to load distribution data:', error)
+  }
+}
+
+function formatClockLabel(timestamp) {
+  const dt = new Date(timestamp)
+  if (Number.isNaN(dt.getTime())) return ''
+  return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+}
+
+function resolveHeatColor(level) {
+  if (level === 'high') return '#ef4444'
+  if (level === 'normal') return '#f97316'
+  if (level === 'low') return '#22c55e'
+  return '#94a3b8'
+}
+
+// Load real-time power data from API
+async function loadRealTimePowerData() {
+  try {
+    const response = await getRealTimePowerData({ hours: 24, interval_minutes: 15 })
+    if (response.code === 0 && response.data && powerChart.value) {
+      const series = response.data.series || []
+      const xData = series.map(item => formatClockLabel(item.timestamp))
+      const yData = series.map(item => Number(item.total_power || 0))
+      const maxPower = yData.length > 0 ? Math.max(...yData) : 0
+
+      powerChart.value.setOption({
+        xAxis: { data: xData },
+        yAxis: { max: Math.max(100, Math.ceil(maxPower * 1.15)) },
+        series: [{ data: yData }],
+      })
+    }
+  } catch (error) {
+    console.error('Failed to load real-time power data:', error)
+  }
+}
+
+// Load building heatmap data from API
+async function loadBuildingHeatmapData() {
+  try {
+    const response = await getBuildingHeatmap({ days: 7 })
+    if (response.code === 0 && response.data && mapChart.value) {
+      const buildings = response.data.buildings || []
+      const scatterData = buildings.map(item => ({
+        name: item.name,
+        value: [item.position?.x ?? 0, item.position?.y ?? 0, item.heat_index ?? 0],
+        heat_index: Number(item.heat_index || 0),
+        latest_power: item.latest_power,
+        itemStyle: { color: resolveHeatColor(item.heat_level) },
+      }))
+
+      mapChart.value.setOption({
+        series: [
+          {
+            symbolSize: (data) => Math.max(14, Number(data[2] || 0) * 0.45),
+            data: scatterData,
+          },
+        ],
+      })
+    }
+  } catch (error) {
+    console.error('Failed to load building heatmap data:', error)
   }
 }
 
@@ -719,68 +735,73 @@ async function loadAlarmsData() {
 
 // Load device status
 async function loadDeviceStatus() {
+  // Get all devices to calculate stats
+  let allDevices = []
   try {
-    const response = await getDeviceDataStatus()
-    if (response.code === 0 && response.data) {
-      // Update device stats with API data
-      const stats = response.data.stats || response.data
-      if (Array.isArray(stats)) {
-        deviceStats.value = stats.map(stat => ({
-          label: stat.label || stat.status || '未知',
-          count: stat.count || 0,
-          percent: stat.percent || 0,
-          color: stat.color || '#94a3b8',
-        }))
-      } else if (stats.online !== undefined || stats.total !== undefined) {
-        // Handle different response format
-        const total = stats.total || (stats.online || 0) + (stats.offline || 0) + (stats.fault || 0)
-        deviceStats.value = [
-          {
-            label: '在线',
-            count: stats.online || 0,
-            percent: total > 0 ? Math.round((stats.online || 0) / total * 100) : 0,
-            color: '#22c55e',
-          },
-          {
-            label: '离线',
-            count: stats.offline || 0,
-            percent: total > 0 ? Math.round((stats.offline || 0) / total * 100) : 0,
-            color: '#94a3b8',
-          },
-          {
-            label: '故障',
-            count: stats.fault || 0,
-            percent: total > 0 ? Math.round((stats.fault || 0) / total * 100) : 0,
-            color: '#ef4444',
-          },
-        ]
-      }
+    // Get total count for stats
+    const countResponse = await getDevices({ page: 1, page_size: 100 })
+    if (countResponse.code === 0 && countResponse.data) {
+      allDevices = countResponse.data
+
+      // Calculate stats from device list
+      const online = allDevices.filter(d => d.status === 'ONLINE').length
+      const offline = allDevices.filter(d => d.status === 'OFFLINE').length
+      const fault = allDevices.filter(d => d.status === 'FAULT').length
+      const total = allDevices.length
+
+      deviceStats.value = [
+        {
+          label: '在线',
+          count: online,
+          percent: total > 0 ? Math.round(online / total * 100) : 0,
+          color: '#22c55e',
+        },
+        {
+          label: '离线',
+          count: offline,
+          percent: total > 0 ? Math.round(offline / total * 100) : 0,
+          color: '#94a3b8',
+        },
+        {
+          label: '故障',
+          count: fault,
+          percent: total > 0 ? Math.round(fault / total * 100) : 0,
+          color: '#ef4444',
+        },
+      ]
     }
   } catch (error) {
     console.error('Failed to load device status:', error)
   }
 
-  // Load device list for preview
+  // Load device list for preview (use already fetched data or fetch again)
   try {
-    const response = await getDevices({ limit: 5 })
-    if (response.code === 0 && response.data) {
-      deviceList.value = response.data.map(device => ({
-        id: device.id,
-        name: device.name,
-        location: device.room_name || device.building_name || '未绑定',
-        value: device.latest_data?.value ? `${device.latest_data.value} ${device.energy_type_unit || ''}` : '--',
-        status: device.status?.toLowerCase() || 'offline',
-      }))
+    let devicesToShow = allDevices.length > 0 ? allDevices.slice(0, 5) : []
+    if (devicesToShow.length === 0) {
+      const response = await getDevices({ limit: 5 })
+      if (response.code === 0 && response.data) {
+        devicesToShow = response.data
+      }
     }
+
+    deviceList.value = devicesToShow.map(device => ({
+      id: device.id,
+      name: device.name,
+      location: device.room_name
+        ? `${device.building_name || ''} ${device.floor_name || ''} ${device.room_name}`
+        : (device.building_name || '未绑定'),
+      value: device.status === 'ONLINE' ? '正常' : device.status === 'OFFLINE' ? '离线' : '故障',
+      status: device.status?.toLowerCase() || 'offline',
+    }))
   } catch (error) {
     console.error('Failed to load devices:', error)
     // Use mock data only when API fails
     deviceList.value = [
-      { id: 1, name: '电表-001', location: '教学楼A-301', value: '245 kWh', status: 'online' },
-      { id: 2, name: '水表-003', location: '实验楼-201', value: '12.5 m³', status: 'online' },
-      { id: 3, name: '气表-002', location: '食堂-101', value: '8.2 m³', status: 'online' },
-      { id: 4, name: '电表-015', location: '宿舍1-102', value: '--', status: 'offline' },
-      { id: 5, name: '电表-018', location: '行政楼-301', value: '189 kWh', status: 'online' },
+      { id: 1, name: '电表-001', location: '教学楼A-301', value: '正常', status: 'online' },
+      { id: 2, name: '水表-003', location: '实验楼-201', value: '正常', status: 'online' },
+      { id: 3, name: '气表-002', location: '食堂-101', value: '正常', status: 'online' },
+      { id: 4, name: '电表-015', location: '宿舍1-102', value: '离线', status: 'offline' },
+      { id: 5, name: '电表-018', location: '行政楼-301', value: '正常', status: 'online' },
     ]
   }
 }
@@ -807,19 +828,10 @@ function handleResize() {
 
 // Setup auto refresh
 function setupAutoRefresh() {
-  refreshTimer = setInterval(() => {
-    loadDashboardData()
-    loadAlarmsData()
-    loadDeviceStatus()
-
-    // Update power chart with new data
-    if (powerChart.value) {
-      const option = powerChart.value.getOption()
-      const newData = option.series[0].data.slice(1)
-      newData.push(Math.floor(4000 + Math.random() * 2000))
-      option.series[0].data = newData
-      powerChart.value.setOption(option)
-    }
+  refreshTimer = setInterval(async () => {
+    await loadDashboardData()
+    await loadAlarmsData()
+    await loadDeviceStatus()
   }, 30000) // 30 seconds
 }
 
@@ -833,10 +845,12 @@ onMounted(async () => {
   initPowerChart()
   initMapChart()
 
-  // Load initial data
-  loadDashboardData()
-  loadAlarmsData()
-  loadDeviceStatus()
+  // Load initial data in parallel
+  await Promise.all([
+    loadDashboardData(),
+    loadAlarmsData(),
+    loadDeviceStatus(),
+  ])
 
   // Setup auto refresh
   setupAutoRefresh()
