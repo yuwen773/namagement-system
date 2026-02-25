@@ -43,7 +43,7 @@
 - 执行 `python manage.py dbshell` 能成功连接数据库
 - 在数据库中创建 `heritage_db` 数据库
 - 执行 `python manage.py migrate`（初始状态）生成 auth 等基础表
-
+> 我的数据库配置 为 端口：3306  密码："yuwen123."
 ---
 
 ### 步骤 1.3：安装并配置依赖包
