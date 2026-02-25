@@ -2,19 +2,17 @@
 
 ## 2026-02-25
 
-### Completed
-- Phase 1 (1.1~1.4): backend scaffold, MySQL config, dependencies, bootstrap SQL.
-- Phase 2 (2.1~2.3): JWT auth, role permissions, unified response/exception handling.
-- Phase 3 (3.1~3.4): core models and admin registration (`Category`, `Region`, `HeritageItem`, `Inheritor`, `ImportJob`, `ImportError`).
-- Phase 4.1: heritage CRUD (`/api/v1/heritage/`) with filters, pagination, admin-write/user-read.
-- Phase 4.2: inheritor CRUD (`/api/v1/inheritors/`) with filters, pagination, related heritage brief.
-- Phase 4.3: category CRUD (`/api/v1/categories/`) and tree endpoint (`/api/v1/categories/tree/`).
-- Phase 4.4: region CRUD (`/api/v1/regions/`) and search (`?search=<country name/code>`).
+### 已完成
+- 阶段 1~5 已完成：认证鉴权、核心模型、资源 CRUD、离线导入（`dry-run`/`commit`）和导入日志。
+- 阶段 6.1 已完成：新增仪表盘总览接口 `GET /api/v1/dashboard/overview/`。
+- 阶段 6.1 测试已补齐：覆盖未登录拦截与四项统计值返回。
 
-### Validation
-- `python manage.py check`: passed.
-- User validation: Phase 4.1~4.4 passed.
+### 验证
+- `python manage.py check` 通过。
+- `python manage.py test apps.importer.tests.test_services` 通过（3/3）。
+- `python manage.py test apps.dashboard.tests.test_views` 通过（2/2）。
+- 用户手动测试阶段 6.1：通过。
 
-### Current Status
-- Phase 4 is complete and verified.
-- Phase 5.1 is the next planned step.
+### 当前状态
+- 已实现并验证到阶段 6.1。
+- 按计划，阶段 6.2（地图分布接口）尚未开始。

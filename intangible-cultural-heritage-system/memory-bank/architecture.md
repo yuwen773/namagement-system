@@ -1,73 +1,34 @@
 # Architecture
 
-## Scope
-- System: intangible cultural heritage management + visualization.
-- Roles: `admin` (write/manage), `user` (read-only).
-- API prefix: `/api/v1`.
+## 目标与边界
+- 目标：先完成后端数据底座与统计 API，再推进前端可视化。
+- 角色：`admin` 可写，`user` 只读；默认接口需要认证。
+- API 前缀：`/api/v1`；响应格式统一为 `{ code, message, data, total? }`。
+- 导入范围：当前仅支持离线导入（脚本），不提供 Web 导入入口。
 
-## Tech Stack
-- Backend: Django 5.2, DRF, SimpleJWT, MySQL 8+.
-- Frontend (planned): Vue 3 + TypeScript + Element Plus + ECharts.
+## 模块与数据
+- 业务模块：`users`、`heritage`、`inheritors`、`categories`、`regions`、`importer`、`dashboard`。
+- 关键关系：`Category -> HeritageItem -> Inheritor`，`Region -> HeritageItem/Inheritor`，`ImportJob -> ImportError`。
+- 约束：列表默认分页 20；导入支持 `dry-run` 与 `commit`，要求幂等与可追踪。
 
-## File Responsibilities
-- Core
-  - `backend/manage.py`: Django command entry.
-  - `backend/heritage_system/settings.py`: app registry, DB, auth, middleware, CORS.
-  - `backend/heritage_system/urls.py`: root routing for versioned API modules.
-- Shared utils
-  - `backend/utils/response.py`: unified response `{code, message, data, total?}` and exception mapping.
-  - `backend/utils/pagination.py`: unified list pagination (`page_size=20`).
-- Auth (`users`)
-  - `backend/apps/users/models.py`: `UserProfile` and role helpers.
-  - `backend/apps/users/permissions.py`: `IsAdmin`, `IsAdminOrReadOnly`.
-  - `backend/apps/users/serializers.py`: auth serializers.
-  - `backend/apps/users/views.py`: login/refresh/logout/me endpoints.
-  - `backend/apps/users/urls.py`: auth routes.
-  - `backend/apps/users/admin.py`: user/profile admin config.
-- Heritage items (`heritage`)
-  - `backend/apps/heritage/models.py`: `HeritageItem` model.
-  - `backend/apps/heritage/serializers.py`: read/write serializers.
-  - `backend/apps/heritage/views.py`: CRUD + filters + pagination + permission.
-  - `backend/apps/heritage/urls.py`: heritage routes.
-  - `backend/apps/heritage/admin.py`: admin config.
-- Inheritors (`inheritors`)
-  - `backend/apps/inheritors/models.py`: `Inheritor` model.
-  - `backend/apps/inheritors/serializers.py`: read/write serializers and heritage brief fields.
-  - `backend/apps/inheritors/views.py`: CRUD + filters + pagination + permission.
-  - `backend/apps/inheritors/urls.py`: inheritor routes.
-  - `backend/apps/inheritors/admin.py`: admin config.
-- Categories (`categories`)
-  - `backend/apps/categories/models.py`: category dictionary with parent-child structure.
-  - `backend/apps/categories/serializers.py`: read/write serializers and parent brief fields.
-  - `backend/apps/categories/views.py`: CRUD + `tree` action + filters + permission.
-  - `backend/apps/categories/urls.py`: category routes.
-  - `backend/apps/categories/admin.py`: admin config.
-- Regions (`regions`)
-  - `backend/apps/regions/models.py`: region model (ISO code, name, coordinates, continent).
-  - `backend/apps/regions/serializers.py`: read/write serializers.
-  - `backend/apps/regions/views.py`: CRUD + `search` (name/code) + permission.
-  - `backend/apps/regions/urls.py`: region routes.
-  - `backend/apps/regions/admin.py`: admin config.
-- Import (`importer`)
-  - `backend/apps/importer/models.py`: `ImportJob`, `ImportError`.
-  - `backend/apps/importer/admin.py`: import job/error admin inspection.
-- DB lifecycle
-  - `backend/apps/*/migrations/*.py`: schema evolution history.
-  - `sql/init_db.sql`: initial DB bootstrap data/script.
+## 关键文件职责
+- `backend/heritage_system/settings.py`：Django/DRF/JWT/MySQL 全局配置。
+- `backend/heritage_system/urls.py`：全局路由入口，聚合各 app 路由。
+- `backend/utils/response.py`：统一成功/失败响应与异常包装。
+- `backend/utils/pagination.py`：统一分页策略（每页 20）。
+- `backend/apps/users/`：登录、刷新、登出、角色权限控制。
+- `backend/apps/heritage/`：非遗项目模型与 CRUD、筛选查询。
+- `backend/apps/inheritors/`：传承人模型与 CRUD、按项目关联。
+- `backend/apps/categories/`：分类字典与树结构接口。
+- `backend/apps/regions/`：国家/地区字典与检索。
+- `backend/apps/importer/services.py`：导入校验、清洗、幂等写入、错误记录。
+- `scripts/import_data.py`：离线导入 CLI 入口。
+- `backend/apps/dashboard/views.py`：仪表盘聚合统计接口（当前已完成 overview）。
+- `backend/apps/dashboard/urls.py`：仪表盘路由定义。
 
-## Data Model Relationships
-- `Category` 1:N `HeritageItem`
-- `Region` 1:N `HeritageItem`
-- `HeritageItem` 1:N `Inheritor`
-- `Region` 1:N `Inheritor`
-- `ImportJob` 1:N `ImportError`
-- `User` 1:N `ImportJob`
-
-## Architecture Insights
-- API contract is unified, so frontend only handles one success/error envelope shape.
-- Permission model is centralized (`IsAdminOrReadOnly`) and reused across resource apps.
-- Resource APIs follow one implementation pattern (ModelViewSet + filters + pagination), reducing maintenance cost.
-- Category tree endpoint keeps hierarchical reads simple without changing relational schema.
+## 当前阶段
+- 已完成阶段 1~5 与阶段 6.1（`GET /api/v1/dashboard/overview/`）。
+- 阶段 6.2（地图分布接口）未开始。
 
 ---
 Last updated: 2026-02-25
