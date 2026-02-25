@@ -403,68 +403,8 @@ function initTrendChart() {
 
   trendChart.value = echarts.init(trendChartRef.value)
 
-  const option = {
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      top: '10%',
-      containLabel: true,
-    },
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-      borderColor: '#f97316',
-      borderWidth: 1,
-      textStyle: { color: '#fff' },
-      axisPointer: {
-        type: 'cross',
-        lineStyle: { color: '#f97316', type: 'dashed' },
-      },
-    },
-    legend: {
-      bottom: 0,
-      textStyle: { color: chartColors.text },
-    },
-    xAxis: {
-      type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-      axisLine: { lineStyle: { color: chartColors.grid } },
-      axisLabel: { color: chartColors.text, fontSize: 11 },
-    },
-    yAxis: {
-      type: 'value',
-      axisLine: { show: false },
-      axisLabel: { color: chartColors.text, fontSize: 11 },
-      splitLine: { lineStyle: { color: chartColors.grid, type: 'dashed' } },
-    },
-    series: [
-      {
-        name: '本期',
-        type: 'line',
-        smooth: true,
-        data: [4200, 4800, 4500, 5200, 4900, 5800, 6200, 5900, 5100, 4800, 5300, 5600],
-        lineStyle: { width: 3, color: chartColors.primary },
-        itemStyle: { color: chartColors.primary, borderWidth: 2 },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(249, 115, 22, 0.3)' },
-            { offset: 1, color: 'rgba(249, 115, 22, 0)' },
-          ]),
-        },
-      },
-      {
-        name: '同期',
-        type: 'line',
-        smooth: true,
-        data: [3800, 4200, 4000, 4800, 4500, 5200, 5500, 5300, 4600, 4300, 4800, 5100],
-        lineStyle: { width: 2, color: chartColors.text, type: 'dashed' },
-        itemStyle: { color: chartColors.text },
-      },
-    ],
-  }
-
-  trendChart.value.setOption(option)
+  // Load trend data from API
+  loadTrendData()
 }
 
 // Initialize comparison chart
@@ -480,14 +420,14 @@ function initComparisonChart() {
 // Load comparison data from API
 async function loadComparisonData() {
   try {
-    const response = await getComparisonData({ type: 'building' })
+    // Backend expects period (day/month/year) and optional anchor_date
+    const response = await getComparisonData({ period: activePeriod.value })
     if (response.code === 0 && response.data) {
       updateComparisonChartWithData(response.data)
     }
   } catch (error) {
     console.error('Failed to load comparison data:', error)
-    // Initialize with default chart
-    updateComparisonChartWithFallback()
+    updateComparisonChartEmpty()
   }
 }
 
@@ -495,14 +435,154 @@ async function loadComparisonData() {
 function updateComparisonChartWithData(data) {
   if (!comparisonChart.value || !data) return
 
-  const categories = data.labels || data.buildings || []
-  const currentData = data.current || []
-  const previousData = data.previous || []
+  // Backend returns { current_total, chain_total, yoy_total, chain_change_rate, yoy_change_rate }
+  const currentTotal = data.current_total || 0
+  const chainTotal = data.chain_total || 0
+  const yoyTotal = data.yoy_total || 0
+  const chainRate = data.chain_change_rate || 0
+  const yoyRate = data.yoy_change_rate || 0
 
   const option = {
     grid: {
       left: '3%',
-      right: '8%',
+      right: '4%',
+      bottom: '3%',
+      top: '15%',
+      containLabel: true,
+    },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: '#f97316',
+      borderWidth: 1,
+      textStyle: { color: '#fff' },
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const item = params[0]
+        const value = item.value
+        let changeInfo = ''
+        if (item.name === '本期') {
+          changeInfo = `\n环比: ${chainRate >= 0 ? '+' : ''}${chainRate.toFixed(1)}%\n同比: ${yoyRate >= 0 ? '+' : ''}${yoyRate.toFixed(1)}%`
+        }
+        return `${item.name}<br/>能耗: ${value} kWh${changeInfo}`
+      },
+    },
+    title: {
+      text: `能耗对比`,
+      left: 'center',
+      top: '2%',
+      textStyle: {
+        fontSize: 12,
+        color: chartColors.text,
+      },
+    },
+    xAxis: {
+      type: 'category',
+      data: ['本期', '上期', '同期'],
+      axisLine: { lineStyle: { color: chartColors.grid } },
+      axisLabel: { color: chartColors.text, fontSize: 12 },
+    },
+    yAxis: {
+      type: 'value',
+      name: 'kWh',
+      axisLine: { show: false },
+      axisLabel: { color: chartColors.text, fontSize: 11 },
+      splitLine: { lineStyle: { color: chartColors.grid, type: 'dashed' } },
+    },
+    series: [
+      {
+        type: 'bar',
+        data: [
+          {
+            value: currentTotal,
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: '#f97316' },
+                { offset: 1, color: '#fbbf24' },
+              ]),
+              borderRadius: [4, 4, 0, 0],
+            },
+          },
+          {
+            value: chainTotal,
+            itemStyle: {
+              color: '#94a3b8',
+              borderRadius: [4, 4, 0, 0],
+            },
+          },
+          {
+            value: yoyTotal,
+            itemStyle: {
+              color: '#64748b',
+              borderRadius: [4, 4, 0, 0],
+            },
+          },
+        ],
+        label: {
+          show: true,
+          position: 'top',
+          color: '#1f2937',
+          fontSize: 11,
+          formatter: '{c} kWh',
+        },
+      },
+    ],
+  }
+
+  comparisonChart.value.setOption(option, true)
+}
+
+// Show empty state for comparison chart
+function updateComparisonChartEmpty() {
+  if (!comparisonChart.value) return
+  comparisonChart.value.setOption({
+    title: {
+      text: '暂无数据',
+      left: 'center',
+      top: 'center',
+      textStyle: { color: '#94a3b8', fontSize: 14 },
+    },
+    xAxis: { data: [] },
+    yAxis: { data: [] },
+    series: [],
+  })
+}
+
+// Initialize ranking chart
+function initRankingChart() {
+  if (!rankingChartRef.value) return
+
+  rankingChart.value = echarts.init(rankingChartRef.value)
+
+  // Load ranking data from API
+  loadRankingData()
+}
+
+// Load ranking data from API
+async function loadRankingData() {
+  try {
+    const response = await getRankingData({ type: rankingType.value, limit: 10 })
+    if (response.code === 0 && response.data) {
+      updateRankingChartWithData(response.data)
+    }
+  } catch (error) {
+    console.error('Failed to load ranking data:', error)
+    updateRankingChartEmpty()
+  }
+}
+
+// Update ranking chart with API data
+function updateRankingChartWithData(data) {
+  if (!rankingChart.value || !data) return
+
+  const chartData = Array.isArray(data) ? data : (data.items || [])
+  // Sort by value descending
+  const sortedData = [...chartData].sort((a, b) => (b.value || b.total_value || 0) - (a.value || a.total_value || 0))
+
+  const option = {
+    grid: {
+      left: '3%',
+      right: '12%',
       bottom: '3%',
       top: '3%',
       containLabel: true,
@@ -527,14 +607,14 @@ function updateComparisonChartWithData(data) {
     },
     yAxis: {
       type: 'category',
-      data: sortedData.map(d => d.name),
+      data: sortedData.map((d, i) => d.name || d.target_name || `排名${i + 1}`),
       axisLine: { show: false },
       axisLabel: { color: chartColors.text, fontSize: 11 },
     },
     series: [
       {
         type: 'bar',
-        data: sortedData.map(d => d.value),
+        data: sortedData.map(d => d.value || d.total_value || 0),
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
             { offset: 0, color: '#f97316' },
@@ -553,7 +633,28 @@ function updateComparisonChartWithData(data) {
     ],
   }
 
-  rankingChart.value?.setOption(option, true)
+  rankingChart.value.setOption(option, true)
+}
+
+// Show empty state for ranking chart
+function updateRankingChartEmpty() {
+  if (!rankingChart.value) return
+  rankingChart.value.setOption({
+    title: {
+      text: '暂无数据',
+      left: 'center',
+      top: 'center',
+      textStyle: { color: '#94a3b8', fontSize: 14 },
+    },
+    xAxis: { data: [] },
+    yAxis: { data: [] },
+    series: [],
+  })
+}
+
+// Handle ranking type change
+async function updateRankingChart() {
+  await loadRankingData()
 }
 
 // Initialize distribution chart
@@ -575,8 +676,7 @@ async function loadDistributionData() {
     }
   } catch (error) {
     console.error('Failed to load distribution data:', error)
-    // Initialize with default chart
-    updateDistributionChartWithFallback()
+    updateDistributionChartEmpty()
   }
 }
 
@@ -584,7 +684,25 @@ async function loadDistributionData() {
 function updateDistributionChartWithData(data) {
   if (!distributionChart.value || !data) return
 
-  const chartData = Array.isArray(data) ? data : (data.items || data.distribution || [])
+  // Backend returns { type, items: [{name, label, value}] }
+  const rawItems = Array.isArray(data) ? data : (data.items || data.distribution || [])
+
+  // Add color mapping based on energy type or area
+  const energyTypeColors = {
+    'ELECTRICITY': '#eab308',
+    'WATER': '#3b82f6',
+    'GAS': '#ef4444',
+  }
+  const defaultColors = ['#f97316', '#eab308', '#3b82f6', '#22c55e', '#64748b']
+
+  const chartData = rawItems.map((item, index) => {
+    const color = energyTypeColors[item.name] || defaultColors[index % defaultColors.length]
+    return {
+      name: item.label || item.name,
+      value: item.value || 0,
+      itemStyle: { color },
+    }
+  })
 
   const option = {
     tooltip: {
@@ -593,7 +711,7 @@ function updateDistributionChartWithData(data) {
       borderColor: '#f97316',
       borderWidth: 1,
       textStyle: { color: '#fff' },
-      formatter: '{b}: {c}% ({d}%)',
+      formatter: '{b}: {c} ({d}%)',
     },
     legend: {
       orient: 'vertical',
@@ -638,16 +756,18 @@ function updateDistributionChartWithData(data) {
   distributionChart.value.setOption(option)
 }
 
-// Fallback for distribution chart
-function updateDistributionChartWithFallback() {
-  const data = [
-    { value: 45, name: '教学楼', itemStyle: { color: '#f97316' } },
-    { value: 20, name: '宿舍楼', itemStyle: { color: '#eab308' } },
-    { value: 15, name: '实验楼', itemStyle: { color: '#3b82f6' } },
-    { value: 10, name: '图书馆', itemStyle: { color: '#22c55e' } },
-    { value: 10, name: '其他', itemStyle: { color: '#64748b' } },
-  ]
-  updateDistributionChartWithData(data)
+// Show empty state for distribution chart
+function updateDistributionChartEmpty() {
+  if (!distributionChart.value) return
+  distributionChart.value.setOption({
+    title: {
+      text: '暂无数据',
+      left: 'center',
+      top: 'center',
+      textStyle: { color: '#94a3b8', fontSize: 14 },
+    },
+    series: [],
+  })
 }
 
 // Initialize forecast chart
@@ -667,14 +787,15 @@ async function updateForecastChart() {
 // Load forecast data from API
 async function loadForecastData() {
   try {
-    const response = await getForecastData({ days: forecastDays.value })
+    // Backend expects period: "7d" or "30d"
+    const period = forecastDays.value === 7 ? '7d' : '30d'
+    const response = await getForecastData({ period })
     if (response.code === 0 && response.data) {
       updateForecastChartWithData(response.data)
     }
   } catch (error) {
     console.error('Failed to load forecast data:', error)
-    // Fallback to generated data
-    updateForecastChartWithFallback()
+    updateForecastChartEmpty()
   }
 }
 
@@ -682,9 +803,27 @@ async function loadForecastData() {
 function updateForecastChartWithData(data) {
   if (!forecastChart.value || !data) return
 
-  const categories = data.labels || data.dates || []
-  const historicalData = data.historical || []
-  const forecastData = data.forecast || []
+  // Process API response data - backend returns { history: [{date, value}], forecast: [{date, predicted_value}] }
+  const historyItems = data.history || []
+  const forecastItems = data.forecast || []
+
+  // Extract dates for x-axis
+  const categories = [
+    ...historyItems.map(item => item.date || ''),
+    ...forecastItems.map(item => item.date || '')
+  ]
+
+  // Historical data
+  const historicalData = historyItems.map(item => item.value || 0)
+
+  // Forecast data - pad with null to align after historical data
+  // The forecast should start from the last historical point
+  const lastHistoryValue = historicalData[historicalData.length - 1] || 0
+  const forecastData = [
+    ...Array(historicalData.length - 1).fill(null),
+    lastHistoryValue, // Connect to last historical point
+    ...forecastItems.map(item => item.predicted_value || 0)
+  ]
 
   const option = {
     grid: {
@@ -750,39 +889,20 @@ function updateForecastChartWithData(data) {
   forecastChart.value?.setOption(option, true)
 }
 
-// Fallback for forecast chart
-function updateForecastChartWithFallback() {
-  const days = forecastDays.value
-  const categories = []
-  const historicalData = []
-  const forecastData = []
-
-  const today = new Date()
-  for (let i = days; i > 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    categories.push(`${date.getMonth() + 1}/${date.getDate()}`)
-    historicalData.push(Math.floor(4000 + Math.random() * 2000))
-  }
-
-  for (let i = 0; i < Math.min(days, 7); i++) {
-    const date = new Date(today)
-    date.setDate(date.getDate() + i)
-    if (i === 0 && categories.length > 0) {
-      // Today is already in categories
-    } else {
-      categories.push(`${date.getMonth() + 1}/${date.getDate()}`)
-    }
-    forecastData.push(Math.floor(4500 + Math.random() * 2000))
-  }
-
-  const data = {
-    labels: categories,
-    historical: historicalData,
-    forecast: Array(historicalData.length - 1).fill(null).concat(historicalData[historicalData.length - 1]).concat(forecastData)
-  }
-
-  updateForecastChartWithData(data)
+// Show empty state for forecast chart
+function updateForecastChartEmpty() {
+  if (!forecastChart.value) return
+  forecastChart.value.setOption({
+    title: {
+      text: '暂无数据',
+      left: 'center',
+      top: 'center',
+      textStyle: { color: '#94a3b8', fontSize: 14 },
+    },
+    xAxis: { data: [] },
+    yAxis: { data: [] },
+    series: [],
+  })
 }
 
 // Get energy type color
@@ -816,37 +936,14 @@ async function loadBuildingOptions() {
     }
   } catch (error) {
     console.error('Failed to load buildings:', error)
-    // Mock data
-    buildingOptions.value = [
-      {
-        id: 1,
-        name: '主校区',
-        children: [
-          { id: 11, name: '教学楼A' },
-          { id: 12, name: '实验楼' },
-          { id: 13, name: '图书馆' },
-        ],
-      },
-    ]
   }
 }
 
 // Load table data
 async function loadTableData() {
-  // Mock data
-  tableData.value = [
-    { date: '2024-01-15', building: '教学楼A', energyType: '电', consumption: '12,450 kWh', cost: '9,867.50', comparison: 5.2, status: 'normal', statusText: '正常' },
-    { date: '2024-01-15', building: '教学楼A', energyType: '水', consumption: '125 m³', cost: '562.50', comparison: -3.1, status: 'normal', statusText: '正常' },
-    { date: '2024-01-15', building: '实验楼', energyType: '电', consumption: '8,620 kWh', cost: '6,842.80', comparison: 12.5, status: 'warning', statusText: '偏高' },
-    { date: '2024-01-15', building: '实验楼', energyType: '水', consumption: '45 m³', cost: '202.50', comparison: -8.2, status: 'normal', statusText: '正常' },
-    { date: '2024-01-14', building: '教学楼B', energyType: '电', consumption: '9,800 kWh', cost: '7,762.00', comparison: 2.8, status: 'normal', statusText: '正常' },
-    { date: '2024-01-14', building: '图书馆', energyType: '电', consumption: '7,200 kWh', cost: '5,688.00', comparison: -1.5, status: 'normal', statusText: '正常' },
-    { date: '2024-01-14', building: '行政楼', energyType: '电', consumption: '5,400 kWh', cost: '4,284.00', comparison: 0, status: 'normal', statusText: '正常' },
-    { date: '2024-01-13', building: '教学楼A', energyType: '气', consumption: '82 m³', cost: '328.00', comparison: 4.2, status: 'normal', statusText: '正常' },
-    { date: '2024-01-13', building: '食堂', energyType: '电', consumption: '4,800 kWh', cost: '3,648.00', comparison: 8.5, status: 'normal', statusText: '正常' },
-    { date: '2024-01-13', building: '食堂', energyType: '水', consumption: '156 m³', cost: '702.00', comparison: -2.3, status: 'normal', statusText: '正常' },
-  ]
-  pagination.value.total = tableData.value.length
+  // TODO: Load from API
+  tableData.value = []
+  pagination.value.total = 0
 }
 
 // Handle time range change
@@ -893,30 +990,61 @@ async function loadTrendData(period = activePeriod.value) {
   try {
     const response = await getTrendData({ period })
     if (response.code === 0 && response.data) {
-      updateTrendChartWithData(response.data)
+      const series = response.data.series || []
+      if (series.length > 0) {
+        updateTrendChartWithData(response.data)
+      } else {
+        // Show empty state
+        updateTrendChartEmpty()
+      }
     }
   } catch (error) {
     console.error('Failed to load trend data:', error)
-    // Fallback to initial chart if API fails
   }
+}
+
+// Show empty state for trend chart
+function updateTrendChartEmpty() {
+  if (!trendChart.value) return
+  trendChart.value.setOption({
+    title: {
+      text: '暂无数据',
+      left: 'center',
+      top: 'center',
+      textStyle: {
+        color: '#94a3b8',
+        fontSize: 14,
+      },
+    },
+    xAxis: { data: [] },
+    yAxis: { data: [] },
+    series: [],
+  })
 }
 
 // Update trend chart with API data
 function updateTrendChartWithData(data) {
   if (!trendChart.value || !data) return
 
-  // Process API response data
-  const xAxisData = data.labels || []
-  const currentData = data.current || []
-  const previousData = data.previous || []
+  // Process API response data - backend returns { period, series }
+  const series = data.series || []
+  const xAxisData = series.map(item => item.period || '')
+  const totalValueData = series.map(item => item.total_value || 0)
+  const avgPowerData = series.map(item => item.avg_power || 0)
 
   trendChart.value.setOption({
     xAxis: {
       data: xAxisData
     },
     series: [
-      { data: currentData },
-      { data: previousData }
+      {
+        data: totalValueData,
+        name: '能耗量',
+      },
+      {
+        data: avgPowerData,
+        name: '平均功率',
+      }
     ]
   })
 }
