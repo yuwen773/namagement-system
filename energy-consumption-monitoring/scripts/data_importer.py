@@ -324,10 +324,10 @@ class BatchImporter:
                     energy_type=energy_type,
                     timestamp=timestamp,
                     value=record["value"],
-                    voltage=record.get("voltage"),
-                    current=record.get("current"),
-                    power=record.get("power"),
-                    flow_rate=record.get("flow_rate"),
+                    voltage=self._normalize_optional_numeric(record.get("voltage")),
+                    current=self._normalize_optional_numeric(record.get("current")),
+                    power=self._normalize_optional_numeric(record.get("power")),
+                    flow_rate=self._normalize_optional_numeric(record.get("flow_rate")),
                 )
                 chunk_instances.append(instance)
             except Exception:
@@ -376,7 +376,7 @@ class BatchImporter:
         energy_type_map: dict[str, Any],
     ):
         value = record.get("energy_type")
-        if value in (None, ""):
+        if value in (None, "") or pd.isna(value):
             return device_energy_type
         key = str(value).strip().upper()
         energy_type = energy_type_map.get(key)
@@ -401,6 +401,14 @@ class BatchImporter:
         if timezone_module.is_naive(dt):
             return timezone_module.make_aware(dt, timezone_module.get_current_timezone())
         return dt
+
+    @staticmethod
+    def _normalize_optional_numeric(value: Any) -> Any | None:
+        if value is None:
+            return None
+        if pd.isna(value):
+            return None
+        return value
 
     @staticmethod
     def _serialize_api_record(record: dict[str, Any]) -> dict[str, Any]:
