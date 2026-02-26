@@ -1,11 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils.timezone import make_aware
+from datetime import datetime
 from rest_framework.test import APIClient
+from rest_framework.test import APITestCase
 
 from apps.categories.models import Category
 from apps.heritage.models import HeritageItem
 from apps.inheritors.models import Inheritor
 from apps.regions.models import Region
+
+User = get_user_model()
 
 
 class DashboardOverviewViewTests(TestCase):
@@ -413,3 +418,86 @@ class DashboardCountryRankingViewTests(TestCase):
                 },
             ],
         )
+
+
+class DashboardTrendViewTests(APITestCase):
+    """时间趋势 API 测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.client.force_authenticate(user=self.user)
+
+        # 创建测试用类别和地区
+        self.category = Category.objects.create(
+            name='测试类别',
+            code='TEST',
+            level='national'
+        )
+        self.region = Region.objects.create(
+            country_code='CN',
+            country_name='China',
+            latitude='39.9',
+            longitude='116.4'
+        )
+
+        # 创建不同年份的非遗项目
+        # Note: created_at has auto_now_add=True, so we need to create first, then update
+        item_2008 = HeritageItem.objects.create(
+            name='2008年项目',
+            category=self.category,
+            region=self.region,
+            level='national',
+        )
+        item_2008.created_at = make_aware(datetime(2008, 6, 15))
+        item_2008.save()
+
+        item_2010_1 = HeritageItem.objects.create(
+            name='2010年项目',
+            category=self.category,
+            region=self.region,
+            level='national',
+        )
+        item_2010_1.created_at = make_aware(datetime(2010, 3, 20))
+        item_2010_1.save()
+
+        item_2010_2 = HeritageItem.objects.create(
+            name='2010年项目2',
+            category=self.category,
+            region=self.region,
+            level='national',
+        )
+        item_2010_2.created_at = make_aware(datetime(2010, 8, 10))
+        item_2010_2.save()
+
+    def test_trend_returns_yearly_counts(self):
+        """测试返回按年份统计的数据"""
+        # Debug: Check what's actually in the database
+        items = HeritageItem.objects.all()
+        print(f"DEBUG: Total HeritageItem count: {items.count()}")
+        for item in items:
+            print(f"DEBUG: Item: {item.name}, created_at: {item.created_at}")
+
+        response = self.client.get('/api/v1/dashboard/trend/')
+        self.assertEqual(response.status_code, 200)
+        data = response.data['data']
+        print(f"DEBUG: data = {data}")
+        print(f"DEBUG: len(data) = {len(data)}")
+        self.assertEqual(len(data), 2)
+
+        # 验证数据结构
+        self.assertIn('year', data[0])
+        self.assertIn('count', data[0])
+
+    def test_trend_ordered_by_year(self):
+        """测试数据按年份排序"""
+        response = self.client.get('/api/v1/dashboard/trend/')
+        data = response.data['data']
+        years = [item['year'] for item in data]
+        self.assertEqual(years, sorted(years))
+
+    def test_trend_requires_auth(self):
+        """测试需要认证"""
+        self.client.force_authenticate(user=None)
+        response = self.client.get('/api/v1/dashboard/trend/')
+        self.assertEqual(response.status_code, 401)

@@ -5,6 +5,7 @@ from .views import (
     DashboardCountryRankingView,
     DashboardMapDistributionView,
     DashboardOverviewView,
+    DashboardTrendView,
 )
 
 urlpatterns = [
@@ -23,5 +24,10 @@ urlpatterns = [
         r"^dashboard/country-ranking/?$",
         DashboardCountryRankingView.as_view(),
         name="dashboard-country-ranking",
+    ),
+    re_path(
+        r"^dashboard/trend/?$",
+        DashboardTrendView.as_view(),
+        name="dashboard-trend",
     ),
 ]

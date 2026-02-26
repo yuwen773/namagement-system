@@ -1,6 +1,7 @@
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db.models import Count, Q
+from django.db.models.functions import ExtractYear
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -154,6 +155,36 @@ class DashboardCountryRankingView(APIView):
                 "heritage_count": region.heritage_count,
             }
             for index, region in enumerate(regions)
+        ]
+
+        return success_response(data=data, message="获取成功")
+
+
+class DashboardTrendView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # 使用原生 MySQL YEAR() 函数，避免时区问题
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    YEAR(created_at) as year,
+                    COUNT(*) as count
+                FROM heritage_items
+                WHERE created_at IS NOT NULL
+                GROUP BY YEAR(created_at)
+                ORDER BY year
+            """)
+            results = cursor.fetchall()
+
+        data = [
+            {
+                "year": row[0],
+                "count": row[1],
+            }
+            for row in results
         ]
 
         return success_response(data=data, message="获取成功")
