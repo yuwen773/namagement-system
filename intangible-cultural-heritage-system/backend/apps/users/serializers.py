@@ -1,6 +1,6 @@
 import re
 
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
@@ -17,14 +17,18 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         request = self.context.get("request")
-        user = authenticate(
-            request=request,
-            username=attrs.get("username"),
-            password=attrs.get("password"),
-        )
+        username = attrs.get("username")
+        password = attrs.get("password")
 
-        if user is None:
+        # 直接查询用户并明文校验密码
+        try:
+            user = User.objects.get(username=username)
+            # 明文密码比较
+            if user.password != password:
+                raise serializers.ValidationError("用户名或密码错误")
+        except User.DoesNotExist:
             raise serializers.ValidationError("用户名或密码错误")
+
         if not user.is_active:
             raise serializers.ValidationError("用户已被禁用")
 
@@ -82,7 +86,7 @@ class RegisterSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """创建新用户"""
+        """创建新用户（明文密码）"""
         username = validated_data["username"]
         password = validated_data["password"]
         email = validated_data["email"]
@@ -92,8 +96,10 @@ class RegisterSerializer(serializers.Serializer):
             if User.objects.filter(username=username).exists():
                 raise serializers.ValidationError("该用户名已被注册")
 
-            # Create user with hashed password
-            user = User.objects.create_user(username=username, password=password)
+            # 创建用户，直接设置明文密码
+            user = User(username=username)
+            user.password = password  # 明文存储
+            user.save()
 
             # Create profile with get_or_create (defensive)
             profile, _ = UserProfile.objects.get_or_create(
@@ -196,7 +202,7 @@ class UserManageSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """创建用户并设置档案"""
+        """创建用户并设置档案（明文密码）"""
         password = validated_data.pop("password", None)
         role = validated_data.pop("role", "user")
         email = validated_data.pop("email", None)
@@ -204,7 +210,7 @@ class UserManageSerializer(serializers.ModelSerializer):
         try:
             user = User(**validated_data)
             if password:
-                user.set_password(password)
+                user.password = password  # 明文存储密码
             user.save()
 
             UserProfile.objects.get_or_create(
@@ -218,7 +224,7 @@ class UserManageSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        """更新用户和档案"""
+        """更新用户和档案（明文密码）"""
         password = validated_data.pop("password", None)
         role = validated_data.pop("role", None)
         email = validated_data.pop("email", None)
@@ -227,7 +233,7 @@ class UserManageSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if password:
-            instance.set_password(password)
+            instance.password = password  # 明文存储密码
         instance.save()
 
         # 使用 get_or_create 获取用户档案（防御性编程）
@@ -284,7 +290,7 @@ class UpdateRoleSerializer(serializers.Serializer):
 
 
 class ResetPasswordSerializer(serializers.Serializer):
-    """重置密码序列化器"""
+    """重置密码序列化器（明文密码）"""
 
     user_id = serializers.IntegerField()
     new_password = serializers.CharField()
@@ -301,10 +307,10 @@ class ResetPasswordSerializer(serializers.Serializer):
         return value
 
     def save(self):
-        """重置用户密码"""
+        """重置用户密码（明文存储）"""
         user_id = self.validated_data["user_id"]
         new_password = self.validated_data["new_password"]
         user = User.objects.get(id=user_id)
-        user.set_password(new_password)
+        user.password = new_password  # 明文存储密码
         user.save()
         return user
