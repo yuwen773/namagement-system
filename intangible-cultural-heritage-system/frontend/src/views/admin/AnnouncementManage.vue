@@ -144,7 +144,7 @@
             </div>
             <div v-if="showPreview" class="content-preview">
               <div class="preview-label">预览效果</div>
-              <div class="preview-content" v-html="form.content"></div>
+              <div class="preview-content" v-html="sanitizeContent(form.content)"></div>
             </div>
           </div>
         </el-form-item>
@@ -174,6 +174,16 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAnnouncementList, createAnnouncement, updateAnnouncement, deleteAnnouncement } from '@/api/announcement'
 import type { Announcement, AnnouncementCreate, AnnouncementListParams } from '@/types'
+import DOMPurify from 'dompurify'
+
+const sanitizeContent = (content: string) => {
+  return DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                   'ul', 'ol', 'li', 'a', 'img', 'blockquote', 'pre', 'code', 'span', 'div', 'table',
+                   'tr', 'td', 'th', 'thead', 'tbody'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style']
+  })
+}
 
 const tableData = ref<Announcement[]>([])
 const loading = ref(false)

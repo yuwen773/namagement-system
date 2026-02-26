@@ -41,7 +41,7 @@
           </div>
         </header>
 
-        <div class="article-content" v-html="announcement.content"></div>
+        <div class="article-content" v-html="sanitizeContent(announcement.content)"></div>
       </article>
     </div>
 
@@ -62,6 +62,16 @@ import { ElMessage } from 'element-plus'
 import { Loading, ArrowLeft, Top, User, Calendar, Edit, DocumentDelete } from '@element-plus/icons-vue'
 import { getAnnouncementDetail } from '@/api/announcement'
 import type { Announcement } from '@/types'
+import DOMPurify from 'dompurify'
+
+const sanitizeContent = (content: string) => {
+  return DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                   'ul', 'ol', 'li', 'a', 'img', 'blockquote', 'pre', 'code', 'span', 'div', 'table',
+                   'tr', 'td', 'th', 'thead', 'tbody'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style']
+  })
+}
 
 const route = useRoute()
 const router = useRouter()
