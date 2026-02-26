@@ -1,0 +1,63 @@
+{
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0
+  },
+  "results": [
+    {
+      "id": "T1",
+      "name": "登录页面访问",
+      "passed": true,
+      "message": "URL: http://localhost:5173/login"
+    },
+    {
+      "id": "T2",
+      "name": "登录表单元素",
+      "passed": true,
+      "message": "发现 2 个输入框, 1 个按钮"
+    },
+    {
+      "id": "T3",
+      "name": "登录成功",
+      "passed": true,
+      "message": "跳转到驾驶舱"
+    },
+    {
+      "id": "T3-1",
+      "name": "Token存储",
+      "passed": true,
+      "message": "Token 已存储"
+    },
+    {
+      "id": "T4",
+      "name": "驾驶舱加载",
+      "passed": true,
+      "message": "标题: frontend"
+    },
+    {
+      "id": "T4-1",
+      "name": "侧边栏菜单",
+      "passed": true,
+      "message": "发现 7 个菜单项"
+    },
+    {
+      "id": "T5",
+      "name": "登出功能",
+      "passed": true,
+      "message": "成功退出"
+    },
+    {
+      "id": "T6",
+      "name": "路由守卫",
+      "passed": true,
+      "message": "未登录被重定向到登录页"
+    },
+    {
+      "id": "T7",
+      "name": "项目列表",
+      "passed": true,
+      "message": "发现 3 个表格"
+    }
+  ]
+}
