@@ -23,6 +23,27 @@ class UserProfile(models.Model):
         db_index=True,
         verbose_name="角色",
     )
+    email = models.EmailField(
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name="邮箱",
+    )
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="手机号",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="账号状态",
+    )
+    last_login_time = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="最后登录时间",
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 
