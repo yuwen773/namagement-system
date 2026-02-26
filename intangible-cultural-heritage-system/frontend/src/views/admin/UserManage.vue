@@ -258,12 +258,20 @@ const resetPasswordRules: FormRules = {
 const fetchData = async () => {
   loading.value = true
   try {
-    const params = {
-      page: currentPage.value,
-      username: filters.username || undefined,
-      role: filters.role,
-      is_active: filters.is_active
+    // 构建参数，只在有值时才添加
+    const params: any = {
+      page: currentPage.value
     }
+    if (filters.username) {
+      params.username = filters.username
+    }
+    if (filters.role) {
+      params.role = filters.role
+    }
+    if (filters.is_active !== undefined && filters.is_active !== null) {
+      params.is_active = filters.is_active
+    }
+
     const res = await getUserList(params)
     if (res.data.code === 0) {
       tableData.value = res.data.data

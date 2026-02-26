@@ -3,6 +3,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -31,6 +32,11 @@ class LoginSerializer(serializers.Serializer):
 
         if not user.is_active:
             raise serializers.ValidationError("用户已被禁用")
+
+        # 更新最后登录时间
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.last_login_time = timezone.now()
+        profile.save()
 
         refresh = RefreshToken.for_user(user)
         return {
