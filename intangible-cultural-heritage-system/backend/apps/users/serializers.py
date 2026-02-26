@@ -2,6 +2,7 @@ import re
 
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -79,17 +80,37 @@ class RegisterSerializer(serializers.Serializer):
         validate_password(value)
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         """创建新用户"""
         username = validated_data["username"]
         password = validated_data["password"]
         email = validated_data["email"]
 
-        # 创建用户
-        user = User.objects.create_user(username=username, password=password)
+        try:
+            # 使用 get_or_create 避免竞态条件
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={"password": password}
+            )
+            if not created:
+                raise serializers.ValidationError("该用户名已被注册")
 
-        # 创建用户档案并设置邮箱
-        UserProfile.objects.create(user=user, email=email, role="user")
+            # 如果是新建用户，需要设置密码
+            user.set_password(password)
+            user.save()
+
+            # 创建或获取用户档案并设置邮箱
+            profile, _ = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={"email": email, "role": "user"}
+            )
+            if profile.email != email:
+                profile.email = email
+                profile.save()
+
+        except IntegrityError:
+            raise serializers.ValidationError("创建用户失败，请稍后重试")
 
         return user
 
@@ -178,20 +199,29 @@ class UserManageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("该用户名已被使用")
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         """创建用户并设置档案"""
         password = validated_data.pop("password", None)
         role = validated_data.pop("role", "user")
         email = validated_data.pop("email", None)
 
-        user = User(**validated_data)
-        if password:
-            user.set_password(password)
-        user.save()
+        try:
+            user = User(**validated_data)
+            if password:
+                user.set_password(password)
+            user.save()
 
-        UserProfile.objects.create(user=user, role=role, email=email)
+            UserProfile.objects.get_or_create(
+                user=user,
+                defaults={"role": role, "email": email}
+            )
+        except IntegrityError:
+            raise serializers.ValidationError("创建用户失败，请稍后重试")
+
         return user
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         """更新用户和档案"""
         password = validated_data.pop("password", None)
@@ -205,8 +235,8 @@ class UserManageSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
 
-        # 更新用户档案
-        profile = instance.profile
+        # 使用 get_or_create 获取用户档案（防御性编程）
+        profile, _ = UserProfile.objects.get_or_create(user=instance)
         if role is not None:
             profile.role = role
         if email is not None:
@@ -262,7 +292,7 @@ class ResetPasswordSerializer(serializers.Serializer):
     """重置密码序列化器"""
 
     user_id = serializers.IntegerField()
-    new_password = serializers.CharField(min_length=6)
+    new_password = serializers.CharField()
 
     def validate_user_id(self, value):
         """验证用户ID是否存在"""
