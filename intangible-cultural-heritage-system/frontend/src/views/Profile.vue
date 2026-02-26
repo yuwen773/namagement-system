@@ -79,7 +79,7 @@
               />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" :loading="changingPwd" @click="changePassword">
+              <el-button type="primary" :loading="changingPwd" @click="handlePasswordChange">
                 修改密码
               </el-button>
             </el-form-item>
@@ -92,8 +92,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, FormInstance, FormRules } from 'element-plus'
-import { getCurrentUser, updateProfile, changePassword } from '@/api/auth'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import { getCurrentUser, updateProfile, changePassword as changePasswordApi } from '@/api/auth'
 import type { UserProfile } from '@/types'
 
 const activeTab = ref('profile')
@@ -130,7 +131,7 @@ const profileRules: FormRules = {
   ],
 }
 
-const validateConfirmPwd = (rule: any, value: string, callback: any) => {
+const validateConfirmPwd = (_rule: any, value: string, callback: any) => {
   if (value !== passwordForm.new_password) {
     callback(new Error('两次输入的密码不一致'))
   } else {
@@ -187,14 +188,14 @@ const saveProfile = async () => {
   })
 }
 
-const changePassword = async () => {
+const handlePasswordChange = async () => {
   if (!passwordFormRef.value) return
 
   await passwordFormRef.value.validate(async (valid) => {
     if (valid) {
       changingPwd.value = true
       try {
-        await changePassword({
+        await changePasswordApi({
           old_password: passwordForm.old_password,
           new_password: passwordForm.new_password,
         })
