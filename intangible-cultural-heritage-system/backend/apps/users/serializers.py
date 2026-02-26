@@ -320,3 +320,31 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.password = new_password  # 明文存储密码
         user.save()
         return user
+
+
+class UpdateProfileSerializer(serializers.Serializer):
+    """更新个人资料序列化器"""
+    email = serializers.EmailField(required=False)
+    phone = serializers.CharField(max_length=20, required=False)
+
+    def validate_email(self, value):
+        """检查邮箱是否已被其他用户使用"""
+        if not value:
+            return value
+        user = self.context['request'].user
+        if UserProfile.objects.exclude(user_id=user.id).filter(email=value).exists():
+            raise serializers.ValidationError("该邮箱已被使用")
+        return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """修改密码序列化器"""
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate_old_password(self, value):
+        """验证旧密码"""
+        user = self.context['request'].user
+        if user.password != value:
+            raise serializers.ValidationError("原密码错误")
+        return value
