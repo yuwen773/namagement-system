@@ -1,101 +1,110 @@
 <template>
-  <div class="main-layout">
-    <!-- 顶部导航栏 -->
+  <div class="heritage-layout">
+    <!-- 顶部导航栏 - 卷轴风格 -->
     <header class="layout-header">
+      <div class="scroll-decoration left"></div>
       <div class="header-content">
-        <!-- Logo 区域 -->
-        <div class="logo-section">
-          <div class="logo-icon">
-            <el-icon :size="28">
-              <Collection />
-            </el-icon>
+        <!-- Logo 印章区域 -->
+        <div class="logo-seal">
+          <div class="seal-outer">
+            <div class="seal-inner">
+              <el-icon :size="32" class="seal-icon">
+                <Collection />
+              </el-icon>
+            </div>
           </div>
-          <div class="logo-text">
+          <div class="logo-texts">
             <h1 class="logo-title">非遗数据平台</h1>
-            <span class="logo-subtitle">Cultural Heritage</span>
+            <span class="logo-subtitle">Cultural Heritage System</span>
           </div>
         </div>
 
         <!-- 用户信息区域 -->
-        <div class="user-section">
-          <div class="user-info">
-            <el-icon :size="20" class="user-icon">
-              <User />
-            </el-icon>
-            <span class="username">{{ userStore.username }}</span>
-            <el-tag :type="userStore.isAdmin ? 'danger' : 'info'" size="small" class="role-tag">
-              {{ userStore.isAdmin ? '管理员' : '用户' }}
-            </el-tag>
+        <div class="user-region">
+          <div class="user-card">
+            <div class="user-avatar">
+              <el-icon :size="18">
+                <User />
+              </el-icon>
+            </div>
+            <div class="user-details">
+              <span class="user-name">{{ userStore.username }}</span>
+              <span
+                class="user-role"
+                :class="userStore.isAdmin ? 'role-admin' : 'role-user'"
+              >
+                {{ userStore.isAdmin ? '管理员' : '用户' }}
+              </span>
+            </div>
           </div>
           <el-button
-            type="danger"
-            size="small"
+            class="logout-btn"
             :icon="SwitchButton"
             @click="handleLogout"
-            class="logout-btn"
           >
             退出
           </el-button>
         </div>
       </div>
+      <div class="scroll-decoration right"></div>
     </header>
 
     <!-- 主体内容区域 -->
     <div class="layout-body">
-      <!-- 侧边栏 -->
+      <!-- 侧边栏 - 书架风格 -->
       <aside class="layout-sidebar">
-        <el-menu
-          :default-active="activeMenu"
-          :router="true"
-          class="sidebar-menu"
-        >
+        <div class="sidebar-mount">
+          <div class="mount-top"></div>
+          <div class="mount-bottom"></div>
+        </div>
+        <nav class="sidebar-nav">
           <!-- 通用菜单 -->
-          <div class="menu-section">
-            <div class="menu-section-title">数据查看</div>
-            <el-menu-item index="/dashboard">
-              <el-icon><DataAnalysis /></el-icon>
-              <span>驾驶舱</span>
-            </el-menu-item>
-            <el-menu-item index="/heritage">
-              <el-icon><Collection /></el-icon>
-              <span>非遗项目</span>
-            </el-menu-item>
-            <el-menu-item index="/inheritors">
-              <el-icon><User /></el-icon>
-              <span>传承人</span>
-            </el-menu-item>
+          <div class="menu-shelf">
+            <div class="shelf-title">数据查看</div>
+            <router-link
+              v-for="item in viewMenus"
+              :key="item.path"
+              :to="item.path"
+              class="nav-item"
+              :class="{ active: isActive(item.path) }"
+            >
+              <span class="nav-icon">
+                <component :is="item.icon" />
+              </span>
+              <span class="nav-text">{{ item.title }}</span>
+              <span class="nav-seal">{{ item.seal }}</span>
+            </router-link>
           </div>
 
           <!-- 管理员菜单 -->
-          <div v-if="userStore.isAdmin" class="menu-section">
-            <div class="menu-section-title">数据管理</div>
-            <el-menu-item index="/admin/heritage">
-              <el-icon><Edit /></el-icon>
-              <span>项目管理</span>
-            </el-menu-item>
-            <el-menu-item index="/admin/inheritors">
-              <el-icon><UserFilled /></el-icon>
-              <span>传承人管理</span>
-            </el-menu-item>
-            <el-menu-item index="/admin/categories">
-              <el-icon><Menu /></el-icon>
-              <span>分类管理</span>
-            </el-menu-item>
-            <el-menu-item index="/admin/import">
-              <el-icon><Upload /></el-icon>
-              <span>数据导入</span>
-            </el-menu-item>
+          <div v-if="userStore.isAdmin" class="menu-shelf">
+            <div class="shelf-title">数据管理</div>
+            <router-link
+              v-for="item in adminMenus"
+              :key="item.path"
+              :to="item.path"
+              class="nav-item"
+              :class="{ active: isActive(item.path) }"
+            >
+              <span class="nav-icon">
+                <component :is="item.icon" />
+              </span>
+              <span class="nav-text">{{ item.title }}</span>
+              <span class="nav-seal">{{ item.seal }}</span>
+            </router-link>
           </div>
-        </el-menu>
+        </nav>
       </aside>
 
-      <!-- 内容区域 -->
+      <!-- 内容区域 - 宣纸风格 -->
       <main class="layout-content">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+        <div class="content-scroll">
+          <router-view v-slot="{ Component }">
+            <transition name="scroll-unfold" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </div>
       </main>
     </div>
   </div>
@@ -121,7 +130,23 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const activeMenu = computed(() => route.path)
+// 菜单配置
+const viewMenus = [
+  { path: '/dashboard', title: '驾驶舱', icon: DataAnalysis, seal: '览' },
+  { path: '/heritage', title: '非遗项目', icon: Collection, seal: '宝' },
+  { path: '/inheritors', title: '传承人', icon: User, seal: '传' }
+]
+
+const adminMenus = [
+  { path: '/admin/heritage', title: '项目管理', icon: Edit, seal: '管' },
+  { path: '/admin/inheritors', title: '传承人管理', icon: UserFilled, seal: '理' },
+  { path: '/admin/categories', title: '分类管理', icon: Menu, seal: '类' },
+  { path: '/admin/import', title: '数据导入', icon: Upload, seal: '入' }
+]
+
+const isActive = (path: string) => {
+  return route.path === path || route.path.startsWith(path + '/')
+}
 
 const handleLogout = async () => {
   try {
@@ -134,124 +159,227 @@ const handleLogout = async () => {
     await userStore.logout()
     ElMessage.success('已退出登录')
     router.push('/login')
-  } catch (error) {
+  } catch {
     // 用户取消
   }
 }
 </script>
 
 <style scoped>
-.main-layout {
+/* ========== 全局布局 ========== */
+.heritage-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #F7F4ED;
 }
 
-/* 顶部导航栏 */
+/* ========== 顶部导航栏 - 卷轴风格 ========== */
 .layout-header {
-  height: 64px;
-  background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
+  position: relative;
+  height: 72px;
+  background: linear-gradient(135deg, #2F3640 0%, #1a2026 100%);
+  display: flex;
+  align-items: stretch;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 1000;
 }
 
-.header-content {
+.scroll-decoration {
+  width: 40px;
+  background: linear-gradient(180deg,
+    #D4AF37 0%,
+    #B8860B 15%,
+    #8B6914 30%,
+    #B8860B 50%,
+    #D4AF37 70%,
+    #B8860B 85%,
+    #8B6914 100%
+  );
+  position: relative;
+  flex-shrink: 0;
+}
+
+.scroll-decoration::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
   height: 100%;
-  padding: 0 24px;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 8px,
+    rgba(0, 0, 0, 0.2) 8px,
+    rgba(0, 0, 0, 0.2) 10px
+  );
+  border-radius: 2px;
+}
+
+.scroll-decoration.left {
+  border-radius: 0 8px 8px 0;
+}
+
+.scroll-decoration.right {
+  border-radius: 8px 0 0 8px;
+}
+
+.header-content {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1920px;
-  margin: 0 auto;
+  padding: 0 32px;
 }
 
-.logo-section {
+.logo-seal {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
 
-.logo-icon {
-  width: 44px;
-  height: 44px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+.seal-outer {
+  width: 56px;
+  height: 56px;
+  background: #C23531;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  box-shadow:
+    0 4px 16px rgba(194, 35, 49, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.seal-outer::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+}
+
+.seal-inner {
+  width: 44px;
+  height: 44px;
+  background: rgba(194, 35, 49, 0.9);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.seal-icon {
+  color: #F7F4ED;
+}
+
+.logo-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.logo-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #F7F4ED;
+  margin: 0;
+  letter-spacing: 4px;
+  font-family: "STSong", "SimSun", serif;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.logo-subtitle {
+  font-size: 11px;
+  color: rgba(247, 244, 237, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 500;
+}
+
+.user-region {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(247, 244, 237, 0.1);
+  border-radius: 30px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
   backdrop-filter: blur(10px);
 }
 
-.logo-text {
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #D4AF37, #CD7F32);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2F3640;
+  flex-shrink: 0;
+}
+
+.user-details {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.logo-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
-.logo-subtitle {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 500;
-}
-
-.user-section {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-}
-
-.user-icon {
-  color: white;
-}
-
-.username {
-  color: white;
-  font-weight: 500;
+.user-name {
   font-size: 14px;
+  font-weight: 600;
+  color: #F7F4ED;
 }
 
-.role-tag {
+.user-role {
   font-size: 11px;
-  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.role-admin {
+  background: #C23531;
+  color: white;
+}
+
+.role-user {
+  background: rgba(93, 138, 168, 0.8);
+  color: white;
 }
 
 .logout-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  backdrop-filter: blur(10px);
+  background: rgba(194, 35, 49, 0.9) !important;
+  border: 1px solid rgba(194, 35, 49, 0.5) !important;
+  color: #F7F4ED !important;
+  border-radius: 20px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s !important;
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: #DC143C !important;
+  border-color: #DC143C !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 20, 60, 0.4) !important;
 }
 
-/* 主体内容区域 */
+/* ========== 主体内容区域 ========== */
 .layout-body {
   flex: 1;
   display: flex;
@@ -260,84 +388,274 @@ const handleLogout = async () => {
   margin: 0 auto;
 }
 
-/* 侧边栏 */
+/* ========== 侧边栏 - 书架风格 ========== */
 .layout-sidebar {
-  width: 240px;
-  background: white;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  width: 260px;
+  background: linear-gradient(180deg, #FFFBF5 0%, #F7F4ED 100%);
+  position: relative;
+  box-shadow:
+    2px 0 20px rgba(47, 54, 64, 0.1),
+    inset 0 0 0 1px rgba(212, 175, 55, 0.1);
+}
+
+.sidebar-mount {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  background: linear-gradient(180deg,
+    rgba(212, 175, 55, 0.4) 0%,
+    rgba(212, 175, 55, 0.2) 50%,
+    rgba(212, 175, 55, 0.4) 100%
+  );
+}
+
+.mount-top,
+.mount-bottom {
+  width: 16px;
+  height: 16px;
+  background: #D4AF37;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.3);
+}
+
+.sidebar-nav {
+  padding: 24px 0 24px 24px;
   overflow-y: auto;
+  max-height: calc(100vh - 72px);
 }
 
-.sidebar-menu {
-  border-right: none;
-  padding: 16px 0;
+.menu-shelf {
+  margin-bottom: 32px;
 }
 
-.menu-section {
-  margin-bottom: 24px;
-}
-
-.menu-section-title {
-  padding: 8px 24px;
+.shelf-title {
+  padding: 8px 16px;
+  margin-bottom: 12px;
   font-size: 12px;
   font-weight: 600;
   color: #909399;
   text-transform: uppercase;
+  letter-spacing: 2px;
+  border-left: 3px solid #D4AF37;
+  padding-left: 12px;
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  margin: 4px 0;
+  border-radius: 8px 0 0 8px;
+  color: #606266;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #D4AF37;
+  transform: scaleY(0);
+  transition: transform 0.3s;
+}
+
+.nav-item:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: #2F3640;
+  transform: translateX(4px);
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(194, 35, 49, 0.1) 0%, transparent 100%);
+  color: #C23531;
+}
+
+.nav-item.active::before {
+  transform: scaleY(1);
+}
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.nav-text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
   letter-spacing: 0.5px;
 }
 
-:deep(.el-menu-item) {
-  margin: 4px 12px;
-  border-radius: 8px;
-  transition: all 0.3s;
+.nav-seal {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #D4AF37;
+  color: #2F3640;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 2px;
+  font-family: "STSong", "SimSun", serif;
+  flex-shrink: 0;
+  opacity: 0.6;
 }
 
-:deep(.el-menu-item:hover) {
-  background: #f5f7fa;
-}
-
-:deep(.el-menu-item.is-active) {
-  background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+.nav-item.active .nav-seal {
+  background: #C23531;
   color: white;
+  opacity: 1;
 }
 
-:deep(.el-menu-item.is-active .el-icon) {
-  color: white;
-}
-
-/* 内容区域 */
+/* ========== 内容区域 ========== */
 .layout-content {
   flex: 1;
-  padding: 24px;
+  overflow: hidden;
+  background: #F7F4ED;
+  position: relative;
+}
+
+.layout-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.content-scroll {
+  height: 100%;
   overflow-y: auto;
-  background: #f5f7fa;
+  padding: 0;
 }
 
-/* 页面切换动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
+/* ========== 页面切换动画 ========== */
+.scroll-unfold-enter-active {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.scroll-unfold-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.scroll-unfold-enter-from {
   opacity: 0;
+  transform: translateY(30px) scale(0.98);
 }
 
-/* 滚动条样式 */
-.layout-sidebar::-webkit-scrollbar,
-.layout-content::-webkit-scrollbar {
+.scroll-unfold-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+/* ========== 滚动条样式 ========== */
+.sidebar-nav::-webkit-scrollbar,
+.content-scroll::-webkit-scrollbar {
   width: 6px;
 }
 
-.layout-sidebar::-webkit-scrollbar-thumb,
-.layout-content::-webkit-scrollbar-thumb {
-  background: #dcdfe6;
+.sidebar-nav::-webkit-scrollbar-track,
+.content-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb,
+.content-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #D4AF37, #CD7F32);
   border-radius: 3px;
 }
 
-.layout-sidebar::-webkit-scrollbar-thumb:hover,
-.layout-content::-webkit-scrollbar-thumb:hover {
-  background: #c0c4cc;
+.sidebar-nav::-webkit-scrollbar-thumb:hover,
+.content-scroll::-webkit-scrollbar-thumb:hover {
+  background: #C23531;
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 1024px) {
+  .layout-sidebar {
+    width: 80px;
+  }
+
+  .sidebar-mount {
+    width: 8px;
+  }
+
+  .mount-top,
+  .mount-bottom {
+    width: 12px;
+    height: 12px;
+  }
+
+  .sidebar-nav {
+    padding: 24px 0 24px 12px;
+  }
+
+  .shelf-title {
+    display: none;
+  }
+
+  .nav-text,
+  .nav-seal {
+    display: none;
+  }
+
+  .nav-item {
+    justify-content: center;
+    padding: 14px;
+  }
+
+  .nav-icon {
+    margin: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-header {
+    height: auto;
+    flex-direction: column;
+  }
+
+  .scroll-decoration {
+    display: none;
+  }
+
+  .header-content {
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .logo-seal {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .layout-sidebar {
+    display: none;
+  }
 }
 </style>
