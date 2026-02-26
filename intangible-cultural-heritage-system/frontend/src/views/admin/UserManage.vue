@@ -275,7 +275,6 @@ const fetchData = async () => {
       params.is_active = filters.is_active
     }
 
-    console.log('筛选参数:', params) // 调试用
     const res = await getUserList(params)
     if (res.data.code === 0) {
       tableData.value = res.data.data
@@ -284,7 +283,6 @@ const fetchData = async () => {
       ElMessage.error(res.data.message || '获取用户列表失败')
     }
   } catch (error) {
-    console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
   } finally {
     loading.value = false
