@@ -1,0 +1,1 @@
+# Inheritors app tests
