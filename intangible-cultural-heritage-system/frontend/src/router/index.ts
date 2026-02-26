@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import MainLayout from '@/layouts/MainLayout.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -11,59 +12,62 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    redirect: '/dashboard'
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('@/views/Dashboard.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/heritage',
-    name: 'HeritageList',
-    component: () => import('@/views/HeritageList.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/heritage/:id',
-    name: 'HeritageDetail',
-    component: () => import('@/views/HeritageDetail.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/inheritors',
-    name: 'InheritorList',
-    component: () => import('@/views/InheritorList.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/admin',
-    redirect: '/admin/heritage'
-  },
-  {
-    path: '/admin/heritage',
-    name: 'AdminHeritage',
-    component: () => import('@/views/admin/HeritageManage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/inheritors',
-    name: 'AdminInheritors',
-    component: () => import('@/views/admin/InheritorManage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/categories',
-    name: 'AdminCategories',
-    component: () => import('@/views/admin/CategoryManage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/import',
-    name: 'AdminImport',
-    component: () => import('@/views/admin/DataImport.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
+    component: MainLayout,
+    redirect: '/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/Dashboard.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'heritage',
+        name: 'HeritageList',
+        component: () => import('@/views/HeritageList.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'heritage/:id',
+        name: 'HeritageDetail',
+        component: () => import('@/views/HeritageDetail.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'inheritors',
+        name: 'InheritorList',
+        component: () => import('@/views/InheritorList.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'admin',
+        redirect: '/admin/heritage'
+      },
+      {
+        path: 'admin/heritage',
+        name: 'AdminHeritage',
+        component: () => import('@/views/admin/HeritageManage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/inheritors',
+        name: 'AdminInheritors',
+        component: () => import('@/views/admin/InheritorManage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/categories',
+        name: 'AdminCategories',
+        component: () => import('@/views/admin/CategoryManage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/import',
+        name: 'AdminImport',
+        component: () => import('@/views/admin/DataImport.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',
