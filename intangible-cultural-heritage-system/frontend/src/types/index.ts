@@ -212,3 +212,28 @@ export interface ResetUserPasswordRequest {
   user_id: number
   new_password: string
 }
+
+// 通知公告相关类型
+export interface Announcement {
+  id: number
+  title: string
+  content: string
+  is_published: boolean
+  is_top: boolean
+  author: number
+  author_name: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AnnouncementCreate {
+  title: string
+  content: string
+  is_published?: boolean
+  is_top?: boolean
+}
+
+export interface AnnouncementListParams extends PaginationParams {
+  is_published?: boolean
+  is_top?: boolean
+}
