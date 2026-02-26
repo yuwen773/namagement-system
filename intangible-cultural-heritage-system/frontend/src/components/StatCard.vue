@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 
 interface Props {
   label: string
@@ -32,30 +32,37 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const displayValue = ref(0)
+let animationFrame: number | null = null
 
 // 数字滚动动画
 const animateValue = (start: number, end: number, duration: number) => {
+  // 取消之前的动画
+  if (animationFrame !== null) {
+    cancelAnimationFrame(animationFrame)
+  }
+
   const startTime = Date.now()
   const animate = () => {
     const now = Date.now()
     const progress = Math.min((now - startTime) / duration, 1)
     const easeOutQuart = 1 - Math.pow(1 - progress, 4)
     displayValue.value = Math.floor(start + (end - start) * easeOutQuart)
-    
+
     if (progress < 1) {
-      requestAnimationFrame(animate)
+      animationFrame = requestAnimationFrame(animate)
+    } else {
+      animationFrame = null
     }
   }
-  requestAnimationFrame(animate)
+  animationFrame = requestAnimationFrame(animate)
 }
 
-watch(() => props.value, (newValue) => {
-  animateValue(displayValue.value, newValue, 1000)
+watch(() => props.value, (newValue, oldValue) => {
+  // 如果是从 0 开始（初次加载），从 0 动画到目标值
+  // 否则从当前显示值动画到新值
+  const startValue = oldValue === undefined || displayValue.value === 0 ? 0 : displayValue.value
+  animateValue(startValue, newValue, 1000)
 }, { immediate: true })
-
-onMounted(() => {
-  animateValue(0, props.value, 1500)
-})
 </script>
 
 <style scoped>
