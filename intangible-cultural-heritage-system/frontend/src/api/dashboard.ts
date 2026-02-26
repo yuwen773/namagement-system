@@ -1,10 +1,13 @@
 import request from '@/utils/request'
-import type { 
-  ApiResponse, 
-  DashboardOverview, 
-  MapPoint, 
-  CategoryDistribution, 
-  CountryRanking 
+import type {
+  ApiResponse,
+  DashboardOverview,
+  MapPoint,
+  CategoryDistribution,
+  CountryRanking,
+  TrendData,
+  LevelDistribution,
+  KeywordWordcloud
 } from '@/types'
 
 // 获取总览统计
@@ -25,4 +28,19 @@ export const getCategoryDistribution = () => {
 // 获取国家排行
 export const getCountryRanking = (params?: { limit?: number }) => {
   return request.get<ApiResponse<CountryRanking[]>>('/dashboard/country-ranking/', { params })
+}
+
+// 获取时间趋势数据
+export const getTrend = () => {
+  return request.get<ApiResponse<TrendData[]>>('/dashboard/trend/')
+}
+
+// 获取保护级别分布
+export const getLevelDistribution = () => {
+  return request.get<ApiResponse<LevelDistribution[]>>('/dashboard/level-distribution/')
+}
+
+// 获取关键词词云
+export const getKeywordWordcloud = () => {
+  return request.get<ApiResponse<KeywordWordcloud[]>>('/dashboard/keyword-cloud/')
 }

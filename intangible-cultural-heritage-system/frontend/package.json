@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
+    "@surbowl/world-geo-json-zh": "^2.1.5",
     "axios": "^1.13.5",
     "echarts": "^5.5.0",
     "echarts-wordcloud": "^2.1.0",

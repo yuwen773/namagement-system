@@ -144,6 +144,25 @@ export interface CountryRanking {
   heritage_count: number
 }
 
+// 时间趋势数据
+export interface TrendData {
+  year: number
+  count: number
+}
+
+// 保护级别分布数据
+export interface LevelDistribution {
+  level: string
+  level_name: string
+  count: number
+}
+
+// 关键词词云数据
+export interface KeywordWordcloud {
+  name: string
+  value: number
+}
+
 // 分页参数
 export interface PaginationParams {
   page?: number

@@ -123,6 +123,57 @@
           <div ref="barChartRef" class="chart-body"></div>
         </div>
       </div>
+
+      <!-- 保护级别玫瑰图 -->
+      <div class="chart-card rose-chart">
+        <div class="chart-frame">
+          <div class="frame-corner top-left"></div>
+          <div class="frame-corner top-right"></div>
+          <div class="frame-corner bottom-left"></div>
+          <div class="frame-corner bottom-right"></div>
+          <div class="chart-header">
+            <div class="header-title-group">
+              <span class="title-seal">级</span>
+              <h3 class="chart-title">保护级别分布</h3>
+            </div>
+          </div>
+          <div ref="roseChartRef" class="chart-body"></div>
+        </div>
+      </div>
+
+      <!-- 时间趋势面积图 -->
+      <div class="chart-card trend-chart">
+        <div class="chart-frame">
+          <div class="frame-corner top-left"></div>
+          <div class="frame-corner top-right"></div>
+          <div class="frame-corner bottom-left"></div>
+          <div class="frame-corner bottom-right"></div>
+          <div class="chart-header">
+            <div class="header-title-group">
+              <span class="title-seal">时</span>
+              <h3 class="chart-title">时间趋势图</h3>
+            </div>
+          </div>
+          <div ref="trendChartRef" class="chart-body"></div>
+        </div>
+      </div>
+
+      <!-- 关键词词云图 -->
+      <div class="chart-card wordcloud-chart">
+        <div class="chart-frame">
+          <div class="frame-corner top-left"></div>
+          <div class="frame-corner top-right"></div>
+          <div class="frame-corner bottom-left"></div>
+          <div class="frame-corner bottom-right"></div>
+          <div class="chart-header">
+            <div class="header-title-group">
+              <span class="title-seal">词</span>
+              <h3 class="chart-title">关键词词云</h3>
+            </div>
+          </div>
+          <div ref="wordcloudChartRef" class="chart-body"></div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -130,6 +181,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import * as echarts from 'echarts'
+import 'echarts-wordcloud'
 import type { ECharts } from 'echarts'
 import { ElMessage } from 'element-plus'
 import { Collection, User, Menu, Location } from '@element-plus/icons-vue'
@@ -137,7 +189,10 @@ import {
   getOverview,
   getMapDistribution,
   getCategoryDistribution,
-  getCountryRanking
+  getCountryRanking,
+  getLevelDistribution,
+  getTrend,
+  getKeywordWordcloud
 } from '@/api/dashboard'
 import { getCategoryList } from '@/api/category'
 import type {
@@ -145,8 +200,25 @@ import type {
   MapPoint,
   CategoryDistribution,
   CountryRanking,
-  Category
+  Category,
+  LevelDistribution,
+  TrendData,
+  KeywordWordcloud
 } from '@/types'
+
+// 世界地图数据
+let worldMapData: any = null
+
+// 加载世界地图数据
+const loadWorldMap = async () => {
+  try {
+    const response = await fetch('/world.json')
+    worldMapData = await response.json()
+    echarts.registerMap('world', worldMapData)
+  } catch (error) {
+    console.error('Failed to load world map:', error)
+  }
+}
 
 // 数据状态
 const overview = ref<DashboardOverview>({
@@ -158,11 +230,14 @@ const overview = ref<DashboardOverview>({
 const mapData = ref<MapPoint[]>([])
 const categoryData = ref<CategoryDistribution[]>([])
 const rankingData = ref<CountryRanking[]>([])
+const levelData = ref<LevelDistribution[]>([])
+const trendData = ref<TrendData[]>([])
+const keywordData = ref<KeywordWordcloud[]>([])
 const categories = ref<Category[]>([])
 const selectedCategory = ref<number | undefined>(undefined)
 
 // 动画数据
-const animatedStats = ref({
+const animatedStats = ref<Record<string, number>>({
   heritage: 0,
   inheritor: 0,
   category: 0,
@@ -213,14 +288,14 @@ const statsData = computed(() => [
 const animateNumber = (key: string, target: number) => {
   const duration = 2000
   const start = Date.now()
-  const startValue = animatedStats.value[key as keyof typeof animatedStats]
+  const startValue = animatedStats.value[key] || 0
 
   const animate = () => {
     const now = Date.now()
     const progress = Math.min((now - start) / duration, 1)
     // 使用easeOutQuart缓动函数
     const easeOut = 1 - Math.pow(1 - progress, 4)
-    animatedStats.value[key as keyof typeof animatedStats] = Math.floor(
+    animatedStats.value[key] = Math.floor(
       startValue + (target - startValue) * easeOut
     )
 
@@ -235,9 +310,15 @@ const animateNumber = (key: string, target: number) => {
 const mapChartRef = ref<HTMLElement>()
 const pieChartRef = ref<HTMLElement>()
 const barChartRef = ref<HTMLElement>()
+const roseChartRef = ref<HTMLElement>()
+const trendChartRef = ref<HTMLElement>()
+const wordcloudChartRef = ref<HTMLElement>()
 let mapChart: ECharts | null = null
 let pieChart: ECharts | null = null
 let barChart: ECharts | null = null
+let roseChart: ECharts | null = null
+let trendChart: ECharts | null = null
+let wordcloudChart: ECharts | null = null
 
 // 中国传统色彩 - 优化后的色彩序列
 const traditionalColors = [
@@ -253,14 +334,201 @@ const traditionalColors = [
   '#B8860B'  // 暗金
 ]
 
+// 世界地图中英文映射
+const nameMap: Record<string, string> = {
+  'Afghanistan': '阿富汗',
+  'Angola': '安哥拉',
+  'Albania': '阿尔巴尼亚',
+  'United Arab Emirates': '阿联酋',
+  'Argentina': '阿根廷',
+  'Armenia': '亚美尼亚',
+  'French Southern and Antarctic Lands': '法属南半球和南极领地',
+  'Australia': '澳大利亚',
+  'Austria': '奥地利',
+  'Azerbaijan': '阿塞拜疆',
+  'Burundi': '布隆迪',
+  'Belgium': '比利时',
+  'Benin': '贝宁',
+  'Burkina Faso': '布基纳法索',
+  'Bangladesh': '孟加拉国',
+  'Bulgaria': '保加利亚',
+  'The Bahamas': '巴哈马',
+  'Bosnia and Herzegovina': '波斯尼亚和黑塞哥维那',
+  'Belarus': '白俄罗斯',
+  'Belize': '伯利兹',
+  'Bermuda': '百慕大',
+  'Bolivia': '玻利维亚',
+  'Brazil': '巴西',
+  'Brunei': '文莱',
+  'Bhutan': '不丹',
+  'Botswana': '博茨瓦纳',
+  'Central African Republic': '中非共和国',
+  'Canada': '加拿大',
+  'Switzerland': '瑞士',
+  'Chile': '智利',
+  'China': '中国',
+  'Ivory Coast': '科特迪瓦',
+  'Cameroon': '喀麦隆',
+  'Democratic Republic of the Congo': '刚果民主共和国',
+  'Republic of the Congo': '刚果共和国',
+  'Colombia': '哥伦比亚',
+  'Costa Rica': '哥斯达黎加',
+  'Cuba': '古巴',
+  'Northern Cyprus': '北塞浦路斯',
+  'Cyprus': '塞浦路斯',
+  'Czech Republic': '捷克共和国',
+  'Germany': '德国',
+  'Djibouti': '吉布提',
+  'Denmark': '丹麦',
+  'Dominican Republic': '多米尼加共和国',
+  'Algeria': '阿尔及利亚',
+  'Ecuador': '厄瓜多尔',
+  'Egypt': '埃及',
+  'Eritrea': '厄立特里亚',
+  'Spain': '西班牙',
+  'Estonia': '爱沙尼亚',
+  'Ethiopia': '埃塞俄比亚',
+  'Finland': '芬兰',
+  'Fiji': '斐济',
+  'Falkland Islands': '福克兰群岛',
+  'France': '法国',
+  'Gabon': '加蓬',
+  'United Kingdom': '英国',
+  'Georgia': '格鲁吉亚',
+  'Ghana': '加纳',
+  'Guinea': '几内亚',
+  'Gambia': '冈比亚',
+  'Guinea Bissau': '几内亚比绍',
+  'Equatorial Guinea': '赤道几内亚',
+  'Greece': '希腊',
+  'Greenland': '格陵兰',
+  'Guatemala': '危地马拉',
+  'French Guiana': '法属圭亚那',
+  'Guyana': '圭亚那',
+  'Honduras': '洪都拉斯',
+  'Croatia': '克罗地亚',
+  'Haiti': '海地',
+  'Hungary': '匈牙利',
+  'Indonesia': '印度尼西亚',
+  'India': '印度',
+  'Ireland': '爱尔兰',
+  'Iran': '伊朗',
+  'Iraq': '伊拉克',
+  'Iceland': '冰岛',
+  'Israel': '以色列',
+  'Italy': '意大利',
+  'Jamaica': '牙买加',
+  'Jordan': '约旦',
+  'Japan': '日本',
+  'Kazakhstan': '哈萨克斯坦',
+  'Kenya': '肯尼亚',
+  'Kyrgyzstan': '吉尔吉斯斯坦',
+  'Cambodia': '柬埔寨',
+  'South Korea': '韩国',
+  'Kosovo': '科索沃',
+  'Kuwait': '科威特',
+  'Laos': '老挝',
+  'Lebanon': '黎巴嫩',
+  'Liberia': '利比里亚',
+  'Libya': '利比亚',
+  'Sri Lanka': "斯里兰卡",
+  'Lesotho': '莱索托',
+  'Lithuania': '立陶宛',
+  'Luxembourg': '卢森堡',
+  'Latvia': '拉脱维亚',
+  'Morocco': '摩洛哥',
+  'Moldova': '摩尔多瓦',
+  'Madagascar': '马达加斯加',
+  'Mexico': '墨西哥',
+  'Macedonia': '马其顿',
+  'Mali': '马里',
+  'Myanmar': '缅甸',
+  'Montenegro': '黑山',
+  'Mongolia': '蒙古',
+  'Mozambique': '莫桑比克',
+  'Mauritania': '毛里塔尼亚',
+  'Malawi': '马拉维',
+  'Malaysia': '马来西亚',
+  'Namibia': '纳米比亚',
+  'New Caledonia': '新喀里多尼亚',
+  'Niger': '尼日尔',
+  'Nigeria': '尼日利亚',
+  'Nicaragua': '尼加拉瓜',
+  'Netherlands': '荷兰',
+  'Norway': '挪威',
+  'Nepal': '尼泊尔',
+  'New Zealand': '新西兰',
+  'Oman': '阿曼',
+  'Pakistan': '巴基斯坦',
+  'Panama': '巴拿马',
+  'Peru': '秘鲁',
+  'Philippines': '菲律宾',
+  'Papua New Guinea': '巴布亚新几内亚',
+  'Poland': '波兰',
+  'Puerto Rico': '波多黎各',
+  'North Korea': '朝鲜',
+  'Portugal': '葡萄牙',
+  'Paraguay': '巴拉圭',
+  'Qatar': '卡塔尔',
+  'Romania': '罗马尼亚',
+  'Russia': '俄罗斯',
+  'Rwanda': '卢旺达',
+  'Western Sahara': '西撒哈拉',
+  'Saudi Arabia': '沙特阿拉伯',
+  'Sudan': '苏丹',
+  'South Sudan': '南苏丹',
+  'Senegal': '塞内加尔',
+  'Solomon Islands': '所罗门群岛',
+  'Sierra Leone': '塞拉利昂',
+  'El Salvador': '萨尔瓦多',
+  'Somaliland': '索马里兰',
+  'Somalia': '索马里',
+  'Republic of Serbia': '塞尔维亚',
+  'Suriname': '苏里南',
+  'Slovakia': '斯洛伐克',
+  'Slovenia': '斯洛文尼亚',
+  'Sweden': '瑞典',
+  'Swaziland': '斯威士兰',
+  'Syria': '叙利亚',
+  'Chad': '乍得',
+  'Togo': '多哥',
+  'Thailand': '泰国',
+  'Tajikistan': '塔吉克斯坦',
+  'Turkmenistan': '土库曼斯坦',
+  'East Timor': '东帝汶',
+  'Trinidad and Tobago': '特立尼达和多巴哥',
+  'Tunisia': '突尼斯',
+  'Turkey': '土耳其',
+  'Tanzania': '坦桑尼亚',
+  'Uganda': '乌干达',
+  'Ukraine': '乌克兰',
+  'Uruguay': '乌拉圭',
+  'United States': '美国',
+  'Uzbekistan': '乌兹别克斯坦',
+  'Venezuela': "委内瑞拉",
+  'Vietnam': '越南',
+  'Vanuatu': '瓦努阿图',
+  'West Bank': '西岸',
+  'Yemen': '也门',
+  'South Africa': '南非',
+  'Zambia': '赞比亚',
+  'Zimbabwe': '津巴布韦'
+}
+
 // 加载数据
 const loadData = async () => {
   try {
-    const [overviewRes, mapRes, categoryRes, rankingRes, categoriesRes] = await Promise.all([
+    // 先加载世界地图
+    await loadWorldMap()
+
+    const [overviewRes, mapRes, categoryRes, rankingRes, levelRes, trendRes, keywordRes, categoriesRes] = await Promise.all([
       getOverview(),
       getMapDistribution(),
       getCategoryDistribution(),
       getCountryRanking({ limit: 20 }),
+      getLevelDistribution(),
+      getTrend(),
+      getKeywordWordcloud(),
       getCategoryList()
     ])
 
@@ -268,6 +536,9 @@ const loadData = async () => {
     mapData.value = mapRes.data.data
     categoryData.value = categoryRes.data.data
     rankingData.value = rankingRes.data.data
+    levelData.value = levelRes.data.data
+    trendData.value = trendRes.data.data
+    keywordData.value = keywordRes.data.data
     categories.value = categoriesRes.data.data
 
     // 触发数字动画
@@ -288,9 +559,10 @@ const loadData = async () => {
   }
 }
 
-// 初始化水墨散点地图
+// 初始化世界地图
 const initMapChart = () => {
   if (!mapChartRef.value) return
+  if (!worldMapData) return // 等待地图加载完成
 
   mapChart = echarts.init(mapChartRef.value)
 
@@ -301,76 +573,95 @@ const initMapChart = () => {
       borderColor: '#D4AF37',
       borderWidth: 2,
       textStyle: { color: '#F7F4ED', fontSize: 14 },
-      formatter: (params: any) => `
-        <div style="padding: 8px;">
-          <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D4AF37;">
-            ${params.data[2]}
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-            <span style="color: #909399;">非遗项目：</span>
-            <span style="font-weight: 600;">${params.data[3]} 项</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="color: #909399;">传承人：</span>
-            <span style="font-weight: 600;">${params.data[4]} 人</span>
-          </div>
-        </div>
-      `
+      formatter: (params: any) => {
+        if (params.seriesType === 'scatter' && params.data) {
+          return `
+            <div style="padding: 8px;">
+              <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D4AF37;">
+                ${params.data.name}
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                <span style="color: #909399;">非遗项目：</span>
+                <span style="font-weight: 600;">${params.data.value[2]} 项</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #909399;">传承人：</span>
+                <span style="font-weight: 600;">${params.data.value[3]} 人</span>
+              </div>
+            </div>
+          `
+        }
+        return params.name
+      }
     },
-    grid: {
-      left: '5%',
-      right: '5%',
-      bottom: '5%',
-      top: '5%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'value',
-      name: '经度',
-      min: -180,
-      max: 180,
-      axisLine: { lineStyle: { color: '#D4AF37', opacity: 0.4 } },
-      axisLabel: { color: '#606266', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#E4E7ED', type: 'dashed', opacity: 0.4 } },
-      nameTextStyle: { color: '#606266' }
-    },
-    yAxis: {
-      type: 'value',
-      name: '纬度',
-      min: -90,
-      max: 90,
-      axisLine: { lineStyle: { color: '#D4AF37', opacity: 0.4 } },
-      axisLabel: { color: '#606266', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#E4E7ED', type: 'dashed', opacity: 0.4 } },
-      nameTextStyle: { color: '#606266' }
+    geo: {
+      map: 'world',
+      roam: true,
+      zoom: 1.2,
+      center: [0, 20],
+      nameMap: nameMap,
+      itemStyle: {
+        areaColor: '#E8E4DB',
+        borderColor: '#C9B99A',
+        borderWidth: 0.5
+      },
+      emphasis: {
+        itemStyle: {
+          areaColor: '#D4AF37',
+          borderColor: '#8B7355',
+          borderWidth: 1
+        },
+        label: {
+          show: false
+        }
+      },
+      select: {
+        itemStyle: {
+          areaColor: '#C23531'
+        }
+      }
     },
     series: [
       {
+        name: '非遗分布',
         type: 'scatter',
-        data: mapData.value.map(item => [
-          item.longitude,
-          item.latitude,
-          item.country_name,
-          item.heritage_count,
-          item.inheritor_count
-        ]),
-        symbolSize: (val: any) => Math.max(Math.sqrt(val[3]) * 6, 14),
+        coordinateSystem: 'geo',
+        data: mapData.value
+          .filter(item => item.longitude !== 0 || item.latitude !== 0)
+          .map(item => ({
+            name: nameMap[item.country_name] || item.country_name,
+            value: [
+              item.longitude,
+              item.latitude,
+              item.heritage_count,
+              item.inheritor_count
+            ]
+          })),
+        symbolSize: (val: any) => {
+          // 使用对数尺度防止数值过大时圆圈覆盖全图
+          // log(val) * factor + base_size
+          const size = Math.log(val[2] || 1) * 8 + 10
+          return Math.min(Math.max(size, 10), 80)
+        },
         itemStyle: {
           color: '#C23531',
-          opacity: 0.8,
+          opacity: 0.85,
           borderColor: '#D4AF37',
-          borderWidth: 2
+          borderWidth: 2,
+          shadowBlur: 15,
+          shadowColor: 'rgba(194, 35, 49, 0.5)'
         },
         emphasis: {
           itemStyle: {
             color: '#DC143C',
             opacity: 1,
             borderWidth: 3,
-            shadowBlur: 25,
-            shadowColor: 'rgba(194, 35, 49, 0.7)'
+            shadowBlur: 30,
+            shadowColor: 'rgba(194, 35, 49, 0.8)'
           },
-          scale: 1.2
-        }
+          scale: 1.3
+        },
+        zlevel: 2
       }
     ]
   }
@@ -378,11 +669,23 @@ const initMapChart = () => {
   mapChart.setOption(option)
 }
 
-// 初始化玉璧饼图
+// 初始化矩形树图
 const initPieChart = () => {
   if (!pieChartRef.value) return
 
   pieChart = echarts.init(pieChartRef.value)
+
+  // 构建树图数据
+  const treeData = {
+    name: '非遗类别',
+    children: categoryData.value.map((item, index) => ({
+      name: item.category_name,
+      value: item.heritage_count,
+      itemStyle: {
+        color: traditionalColors[index % traditionalColors.length]
+      }
+    }))
+  }
 
   const option = {
     tooltip: {
@@ -391,79 +694,67 @@ const initPieChart = () => {
       borderColor: '#D4AF37',
       borderWidth: 2,
       textStyle: { color: '#F7F4ED', fontSize: 14 },
-      formatter: '{b}: {c} 项 ({d}%)'
-    },
-    legend: {
-      orient: 'vertical',
-      right: '5%',
-      top: 'center',
-      textStyle: {
-        color: '#2F3640',
-        fontSize: 13,
-        fontWeight: 500
-      },
-      itemGap: 16,
-      itemWidth: 18,
-      itemHeight: 18,
-      formatter: (name: string) => {
-        const item = categoryData.value.find(d => d.category_name === name)
-        if (item) {
-          return `${name}  ${item.heritage_count}项`
-        }
-        return name
+      formatter: (params: any) => {
+        return `
+          <div style="padding: 8px;">
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D4AF37;">
+              ${params.name}
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #909399;">项目数量：</span>
+              <span style="font-weight: 600;">${params.value} 项</span>
+            </div>
+          </div>
+        `
       }
     },
     series: [
       {
         name: '类别分布',
-        type: 'pie',
-        radius: ['40%', '75%'],
-        center: ['35%', '50%'],
-        avoidLabelOverlap: true,
-        itemStyle: {
-          borderRadius: 6,
-          borderColor: '#F7F4ED',
-          borderWidth: 4
+        type: 'treemap',
+        width: '90%',
+        height: '85%',
+        top: '5%',
+        left: '5%',
+        breadcrumb: {
+          show: false
         },
         label: {
           show: true,
-          position: 'outside',
-          formatter: (params: any) => {
-            if (params.percent >= 5) {
-              return `${params.name}\n${params.percent.toFixed(1)}%`
-            }
-            return ''
-          },
-          color: '#2F3640',
-          fontSize: 12,
-          fontWeight: 500
+          formatter: '{b}\n{c}项',
+          fontSize: 14,
+          fontWeight: 500,
+          color: '#F7F4ED',
+          textShadowColor: 'rgba(0,0,0,0.3)',
+          textShadowBlur: 4
         },
-        labelLine: {
-          show: true,
-          length: 15,
-          length2: 20,
-          smooth: true,
-          lineStyle: { color: '#D4AF37', width: 1.5 }
+        itemStyle: {
+          borderColor: '#F7F4ED',
+          borderWidth: 3,
+          gapWidth: 3
         },
         emphasis: {
           label: {
-            show: true,
-            fontSize: 18,
-            fontWeight: 'bold'
+            fontSize: 16,
+            fontWeight: 700
           },
           itemStyle: {
+            borderColor: '#D4AF37',
+            borderWidth: 4,
             shadowBlur: 20,
-            shadowOffsetX: 0,
             shadowColor: 'rgba(212, 175, 55, 0.5)'
           }
         },
-        data: categoryData.value.map((item, index) => ({
-          name: item.category_name,
-          value: item.heritage_count,
-          itemStyle: {
-            color: traditionalColors[index % traditionalColors.length]
+        levels: [
+          {
+            itemStyle: {
+              borderColor: '#F7F4ED',
+              borderWidth: 2,
+              gapWidth: 2
+            }
           }
-        }))
+        ],
+        data: treeData.children
       }
     ]
   }
@@ -507,7 +798,7 @@ const initBarChart = () => {
     },
     yAxis: {
       type: 'category',
-      data: rankingData.value.map(item => item.country_name).reverse(),
+      data: rankingData.value.map(item => nameMap[item.country_name] || item.country_name).reverse(),
       axisLabel: {
         color: '#2F3640',
         fontSize: 13,
@@ -558,10 +849,282 @@ const initBarChart = () => {
   barChart.setOption(option)
 }
 
+// 初始化玫瑰图（南丁格尔图）
+const initRoseChart = () => {
+  if (!roseChartRef.value) return
+
+  roseChart = echarts.init(roseChartRef.value)
+
+  const levelColors: Record<string, string> = {
+    national: '#C23531',
+    provincial: '#D4AF37',
+    city_county: '#5D8AA8'
+  }
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(47, 54, 64, 0.95)',
+      borderColor: '#D4AF37',
+      borderWidth: 2,
+      textStyle: { color: '#F7F4ED', fontSize: 14 },
+      formatter: (params: any) => {
+        return `
+          <div style="padding: 8px;">
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D4AF37;">
+              ${params.name}
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #909399;">项目数量：</span>
+              <span style="font-weight: 600;">${params.value} 项</span>
+            </div>
+          </div>
+        `
+      }
+    },
+    legend: {
+      orient: 'vertical',
+      right: '5%',
+      top: 'center',
+      textStyle: {
+        color: '#2F3640',
+        fontSize: 13,
+        fontWeight: 500
+      },
+      itemGap: 16,
+      itemWidth: 18,
+      itemHeight: 18,
+      formatter: (name: string) => {
+        const item = levelData.value.find(d => d.level_name === name)
+        if (item) {
+          return `${name}  ${item.count}项`
+        }
+        return name
+      }
+    },
+    series: [
+      {
+        name: '保护级别',
+        type: 'pie',
+        radius: ['20%', '75%'],
+        center: ['38%', '50%'],
+        roseType: 'radius',
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#F7F4ED',
+          borderWidth: 3
+        },
+        label: {
+          show: true,
+          position: 'outside',
+          formatter: (params: any) => {
+            if (params.percent >= 3) {
+              return `${params.name}\n${params.percent.toFixed(1)}%`
+            }
+            return ''
+          },
+          color: '#2F3640',
+          fontSize: 12,
+          fontWeight: 500
+        },
+        labelLine: {
+          show: true,
+          length: 12,
+          length2: 18,
+          smooth: true,
+          lineStyle: { color: '#D4AF37', width: 1.5 }
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold'
+          },
+          itemStyle: {
+            shadowBlur: 25,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(212, 175, 55, 0.6)'
+          }
+        },
+        data: levelData.value.map((item, index) => ({
+          name: item.level_name,
+          value: item.count,
+          itemStyle: {
+            color: levelColors[item.level] || traditionalColors[index % traditionalColors.length]
+          }
+        }))
+      }
+    ]
+  }
+
+  roseChart.setOption(option)
+}
+
+// 初始化时间趋势面积图
+const initTrendChart = () => {
+  if (!trendChartRef.value) return
+
+  trendChart = echarts.init(trendChartRef.value)
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(47, 54, 64, 0.95)',
+      borderColor: '#D4AF37',
+      borderWidth: 2,
+      textStyle: { color: '#F7F4ED', fontSize: 14 },
+      formatter: (params: any) => {
+        const data = params[0]
+        return `
+          <div style="padding: 8px;">
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D4AF37;">
+              ${data.name}年
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #909399;">新增项目：</span>
+              <span style="font-weight: 600;">${data.value} 项</span>
+            </div>
+          </div>
+        `
+      }
+    },
+    grid: {
+      left: '12%',
+      right: '8%',
+      bottom: '15%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: trendData.value.map(item => item.year),
+      axisLine: { lineStyle: { color: '#D4AF37', opacity: 0.4 } },
+      axisLabel: { color: '#606266', fontSize: 12 },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      axisLabel: {
+        color: '#606266',
+        fontSize: 12,
+        formatter: '{value} 项'
+      },
+      splitLine: {
+        lineStyle: { color: '#E4E7ED', type: 'dashed', opacity: 0.4 }
+      }
+    },
+    series: [
+      {
+        name: '新增项目',
+        type: 'line',
+        data: trendData.value.map(item => item.count),
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 10,
+        lineStyle: {
+          color: '#C23531',
+          width: 3
+        },
+        itemStyle: {
+          color: '#C23531',
+          borderColor: '#D4AF37',
+          borderWidth: 2
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(194, 35, 49, 0.5)' },
+            { offset: 0.5, color: 'rgba(194, 35, 49, 0.2)' },
+            { offset: 1, color: 'rgba(194, 35, 49, 0.05)' }
+          ])
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#DC143C',
+            borderWidth: 3,
+            shadowBlur: 15,
+            shadowColor: 'rgba(194, 35, 49, 0.6)'
+          },
+          scale: 1.3
+        }
+      }
+    ]
+  }
+
+  trendChart.setOption(option)
+}
+
+// 初始化词云图
+const initWordcloudChart = () => {
+  if (!wordcloudChartRef.value) return
+
+  wordcloudChart = echarts.init(wordcloudChartRef.value)
+
+  const option = {
+    tooltip: {
+      show: true,
+      backgroundColor: 'rgba(47, 54, 64, 0.95)',
+      borderColor: '#D4AF37',
+      borderWidth: 2,
+      textStyle: { color: '#F7F4ED', fontSize: 14 },
+      formatter: (params: any) => {
+        return `
+          <div style="padding: 8px;">
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D4AF37;">
+              ${params.name}
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #909399;">出现频次：</span>
+              <span style="font-weight: 600;">${params.value} 次</span>
+            </div>
+          </div>
+        `
+      }
+    },
+    series: [
+      {
+        name: '关键词词云',
+        type: 'wordCloud',
+        sizeRange: [14, 60],
+        rotationRange: [-90, 90],
+        rotationStep: 45,
+        gridSize: 8,
+        drawOutOfBound: false,
+        layoutAnimation: true,
+        textStyle: {
+          fontFamily: 'STSong, SimSun, serif',
+          fontWeight: 'bold'
+        },
+        emphasis: {
+          focus: 'self',
+          textStyle: {
+            textShadowBlur: 10,
+            textShadowColor: '#D4AF37'
+          }
+        },
+        data: keywordData.value.map((item, index) => ({
+          name: item.name,
+          value: item.value,
+          itemStyle: {
+            color: traditionalColors[index % traditionalColors.length]
+          }
+        }))
+      }
+    ]
+  }
+
+  wordcloudChart.setOption(option)
+}
+
 const initCharts = () => {
   initMapChart()
   initPieChart()
   initBarChart()
+  initRoseChart()
+  initTrendChart()
+  initWordcloudChart()
 }
 
 const handleCategoryChange = async () => {
@@ -581,6 +1144,9 @@ const handleResize = () => {
   mapChart?.resize()
   pieChart?.resize()
   barChart?.resize()
+  roseChart?.resize()
+  trendChart?.resize()
+  wordcloudChart?.resize()
 }
 
 onMounted(() => {
@@ -592,6 +1158,9 @@ onUnmounted(() => {
   mapChart?.dispose()
   pieChart?.dispose()
   barChart?.dispose()
+  roseChart?.dispose()
+  trendChart?.dispose()
+  wordcloudChart?.dispose()
   window.removeEventListener('resize', handleResize)
 })
 </script>
@@ -1103,7 +1672,10 @@ onUnmounted(() => {
 }
 
 .pie-chart,
-.bar-chart {
+.bar-chart,
+.rose-chart,
+.trend-chart,
+.wordcloud-chart {
   grid-column: span 6;
 }
 
@@ -1237,7 +1809,10 @@ onUnmounted(() => {
   }
 
   .pie-chart,
-  .bar-chart {
+  .bar-chart,
+  .rose-chart,
+  .trend-chart,
+  .wordcloud-chart {
     grid-column: span 12;
   }
 }
@@ -1272,7 +1847,10 @@ onUnmounted(() => {
 
   .map-chart,
   .pie-chart,
-  .bar-chart {
+  .bar-chart,
+  .rose-chart,
+  .trend-chart,
+  .wordcloud-chart {
     grid-column: span 1;
   }
 
