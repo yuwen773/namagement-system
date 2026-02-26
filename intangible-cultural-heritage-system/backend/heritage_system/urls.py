@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/v1/', include('apps.categories.urls')),
     path('api/v1/', include('apps.regions.urls')),
     path('api/v1/', include('apps.dashboard.urls')),
+    path('api/v1/', include('apps.announcements.urls')),
 ]

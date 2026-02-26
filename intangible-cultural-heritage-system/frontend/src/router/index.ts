@@ -46,6 +46,18 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'announcements',
+        name: 'AnnouncementList',
+        component: () => import('@/views/AnnouncementList.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'announcements/:id',
+        name: 'AnnouncementDetail',
+        component: () => import('@/views/AnnouncementDetail.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'admin',
         redirect: '/admin/heritage'
       },
@@ -71,6 +83,12 @@ const routes: RouteRecordRaw[] = [
         path: 'admin/import',
         name: 'AdminImport',
         component: () => import('@/views/admin/DataImport.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'admin/announcements',
+        name: 'AdminAnnouncements',
+        component: () => import('@/views/admin/AnnouncementManage.vue'),
         meta: { requiresAuth: true, requiresAdmin: true }
       },
       {

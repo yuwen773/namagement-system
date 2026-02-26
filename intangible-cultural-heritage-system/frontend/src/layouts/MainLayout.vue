@@ -123,7 +123,8 @@ import {
   Edit,
   Menu,
   Upload,
-  Lock
+  Lock,
+  Bell
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -135,7 +136,8 @@ const userStore = useUserStore()
 const viewMenus = [
   { path: '/dashboard', title: '驾驶舱', icon: DataAnalysis, seal: '览' },
   { path: '/heritage', title: '非遗项目', icon: Collection, seal: '宝' },
-  { path: '/inheritors', title: '传承人', icon: User, seal: '传' }
+  { path: '/inheritors', title: '传承人', icon: User, seal: '传' },
+  { path: '/announcements', title: '通知公告', icon: Bell, seal: '告' }
 ]
 
 const adminMenus = [
@@ -143,6 +145,7 @@ const adminMenus = [
   { path: '/admin/inheritors', title: '传承人管理', icon: UserFilled, seal: '理' },
   { path: '/admin/categories', title: '分类管理', icon: Menu, seal: '类' },
   { path: '/admin/import', title: '数据导入', icon: Upload, seal: '入' },
+  { path: '/admin/announcements', title: '公告管理', icon: Bell, seal: '告' },
   { path: '/admin/users', title: '用户管理', icon: Lock, seal: '用' }
 ]
 

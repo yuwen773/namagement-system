@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'apps.regions',
     'apps.importer',
     'apps.dashboard',
+    'apps.announcements',
 ]
 
 MIDDLEWARE = [
