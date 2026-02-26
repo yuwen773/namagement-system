@@ -15,6 +15,17 @@ export interface User {
   role: UserRole
 }
 
+// 用户详细信息
+export interface UserDetail {
+  id: number
+  username: string
+  role: UserRole
+  email: string
+  is_active: boolean
+  last_login_time: string | null
+  date_joined: string
+}
+
 export interface LoginRequest {
   username: string
   password: string
@@ -152,4 +163,49 @@ export interface InheritorListParams extends PaginationParams {
   level?: string
   region?: number
   name?: string
+}
+
+// 用户注册相关类型
+export interface RegisterRequest {
+  username: string
+  password: string
+  email: string
+}
+
+export interface CheckUsernameRequest {
+  username: string
+}
+
+export interface CheckEmailRequest {
+  email: string
+}
+
+export interface UserListParams extends PaginationParams {
+  username?: string
+  role?: UserRole
+  is_active?: boolean
+}
+
+export interface CreateUserRequest {
+  username: string
+  password: string
+  email: string
+  role?: UserRole
+}
+
+export interface UpdateUserRequest {
+  email?: string
+  role?: UserRole
+}
+
+export interface UpdateUserStatusRequest {
+  is_active: boolean
+}
+
+export interface UpdateUserRoleRequest {
+  role: UserRole
+}
+
+export interface ResetUserPasswordRequest {
+  password: string
 }
