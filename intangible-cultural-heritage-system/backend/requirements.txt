@@ -6,3 +6,5 @@ pandas
 openpyxl
 Pillow
 django-cors-headers
+pytest
+pytest-django
