@@ -19,6 +19,29 @@
           </div>
         </div>
 
+        <!-- 顶部导航菜单 -->
+        <nav class="top-nav">
+          <div class="nav-container">
+            <!-- 通用菜单 -->
+            <div class="nav-group">
+              <router-link
+                v-for="item in viewMenus"
+                :key="item.path"
+                :to="item.path"
+                class="top-nav-item"
+                :class="{ active: isActive(item.path) }"
+              >
+                <span class="nav-icon">
+                  <component :is="item.icon" />
+                </span>
+                <span class="nav-text">{{ item.title }}</span>
+                <span class="nav-seal">{{ item.seal }}</span>
+              </router-link>
+            </div>
+
+          </div>
+        </nav>
+
         <!-- 用户信息区域 -->
         <div class="user-region">
           <div class="user-card">
@@ -49,64 +72,16 @@
       <div class="scroll-decoration right"></div>
     </header>
 
-    <!-- 主体内容区域 -->
-    <div class="layout-body">
-      <!-- 侧边栏 - 书架风格 -->
-      <aside class="layout-sidebar">
-        <div class="sidebar-mount">
-          <div class="mount-top"></div>
-          <div class="mount-bottom"></div>
-        </div>
-        <nav class="sidebar-nav">
-          <!-- 通用菜单 -->
-          <div class="menu-shelf">
-            <div class="shelf-title">数据查看</div>
-            <router-link
-              v-for="item in viewMenus"
-              :key="item.path"
-              :to="item.path"
-              class="nav-item"
-              :class="{ active: isActive(item.path) }"
-            >
-              <span class="nav-icon">
-                <component :is="item.icon" />
-              </span>
-              <span class="nav-text">{{ item.title }}</span>
-              <span class="nav-seal">{{ item.seal }}</span>
-            </router-link>
-          </div>
-
-          <!-- 管理员菜单 -->
-          <div v-if="userStore.isAdmin" class="menu-shelf">
-            <div class="shelf-title">数据管理</div>
-            <router-link
-              v-for="item in adminMenus"
-              :key="item.path"
-              :to="item.path"
-              class="nav-item"
-              :class="{ active: isActive(item.path) }"
-            >
-              <span class="nav-icon">
-                <component :is="item.icon" />
-              </span>
-              <span class="nav-text">{{ item.title }}</span>
-              <span class="nav-seal">{{ item.seal }}</span>
-            </router-link>
-          </div>
-        </nav>
-      </aside>
-
-      <!-- 内容区域 - 宣纸风格 -->
-      <main class="layout-content">
-        <div class="content-scroll">
-          <router-view v-slot="{ Component }">
-            <transition name="scroll-unfold" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </router-view>
-        </div>
-      </main>
-    </div>
+    <!-- 主体内容区域 - 宣纸风格 -->
+    <main class="layout-content">
+      <div class="content-scroll">
+        <router-view v-slot="{ Component }">
+          <transition name="scroll-unfold" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -141,14 +116,6 @@ const viewMenus = [
   { path: '/profile', title: '个人中心', icon: UserFilled, seal: '我' }
 ]
 
-const adminMenus = [
-  { path: '/admin/heritage', title: '项目管理', icon: Edit, seal: '管' },
-  { path: '/admin/inheritors', title: '传承人管理', icon: UserFilled, seal: '理' },
-  { path: '/admin/categories', title: '分类管理', icon: Menu, seal: '类' },
-  { path: '/admin/import', title: '数据导入', icon: Upload, seal: '入' },
-  { path: '/admin/announcements', title: '公告管理', icon: Bell, seal: '告' },
-  { path: '/admin/users', title: '用户管理', icon: Lock, seal: '用' }
-]
 
 const isActive = (path: string) => {
   return route.path === path || route.path.startsWith(path + '/')
@@ -183,7 +150,6 @@ const handleLogout = async () => {
 /* ========== 顶部导航栏 - 卷轴风格 ========== */
 .layout-header {
   position: relative;
-  height: 72px;
   background: linear-gradient(135deg, #2F3640 0%, #1a2026 100%);
   display: flex;
   align-items: stretch;
@@ -238,12 +204,15 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
+  gap: 24px;
 }
 
+/* ========== Logo 区域 ========== */
 .logo-seal {
   display: flex;
   align-items: center;
   gap: 20px;
+  flex-shrink: 0;
 }
 
 .seal-outer {
@@ -310,17 +279,132 @@ const handleLogout = async () => {
   font-weight: 500;
 }
 
+/* ========== 顶部导航菜单 ========== */
+.top-nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.nav-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(247, 244, 237, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.5) 20%,
+    rgba(212, 175, 55, 0.5) 80%,
+    transparent 100%
+  );
+  margin: 0 12px;
+}
+
+.top-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: rgba(247, 244, 237, 0.8);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.top-nav-item::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, #D4AF37, #C23531);
+  border-radius: 2px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.top-nav-item:hover {
+  background: rgba(247, 244, 237, 0.1);
+  color: #F7F4ED;
+  transform: translateY(-2px);
+}
+
+.top-nav-item.active {
+  background: rgba(194, 35, 49, 0.2);
+  color: #F7F4ED;
+}
+
+.top-nav-item.active::before {
+  transform: translateX(-50%) scaleX(1);
+}
+
+.top-nav-item .nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.top-nav-item .nav-text {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.top-nav-item .nav-seal {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(212, 175, 55, 0.3);
+  color: #D4AF37;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 2px;
+  font-family: "STSong", "SimSun", serif;
+  flex-shrink: 0;
+}
+
+.top-nav-item.active .nav-seal {
+  background: #C23531;
+  color: white;
+}
+
+/* ========== 用户信息区域 ========== */
 .user-region {
   display: flex;
   align-items: center;
   gap: 20px;
+  flex-shrink: 0;
 }
 
 .user-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: rgba(247, 244, 237, 0.1);
   border-radius: 30px;
   border: 1px solid rgba(212, 175, 55, 0.3);
@@ -386,154 +470,6 @@ const handleLogout = async () => {
 }
 
 /* ========== 主体内容区域 ========== */
-.layout-body {
-  flex: 1;
-  display: flex;
-  max-width: 1920px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-/* ========== 侧边栏 - 书架风格 ========== */
-.layout-sidebar {
-  width: 260px;
-  background: linear-gradient(180deg, #FFFBF5 0%, #F7F4ED 100%);
-  position: relative;
-  box-shadow:
-    2px 0 20px rgba(47, 54, 64, 0.1),
-    inset 0 0 0 1px rgba(212, 175, 55, 0.1);
-}
-
-.sidebar-mount {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 0;
-  background: linear-gradient(180deg,
-    rgba(212, 175, 55, 0.4) 0%,
-    rgba(212, 175, 55, 0.2) 50%,
-    rgba(212, 175, 55, 0.4) 100%
-  );
-}
-
-.mount-top,
-.mount-bottom {
-  width: 16px;
-  height: 16px;
-  background: #D4AF37;
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.3);
-}
-
-.sidebar-nav {
-  padding: 24px 0 24px 24px;
-  overflow-y: auto;
-  max-height: calc(100vh - 72px);
-}
-
-.menu-shelf {
-  margin-bottom: 32px;
-}
-
-.shelf-title {
-  padding: 8px 16px;
-  margin-bottom: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #909399;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  border-left: 3px solid #D4AF37;
-  padding-left: 12px;
-}
-
-.nav-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 20px;
-  margin: 4px 0;
-  border-radius: 8px 0 0 8px;
-  color: #606266;
-  text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.nav-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: #D4AF37;
-  transform: scaleY(0);
-  transition: transform 0.3s;
-}
-
-.nav-item:hover {
-  background: rgba(212, 175, 55, 0.1);
-  color: #2F3640;
-  transform: translateX(4px);
-}
-
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(194, 35, 49, 0.1) 0%, transparent 100%);
-  color: #C23531;
-}
-
-.nav-item.active::before {
-  transform: scaleY(1);
-}
-
-.nav-icon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.nav-text {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.nav-seal {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #D4AF37;
-  color: #2F3640;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 2px;
-  font-family: "STSong", "SimSun", serif;
-  flex-shrink: 0;
-  opacity: 0.6;
-}
-
-.nav-item.active .nav-seal {
-  background: #C23531;
-  color: white;
-  opacity: 1;
-}
-
-/* ========== 内容区域 ========== */
 .layout-content {
   flex: 1;
   overflow: hidden;
@@ -578,63 +514,37 @@ const handleLogout = async () => {
 }
 
 /* ========== 滚动条样式 ========== */
-.sidebar-nav::-webkit-scrollbar,
 .content-scroll::-webkit-scrollbar {
   width: 6px;
 }
 
-.sidebar-nav::-webkit-scrollbar-track,
 .content-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sidebar-nav::-webkit-scrollbar-thumb,
 .content-scroll::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #D4AF37, #CD7F32);
   border-radius: 3px;
 }
 
-.sidebar-nav::-webkit-scrollbar-thumb:hover,
 .content-scroll::-webkit-scrollbar-thumb:hover {
   background: #C23531;
 }
 
 /* ========== 响应式 ========== */
-@media (max-width: 1024px) {
-  .layout-sidebar {
-    width: 80px;
+@media (max-width: 1400px) {
+  .top-nav-item .nav-text {
+    font-size: 13px;
   }
 
-  .sidebar-mount {
-    width: 8px;
+  .top-nav-item {
+    padding: 8px 12px;
   }
+}
 
-  .mount-top,
-  .mount-bottom {
-    width: 12px;
-    height: 12px;
-  }
-
-  .sidebar-nav {
-    padding: 24px 0 24px 12px;
-  }
-
-  .shelf-title {
+@media (max-width: 1200px) {
+  .top-nav {
     display: none;
-  }
-
-  .nav-text,
-  .nav-seal {
-    display: none;
-  }
-
-  .nav-item {
-    justify-content: center;
-    padding: 14px;
-  }
-
-  .nav-icon {
-    margin: 0;
   }
 }
 
@@ -660,8 +570,9 @@ const handleLogout = async () => {
     gap: 12px;
   }
 
-  .layout-sidebar {
-    display: none;
+  .user-region {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
