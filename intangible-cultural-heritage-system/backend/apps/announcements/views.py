@@ -26,6 +26,18 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
+        # 处理筛选参数
+        title = self.request.query_params.get('title')
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        is_published = self.request.query_params.get('is_published')
+        if is_published is not None:
+            if is_published.lower() == 'true':
+                queryset = queryset.filter(is_published=True)
+            elif is_published.lower() == 'false':
+                queryset = queryset.filter(is_published=False)
+
         # 普通用户只能看到已发布的公告（list 和 retrieve 动作）
         if self.action in ('list', 'retrieve'):
             # 检查是否不是管理员

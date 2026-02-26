@@ -42,8 +42,8 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <button class="action-btn search-btn" @click="handleSearch">搜索</button>
-          <button class="action-btn reset-btn" @click="handleReset">重置</button>
+          <button type="button" class="action-btn search-btn" @click="handleSearch">搜索</button>
+          <button type="button" class="action-btn reset-btn" @click="handleReset">重置</button>
         </el-form-item>
       </el-form>
     </div>

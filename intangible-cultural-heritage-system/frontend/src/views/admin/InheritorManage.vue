@@ -23,7 +23,7 @@
         <el-form-item label="姓名">
           <el-input v-model="filters.name" placeholder="搜索传承人姓名" clearable @clear="handleSearch" class="heritage-input" />
         </el-form-item>
-        <el-form-item label="级别">
+        <el-form-item label="级别" >
           <el-select v-model="filters.level" placeholder="选择级别" clearable class="heritage-select">
             <el-option label="国家级" value="national" />
             <el-option label="省级" value="provincial" />
@@ -41,8 +41,8 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <button class="action-btn search-btn" @click="handleSearch">搜索</button>
-          <button class="action-btn reset-btn" @click="handleReset">重置</button>
+          <button type="button" class="action-btn search-btn" @click="handleSearch">搜索</button>
+          <button type="button" class="action-btn reset-btn" @click="handleReset">重置</button>
         </el-form-item>
       </el-form>
     </div>
@@ -516,6 +516,10 @@ onMounted(() => {
   background: #F7F4ED;
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 6px;
+}
+
+.heritage-select {
+  width: 200px;
 }
 
 .action-btn {

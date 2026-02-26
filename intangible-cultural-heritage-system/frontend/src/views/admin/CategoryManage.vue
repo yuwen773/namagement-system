@@ -24,16 +24,16 @@
           <el-input v-model="filters.name" placeholder="搜索分类名称" clearable @clear="handleSearch" class="heritage-input" />
         </el-form-item>
         <el-form-item label="级别">
-          <el-select v-model="filters.level" placeholder="选择级别" clearable class="heritage-select">
+          <el-select v-model="filters.level" placeholder="选择级别" clearable class="heritage-select" style="width: 120px;">
             <el-option label="国家级" value="national" />
             <el-option label="省级" value="provincial" />
             <el-option label="市县级" value="city_county" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <button class="action-btn search-btn" @click="handleSearch">搜索</button>
-          <button class="action-btn reset-btn" @click="handleReset">重置</button>
-          <button class="action-btn toggle-btn" @click="toggleTreeView">
+          <button type="button" class="action-btn search-btn" @click="handleSearch">搜索</button>
+          <button type="button" class="action-btn reset-btn" @click="handleReset">重置</button>
+          <button type="button" class="action-btn toggle-btn" @click="toggleTreeView">
             {{ showTree ? '列表视图' : '树形视图' }}
           </button>
         </el-form-item>

@@ -24,12 +24,12 @@
           <el-input v-model="filters.name" placeholder="搜索项目名称" clearable @clear="handleSearch" class="heritage-input" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="filters.category" placeholder="选择分类" clearable class="heritage-select">
+          <el-select v-model="filters.category" placeholder="选择分类" clearable class="heritage-select" style="width: 120px;">
             <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="级别">
-          <el-select v-model="filters.level" placeholder="选择级别" clearable class="heritage-select">
+          <el-select v-model="filters.level" placeholder="选择级别" clearable class="heritage-select" style="width: 120px;">
             <el-option label="国家级" value="national" />
             <el-option label="省级" value="provincial" />
             <el-option label="市县级" value="city_county" />
@@ -41,8 +41,8 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <button class="action-btn search-btn" @click="handleSearch">搜索</button>
-          <button class="action-btn reset-btn" @click="handleReset">重置</button>
+          <button type="button" class="action-btn search-btn" @click="handleSearch">搜索</button>
+          <button type="button" class="action-btn reset-btn" @click="handleReset">重置</button>
         </el-form-item>
       </el-form>
     </div>
