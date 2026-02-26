@@ -199,13 +199,16 @@ export interface UpdateUserRequest {
 }
 
 export interface UpdateUserStatusRequest {
+  user_ids: number[]
   is_active: boolean
 }
 
 export interface UpdateUserRoleRequest {
+  user_ids: number[]
   role: UserRole
 }
 
 export interface ResetUserPasswordRequest {
-  password: string
+  user_id: number
+  new_password: string
 }
