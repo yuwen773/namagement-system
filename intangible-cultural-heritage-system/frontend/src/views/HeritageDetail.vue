@@ -114,19 +114,19 @@
             </div>
             <div class="card-body">
               <div class="info-grid">
-                <div class="info-item">
+                <div v-if="heritageItem.region" class="info-item">
                   <span class="info-label">国家代码</span>
                   <span class="info-value">{{ heritageItem.region.country_code }}</span>
                 </div>
-                <div v-if="heritageItem.region.continent" class="info-item">
+                <div v-if="heritageItem.region?.continent" class="info-item">
                   <span class="info-label">所属洲</span>
                   <span class="info-value">{{ heritageItem.region.continent }}</span>
                 </div>
-                <div class="info-item">
+                <div v-if="heritageItem.region?.longitude != null" class="info-item">
                   <span class="info-label">经度</span>
                   <span class="info-value">{{ heritageItem.region.longitude.toFixed(4) }}°</span>
                 </div>
-                <div class="info-item">
+                <div v-if="heritageItem.region?.latitude != null" class="info-item">
                   <span class="info-label">纬度</span>
                   <span class="info-value">{{ heritageItem.region.latitude.toFixed(4) }}°</span>
                 </div>
