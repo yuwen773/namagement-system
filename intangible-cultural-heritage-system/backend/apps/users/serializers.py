@@ -88,19 +88,14 @@ class RegisterSerializer(serializers.Serializer):
         email = validated_data["email"]
 
         try:
-            # 使用 get_or_create 避免竞态条件
-            user, created = User.objects.get_or_create(
-                username=username,
-                defaults={"password": password}
-            )
-            if not created:
+            # First check if user exists (atomic check)
+            if User.objects.filter(username=username).exists():
                 raise serializers.ValidationError("该用户名已被注册")
 
-            # 如果是新建用户，需要设置密码
-            user.set_password(password)
-            user.save()
+            # Create user with hashed password
+            user = User.objects.create_user(username=username, password=password)
 
-            # 创建或获取用户档案并设置邮箱
+            # Create profile with get_or_create (defensive)
             profile, _ = UserProfile.objects.get_or_create(
                 user=user,
                 defaults={"email": email, "role": "user"}
