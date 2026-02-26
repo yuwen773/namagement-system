@@ -12,21 +12,41 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from datetime import timedelta
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# ================================
+# 环境变量配置
+# ================================
+def env_bool(key, default=False):
+    """从环境变量读取布尔值"""
+    value = os.environ.get(key, str(default)).lower()
+    return value in ('true', '1', 'yes', 'on')
+
+
+def env_list(key, default=None):
+    """从环境变量读取列表（逗号分隔）"""
+    if default is None:
+        default = []
+    value = os.environ.get(key, '')
+    return [item.strip() for item in value.split(',') if item.strip()] or default
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v^3^0g#bf#f##()#oo$$=ajve-sscfld@thkb$votp6%h1xhzb'
+# 优先从环境变量读取，否则使用默认值（仅用于开发）
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-v^3^0g#bf#f##()#oo$$=ajve-sscfld@thkb$votp6%h1xhzb')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env_bool('DEBUG', True)
 
-ALLOWED_HOSTS = []
+# 允许的主机
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
 
 
 # Application definition
@@ -88,11 +108,11 @@ WSGI_APPLICATION = 'heritage_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'heritage_db',
-        'USER': 'root',
-        'PASSWORD': 'yuwen123.',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'heritage_db'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'yuwen123.'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -133,7 +153,7 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+# https://docs.djangoproject.com/en/5.2/howto/staticfiles/
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -148,6 +168,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# ================================
+# REST Framework 配置
+# ================================
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -158,13 +182,43 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'utils.response.custom_exception_handler',
 }
 
+# JWT 配置
+JWT_ACCESS_TOKEN_LIFETIME = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_LIFETIME_HOURS', 2)))
+JWT_REFRESH_TOKEN_LIFETIME = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_LIFETIME_DAYS', 7)))
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': JWT_ACCESS_TOKEN_LIFETIME,
+    'REFRESH_TOKEN_LIFETIME': JWT_REFRESH_TOKEN_LIFETIME,
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+# ================================
+# CORS 配置
+# ================================
+# 开发环境：允许所有来源
+# 生产环境：应通过环境变量 CORS_ALLOWED_ORIGINS 指定具体域名
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', ['http://localhost:5173', 'http://127.0.0.1:5173'])
+
+# 如果环境变量设置为 all 或 *，则允许所有来源
+if os.environ.get('CORS_ALLOW_ALL_ORIGINS', '').lower() in ('true', '1', 'all', '*'):
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOW_CREDENTIALS = True
+
+
+# ================================
+# 安全配置（生产环境建议）
+# ================================
+if not DEBUG:
+    # 生产环境安全设置
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    # 如果使用 HTTPS，取消以下注释
+    # SECURE_SSL_REDIRECT = True
+    # SESSION_COOKIE_SECURE = True
+    # CSRF_COOKIE_SECURE = True
