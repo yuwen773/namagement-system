@@ -26,10 +26,12 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # 普通用户只能看到已发布的公告
-        if not self.request.user.is_superuser:
+        # 普通用户只能看到已发布的公告（list 和 retrieve 动作）
+        if self.action in ('list', 'retrieve'):
+            # 检查是否不是管理员
             from apps.users.models import get_user_role
-            if get_user_role(self.request.user) != 'admin':
+            user_role = get_user_role(self.request.user)
+            if user_role != 'admin':
                 queryset = queryset.filter(is_published=True)
 
         return queryset

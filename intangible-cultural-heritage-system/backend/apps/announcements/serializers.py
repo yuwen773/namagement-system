@@ -7,11 +7,13 @@ class AnnouncementSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Announcement
-        fields = ['id', 'title', 'content', 'is_published', 'is_top', 'author', 'author_name', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'author', 'created_at', 'updated_at']
+        # 移除 author 字段，只保留 author_name
+        fields = ['id', 'title', 'content', 'is_published', 'is_top', 'author_name', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class AnnouncementCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Announcement
-        fields = ['id', 'title', 'content', 'is_published', 'is_top', 'created_at', 'updated_at']
+        # 只包含可写字段
+        fields = ['title', 'content', 'is_published', 'is_top']
