@@ -4,9 +4,12 @@ import type {
   LoginRequest,
   LoginResponse,
   User,
+  UserProfile,
   RegisterRequest,
   CheckUsernameRequest,
-  CheckEmailRequest
+  CheckEmailRequest,
+  UpdateProfileRequest,
+  ChangePasswordRequest
 } from '@/types'
 
 // 登录
@@ -26,7 +29,17 @@ export const logout = (refresh: string) => {
 
 // 获取当前用户信息
 export const getCurrentUser = () => {
-  return request.get<ApiResponse<User>>('/auth/me/')
+  return request.get<ApiResponse<UserProfile>>('/auth/me/')
+}
+
+// 更新个人资料
+export const updateProfile = (data: UpdateProfileRequest) => {
+  return request.patch<ApiResponse<UserProfile>>('/auth/me/', data)
+}
+
+// 修改密码
+export const changePassword = (data: ChangePasswordRequest) => {
+  return request.post<ApiResponse<{ message: string }>>('/auth/me/change-password/', data)
 }
 
 // 检查用户名是否可用
