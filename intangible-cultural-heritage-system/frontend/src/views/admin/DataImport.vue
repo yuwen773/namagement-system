@@ -206,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, type UploadInstance, type UploadFile } from 'element-plus'
 import { UploadFilled, Document, Close, Upload } from '@element-plus/icons-vue'
 

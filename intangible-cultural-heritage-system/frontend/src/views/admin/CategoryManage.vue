@@ -44,7 +44,7 @@
         default-expand-all
         class="category-tree"
       >
-        <template #default="{ node, data }">
+        <template #default="{ data }">
           <div class="tree-node">
             <div class="node-content">
               <span class="node-name">{{ data.name }}</span>
