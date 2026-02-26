@@ -190,6 +190,10 @@ temp/
 # ================================
 # Project Specific
 # ================================
+# Worktrees
+.worktrees/
+worktrees/
+
 # Uploaded media files
 uploads/
 media/
