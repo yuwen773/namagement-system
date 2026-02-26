@@ -210,3 +210,32 @@ class DashboardLevelDistributionView(APIView):
             })
 
         return success_response(data=data, message="获取成功")
+
+
+class DashboardKeywordCloudView(APIView):
+    """
+    关键词词云
+    GET /dashboard/keyword-cloud/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        import jieba
+
+        # 获取所有非遗项目名称
+        names = HeritageItem.objects.values_list('name', flat=True)
+
+        # 分词统计
+        word_count = {}
+        for name in names:
+            words = jieba.cut(name)
+            for word in words:
+                if len(word) >= 2:  # 过滤单字
+                    word_count[word] = word_count.get(word, 0) + 1
+
+        # 按词频排序，取前100
+        sorted_words = sorted(word_count.items(), key=lambda x: x[1], reverse=True)[:100]
+
+        data = [{'name': word, 'value': count} for word, count in sorted_words]
+
+        return success_response(data=data, message="获取成功")

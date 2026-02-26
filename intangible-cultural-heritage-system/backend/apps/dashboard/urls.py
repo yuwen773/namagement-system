@@ -3,6 +3,7 @@ from django.urls import re_path
 from .views import (
     DashboardCategoryDistributionView,
     DashboardCountryRankingView,
+    DashboardKeywordCloudView,
     DashboardLevelDistributionView,
     DashboardMapDistributionView,
     DashboardOverviewView,
@@ -35,5 +36,10 @@ urlpatterns = [
         r"^dashboard/level-distribution/?$",
         DashboardLevelDistributionView.as_view(),
         name="dashboard-level-distribution",
+    ),
+    re_path(
+        r"^dashboard/keyword-cloud/?$",
+        DashboardKeywordCloudView.as_view(),
+        name="dashboard-keyword-cloud",
     ),
 ]

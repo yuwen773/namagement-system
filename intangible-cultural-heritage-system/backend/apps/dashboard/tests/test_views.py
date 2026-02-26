@@ -572,3 +572,71 @@ class DashboardLevelDistributionViewTests(APITestCase):
         data = response.data['data']
 
         self.assertIn('level_name', data[0])
+
+
+class DashboardKeywordCloudViewTests(APITestCase):
+    """关键词词云 API 测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.client.force_authenticate(user=self.user)
+
+        self.category = Category.objects.create(
+            name='传统技艺',
+            code='CRAFT',
+            level='national'
+        )
+        self.region = Region.objects.create(
+            country_code='CN',
+            country_name='China',
+            latitude=39.9,
+            longitude=116.4
+        )
+
+        # 创建包含重复关键词的项目
+        HeritageItem.objects.create(
+            name='剪纸艺术',
+            category=self.category,
+            region=self.region,
+            level='national'
+        )
+        HeritageItem.objects.create(
+            name='传统剪纸',
+            category=self.category,
+            region=self.region,
+            level='national'
+        )
+        HeritageItem.objects.create(
+            name='刺绣技艺',
+            category=self.category,
+            region=self.region,
+            level='national'
+        )
+
+    def test_keyword_cloud_returns_word_counts(self):
+        """测试返回词频统计"""
+        response = self.client.get('/api/v1/dashboard/keyword-cloud/')
+        self.assertEqual(response.status_code, 200)
+        data = response.data['data']
+
+        # 验证数据结构
+        self.assertIn('name', data[0])
+        self.assertIn('value', data[0])
+
+    def test_keyword_cloud_counts_correctly(self):
+        """测试词频统计正确"""
+        response = self.client.get('/api/v1/dashboard/keyword-cloud/')
+        data = response.data['data']
+
+        # 验证返回了数据且有正确的结构
+        self.assertTrue(len(data) >= 3)
+        # 验证最高的词频
+        max_count = max(item['value'] for item in data)
+        self.assertGreaterEqual(max_count, 2)
+
+    def test_keyword_cloud_limits_results(self):
+        """测试结果限制在100个"""
+        response = self.client.get('/api/v1/dashboard/keyword-cloud/')
+        data = response.data['data']
+        self.assertLessEqual(len(data), 100)
