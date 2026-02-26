@@ -205,16 +205,26 @@ class UserViewSet(ModelViewSet):
         queryset = self.get_queryset()
 
         # 过滤参数
-        username = request.query_params.get("username", "").strip()
-        role = request.query_params.get("role", "").strip()
-        is_active = request.query_params.get("is_active", "").strip()
+        username = request.query_params.get("username")
+        role = request.query_params.get("role")
+        is_active = request.query_params.get("is_active")
 
+        # 用户名筛选（模糊匹配）
         if username:
-            queryset = queryset.filter(username__icontains=username)
+            queryset = queryset.filter(username__icontains=username.strip())
+
+        # 角色筛选
         if role:
-            queryset = queryset.filter(profile__role=role)
-        if is_active:
-            queryset = queryset.filter(profile__is_active=is_active.lower() == "true")
+            queryset = queryset.filter(profile__role=role.strip())
+
+        # 状态筛选（处理字符串和布尔值）
+        if is_active is not None and is_active != "":
+            # 处理字符串形式的布尔值
+            if isinstance(is_active, str):
+                is_active_bool = is_active.strip().lower() == "true"
+            else:
+                is_active_bool = bool(is_active)
+            queryset = queryset.filter(profile__is_active=is_active_bool)
 
         # 分页
         paginator = self.pagination_class()

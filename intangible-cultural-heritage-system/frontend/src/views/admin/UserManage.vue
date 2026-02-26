@@ -258,20 +258,24 @@ const resetPasswordRules: FormRules = {
 const fetchData = async () => {
   loading.value = true
   try {
-    // 构建参数，只在有值时才添加
+    // 构建参数，只在有有效值时才添加
     const params: any = {
       page: currentPage.value
     }
-    if (filters.username) {
-      params.username = filters.username
+    // 用户名：非空字符串
+    if (filters.username && filters.username.trim()) {
+      params.username = filters.username.trim()
     }
-    if (filters.role) {
-      params.role = filters.role
+    // 角色：非空字符串
+    if (filters.role && filters.role.trim()) {
+      params.role = filters.role.trim()
     }
-    if (filters.is_active !== undefined && filters.is_active !== null) {
+    // 状态：布尔值（包括 false）
+    if (filters.is_active !== undefined && filters.is_active !== null && filters.is_active !== '') {
       params.is_active = filters.is_active
     }
 
+    console.log('筛选参数:', params) // 调试用
     const res = await getUserList(params)
     if (res.data.code === 0) {
       tableData.value = res.data.data
@@ -280,6 +284,7 @@ const fetchData = async () => {
       ElMessage.error(res.data.message || '获取用户列表失败')
     }
   } catch (error) {
+    console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
   } finally {
     loading.value = false
@@ -293,8 +298,8 @@ const handleSearch = () => {
 
 const handleReset = () => {
   filters.username = ''
-  filters.role = undefined
-  filters.is_active = undefined
+  filters.role = undefined as 'admin' | 'user' | undefined
+  filters.is_active = undefined as boolean | undefined
   handleSearch()
 }
 
