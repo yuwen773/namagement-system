@@ -114,12 +114,6 @@
               </el-form-item>
             </el-form>
 
-            <!-- 提示信息 -->
-            <div class="login-hint">
-              <div class="hint-seal">试</div>
-              <p>测试账号：admin / password123</p>
-            </div>
-
             <!-- 注册链接 -->
             <div class="register-link">
               <span class="link-text">还没有账号？</span>
