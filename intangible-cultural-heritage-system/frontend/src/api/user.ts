@@ -30,35 +30,35 @@ export const register = (data: RegisterRequest) => {
 
 // 获取用户列表
 export const getUserList = (params?: UserListParams) => {
-  return request.get<ApiResponse<UserDetail[]>>('/users/', { params })
+  return request.get<ApiResponse<UserDetail[]>>('/auth/users/', { params })
 }
 
 // 创建用户
 export const createUser = (data: CreateUserRequest) => {
-  return request.post<ApiResponse<UserDetail>>('/users/', data)
+  return request.post<ApiResponse<UserDetail>>('/auth/users/', data)
 }
 
 // 更新用户信息
 export const updateUser = (id: number, data: UpdateUserRequest) => {
-  return request.patch<ApiResponse<UserDetail>>(`/users/${id}/`, data)
+  return request.patch<ApiResponse<UserDetail>>(`/auth/users/${id}/`, data)
 }
 
 // 批量更新用户状态
 export const updateUserStatus = (data: UpdateUserStatusRequest) => {
-  return request.patch<ApiResponse<{ updated_count: number }>>('/users/update-status/', data)
+  return request.patch<ApiResponse<{ updated_count: number }>>('/auth/users/update-status/', data)
 }
 
 // 批量更新用户角色
 export const updateUserRole = (data: UpdateUserRoleRequest) => {
-  return request.patch<ApiResponse<{ updated_count: number }>>('/users/update-role/', data)
+  return request.patch<ApiResponse<{ updated_count: number }>>('/auth/users/update-role/', data)
 }
 
 // 重置用户密码
 export const resetUserPassword = (data: ResetUserPasswordRequest) => {
-  return request.patch<ApiResponse<{ user_id: number; username: string }>>('/users/reset-password/', data)
+  return request.patch<ApiResponse<{ user_id: number; username: string }>>('/auth/users/reset-password/', data)
 }
 
 // 删除用户
 export const deleteUser = (id: number) => {
-  return request.delete<ApiResponse<null>>(`/users/${id}/`)
+  return request.delete<ApiResponse<null>>(`/auth/users/${id}/`)
 }
