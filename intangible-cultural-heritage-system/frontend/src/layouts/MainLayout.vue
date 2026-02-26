@@ -122,7 +122,8 @@ import {
   DataAnalysis,
   Edit,
   Menu,
-  Upload
+  Upload,
+  Lock
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -141,7 +142,8 @@ const adminMenus = [
   { path: '/admin/heritage', title: '项目管理', icon: Edit, seal: '管' },
   { path: '/admin/inheritors', title: '传承人管理', icon: UserFilled, seal: '理' },
   { path: '/admin/categories', title: '分类管理', icon: Menu, seal: '类' },
-  { path: '/admin/import', title: '数据导入', icon: Upload, seal: '入' }
+  { path: '/admin/import', title: '数据导入', icon: Upload, seal: '入' },
+  { path: '/admin/users', title: '用户管理', icon: Lock, seal: '用' }
 ]
 
 const isActive = (path: string) => {
