@@ -245,6 +245,28 @@ export interface Announcement {
   updated_at: string
 }
 
+// 个人中心相关类型
+export interface UserProfile {
+  id: number
+  username: string
+  role: UserRole
+  email: string
+  phone: string
+  is_active: boolean
+  last_login_time: string | null
+  date_joined: string
+}
+
+export interface UpdateProfileRequest {
+  email?: string
+  phone?: string
+}
+
+export interface ChangePasswordRequest {
+  old_password: string
+  new_password: string
+}
+
 export interface AnnouncementCreate {
   title: string
   content: string
