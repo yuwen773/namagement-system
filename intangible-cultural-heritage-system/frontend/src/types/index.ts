@@ -234,6 +234,7 @@ export interface AnnouncementCreate {
 }
 
 export interface AnnouncementListParams extends PaginationParams {
+  title?: string
   is_published?: boolean
   is_top?: boolean
 }
