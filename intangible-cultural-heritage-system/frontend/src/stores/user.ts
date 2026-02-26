@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login as loginApi, logout as logoutApi, getCurrentUser } from '@/api/auth'
-import type { User, LoginRequest } from '@/types'
+import { login as loginApi, logout as logoutApi, getCurrentUser, register as registerApi } from '@/api/auth'
+import type { User, LoginRequest, RegisterRequest } from '@/types'
 
 export const useUserStore = defineStore('user', () => {
   // State
@@ -80,6 +80,28 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  const register = async (registerData: RegisterRequest) => {
+    try {
+      const response = await registerApi(registerData)
+      const { access, refresh, user } = response.data.data
+
+      // 保存 token
+      token.value = access
+      refreshToken.value = refresh
+      userInfo.value = user
+
+      // 持久化到 localStorage
+      localStorage.setItem('access_token', access)
+      localStorage.setItem('refresh_token', refresh)
+      localStorage.setItem('user_info', JSON.stringify(user))
+
+      return true
+    } catch (error) {
+      console.error('Register failed:', error)
+      return false
+    }
+  }
+
   // 初始化时从 localStorage 恢复用户信息
   initFromStorage()
 
@@ -92,6 +114,7 @@ export const useUserStore = defineStore('user', () => {
     username,
     login,
     logout,
+    register,
     fetchUserInfo
   }
 })

@@ -1,5 +1,5 @@
 <template>
-  <div class="login-page">
+  <div class="register-page">
     <!-- 背景装饰 -->
     <div class="ink-background">
       <div class="ink-splash s1"></div>
@@ -17,7 +17,7 @@
       </svg>
     </div>
 
-    <div class="login-container">
+    <div class="register-container">
       <!-- 左侧装饰区 -->
       <div class="decoration-side">
         <div class="vertical-text">
@@ -28,15 +28,15 @@
         <div class="seal-stamp">
           <div class="seal-outer">
             <div class="seal-inner">
-              <span class="seal-char">非遗</span>
+              <span class="seal-char">注册</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 登录表单区 -->
+      <!-- 注册表单区 -->
       <div class="form-side">
-        <div class="login-scroll">
+        <div class="register-scroll">
           <div class="scroll-top"></div>
           <div class="scroll-content">
             <!-- 顶部印章 Logo -->
@@ -49,32 +49,68 @@
                 </div>
               </div>
               <div class="logo-texts">
-                <h1 class="logo-title">非遗数据平台</h1>
-                <p class="logo-subtitle">Intangible Cultural Heritage System</p>
+                <h1 class="logo-title">创建账号</h1>
+                <p class="logo-subtitle">Join Intangible Cultural Heritage System</p>
               </div>
             </div>
 
-            <!-- 登录表单 -->
+            <!-- 注册表单 -->
             <el-form
-              ref="loginFormRef"
-              :model="loginForm"
-              :rules="loginRules"
-              class="login-form"
-              @submit.prevent="handleLogin"
+              ref="registerFormRef"
+              :model="registerForm"
+              :rules="registerRules"
+              class="register-form"
+              @submit.prevent="handleRegister"
             >
               <el-form-item prop="username">
                 <div class="input-group">
                   <span class="input-label">用户名</span>
                   <el-input
-                    v-model="loginForm.username"
-                    placeholder="请输入用户名"
+                    v-model="registerForm.username"
+                    placeholder="3-20个字符，仅支持字母、数字和下划线"
                     size="large"
                     class="heritage-input"
+                    @blur="checkUsernameAvailability"
                   >
                     <template #prefix>
                       <el-icon><User /></el-icon>
                     </template>
                   </el-input>
+                  <div class="input-hint" :class="{ 'success': usernameStatus.available, 'error': usernameStatus.taken }">
+                    <span v-if="usernameStatus.checking" class="checking">
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                    </span>
+                    <span v-else-if="usernameStatus.available" class="success-text">✓ 用户名可用</span>
+                    <span v-else-if="usernameStatus.taken" class="error-text">✗ 用户名已存在</span>
+                  </div>
+                </div>
+              </el-form-item>
+
+              <el-form-item prop="email">
+                <div class="input-group">
+                  <span class="input-label">邮箱</span>
+                  <el-input
+                    v-model="registerForm.email"
+                    placeholder="请输入邮箱地址"
+                    size="large"
+                    class="heritage-input"
+                    @blur="checkEmailAvailability"
+                  >
+                    <template #prefix>
+                      <el-icon><Message /></el-icon>
+                    </template>
+                  </el-input>
+                  <div class="input-hint" :class="{ 'success': emailStatus.available, 'error': emailStatus.taken }">
+                    <span v-if="emailStatus.checking" class="checking">
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                    </span>
+                    <span v-else-if="emailStatus.available" class="success-text">✓ 邮箱可用</span>
+                    <span v-else-if="emailStatus.taken" class="error-text">✗ 邮箱已被注册</span>
+                  </div>
                 </div>
               </el-form-item>
 
@@ -82,13 +118,31 @@
                 <div class="input-group">
                   <span class="input-label">密码</span>
                   <el-input
-                    v-model="loginForm.password"
+                    v-model="registerForm.password"
                     type="password"
-                    placeholder="请输入密码"
+                    placeholder="至少6个字符"
                     size="large"
                     class="heritage-input"
                     show-password
-                    @keyup.enter="handleLogin"
+                  >
+                    <template #prefix>
+                      <el-icon><Lock /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
+              </el-form-item>
+
+              <el-form-item prop="confirmPassword">
+                <div class="input-group">
+                  <span class="input-label">确认密码</span>
+                  <el-input
+                    v-model="registerForm.confirmPassword"
+                    type="password"
+                    placeholder="请再次输入密码"
+                    size="large"
+                    class="heritage-input"
+                    show-password
+                    @keyup.enter="handleRegister"
                   >
                     <template #prefix>
                       <el-icon><Lock /></el-icon>
@@ -100,11 +154,11 @@
               <el-form-item>
                 <button
                   type="submit"
-                  class="login-btn"
+                  class="register-btn"
                   :class="{ loading: loading }"
-                  :disabled="loading"
+                  :disabled="loading || !canSubmit"
                 >
-                  <span v-if="!loading">登录</span>
+                  <span v-if="!loading">注册</span>
                   <span v-else class="loading-text">
                     <span class="dot"></span>
                     <span class="dot"></span>
@@ -114,16 +168,10 @@
               </el-form-item>
             </el-form>
 
-            <!-- 提示信息 -->
-            <div class="login-hint">
-              <div class="hint-seal">试</div>
-              <p>测试账号：admin / password123</p>
-            </div>
-
-            <!-- 注册链接 -->
-            <div class="register-link">
-              <span class="link-text">还没有账号？</span>
-              <router-link to="/register" class="link-btn">立即注册</router-link>
+            <!-- 登录链接 -->
+            <div class="login-link">
+              <span class="link-text">已有账号？</span>
+              <router-link to="/login" class="link-btn">立即登录</router-link>
             </div>
           </div>
           <div class="scroll-bottom"></div>
@@ -140,55 +188,180 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { User, Lock, Collection } from '@element-plus/icons-vue'
+import { User, Lock, Collection, Message } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { checkUsername as checkUsernameApi, checkEmail as checkEmailApi } from '@/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const loginFormRef = ref<FormInstance>()
+const registerFormRef = ref<FormInstance>()
 const loading = ref(false)
 
-const welcomeText = '欢迎登录非遗数据平台'
+const welcomeText = '欢迎加入非遗数据平台'
 
-const loginForm = reactive({
-  username: '',
-  password: ''
+const usernameStatus = reactive({
+  checking: false,
+  available: false,
+  taken: false
 })
 
-const loginRules: FormRules = {
+const emailStatus = reactive({
+  checking: false,
+  available: false,
+  taken: false
+})
+
+const registerForm = reactive({
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+})
+
+// 表单验证规则
+const validateUsername = (_rule: unknown, value: string, callback: any) => {
+  if (!value) {
+    callback(new Error('请输入用户名'))
+  } else if (!/^[a-zA-Z0-9_]{3,20}$/.test(value)) {
+    callback(new Error('用户名长度在 3 到 20 个字符，仅支持字母、数字和下划线'))
+  } else if (usernameStatus.taken) {
+    callback(new Error('用户名已存在'))
+  } else {
+    callback()
+  }
+}
+
+const validateEmail = (_rule: unknown, value: string, callback: any) => {
+  if (!value) {
+    callback(new Error('请输入邮箱'))
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    callback(new Error('请输入正确的邮箱格式'))
+  } else if (emailStatus.taken) {
+    callback(new Error('邮箱已被注册'))
+  } else {
+    callback()
+  }
+}
+
+const validateConfirmPassword = (_rule: unknown, value: string, callback: any) => {
+  if (!value) {
+    callback(new Error('请再次输入密码'))
+  } else if (value !== registerForm.password) {
+    callback(new Error('两次输入密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const registerRules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+    { required: true, validator: validateUsername, trigger: 'blur' }
+  ],
+  email: [
+    { required: true, validator: validateEmail, trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, validator: validateConfirmPassword, trigger: 'blur' }
   ]
 }
 
-const handleLogin = async () => {
-  if (!loginFormRef.value) return
+// 是否可以提交（用户名和邮箱都可用）
+const canSubmit = computed(() => {
+  return !usernameStatus.taken && !emailStatus.taken
+})
 
-  await loginFormRef.value.validate(async (valid) => {
+// 检查用户名可用性
+const checkUsernameAvailability = async () => {
+  const username = registerForm.username.trim()
+
+  // 重置状态
+  usernameStatus.available = false
+  usernameStatus.taken = false
+
+  // 验证格式
+  if (!username || !/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+    return
+  }
+
+  usernameStatus.checking = true
+
+  try {
+    const response = await checkUsernameApi({ username })
+    usernameStatus.available = response.data.data.available
+    usernameStatus.taken = !response.data.data.available
+  } catch (error) {
+    console.error('Check username failed:', error)
+    // 静默失败，不显示错误
+  } finally {
+    usernameStatus.checking = false
+  }
+}
+
+// 检查邮箱可用性
+const checkEmailAvailability = async () => {
+  const email = registerForm.email.trim()
+
+  // 重置状态
+  emailStatus.available = false
+  emailStatus.taken = false
+
+  // 验证格式
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return
+  }
+
+  emailStatus.checking = true
+
+  try {
+    const response = await checkEmailApi({ email })
+    emailStatus.available = response.data.data.available
+    emailStatus.taken = !response.data.data.available
+  } catch (error) {
+    console.error('Check email failed:', error)
+    // 静默失败，不显示错误
+  } finally {
+    emailStatus.checking = false
+  }
+}
+
+const handleRegister = async () => {
+  if (!registerFormRef.value) return
+
+  await registerFormRef.value.validate(async (valid) => {
     if (!valid) return
+
+    // 再次检查用户名和邮箱是否已被占用
+    if (usernameStatus.taken || emailStatus.taken) {
+      ElMessage.error('请更换用户名或邮箱后重试')
+      return
+    }
 
     loading.value = true
     try {
-      const success = await userStore.login(loginForm)
+      const success = await userStore.register({
+        username: registerForm.username,
+        email: registerForm.email,
+        password: registerForm.password
+      })
+
       if (success) {
-        ElMessage.success('登录成功')
+        ElMessage.success('注册成功，正在跳转...')
         router.push('/dashboard')
       } else {
-        ElMessage.error('登录失败，请检查用户名和密码')
+        ElMessage.error('注册失败，请稍后重试')
       }
     } catch (error) {
-      console.error('Login error:', error)
-      ElMessage.error('登录失败，请稍后重试')
+      console.error('Register error:', error)
+      ElMessage.error('注册失败，请稍后重试')
     } finally {
       loading.value = false
     }
@@ -198,7 +371,7 @@ const handleLogin = async () => {
 
 <style scoped>
 /* ========== 全局样式 ========== */
-.login-page {
+.register-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -298,8 +471,8 @@ const handleLogin = async () => {
   100% { transform: translateX(0); }
 }
 
-/* ========== 登录容器 ========== */
-.login-container {
+/* ========== 注册容器 ========== */
+.register-container {
   position: relative;
   z-index: 1;
   display: flex;
@@ -412,7 +585,7 @@ const handleLogin = async () => {
   flex-direction: column;
 }
 
-.login-scroll {
+.register-scroll {
   position: relative;
   flex: 1;
   display: flex;
@@ -514,7 +687,7 @@ const handleLogin = async () => {
 }
 
 /* ========== 表单 ========== */
-.login-form {
+.register-form {
   margin-bottom: 24px;
 }
 
@@ -563,8 +736,56 @@ const handleLogin = async () => {
   color: #909399;
 }
 
-/* ========== 登录按钮 ========== */
-.login-btn {
+/* ========== 输入提示 ========== */
+.input-hint {
+  margin-top: 8px;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input-hint .checking {
+  display: flex;
+  gap: 4px;
+}
+
+.input-hint .dot {
+  width: 6px;
+  height: 6px;
+  background: #909399;
+  border-radius: 50%;
+  animation: hintDotBounce 1.4s ease-in-out infinite;
+}
+
+.input-hint .dot:nth-child(2) { animation-delay: 0.2s; }
+.input-hint .dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes hintDotBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+.input-hint .success-text {
+  font-size: 12px;
+  color: #67C23A;
+  font-weight: 500;
+}
+
+.input-hint .error-text {
+  font-size: 12px;
+  color: #F56C6C;
+  font-weight: 500;
+}
+
+/* ========== 注册按钮 ========== */
+.register-btn {
   width: 100%;
   padding: 16px 32px;
   background: linear-gradient(135deg, #C23531 0%, #A93226 100%);
@@ -581,7 +802,7 @@ const handleLogin = async () => {
   overflow: hidden;
 }
 
-.login-btn::before {
+.register-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -592,21 +813,26 @@ const handleLogin = async () => {
   transition: left 0.5s;
 }
 
-.login-btn:hover {
+.register-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(194, 35, 49, 0.4);
 }
 
-.login-btn:hover::before {
+.register-btn:hover::before {
   left: 100%;
 }
 
-.login-btn:active {
+.register-btn:active {
   transform: translateY(0);
 }
 
-.login-btn.loading {
+.register-btn.loading {
   background: linear-gradient(135deg, #909399 0%, #606266 100%);
+  cursor: not-allowed;
+}
+
+.register-btn:disabled {
+  background: linear-gradient(135deg, #C0C4CC 0%, #909399 100%);
   cursor: not-allowed;
 }
 
@@ -617,7 +843,7 @@ const handleLogin = async () => {
   gap: 8px;
 }
 
-.dot {
+.loading-text .dot {
   width: 8px;
   height: 8px;
   background: white;
@@ -625,8 +851,8 @@ const handleLogin = async () => {
   animation: dotBounce 1.4s ease-in-out infinite;
 }
 
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
+.loading-text .dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-text .dot:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes dotBounce {
   0%, 80%, 100% {
@@ -639,63 +865,29 @@ const handleLogin = async () => {
   }
 }
 
-/* ========== 提示信息 ========== */
-.login-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(212, 175, 55, 0.1);
-  border-radius: 8px;
-  border: 1px dashed rgba(212, 175, 55, 0.3);
-}
-
-.hint-seal {
-  width: 32px;
-  height: 32px;
-  background: #D4AF37;
-  color: #2F3640;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: "STSong", "SimSun", serif;
-  flex-shrink: 0;
-}
-
-.login-hint p {
-  margin: 0;
-  font-size: 13px;
-  color: #606266;
-}
-
-/* ========== 注册链接 ========== */
-.register-link {
+/* ========== 登录链接 ========== */
+.login-link {
   text-align: center;
   padding: 16px;
   background: rgba(212, 175, 55, 0.1);
   border-radius: 8px;
   border: 1px dashed rgba(212, 175, 55, 0.3);
-  margin-top: 16px;
 }
 
-.register-link .link-text {
+.link-text {
   font-size: 14px;
   color: #606266;
   margin-right: 8px;
 }
 
-.register-link .link-btn {
+.link-btn {
   color: #C23531;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s;
 }
 
-.register-link .link-btn:hover {
+.link-btn:hover {
   color: #A93226;
   text-decoration: underline;
 }
