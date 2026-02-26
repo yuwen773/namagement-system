@@ -1,4 +1,5 @@
 from django.urls import re_path
+from rest_framework.routers import DefaultRouter
 
 from .views import (
     CheckEmailView,
@@ -8,7 +9,12 @@ from .views import (
     ProfileView,
     RefreshTokenView,
     RegisterView,
+    UserViewSet,
 )
+
+# Router for ViewSets
+router = DefaultRouter()
+router.register(r"users", UserViewSet, basename="user")
 
 urlpatterns = [
     re_path(r"^login/?$", LoginView.as_view(), name="auth-login"),
@@ -19,3 +25,6 @@ urlpatterns = [
     re_path(r"^check-username/?$", CheckUsernameView.as_view(), name="auth-check-username"),
     re_path(r"^check-email/?$", CheckEmailView.as_view(), name="auth-check-email"),
 ]
+
+# Add router URLs
+urlpatterns += router.urls
