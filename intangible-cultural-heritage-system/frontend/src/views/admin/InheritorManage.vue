@@ -1,69 +1,83 @@
 <template>
   <div class="inheritor-manage">
-    <!-- Header -->
-    <div class="page-header">
+    <!-- 页面头部 -->
+    <header class="page-header">
       <div class="header-content">
-        <h1 class="page-title">传承人管理</h1>
-        <p class="page-subtitle">管理和维护非物质文化遗产传承人数据</p>
+        <div class="header-seal">
+          <span class="seal-text">传承</span>
+        </div>
+        <div class="header-texts">
+          <h1 class="page-title">传承人管理</h1>
+          <p class="page-subtitle">管理和维护非物质文化遗产传承人数据</p>
+        </div>
       </div>
-      <el-button type="primary" size="large" @click="handleAdd" class="add-btn">
-        <el-icon><Plus /></el-icon>
+      <button class="add-btn" @click="handleAdd">
+        <span class="btn-seal">增</span>
         <span>新增传承人</span>
-      </el-button>
-    </div>
+      </button>
+    </header>
 
-    <!-- Filters -->
+    <!-- 筛选区域 -->
     <div class="filter-section">
       <el-form :inline="true" :model="filters" class="filter-form">
         <el-form-item label="姓名">
-          <el-input v-model="filters.name" placeholder="搜索传承人姓名" clearable @clear="handleSearch" />
+          <el-input v-model="filters.name" placeholder="搜索传承人姓名" clearable @clear="handleSearch" class="heritage-input" />
         </el-form-item>
         <el-form-item label="级别">
-          <el-select v-model="filters.level" placeholder="选择级别" clearable>
+          <el-select v-model="filters.level" placeholder="选择级别" clearable class="heritage-select">
             <el-option label="国家级" value="national" />
             <el-option label="省级" value="provincial" />
             <el-option label="市县级" value="city_county" />
           </el-select>
         </el-form-item>
         <el-form-item label="国家">
-          <el-select v-model="filters.region" placeholder="选择国家" clearable filterable>
+          <el-select v-model="filters.region" placeholder="选择国家" clearable filterable class="heritage-select">
             <el-option v-for="reg in regions" :key="reg.id" :label="reg.country_name" :value="reg.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="所属项目">
-          <el-select v-model="filters.heritage_item" placeholder="选择项目" clearable filterable>
+          <el-select v-model="filters.heritage_item" placeholder="选择项目" clearable filterable class="heritage-select">
             <el-option v-for="item in heritageItems" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <button class="action-btn search-btn" @click="handleSearch">搜索</button>
+          <button class="action-btn reset-btn" @click="handleReset">重置</button>
         </el-form-item>
       </el-form>
     </div>
 
-    <!-- Table -->
-    <div class="table-section">
-      <el-table :data="tableData" v-loading="loading" stripe class="data-table">
+    <!-- 表格区域 -->
+    <div class="table-frame">
+      <el-table :data="tableData" v-loading="loading" class="data-table">
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="name" label="姓名" width="150" />
+        <el-table-column prop="name" label="姓名" width="150">
+          <template #default="{ row }">
+            <div class="name-cell">
+              <div class="avatar-circle">{{ row.name.charAt(0) }}</div>
+              <span class="name-text">{{ row.name }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="性别" width="100">
           <template #default="{ row }">
-            <span v-if="row.gender">{{ getGenderText(row.gender) }}</span>
-            <span v-else class="text-gray">未填写</span>
+            <span v-if="row.gender" class="gender-text">{{ getGenderText(row.gender) }}</span>
+            <span v-else class="empty-text">未填写</span>
           </template>
         </el-table-column>
         <el-table-column label="所属项目" min-width="200">
           <template #default="{ row }">
-            <el-link type="primary" @click="viewHeritage(row.heritage_item.id)">
+            <a class="heritage-link" @click="viewHeritage(row.heritage_item.id)">
               {{ row.heritage_item.name }}
-            </el-link>
+            </a>
           </template>
         </el-table-column>
         <el-table-column label="级别" width="120">
           <template #default="{ row }">
-            <el-tag v-if="row.level" :type="getLevelType(row.level)">{{ getLevelText(row.level) }}</el-tag>
-            <span v-else class="text-gray">未填写</span>
+            <span v-if="row.level" class="level-badge" :class="getLevelClass(row.level)">
+              {{ getLevelText(row.level) }}
+            </span>
+            <span v-else class="empty-text">未填写</span>
           </template>
         </el-table-column>
         <el-table-column label="国家" width="120">
@@ -74,13 +88,13 @@
         <el-table-column prop="area" label="地区" width="150" />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <button class="table-action-btn edit-btn" @click="handleEdit(row)">编辑</button>
+            <button class="table-action-btn delete-btn" @click="handleDelete(row)">删除</button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- Pagination -->
+      <!-- 分页 -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
@@ -92,12 +106,13 @@
       </div>
     </div>
 
-    <!-- Dialog -->
+    <!-- 弹窗 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
       width="600px"
       :close-on-click-modal="false"
+      class="heritage-dialog"
     >
       <el-form :model="formData" :rules="formRules" ref="formRef" label-width="100px">
         <el-form-item label="姓名" prop="name">
@@ -140,8 +155,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
+        <button class="dialog-btn cancel-btn" @click="dialogVisible = false">取消</button>
+        <button class="dialog-btn confirm-btn" @click="handleSubmit" :disabled="submitting">
+          {{ submitting ? '提交中...' : '确定' }}
+        </button>
       </template>
     </el-dialog>
   </div>
@@ -151,7 +168,6 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
 import { getInheritorList, createInheritor, updateInheritor, deleteInheritor } from '@/api/inheritor'
 import { getHeritageList } from '@/api/heritage'
 import { getRegionList } from '@/api/region'
@@ -307,10 +323,10 @@ const handleDelete = async (row: Inheritor) => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     submitting.value = true
     try {
       if (editingId.value) {
@@ -364,13 +380,8 @@ const getGenderText = (gender: string) => {
   return texts[gender] || gender
 }
 
-const getLevelType = (level: string) => {
-  const types: Record<string, any> = {
-    national: 'danger',
-    provincial: 'warning',
-    city_county: 'info'
-  }
-  return types[level] || 'info'
+const getLevelClass = (level: string) => {
+  return `level-${level}`
 }
 
 const getLevelText = (level: string) => {
@@ -393,74 +404,268 @@ onMounted(() => {
 <style scoped>
 .inheritor-manage {
   padding: 24px;
-  background: linear-gradient(135deg, #f5f1ed 0%, #faf8f5 100%);
+  background: #F7F4ED;
   min-height: calc(100vh - 60px);
 }
 
+/* ========== 页面头部 ========== */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   padding: 32px;
-  background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(139, 69, 19, 0.2);
+  background: linear-gradient(135deg, #2F3640 0%, #1a2026 100%);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(47, 54, 64, 0.3);
 }
 
 .header-content {
-  color: white;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-seal {
+  width: 56px;
+  height: 56px;
+  background: #D4AF37;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
+}
+
+.seal-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2F3640;
+  font-family: "STSong", "SimSun", serif;
+  letter-spacing: 2px;
+}
+
+.header-texts {
+  color: #F7F4ED;
 }
 
 .page-title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  margin: 0 0 8px 0;
-  letter-spacing: 1px;
+  margin: 0 0 4px 0;
+  letter-spacing: 4px;
+  font-family: "STSong", "SimSun", serif;
 }
 
 .page-subtitle {
-  font-size: 16px;
+  font-size: 13px;
   margin: 0;
-  opacity: 0.9;
+  opacity: 0.8;
 }
 
 .add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
   background: white;
-  color: #8b4513;
+  color: #2F3640;
   border: none;
+  border-radius: 6px;
   font-weight: 600;
-  padding: 12px 32px;
-  font-size: 16px;
-  transition: all 0.3s ease;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .add-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
+.btn-seal {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2F3640;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 2px;
+  font-family: "STSong", "SimSun", serif;
+}
+
+/* ========== 筛选区域 ========== */
 .filter-section {
   background: white;
   padding: 24px;
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(47, 54, 64, 0.08);
 }
 
 .filter-form {
   margin: 0;
 }
 
-.table-section {
+:deep(.heritage-input .el-input__wrapper),
+:deep(.heritage-select .el-select__wrapper) {
+  background: #F7F4ED;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 6px;
+}
+
+.action-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.search-btn {
+  background: #2F3640;
+  color: white;
+}
+
+.search-btn:hover {
+  background: #1a2026;
+}
+
+.reset-btn {
+  background: #F7F4ED;
+  color: #606266;
+  margin-left: 8px;
+}
+
+.reset-btn:hover {
+  background: #EDF2ED;
+}
+
+/* ========== 表格区域 ========== */
+.table-frame {
   background: white;
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(47, 54, 64, 0.08);
 }
 
 .data-table {
   margin-bottom: 24px;
+}
+
+:deep(.data-table th) {
+  background: #F7F4ED !important;
+  color: #2F3640 !important;
+  font-weight: 600 !important;
+}
+
+:deep(.data-table tr:hover) {
+  background: rgba(212, 175, 55, 0.05) !important;
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #D4AF37, #CD7F32);
+  color: #2F3640;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 50%;
+  font-family: "STSong", "SimSun", serif;
+}
+
+.name-text {
+  font-weight: 500;
+  color: #2F3640;
+}
+
+.gender-text {
+  color: #606266;
+}
+
+.heritage-link {
+  color: #2F3640;
+  text-decoration: none;
+  border-bottom: 1px dashed #D4AF37;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.heritage-link:hover {
+  color: #C23531;
+  border-bottom-color: #C23531;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.level-badge.level-national {
+  background: rgba(194, 35, 49, 0.1);
+  color: #C23531;
+}
+
+.level-badge.level-provincial {
+  background: rgba(212, 175, 55, 0.15);
+  color: #CD7F32;
+}
+
+.level-badge.level-city_county {
+  background: rgba(93, 138, 168, 0.15);
+  color: #5D8AA8;
+}
+
+.empty-text {
+  color: #C0C4CC;
+  font-style: italic;
+}
+
+.table-action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-btn {
+  background: rgba(212, 175, 55, 0.15);
+  color: #CD7F32;
+  margin-right: 8px;
+}
+
+.edit-btn:hover {
+  background: #D4AF37;
+  color: white;
+}
+
+.delete-btn {
+  background: rgba(194, 35, 49, 0.1);
+  color: #C23531;
+}
+
+.delete-btn:hover {
+  background: #C23531;
+  color: white;
 }
 
 .pagination-wrapper {
@@ -468,32 +673,57 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.text-gray {
-  color: #999;
-  font-style: italic;
+:deep(.el-pagination .el-pager li.is-active) {
+  background: #2F3640 !important;
+  border-color: #2F3640 !important;
 }
 
-:deep(.el-table) {
-  font-size: 14px;
+/* ========== 弹窗 ========== */
+:deep(.heritage-dialog .el-dialog__header) {
+  background: linear-gradient(135deg, #2F3640 0%, #1a2026 100%);
+  color: white;
+  padding: 20px 24px;
+  border-radius: 8px 8px 0 0;
 }
 
-:deep(.el-table th) {
-  background: #f8f5f2;
-  color: #8b4513;
+:deep(.heritage-dialog .el-dialog__title) {
+  font-size: 18px;
   font-weight: 600;
+  letter-spacing: 2px;
+  font-family: "STSong", "SimSun", serif;
 }
 
-:deep(.el-table__row:hover) {
-  background: #faf8f5;
+.dialog-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-:deep(.el-button--primary) {
-  background: #8b4513;
-  border-color: #8b4513;
+.cancel-btn {
+  background: #F7F4ED;
+  color: #606266;
+  margin-right: 12px;
 }
 
-:deep(.el-button--primary:hover) {
-  background: #a0522d;
-  border-color: #a0522d;
+.cancel-btn:hover {
+  background: #EDF2ED;
+}
+
+.confirm-btn {
+  background: #2F3640;
+  color: white;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #1a2026;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

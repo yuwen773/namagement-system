@@ -1,41 +1,46 @@
 <template>
   <div class="category-manage">
-    <!-- Header -->
-    <div class="page-header">
+    <!-- 页面头部 -->
+    <header class="page-header">
       <div class="header-content">
-        <h1 class="page-title">分类字典管理</h1>
-        <p class="page-subtitle">管理非物质文化遗产分类体系</p>
+        <div class="header-seal">
+          <span class="seal-text">分类</span>
+        </div>
+        <div class="header-texts">
+          <h1 class="page-title">分类字典管理</h1>
+          <p class="page-subtitle">管理非物质文化遗产分类体系</p>
+        </div>
       </div>
-      <el-button type="primary" size="large" @click="handleAdd" class="add-btn">
-        <el-icon><Plus /></el-icon>
+      <button class="add-btn" @click="handleAdd">
+        <span class="btn-seal">增</span>
         <span>新增分类</span>
-      </el-button>
-    </div>
+      </button>
+    </header>
 
-    <!-- Filters -->
+    <!-- 筛选区域 -->
     <div class="filter-section">
       <el-form :inline="true" :model="filters" class="filter-form">
         <el-form-item label="分类名称">
-          <el-input v-model="filters.name" placeholder="搜索分类名称" clearable @clear="handleSearch" />
+          <el-input v-model="filters.name" placeholder="搜索分类名称" clearable @clear="handleSearch" class="heritage-input" />
         </el-form-item>
         <el-form-item label="级别">
-          <el-select v-model="filters.level" placeholder="选择级别" clearable>
+          <el-select v-model="filters.level" placeholder="选择级别" clearable class="heritage-select">
             <el-option label="国家级" value="national" />
             <el-option label="省级" value="provincial" />
             <el-option label="市县级" value="city_county" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
-          <el-button @click="toggleTreeView">
+          <button class="action-btn search-btn" @click="handleSearch">搜索</button>
+          <button class="action-btn reset-btn" @click="handleReset">重置</button>
+          <button class="action-btn toggle-btn" @click="toggleTreeView">
             {{ showTree ? '列表视图' : '树形视图' }}
-          </el-button>
+          </button>
         </el-form-item>
       </el-form>
     </div>
 
-    <!-- Tree View -->
+    <!-- 树形视图 -->
     <div v-if="showTree" class="tree-section">
       <el-tree
         :data="treeData"
@@ -48,33 +53,37 @@
           <div class="tree-node">
             <div class="node-content">
               <span class="node-name">{{ data.name }}</span>
-              <el-tag size="small" class="node-code">{{ data.code }}</el-tag>
-              <el-tag size="small" :type="getLevelType(data.level)">{{ getLevelText(data.level) }}</el-tag>
+              <span class="node-code">{{ data.code }}</span>
+              <span class="level-badge" :class="getLevelClass(data.level)">
+                {{ getLevelText(data.level) }}
+              </span>
             </div>
             <div class="node-actions">
-              <el-button link type="primary" size="small" @click.stop="handleEdit(data)">编辑</el-button>
-              <el-button link type="danger" size="small" @click.stop="handleDelete(data)">删除</el-button>
+              <button class="node-btn edit-btn" @click.stop="handleEdit(data)">编辑</button>
+              <button class="node-btn delete-btn" @click.stop="handleDelete(data)">删除</button>
             </div>
           </div>
         </template>
       </el-tree>
     </div>
 
-    <!-- Table View -->
-    <div v-else class="table-section">
-      <el-table :data="tableData" v-loading="loading" stripe class="data-table">
+    <!-- 列表视图 -->
+    <div v-else class="table-frame">
+      <el-table :data="tableData" v-loading="loading" class="data-table">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="分类名称" min-width="200" />
         <el-table-column prop="code" label="分类代码" width="150" />
         <el-table-column label="级别" width="120">
           <template #default="{ row }">
-            <el-tag :type="getLevelType(row.level)">{{ getLevelText(row.level) }}</el-tag>
+            <span class="level-badge" :class="getLevelClass(row.level)">
+              {{ getLevelText(row.level) }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="父分类" width="200">
           <template #default="{ row }">
             <span v-if="row.parent">{{ row.parent.name }}</span>
-            <span v-else class="text-gray">根分类</span>
+            <span v-else class="empty-text">根分类</span>
           </template>
         </el-table-column>
         <el-table-column label="创建时间" width="180">
@@ -84,13 +93,13 @@
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <button class="table-action-btn edit-btn" @click="handleEdit(row)">编辑</button>
+            <button class="table-action-btn delete-btn" @click="handleDelete(row)">删除</button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- Pagination -->
+      <!-- 分页 -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
@@ -102,12 +111,13 @@
       </div>
     </div>
 
-    <!-- Dialog -->
+    <!-- 弹窗 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
       width="500px"
       :close-on-click-modal="false"
+      class="heritage-dialog"
     >
       <el-form :model="formData" :rules="formRules" ref="formRef" label-width="100px">
         <el-form-item label="分类名称" prop="name">
@@ -136,8 +146,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
+        <button class="dialog-btn cancel-btn" @click="dialogVisible = false">取消</button>
+        <button class="dialog-btn confirm-btn" @click="handleSubmit" :disabled="submitting">
+          {{ submitting ? '提交中...' : '确定' }}
+        </button>
       </template>
     </el-dialog>
   </div>
@@ -146,7 +158,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
 import { getCategoryList, getCategoryTree, createCategory, updateCategory, deleteCategory } from '@/api/category'
 import type { Category, CategoryTree } from '@/types'
 
@@ -310,10 +321,10 @@ const handleDelete = async (row: Category) => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     submitting.value = true
     try {
       if (editingId.value) {
@@ -361,13 +372,8 @@ const resetForm = () => {
   formRef.value?.clearValidate()
 }
 
-const getLevelType = (level: string) => {
-  const types: Record<string, any> = {
-    national: 'danger',
-    provincial: 'warning',
-    city_county: 'info'
-  }
-  return types[level] || 'info'
+const getLevelClass = (level: string) => {
+  return `level-${level}`
 }
 
 const getLevelText = (level: string) => {
@@ -393,70 +399,165 @@ onMounted(() => {
 <style scoped>
 .category-manage {
   padding: 24px;
-  background: linear-gradient(135deg, #f5f1ed 0%, #faf8f5 100%);
+  background: #F7F4ED;
   min-height: calc(100vh - 60px);
 }
 
+/* ========== 页面头部 ========== */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   padding: 32px;
-  background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(139, 69, 19, 0.2);
+  background: linear-gradient(135deg, #D4AF37 0%, #CD7F32 100%);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
 }
 
 .header-content {
-  color: white;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-seal {
+  width: 56px;
+  height: 56px;
+  background: #2F3640;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(47, 54, 64, 0.4);
+}
+
+.seal-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #F7F4ED;
+  font-family: "STSong", "SimSun", serif;
+  letter-spacing: 2px;
+}
+
+.header-texts {
+  color: #2F3640;
 }
 
 .page-title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  margin: 0 0 8px 0;
-  letter-spacing: 1px;
+  margin: 0 0 4px 0;
+  letter-spacing: 4px;
+  font-family: "STSong", "SimSun", serif;
 }
 
 .page-subtitle {
-  font-size: 16px;
+  font-size: 13px;
   margin: 0;
-  opacity: 0.9;
+  opacity: 0.8;
 }
 
 .add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
   background: white;
-  color: #8b4513;
+  color: #CD7F32;
   border: none;
+  border-radius: 6px;
   font-weight: 600;
-  padding: 12px 32px;
-  font-size: 16px;
-  transition: all 0.3s ease;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .add-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
+.btn-seal {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #D4AF37;
+  color: #2F3640;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 2px;
+  font-family: "STSong", "SimSun", serif;
+}
+
+/* ========== 筛选区域 ========== */
 .filter-section {
   background: white;
   padding: 24px;
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(47, 54, 64, 0.08);
 }
 
 .filter-form {
   margin: 0;
 }
 
+:deep(.heritage-input .el-input__wrapper),
+:deep(.heritage-select .el-select__wrapper) {
+  background: #F7F4ED;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 6px;
+}
+
+.action-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.search-btn {
+  background: #D4AF37;
+  color: #2F3640;
+}
+
+.search-btn:hover {
+  background: #CD7F32;
+}
+
+.reset-btn {
+  background: #F7F4ED;
+  color: #606266;
+  margin-left: 8px;
+}
+
+.reset-btn:hover {
+  background: #EDF2ED;
+}
+
+.toggle-btn {
+  background: rgba(212, 175, 55, 0.15);
+  color: #CD7F32;
+  margin-left: 8px;
+}
+
+.toggle-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+}
+
+/* ========== 树形视图 ========== */
 .tree-section {
   background: white;
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(47, 54, 64, 0.08);
 }
 
 .category-tree {
@@ -474,7 +575,7 @@ onMounted(() => {
 }
 
 .tree-node:hover {
-  background: #faf8f5;
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .node-content {
@@ -485,11 +586,35 @@ onMounted(() => {
 
 .node-name {
   font-weight: 500;
-  color: #333;
+  color: #2F3640;
 }
 
 .node-code {
   font-family: monospace;
+  color: #909399;
+  font-size: 12px;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.level-badge.level-national {
+  background: rgba(194, 35, 49, 0.1);
+  color: #C23531;
+}
+
+.level-badge.level-provincial {
+  background: rgba(212, 175, 55, 0.15);
+  color: #CD7F32;
+}
+
+.level-badge.level-city_county {
+  background: rgba(93, 138, 168, 0.15);
+  color: #5D8AA8;
 }
 
 .node-actions {
@@ -503,15 +628,90 @@ onMounted(() => {
   opacity: 1;
 }
 
-.table-section {
+.node-btn {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.node-btn.edit-btn {
+  background: rgba(212, 175, 55, 0.15);
+  color: #CD7F32;
+}
+
+.node-btn.edit-btn:hover {
+  background: #D4AF37;
+  color: white;
+}
+
+.node-btn.delete-btn {
+  background: rgba(194, 35, 49, 0.1);
+  color: #C23531;
+}
+
+.node-btn.delete-btn:hover {
+  background: #C23531;
+  color: white;
+}
+
+/* ========== 表格区域 ========== */
+.table-frame {
   background: white;
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(47, 54, 64, 0.08);
 }
 
 .data-table {
   margin-bottom: 24px;
+}
+
+:deep(.data-table th) {
+  background: #F7F4ED !important;
+  color: #2F3640 !important;
+  font-weight: 600 !important;
+}
+
+:deep(.data-table tr:hover) {
+  background: rgba(212, 175, 55, 0.05) !important;
+}
+
+.empty-text {
+  color: #C0C4CC;
+  font-style: italic;
+}
+
+.table-action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-btn {
+  background: rgba(212, 175, 55, 0.15);
+  color: #CD7F32;
+  margin-right: 8px;
+}
+
+.edit-btn:hover {
+  background: #D4AF37;
+  color: white;
+}
+
+.delete-btn {
+  background: rgba(194, 35, 49, 0.1);
+  color: #C23531;
+}
+
+.delete-btn:hover {
+  background: #C23531;
+  color: white;
 }
 
 .pagination-wrapper {
@@ -519,37 +719,58 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.text-gray {
-  color: #999;
-  font-style: italic;
+:deep(.el-pagination .el-pager li.is-active) {
+  background: #D4AF37 !important;
+  border-color: #D4AF37 !important;
+  color: #2F3640 !important;
 }
 
-:deep(.el-table) {
-  font-size: 14px;
+/* ========== 弹窗 ========== */
+:deep(.heritage-dialog .el-dialog__header) {
+  background: linear-gradient(135deg, #D4AF37 0%, #CD7F32 100%);
+  color: #2F3640;
+  padding: 20px 24px;
+  border-radius: 8px 8px 0 0;
 }
 
-:deep(.el-table th) {
-  background: #f8f5f2;
-  color: #8b4513;
+:deep(.heritage-dialog .el-dialog__title) {
+  font-size: 18px;
   font-weight: 600;
+  letter-spacing: 2px;
+  font-family: "STSong", "SimSun", serif;
 }
 
-:deep(.el-table__row:hover) {
-  background: #faf8f5;
+.dialog-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-:deep(.el-button--primary) {
-  background: #8b4513;
-  border-color: #8b4513;
+.cancel-btn {
+  background: #F7F4ED;
+  color: #606266;
+  margin-right: 12px;
 }
 
-:deep(.el-button--primary:hover) {
-  background: #a0522d;
-  border-color: #a0522d;
+.cancel-btn:hover {
+  background: #EDF2ED;
 }
 
-:deep(.el-tree-node__content) {
-  height: auto;
-  padding: 4px 0;
+.confirm-btn {
+  background: #D4AF37;
+  color: #2F3640;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #CD7F32;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
