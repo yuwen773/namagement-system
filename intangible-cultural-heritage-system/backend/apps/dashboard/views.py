@@ -188,3 +188,25 @@ class DashboardTrendView(APIView):
         ]
 
         return success_response(data=data, message="获取成功")
+
+
+class DashboardLevelDistributionView(APIView):
+    """
+    保护级别分布
+    GET /dashboard/level-distribution/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.heritage.models import HeritageItem
+
+        data = []
+        for level_value, level_name in HeritageItem.LEVEL_CHOICES:
+            count = HeritageItem.objects.filter(level=level_value).count()
+            data.append({
+                'level': level_value,
+                'level_name': level_name,
+                'count': count
+            })
+
+        return success_response(data=data, message="获取成功")

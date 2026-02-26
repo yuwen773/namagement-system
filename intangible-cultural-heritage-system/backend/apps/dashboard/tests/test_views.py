@@ -501,3 +501,74 @@ class DashboardTrendViewTests(APITestCase):
         self.client.force_authenticate(user=None)
         response = self.client.get('/api/v1/dashboard/trend/')
         self.assertEqual(response.status_code, 401)
+
+
+class DashboardLevelDistributionViewTests(APITestCase):
+    """保护级别分布 API 测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.client.force_authenticate(user=self.user)
+
+        self.category = Category.objects.create(
+            name='测试类别',
+            code='TEST',
+            level='national'
+        )
+        self.region = Region.objects.create(
+            country_code='CN',
+            country_name='China',
+            latitude=39.9,
+            longitude=116.4
+        )
+
+        # 创建不同级别的项目
+        HeritageItem.objects.create(
+            name='国家级项目1',
+            category=self.category,
+            region=self.region,
+            level='national'
+        )
+        HeritageItem.objects.create(
+            name='国家级项目2',
+            category=self.category,
+            region=self.region,
+            level='national'
+        )
+        HeritageItem.objects.create(
+            name='省级项目',
+            category=self.category,
+            region=self.region,
+            level='provincial'
+        )
+        HeritageItem.objects.create(
+            name='县级项目',
+            category=self.category,
+            region=self.region,
+            level='city_county'
+        )
+
+    def test_level_distribution_returns_all_levels(self):
+        """测试返回所有保护级别"""
+        response = self.client.get('/api/v1/dashboard/level-distribution/')
+        self.assertEqual(response.status_code, 200)
+        data = response.data['data']
+        self.assertEqual(len(data), 3)
+
+    def test_level_distribution_counts_are_correct(self):
+        """测试统计数据正确"""
+        response = self.client.get('/api/v1/dashboard/level-distribution/')
+        data = response.data['data']
+
+        level_counts = {item['level']: item['count'] for item in data}
+        self.assertEqual(level_counts['national'], 2)
+        self.assertEqual(level_counts['provincial'], 1)
+        self.assertEqual(level_counts['city_county'], 1)
+
+    def test_level_distribution_has_level_name(self):
+        """测试返回级别中文名"""
+        response = self.client.get('/api/v1/dashboard/level-distribution/')
+        data = response.data['data']
+
+        self.assertIn('level_name', data[0])
