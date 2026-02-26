@@ -14,12 +14,14 @@ from utils.response import error_response, success_response
 from .models import UserProfile, get_user_role
 from .permissions import IsAdmin
 from .serializers import (
+    ChangePasswordSerializer,
     CheckEmailSerializer,
     CheckUsernameSerializer,
     LoginSerializer,
     LogoutSerializer,
     RegisterSerializer,
     ResetPasswordSerializer,
+    UpdateProfileSerializer,
     UpdateRoleSerializer,
     UpdateStatusSerializer,
     UserManageSerializer,
@@ -96,12 +98,62 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        profile = request.user.profile
         data = {
             "id": request.user.id,
             "username": request.user.username,
             "role": get_user_role(request.user),
+            "email": profile.email or "",
+            "phone": profile.phone or "",
+            "is_active": profile.is_active,
+            "last_login_time": profile.last_login_time,
+            "date_joined": request.user.date_joined,
         }
         return success_response(data=data, message="获取成功")
+
+    def patch(self, request):
+        """更新当前用户个人信息"""
+        serializer = UpdateProfileSerializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            return error_response(
+                message=_first_error(serializer.errors),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        profile = request.user.profile
+        validated_data = serializer.validated_data
+
+        if 'email' in validated_data:
+            profile.email = validated_data['email']
+        if 'phone' in validated_data:
+            profile.phone = validated_data['phone']
+        profile.save()
+
+        return success_response(
+            data={
+                "id": request.user.id,
+                "username": request.user.username,
+                "role": get_user_role(request.user),
+                "email": profile.email or "",
+                "phone": profile.phone or "",
+            },
+            message="更新成功",
+        )
+
+    @action(methods=["post"], detail=False, url_path="change-password")
+    def change_password(self, request):
+        """修改密码"""
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            return error_response(
+                message=_first_error(serializer.errors),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+
+        return success_response(message="密码修改成功，请重新登录")
 
 
 class RegisterView(APIView):
