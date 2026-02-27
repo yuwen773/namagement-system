@@ -8,6 +8,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
+    path: '/',
+    name: 'Root',
+    redirect: '/login',
+    meta: {
+      requiresAuth: false,
+    },
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue'),

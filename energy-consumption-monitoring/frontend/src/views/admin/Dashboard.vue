@@ -474,9 +474,9 @@ function initPowerChart() {
 // Initialize 2D map chart
 function initMapChart(retryCount = 0) {
   const option = {
-    grid: { top: 10, bottom: 10, left: 10, right: 10 },
-    xAxis: { show: false, min: -1, max: 8 },
-    yAxis: { show: false, min: -1, max: 8 },
+    grid: { top: 50, bottom: 50, left: 50, right: 50 },
+    xAxis: { show: false, min: -0.5, max: 7.5 },
+    yAxis: { show: false, min: -0.5, max: 7.5 },
     tooltip: {
       backgroundColor: 'rgba(15, 23, 42, 0.9)',
       borderColor: '#f97316',
@@ -492,24 +492,31 @@ function initMapChart(retryCount = 0) {
     series: [
       {
         type: 'scatter',
-        symbolSize: 18,
+        symbolSize: 24,
         data: [],
         itemStyle: {
           shadowBlur: 10,
-          shadowColor: 'rgba(249, 115, 22, 0.5)',
+          shadowColor: 'rgba(249, 115, 22, 0.4)',
           shadowOffsetY: 0,
         },
         label: {
           show: true,
           position: 'bottom',
           color: '#1f2937',
-          fontSize: 10,
+          fontSize: 13,
+          fontWeight: '500',
           formatter: '{b}',
+          hideOverlap: true,
         },
         emphasis: {
           itemStyle: {
             shadowBlur: 20,
-            shadowColor: 'rgba(249, 115, 22, 0.8)',
+            shadowColor: 'rgba(249, 115, 22, 0.6)',
+          },
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold',
           },
           scale: 1.2,
         },
@@ -690,7 +697,7 @@ async function loadBuildingHeatmapData() {
       mapChart.value.setOption({
         series: [
           {
-            symbolSize: (data) => Math.max(14, Number(data[2] || 0) * 0.45),
+            symbolSize: (data) => Math.max(25, Number(data[2] || 0) * 0.75),
             data: scatterData,
           },
         ],
@@ -1035,7 +1042,7 @@ onUnmounted(() => {
 .charts-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  grid-template-rows: 320px 280px;
+  grid-template-rows: 320px 320px 500px;
   gap: 16px;
 }
 
@@ -1059,13 +1066,13 @@ onUnmounted(() => {
 }
 
 .power-chart {
-  grid-column: 1 / 2;
+  grid-column: 1 / 3;
   grid-row: 2 / 3;
 }
 
 .map-chart {
-  grid-column: 2 / 3;
-  grid-row: 2 / 3;
+  grid-column: 1 / 3;
+  grid-row: 3 / 4;
 }
 
 .card-header {

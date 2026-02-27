@@ -1,7 +1,21 @@
 <template>
   <div class="admin-layout">
+    <!-- Mobile Sidebar Overlay -->
+    <div
+      v-if="isMobile && isSidebarOpen"
+      class="sidebar-overlay"
+      @click="closeSidebar"
+    ></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar" :class="{ 'sidebar-collapsed': isCollapsed }">
+    <aside
+      class="sidebar"
+      :class="{
+        'sidebar-collapsed': isCollapsed && !isMobile,
+        'sidebar-mobile': isMobile,
+        'sidebar-open': isMobile && isSidebarOpen
+      }"
+    >
       <!-- Logo Section -->
       <div class="sidebar-header">
         <div class="logo-wrapper">
@@ -13,7 +27,7 @@
             </svg>
           </div>
           <transition name="logo-text">
-            <div v-show="!isCollapsed" class="logo-text">
+            <div v-show="(!isCollapsed && !isMobile) || (isMobile && isSidebarOpen)" class="logo-text">
               <span class="logo-title">能耗监测</span>
               <span class="logo-subtitle">Energy Monitor</span>
             </div>
@@ -38,60 +52,47 @@
           class="sidebar-menu"
         >
           <el-menu-item index="/admin/dashboard">
-            <template #title>
-              <el-icon><icon-ep-monitor /></el-icon>
-              <span>综合监控</span>
-            </template>
+            <el-icon><icon-ep-monitor /></el-icon>
+            <template #title>综合监控</template>
           </el-menu-item>
 
           <el-menu-item index="/admin/monitoring">
-            <template #title>
-              <el-icon><icon-ep-data-analysis /></el-icon>
-              <span>监测中心</span>
-            </template>
+            <el-icon><icon-ep-data-analysis /></el-icon>
+            <template #title>监测中心</template>
           </el-menu-item>
 
           <el-menu-item index="/admin/analysis">
-            <template #title>
-              <el-icon><icon-ep-trend-charts /></el-icon>
-              <span>统计分析</span>
-            </template>
+            <el-icon><icon-ep-trend-charts /></el-icon>
+            <template #title>统计分析</template>
           </el-menu-item>
 
           <el-menu-item index="/admin/alarms">
-            <template #title>
-              <el-icon><icon-ep-warning />
-                <el-badge v-if="alarmCount > 0" :value="alarmCount" class="alarm-badge" />
-              </el-icon>
-              <span>异常告警</span>
-            </template>
+            <el-icon>
+              <icon-ep-warning />
+              <el-badge v-if="alarmCount > 0" :value="alarmCount" class="alarm-badge" />
+            </el-icon>
+            <template #title>异常告警</template>
           </el-menu-item>
 
           <el-menu-item index="/admin/devices">
-            <template #title>
-              <el-icon><icon-ep-cpu /></el-icon>
-              <span>设备管理</span>
-            </template>
+            <el-icon><icon-ep-cpu /></el-icon>
+            <template #title>设备管理</template>
           </el-menu-item>
 
           <el-menu-item index="/admin/configuration">
-            <template #title>
-              <el-icon><icon-ep-setting /></el-icon>
-              <span>基础配置</span>
-            </template>
+            <el-icon><icon-ep-setting /></el-icon>
+            <template #title>基础配置</template>
           </el-menu-item>
 
           <el-menu-item index="/admin/system">
-            <template #title>
-              <el-icon><icon-ep-tools /></el-icon>
-              <span>系统管理</span>
-            </template>
+            <el-icon><icon-ep-tools /></el-icon>
+            <template #title>系统管理</template>
           </el-menu-item>
         </el-menu>
       </nav>
 
       <!-- Sidebar Footer -->
-      <div v-show="!isCollapsed" class="sidebar-footer">
+      <div v-show="(!isCollapsed && !isMobile) || (isMobile && isSidebarOpen)" class="sidebar-footer">
         <div class="system-status">
           <div class="status-dot status-online"></div>
           <span class="status-text">系统运行正常</span>
@@ -103,8 +104,15 @@
     <div class="main-wrapper">
       <!-- Top Header -->
       <header class="top-header">
-        <!-- Left: Breadcrumb -->
+        <!-- Left: Mobile Menu Toggle + Breadcrumb -->
         <div class="header-left">
+          <!-- Mobile Menu Toggle Button -->
+          <button class="mobile-menu-btn" @click="toggleMobileSidebar">
+            <el-icon :size="20">
+              <icon-ep-fold v-if="isSidebarOpen" />
+              <icon-ep-expand v-else />
+            </el-icon>
+          </button>
           <el-breadcrumb separator="/">
             <el-breadcrumb-item :to="{ path: '/admin' }">
               <el-icon><icon-ep-house /></el-icon>
@@ -236,6 +244,8 @@ const userStore = useUserStore()
 
 // Sidebar state
 const isCollapsed = ref(false)
+const isMobile = ref(false)
+const isSidebarOpen = ref(false)
 
 // UI state
 const showNotifications = ref(false)
@@ -306,6 +316,22 @@ function toggleSidebar() {
   localStorage.setItem('sidebarCollapsed', String(isCollapsed.value))
 }
 
+function toggleMobileSidebar() {
+  isSidebarOpen.value = !isSidebarOpen.value
+}
+
+function closeSidebar() {
+  isSidebarOpen.value = false
+}
+
+function checkMobile() {
+  isMobile.value = window.innerWidth < 1024
+  // Close mobile sidebar when switching to desktop
+  if (!isMobile.value) {
+    isSidebarOpen.value = false
+  }
+}
+
 function handleUserCommand(command) {
   switch (command) {
     case 'profile':
@@ -360,15 +386,19 @@ onMounted(() => {
     isCollapsed.value = savedState === 'true'
   }
 
+  // Check mobile status
+  checkMobile()
+
   // Handle responsive sidebar
   const handleResize = () => {
-    if (window.innerWidth < 1024) {
+    checkMobile()
+    // Auto collapse on desktop if window gets smaller
+    if (window.innerWidth < 1024 && !isMobile.value) {
       isCollapsed.value = true
     }
   }
 
   window.addEventListener('resize', handleResize)
-  handleResize()
 
   onUnmounted(() => {
     window.removeEventListener('resize', handleResize)
@@ -892,14 +922,79 @@ onMounted(() => {
 /* ========================================
    RESPONSIVE DESIGN
    ======================================== */
+
+/* Mobile Menu Button */
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 12px;
+}
+
+.mobile-menu-btn:hover {
+  background: #fef3c7;
+  color: #f97316;
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @media (max-width: 1024px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Sidebar Overlay - only show on mobile when sidebar is open */
+  .sidebar-overlay {
+    display: block;
+  }
+
   .sidebar {
-    position: absolute;
+    position: fixed !important;
+    left: 0;
+    top: 0;
     height: 100vh;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar-open {
+    transform: translateX(0) !important;
+    width: 260px !important;
   }
 
   .sidebar-collapsed {
-    width: 64px;
+    /* Don't collapse on mobile, sidebar is hidden by default */
+  }
+
+  /* Hide collapse button on mobile */
+  .collapse-btn {
+    display: none;
   }
 
   .page-content {
@@ -908,6 +1003,11 @@ onMounted(() => {
 
   .page-title {
     font-size: 20px;
+  }
+
+  /* Hide breadcrumb on mobile */
+  .header-left :deep(.el-breadcrumb) {
+    display: none;
   }
 }
 
