@@ -190,6 +190,10 @@ temp/
 # ================================
 # Project Specific
 # ================================
+# Git worktrees
+.worktrees/
+worktrees/
+
 # Uploaded media files
 uploads/
 media/
