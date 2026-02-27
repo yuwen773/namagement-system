@@ -2,6 +2,7 @@
 from rest_framework import serializers
 
 from apps.alarms.models import Alarm, AlarmRule, AlarmStatus
+from apps.devices.models import EnergyType
 from apps.devices.serializers import DeviceSerializer, EnergyTypeSerializer
 
 
@@ -22,6 +23,20 @@ class AlarmRuleSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+        extra_kwargs = {
+            "energy_type": {"required": True}
+        }
+
+    def validate_energy_type(self, value):
+        # 支持两种输入方式：
+        # 1. 整数 ID（原始行为）
+        # 2. 字符串 code（自动转换为 EnergyType 对象）
+        if isinstance(value, str):
+            try:
+                return EnergyType.objects.get(code=value)
+            except EnergyType.DoesNotExist:
+                raise serializers.ValidationError(f"能源类型代码 '{value}' 不存在")
+        return value
 
 
 class AlarmSerializer(serializers.ModelSerializer):
