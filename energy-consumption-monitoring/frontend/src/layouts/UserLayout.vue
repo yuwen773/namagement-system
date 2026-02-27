@@ -93,10 +93,10 @@
                   <el-icon><icon-ep-user /></el-icon>
                   <span>个人中心</span>
                 </el-dropdown-item>
-                <el-dropdown-item command="settings">
+                <!-- <el-dropdown-item command="settings">
                   <el-icon><icon-ep-setting /></el-icon>
                   <span>设置</span>
-                </el-dropdown-item>
+                </el-dropdown-item> -->
                 <el-dropdown-item divided command="logout">
                   <el-icon><icon-ep-switch-button /></el-icon>
                   <span>退出登录</span>

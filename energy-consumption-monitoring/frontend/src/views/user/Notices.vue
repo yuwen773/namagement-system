@@ -200,20 +200,50 @@ const noticeFilters = [
   { key: 'unread', label: '未读', count: 0 },
 ]
 
-// Tip categories
-const tipCategories = [
-  { key: 'all', label: '全部', icon: '🌍' },
-  { key: 'electricity', label: '节电', icon: '⚡' },
-  { key: 'water', label: '节水', icon: '💧' },
-  { key: 'gas', label: '节气', icon: '🔥' },
-  { key: 'daily', label: '日常', icon: '🏠' },
-]
-
 // Data
 const notices = ref([])
 
 // Tips data - 从API获取
 const tips = ref([])
+
+const tipCategoryIconRules = [
+  { pattern: /电|electricity|energy/i, icon: '⚡' },
+  { pattern: /水|water/i, icon: '💧' },
+  { pattern: /气|gas|燃气|天然气/i, icon: '🔥' },
+  { pattern: /日常|daily|生活|习惯/i, icon: '🏠' },
+  { pattern: /技术|方案|改造|technology/i, icon: '🛠️' },
+  { pattern: /管理|实践|运营|运维/i, icon: '📋' },
+  { pattern: /政策|法规|标准|policy/i, icon: '📜' },
+]
+
+function normalizeTipCategory(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function getTipCategoryIcon(category) {
+  const normalizedCategory = normalizeTipCategory(category)
+  const matchedRule = tipCategoryIconRules.find(rule => rule.pattern.test(normalizedCategory))
+  return matchedRule ? matchedRule.icon : '📚'
+}
+
+const tipCategories = computed(() => {
+  const categories = Array.from(
+    new Set(
+      tips.value
+        .map(item => String(item.category || '').trim())
+        .filter(Boolean)
+    )
+  )
+
+  return [
+    { key: 'all', label: '全部', icon: '🌍' },
+    ...categories.map(category => ({
+      key: category,
+      label: category,
+      icon: getTipCategoryIcon(category),
+    })),
+  ]
+})
 
 // Load tips from API
 async function loadTips() {
@@ -221,6 +251,14 @@ async function loadTips() {
     const response = await getTips()
     if (response.code === 0 && response.data) {
       tips.value = response.data
+      const hasActiveCategory =
+        activeTipCategory.value === 'all' ||
+        tips.value.some(
+          tip => normalizeTipCategory(tip.category) === normalizeTipCategory(activeTipCategory.value)
+        )
+      if (!hasActiveCategory) {
+        activeTipCategory.value = 'all'
+      }
     }
   } catch (error) {
     console.error('Failed to load tips:', error)
@@ -252,7 +290,8 @@ const filteredNotices = computed(() => {
 
 const filteredTips = computed(() => {
   if (activeTipCategory.value === 'all') return tips.value
-  return tips.value.filter(t => t.category === activeTipCategory.value)
+  const selectedCategory = normalizeTipCategory(activeTipCategory.value)
+  return tips.value.filter(t => normalizeTipCategory(t.category) === selectedCategory)
 })
 
 // Methods

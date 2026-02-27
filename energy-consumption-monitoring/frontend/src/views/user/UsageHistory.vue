@@ -306,7 +306,7 @@ import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getEnergyData, getEnergyStatistics, exportEnergyData } from '@/api/energy'
 import { getMyBindRooms } from '@/api/profile'
-import { getHourlyDistribution } from '@/api/analysis'
+import { getHourlyDistribution, getTrendData } from '@/api/analysis'
 
 // Chart refs
 const trendChartRef = ref(null)
@@ -386,6 +386,13 @@ const chartColors = {
   grid: '#e2e8f0',
 }
 
+function formatLocalDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Computed
 const filteredTableData = computed(() => {
   if (!searchKeyword.value) return tableData.value
@@ -449,21 +456,6 @@ async function initHourlyChart() {
 
   hourlyChart.value = echarts.init(hourlyChartRef.value)
 
-  // Default data in case API fails
-  let hourlyData = [0, 0, 0, 0, 0, 0]
-
-  try {
-    const response = await getHourlyDistribution({})
-    if (response.code === 0 && response.data && response.data.buckets) {
-      hourlyData = response.data.buckets.map((bucket) => {
-        const totalValue = Number(bucket.total_value || 0)
-        return Number(totalValue.toFixed(2))
-      })
-    }
-  } catch (error) {
-    console.error('Failed to load hourly distribution:', error)
-  }
-
   const option = {
     grid: {
       left: '3%',
@@ -498,7 +490,7 @@ async function initHourlyChart() {
       {
         name: '用量',
         type: 'bar',
-        data: hourlyData,
+        data: [0, 0, 0, 0, 0, 0],
         itemStyle: {
           borderRadius: [6, 6, 0, 0],
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -514,8 +506,34 @@ async function initHourlyChart() {
   hourlyChart.value.setOption(option)
 }
 
+async function loadHourlyChartData(params = {}) {
+  if (!hourlyChart.value) return
+
+  let hourlyData = [0, 0, 0, 0, 0, 0]
+  try {
+    const response = await getHourlyDistribution(params)
+    if (response.code === 0 && response.data && response.data.buckets) {
+      hourlyData = response.data.buckets.map((bucket) => {
+        const totalValue = Number(bucket.total_value || 0)
+        return Number(totalValue.toFixed(2))
+      })
+    }
+  } catch (error) {
+    console.error('Failed to load hourly distribution:', error)
+  }
+
+  hourlyChart.value.setOption({
+    series: [
+      {
+        name: '用量',
+        data: hourlyData,
+      },
+    ],
+  })
+}
+
 // Generate calendar days from actual energy data
-function generateCalendarDays() {
+function generateCalendarDays(dailyTotalsByDate = {}) {
   const days = []
   const today = new Date()
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
@@ -538,12 +556,13 @@ function generateCalendarDays() {
   for (let i = 1; i <= daysInMonth; i++) {
     const date = new Date(today.getFullYear(), today.getMonth(), i)
     const isToday = i === today.getDate()
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = formatLocalDate(date)
     const dayOfWeek = date.getDay()
 
     // Get actual value from data
     const dayData = dataByDate[dateStr]
-    const value = dayData ? dayData.total : (dayOfWeek === 0 ? 0 : 0)
+    const trendTotal = dailyTotalsByDate[dateStr]
+    const value = Number(trendTotal ?? (dayData ? dayData.total : (dayOfWeek === 0 ? 0 : 0)))
     const level = value === 0 ? 0 : value < 15 ? 1 : value < 30 ? 2 : value < 45 ? 3 : 4
 
     // Build breakdown from actual data
@@ -579,6 +598,53 @@ function generateCalendarDays() {
   calendarDays.value = days
 }
 
+async function loadCalendarDailyTotals(filterParams) {
+  const trendParams = { period: 'day' }
+  if (filterParams.start_date) trendParams.start_date = filterParams.start_date
+  if (filterParams.end_date) trendParams.end_date = filterParams.end_date
+  if (filterParams.energy_type) trendParams.energy_type = filterParams.energy_type
+  if (filterParams.room_id) trendParams.room_id = filterParams.room_id
+
+  const response = await getTrendData(trendParams)
+  if (response.code !== 0 || !response.data || !Array.isArray(response.data.series)) {
+    return {}
+  }
+
+  return response.data.series.reduce((acc, item) => {
+    if (item?.period) {
+      acc[item.period] = Number(item.total_value || 0)
+    }
+    return acc
+  }, {})
+}
+
+function updateTrendChartWithDailyTotals(dailyTotalsByDate = {}) {
+  if (!trendChart.value) return
+
+  const dates = Object.keys(dailyTotalsByDate).sort()
+  const values = dates.map(date => Number(dailyTotalsByDate[date] || 0))
+
+  trendChart.value.setOption({
+    xAxis: { data: dates.map(d => d.slice(5)) },
+    series: [
+      {
+        name: '用量',
+        type: 'line',
+        smooth: true,
+        data: values,
+        lineStyle: { width: 3, color: chartColors.secondary },
+        itemStyle: { color: chartColors.secondary },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(234, 179, 8, 0.3)' },
+            { offset: 1, color: 'rgba(234, 179, 8, 0)' },
+          ]),
+        },
+      },
+    ],
+  })
+}
+
 // Load data
 async function loadData() {
   try {
@@ -588,8 +654,8 @@ async function loadData() {
     }
 
     if (dateRange.value && dateRange.value.length === 2) {
-      params.start_date = dateRange.value[0].toISOString().split('T')[0]
-      params.end_date = dateRange.value[1].toISOString().split('T')[0]
+      params.start_date = formatLocalDate(dateRange.value[0])
+      params.end_date = formatLocalDate(dateRange.value[1])
     }
 
     if (selectedEnergyType.value) {
@@ -620,14 +686,20 @@ async function loadData() {
       summaryStats.value[2].value = (totalValue / Math.max(tableData.value.length, 1)).toFixed(1)
       summaryStats.value[3].value = totalRecords.value.toString()
 
-      // Update charts
-      updateChartsWithData(tableData.value)
+      // Update calendar heatmap & trend chart with full daily trend (not affected by table pagination)
+      const dailyTotalsByDate = await loadCalendarDailyTotals(params)
+      generateCalendarDays(dailyTotalsByDate)
+      updateTrendChartWithDailyTotals(dailyTotalsByDate)
+      loadHourlyChartData(params)
     }
   } catch (error) {
     console.error('Failed to load energy data:', error)
     ElMessage.error('加载能耗数据失败，请稍后重试')
     tableData.value = []
     totalRecords.value = 0
+    generateCalendarDays({})
+    updateTrendChartWithDailyTotals({})
+    loadHourlyChartData({})
   }
 }
 
@@ -672,7 +744,7 @@ async function handleExport() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `能耗数据_${new Date().toISOString().split('T')[0]}.xlsx`
+    a.download = `能耗数据_${formatLocalDate(new Date())}.xlsx`
     a.click()
     window.URL.revokeObjectURL(url)
     ElMessage.success('导出成功')
@@ -758,7 +830,7 @@ onMounted(async () => {
     new Promise(resolve => setTimeout(resolve, 100)).then(() => initHourlyChart()),
   ])
 
-  generateCalendarDays()
+  generateCalendarDays({})
   loadBoundRooms()
   loadData()
 

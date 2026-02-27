@@ -150,6 +150,7 @@ import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getTrendData, getDistributionData } from '@/api/analysis'
 import { getNotices, getTips } from '@/api/system'
+import { getMyBindRooms } from '@/api/profile'
 
 // Chart refs using shallowRef to avoid deep reactivity
 const trendChartRef = ref(null)
@@ -434,6 +435,24 @@ async function loadTips() {
   }
 }
 
+// Load current room from user binded rooms
+async function loadCurrentRoom() {
+  try {
+    const response = await getMyBindRooms()
+    if (response.code === 0 && Array.isArray(response.data) && response.data.length > 0) {
+      const room = response.data[0]
+      const roomNumber = room.room_number || room.name || `房间${room.id}`
+      const buildingName = room.building_name || room.building || ''
+      metrics.value[0].value = buildingName ? `${buildingName}-${roomNumber}` : roomNumber
+      return
+    }
+    metrics.value[0].value = '未绑定'
+  } catch (error) {
+    console.error('Failed to load current room:', error)
+    metrics.value[0].value = '未绑定'
+  }
+}
+
 function formatTime(timeStr) {
   if (!timeStr) return ''
   const date = new Date(timeStr)
@@ -502,6 +521,7 @@ onMounted(async () => {
   initCompositionChart()
 
   // Load data
+  loadCurrentRoom()
   loadTrendData()
   loadCompositionData()
   loadNotices()
