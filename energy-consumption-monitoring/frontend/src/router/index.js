@@ -146,16 +146,6 @@ const routes = [
         },
       },
       {
-        path: 'cost',
-        name: 'CostPayment',
-        component: () => import('@/views/user/CostPayment.vue'),
-        meta: {
-          title: 'Cost & Payment - Energy Monitoring',
-          requiresAuth: true,
-          roles: ['USER', 'ADMIN'],
-        },
-      },
-      {
         path: 'comparison',
         name: 'Comparison',
         component: () => import('@/views/user/Comparison.vue'),

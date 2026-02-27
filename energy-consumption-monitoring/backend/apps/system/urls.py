@@ -4,11 +4,9 @@ from rest_framework.routers import DefaultRouter
 from apps.system.views import (
     AdminNoticeViewSet,
     AdminTipsViewSet,
-    BillViewSet,
     NoticeViewSet,
     OperationLogViewSet,
     ProfileViewSet,
-    RechargeViewSet,
     RoleViewSet,
     TipsViewSet,
     UserViewSet,
@@ -17,13 +15,11 @@ from apps.system.views import (
 router = DefaultRouter()
 router.register("users", UserViewSet, basename="user")
 router.register("roles", RoleViewSet, basename="role")
-router.register("bills", BillViewSet, basename="bill")
 router.register("notices", NoticeViewSet, basename="notice")
 router.register("tips", TipsViewSet, basename="tip")
 router.register("admin/notices", AdminNoticeViewSet, basename="admin-notice")
 router.register("admin/tips", AdminTipsViewSet, basename="admin-tip")
 router.register("logs", OperationLogViewSet, basename="log")
-router.register("recharges", RechargeViewSet, basename="recharge")
 
 profile_view = ProfileViewSet.as_view(
     {

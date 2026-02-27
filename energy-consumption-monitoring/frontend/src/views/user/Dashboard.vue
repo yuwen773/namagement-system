@@ -149,7 +149,7 @@ import { ref, shallowRef, onMounted, onUnmounted, computed, nextTick } from 'vue
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getTrendData, getDistributionData } from '@/api/analysis'
-import { getMyBills, getNotices, getTips } from '@/api/system'
+import { getNotices, getTips } from '@/api/system'
 
 // Chart refs using shallowRef to avoid deep reactivity
 const trendChartRef = ref(null)
@@ -196,16 +196,6 @@ const metrics = ref([
     trendClass: 'down',
     icon: 'icon-ep-circle',
     color: '#3b82f6',
-  },
-  {
-    type: 'cost',
-    label: '本月费用',
-    value: '-',
-    unit: '元',
-    trend: '',
-    trendClass: 'up',
-    icon: 'icon-ep-wallet',
-    color: '#22c55e',
   },
 ])
 
@@ -410,27 +400,6 @@ async function loadCompositionData() {
   }
 }
 
-// Load bills data
-async function loadBillsData() {
-  try {
-    const response = await getMyBills()
-    if (response.code === 0 && response.data) {
-      const currentMonthBills = response.data.filter(b => {
-        const billDate = new Date(bill.bill_period)
-        const now = new Date()
-        return billDate.getMonth() === now.getMonth() && billDate.getFullYear() === now.getFullYear()
-      })
-
-      if (currentMonthBills.length > 0) {
-        const totalCost = currentMonthBills.reduce((sum, b) => sum + (b.amount || 0), 0)
-        metrics.value[3].value = totalCost.toFixed(2)
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load bills:', error)
-  }
-}
-
 // Load notices
 async function loadNotices() {
   try {
@@ -535,7 +504,6 @@ onMounted(async () => {
   // Load data
   loadTrendData()
   loadCompositionData()
-  loadBillsData()
   loadNotices()
   loadTips()
 

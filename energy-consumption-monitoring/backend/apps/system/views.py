@@ -13,17 +13,14 @@ from rest_framework.response import Response
 
 from apps.accounts.models import UserProfile, UserRole
 from apps.buildings.models import Room
-from apps.system.models import Bill, BillStatus, Notice, NoticeTargetRole, NoticeType, OperationLog, RechargeRecord
+from apps.system.models import Notice, NoticeTargetRole, NoticeType, OperationLog
 from apps.system.serializers import (
     AdminNoticeSerializer,
     AdminTipSerializer,
-    BillSerializer,
     OperationLogSerializer,
     ProfileAlarmSubscriptionSerializer,
     ProfileBindRoomsSerializer,
     ProfileSerializer,
-    RechargeRecordSerializer,
-    RechargeSimulateSerializer,
     ResetPasswordSerializer,
     RoleSerializer,
     TipSerializer,
@@ -46,16 +43,6 @@ BindRoomsResponseSerializer = inline_serializer(
     name="BindRoomsResponse",
     fields={
         "bind_rooms": serializers.ListField(child=serializers.IntegerField()),
-    },
-)
-RechargeSimulateResponseSerializer = inline_serializer(
-    name="RechargeSimulateResponse",
-    fields={
-        "record": RechargeRecordSerializer(),
-        "paid_bill_ids": serializers.ListField(child=serializers.IntegerField()),
-        "paid_bill_count": serializers.IntegerField(),
-        "remaining_amount": serializers.CharField(),
-        "account_balance": serializers.CharField(),
     },
 )
 
@@ -164,93 +151,6 @@ class RoleViewSet(viewsets.ModelViewSet):
         role_id = instance.id
         super().perform_destroy(instance)
         _write_operation_log(self.request, "delete_role", f"role:{role_id}")
-
-
-@extend_schema_view(
-    list=extend_schema(summary="获取账单列表"),
-)
-class BillViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """账单查询接口（管理员全量、用户个人）。"""
-
-    queryset = Bill.objects.select_related("room", "room__floor__building", "energy_type").all()
-    serializer_class = BillSerializer
-    permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["room__room_number", "room__floor__building__name", "bill_period"]
-    ordering_fields = ["id", "bill_period", "amount", "status", "due_date", "created_at"]
-    ordering = ["-bill_period", "-id"]
-    http_method_names = ["get", "head", "options"]
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        status_value = self.request.query_params.get("status")
-        if status_value:
-            queryset = queryset.filter(status=str(status_value).strip().upper())
-        room_id = self.request.query_params.get("room_id")
-        if room_id:
-            queryset = queryset.filter(room_id=room_id)
-        energy_type = self.request.query_params.get("energy_type")
-        if energy_type:
-            if str(energy_type).isdigit():
-                queryset = queryset.filter(energy_type_id=int(energy_type))
-            else:
-                queryset = queryset.filter(energy_type__code__iexact=str(energy_type).strip())
-        return queryset
-
-    @action(detail=False, methods=["get"], url_path="my", permission_classes=[IsAuthenticated])
-    @extend_schema(
-        summary="获取当前用户账单列表",
-        responses={200: BillSerializer(many=True)},
-    )
-    def my(self, request):
-        """返回当前用户已绑定房间的账单。"""
-        room_ids = _bound_room_ids(request.user)
-        queryset = Bill.objects.select_related("room", "room__floor__building", "energy_type").filter(
-            room_id__in=room_ids
-        )
-        status_value = request.query_params.get("status")
-        if status_value:
-            queryset = queryset.filter(status=str(status_value).strip().upper())
-        queryset = queryset.order_by("-bill_period", "-id")
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = BillSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = BillSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=["get"], url_path="my/summary", permission_classes=[IsAuthenticated])
-    @extend_schema(
-        summary="获取当前用户账单汇总",
-        responses={200: OpenApiResponse(description="账单汇总信息")},
-    )
-    def my_summary(self, request):
-        room_ids = _bound_room_ids(request.user)
-        month_key = timezone.localdate().strftime("%Y-%m")
-        bill_queryset = Bill.objects.filter(room_id__in=room_ids)
-        month_cost = (
-            bill_queryset.filter(bill_period=month_key).aggregate(total=Sum("amount")).get("total")
-            or Decimal("0.00")
-        )
-        unpaid_bill_count = bill_queryset.filter(status=BillStatus.UNPAID).count()
-        month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        total_recharge = (
-            RechargeRecord.objects.filter(
-                room_id__in=room_ids,
-                recharge_time__gte=month_start,
-                recharge_time__lte=timezone.now(),
-            ).aggregate(total=Sum("amount")).get("total")
-            or Decimal("0.00")
-        )
-        return Response(
-            {
-                "month": month_key,
-                "month_cost": f"{month_cost:.2f}",
-                "unpaid_bill_count": unpaid_bill_count,
-                "total_recharge": f"{total_recharge:.2f}",
-                "energy_saving_reward": "0.00",
-            }
-        )
 
 
 @extend_schema_view(
@@ -413,107 +313,6 @@ class OperationLogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     ordering_fields = ["id", "create_time", "action"]
     ordering = ["-create_time", "-id"]
     http_method_names = ["get", "head", "options"]
-
-
-@extend_schema_view(
-    list=extend_schema(summary="获取充值记录列表"),
-)
-class RechargeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """充值记录查询与模拟充值接口。"""
-
-    queryset = RechargeRecord.objects.select_related("room", "room__floor__building", "operator").all()
-    serializer_class = RechargeRecordSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["room__room_number", "room__floor__building__name", "remark"]
-    ordering_fields = ["id", "recharge_time", "amount", "created_at"]
-    ordering = ["-recharge_time", "-id"]
-    http_method_names = ["get", "post", "head", "options"]
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if not is_admin_user(self.request.user):
-            queryset = queryset.filter(room_id__in=_bound_room_ids(self.request.user))
-
-        room_id = self.request.query_params.get("room_id")
-        if room_id:
-            queryset = queryset.filter(room_id=room_id)
-        return queryset
-
-    @action(detail=False, methods=["post"], url_path="simulate")
-    @extend_schema(
-        summary="模拟充值并自动冲抵账单",
-        request=RechargeSimulateSerializer,
-        responses={
-            200: RechargeSimulateResponseSerializer,
-            403: OpenApiResponse(description="用户无权限操作该房间"),
-        },
-    )
-    def simulate(self, request):
-        """创建模拟充值记录，并按到期顺序结清账单。"""
-        serializer = RechargeSimulateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        room_id = serializer.validated_data["room_id"]
-        amount = Decimal(serializer.validated_data["amount"])
-
-        if not is_admin_user(request.user) and room_id not in _bound_room_ids(request.user):
-            return Response(
-                {"message": "只能为已绑定房间进行充值。"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        now = timezone.now()
-        payment_method = serializer.validated_data.get("payment_method") or "SIMULATED"
-        remark = serializer.validated_data.get("remark", "")
-        profile = _ensure_profile(request.user)
-
-        with transaction.atomic():
-            profile = UserProfile.objects.select_for_update().get(pk=profile.pk)
-            record = RechargeRecord.objects.create(
-                room_id=room_id,
-                amount=amount,
-                payment_method=payment_method,
-                recharge_time=now,
-                operator=request.user,
-                remark=remark,
-            )
-
-            account_balance = Decimal(profile.balance or 0) + amount
-            paid_bill_ids = []
-            unpaid_bills = (
-                Bill.objects.select_for_update()
-                .filter(room_id=room_id, status=BillStatus.UNPAID)
-                .order_by("due_date", "bill_period", "id")
-            )
-            for bill in unpaid_bills:
-                bill_amount = Decimal(bill.amount or 0)
-                if bill_amount <= 0:
-                    bill.status = BillStatus.PAID
-                    bill.paid_time = now
-                    bill.save(update_fields=["status", "paid_time", "updated_at"])
-                    paid_bill_ids.append(bill.id)
-                    continue
-                if account_balance < bill_amount:
-                    continue
-                account_balance -= bill_amount
-                bill.status = BillStatus.PAID
-                bill.paid_time = now
-                bill.save(update_fields=["status", "paid_time", "updated_at"])
-                paid_bill_ids.append(bill.id)
-
-            profile.balance = account_balance
-            profile.save(update_fields=["balance", "updated_at"])
-
-        _write_operation_log(request, "simulate_recharge", f"room:{room_id}")
-        return Response(
-            {
-                "record": RechargeRecordSerializer(record).data,
-                "paid_bill_ids": paid_bill_ids,
-                "paid_bill_count": len(paid_bill_ids),
-                "remaining_amount": f"{account_balance:.2f}",
-                "account_balance": f"{account_balance:.2f}",
-            }
-        )
 
 
 class ProfileViewSet(viewsets.GenericViewSet):

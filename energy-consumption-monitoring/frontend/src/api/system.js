@@ -149,28 +149,6 @@ export function deleteRole(id) {
 }
 
 /**
- * Get bills
- * @param {Object} params - Query parameters
- */
-export function getBills(params) {
-  return request({
-    url: '/bills/',
-    method: 'get',
-    params,
-  })
-}
-
-/**
- * Get my bills
- */
-export function getMyBills() {
-  return request({
-    url: '/bills/my/',
-    method: 'get',
-  })
-}
-
-/**
  * Get notices
  * @param {Object} params - Query parameters
  */
