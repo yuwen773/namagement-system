@@ -93,6 +93,11 @@
             <el-icon><icon-ep-bell /></el-icon>
             <template #title>公告管理</template>
           </el-menu-item>
+
+          <el-menu-item index="/admin/room-binding">
+            <el-icon><icon-ep-house /></el-icon>
+            <template #title>房间绑定审核</template>
+          </el-menu-item>
         </el-menu>
       </nav>
 
@@ -175,14 +180,14 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">
+                <!-- <el-dropdown-item command="profile">
                   <el-icon><icon-ep-user /></el-icon>
                   <span>个人中心</span>
                 </el-dropdown-item>
                 <el-dropdown-item command="settings">
                   <el-icon><icon-ep-setting /></el-icon>
                   <span>系统设置</span>
-                </el-dropdown-item>
+                </el-dropdown-item> -->
                 <el-dropdown-item divided command="logout">
                   <el-icon><icon-ep-switch-button /></el-icon>
                   <span>退出登录</span>

@@ -123,6 +123,16 @@ const routes = [
           roles: ['ADMIN'],
         },
       },
+      {
+        path: 'room-binding',
+        name: 'RoomBinding',
+        component: () => import('@/views/admin/RoomBinding.vue'),
+        meta: {
+          title: 'Room Binding Approval - Energy Monitoring',
+          requiresAuth: true,
+          roles: ['ADMIN'],
+        },
+      },
     ],
   },
   {

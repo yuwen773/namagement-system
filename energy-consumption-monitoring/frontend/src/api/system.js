@@ -149,12 +149,24 @@ export function deleteRole(id) {
 }
 
 /**
- * Get notices
+ * Get notices (user endpoint)
  * @param {Object} params - Query parameters
  */
 export function getNotices(params) {
   return request({
     url: '/notices/',
+    method: 'get',
+    params,
+  })
+}
+
+/**
+ * Get admin notices with filters
+ * @param {Object} params - Query parameters (notice_type, is_published, search, etc.)
+ */
+export function getAdminNotices(params) {
+  return request({
+    url: '/admin/notices/',
     method: 'get',
     params,
   })
@@ -243,6 +255,18 @@ export function getTip(id) {
 }
 
 /**
+ * Get admin tips with filters
+ * @param {Object} params - Query parameters (category, is_published, search, etc.)
+ */
+export function getAdminTips(params) {
+  return request({
+    url: '/admin/tips/',
+    method: 'get',
+    params,
+  })
+}
+
+/**
  * Create tip (Admin)
  * @param {Object} data - Tip data
  */
@@ -275,5 +299,27 @@ export function deleteTip(id) {
   return request({
     url: `/admin/tips/${id}/`,
     method: 'delete',
+  })
+}
+
+/**
+ * Get all pending bind requests
+ */
+export function getAllPendingBindRequests() {
+  return request({
+    url: '/profile/all-pending-bind-requests/',
+    method: 'get',
+  })
+}
+
+/**
+ * Approve or reject bind request
+ * @param {Object} data - { user_id, room_ids, approve }
+ */
+export function approveBindRequest(data) {
+  return request({
+    url: '/profile/approve-bind-request/',
+    method: 'post',
+    data,
   })
 }
