@@ -21,7 +21,16 @@ class EnergyTypeField(serializers.PrimaryKeyRelatedField):
 
     def to_representation(self, value):
         """输出时返回 code 字符串而不是 ID"""
-        return value.code
+        # value 可能是模型实例或 PKOnlyObject
+        if isinstance(value, EnergyType):
+            return value.code
+        # 如果是 PKOnlyObject（只有 pk 属性），需要查询数据库
+        pk = getattr(value, 'pk', value)  # 获取主键
+        try:
+            energy_type = EnergyType.objects.get(pk=pk)
+            return energy_type.code
+        except EnergyType.DoesNotExist:
+            return str(pk)
 
 
 class AlarmRuleSerializer(serializers.ModelSerializer):
