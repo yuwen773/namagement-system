@@ -3,7 +3,9 @@ from decimal import Decimal
 
 from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
-from django.db.models.functions import TruncDate, TruncMonth, TruncYear
+from django.db.models.functions import TruncDate
+from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncYear
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -484,37 +486,74 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             params,
         )
 
+        series = []
+
         if period == "day":
+            # Daily trend using TruncDate (works reliably)
             trunc_func = TruncDate("timestamp")
             label_format = "%Y-%m-%d"
-        elif period == "month":
-            trunc_func = TruncMonth("timestamp")
-            label_format = "%Y-%m"
-        else:
-            trunc_func = TruncYear("timestamp")
-            label_format = "%Y"
 
-        rows = (
-            energy_queryset
-            .annotate(bucket=trunc_func)
-            .values("bucket")
-            .annotate(
+            rows = (
+                energy_queryset
+                .annotate(bucket=trunc_func)
+                .values("bucket")
+                .annotate(
+                    total_value=Sum("value"),
+                    avg_power=Avg("power"),
+                    records=Count("id"),
+                )
+                .order_by("bucket")
+            )
+
+            series = [
+                {
+                    "period": row["bucket"].strftime(label_format) if row["bucket"] else None,
+                    "total_value": row["total_value"] or 0,
+                    "avg_power": row["avg_power"] or 0,
+                    "records": row["records"],
+                }
+                for row in rows
+            ]
+
+        elif period == "month":
+            # Monthly trend - use database-specific format to avoid timezone issues
+            rows = energy_queryset.extra(
+                select={"month": "DATE_FORMAT(timestamp, '%%Y-%%m')"}
+            ).values("month").annotate(
                 total_value=Sum("value"),
                 avg_power=Avg("power"),
                 records=Count("id"),
-            )
-            .order_by("bucket")
-        )
+            ).order_by("month")
 
-        series = [
-            {
-                "period": row["bucket"].strftime(label_format) if row["bucket"] else None,
-                "total_value": row["total_value"] or 0,
-                "avg_power": row["avg_power"] or 0,
-                "records": row["records"],
-            }
-            for row in rows
-        ]
+            series = [
+                {
+                    "period": row["month"],
+                    "total_value": row["total_value"] or 0,
+                    "avg_power": row["avg_power"] or 0,
+                    "records": row["records"],
+                }
+                for row in rows
+            ]
+
+        else:  # year
+            # Yearly trend - use database-specific format
+            rows = energy_queryset.extra(
+                select={"year": "DATE_FORMAT(timestamp, '%%Y')"}
+            ).values("year").annotate(
+                total_value=Sum("value"),
+                avg_power=Avg("power"),
+                records=Count("id"),
+            ).order_by("year")
+
+            series = [
+                {
+                    "period": row["year"],
+                    "total_value": row["total_value"] or 0,
+                    "avg_power": row["avg_power"] or 0,
+                    "records": row["records"],
+                }
+                for row in rows
+            ]
 
         return Response({"period": period, "series": series})
 
@@ -852,37 +891,33 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             else:
                 forecast_queryset = forecast_queryset.filter(energy_type__code__iexact=str(energy_type).strip())
 
-        if target_id:
-            forecast_queryset = forecast_queryset.filter(target_id=target_id)
-        else:
-            hint_fields = {"campus": "campus_id", "building": "building_id", "meter": "target_id"}
-            field_name = hint_fields[target]
-            return Response(
-                {
-                    "target": target,
-                    "period": params["period"],
-                    "history": [],
-                    "forecast": [],
-                    "message": f"缺少 target_id，请指定 `{field_name}`。",
-                }
-            )
-
         if model_version:
             forecast_queryset = forecast_queryset.filter(model_version=model_version)
 
-        forecast_rows = list(
-            forecast_queryset.values("forecast_date", "forecast_value", "model_version").order_by("forecast_date")
-        )
+        # When no target_id is specified, aggregate all forecasts by date
+        if target_id:
+            forecast_queryset = forecast_queryset.filter(target_id=target_id)
+            forecast_rows = list(
+                forecast_queryset.values("forecast_date", "forecast_value", "model_version").order_by("forecast_date")
+            )
+        else:
+            # Aggregate all forecasts by date - sum forecast values for each date
+            forecast_rows = list(
+                forecast_queryset.values("forecast_date")
+                .annotate(forecast_value=Sum("forecast_value"))
+                .values("forecast_date", "forecast_value")
+                .order_by("forecast_date")
+            )
 
         energy_queryset = self._apply_common_filters(
             EnergyData.objects.select_related("device", "energy_type"),
             params,
         )
-        if target == "campus":
+        if target == "campus" and target_id:
             energy_queryset = energy_queryset.filter(device__room__floor__building__campus_id=target_id)
-        if target == "building":
+        if target == "building" and target_id:
             energy_queryset = energy_queryset.filter(device__room__floor__building_id=target_id)
-        if target == "meter":
+        if target == "meter" and target_id:
             if str(target_id).isdigit():
                 energy_queryset = energy_queryset.filter(device_id=int(target_id))
             else:
@@ -895,7 +930,7 @@ class AnalysisViewSet(viewsets.GenericViewSet):
                 timestamp__gte=_day_range(start_date)[0],
                 timestamp__lte=_day_range(end_date)[1],
             )
-            .annotate(day=TruncDate("timestamp"))
+            .extra(select={"day": "DATE(timestamp)"})
             .values("day")
             .annotate(total_value=Sum("value"))
             .order_by("day")
@@ -911,13 +946,18 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         ]
         baseline = round(sum(item["value"] for item in history_items) / len(history_items), 6) if history_items else 0
 
+        # Get model_version from forecast rows if available
+        forecast_model_version = None
+        if forecast_rows:
+            forecast_model_version = forecast_rows[0].get("model_version") or model_version or None
+
         return Response(
             {
                 "target": target,
                 "period": params["period"],
-                "target_id": target_id,
+                "target_id": target_id or None,
                 "baseline_avg": baseline,
-                "model_version": forecast_rows[0]["model_version"] if forecast_rows else model_version or None,
+                "model_version": forecast_model_version,
                 "history": history_items,
                 "forecast": forecast_items,
             }
