@@ -3,9 +3,6 @@ from decimal import Decimal
 
 from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
-from django.db.models.functions import TruncDate
-from django.db.models.functions import TruncMonth
-from django.db.models.functions import TruncYear
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -489,13 +486,12 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         series = []
 
         if period == "day":
-            # Daily trend using TruncDate (works reliably)
-            trunc_func = TruncDate("timestamp")
-            label_format = "%Y-%m-%d"
-
+            # Daily trend using CONVERT_TZ to handle timezone correctly
             rows = (
                 energy_queryset
-                .annotate(bucket=trunc_func)
+                .extra(
+                    select={"bucket": "DATE(CONVERT_TZ(timestamp, '+00:00', '+08:00'))"}
+                )
                 .values("bucket")
                 .annotate(
                     total_value=Sum("value"),
@@ -507,7 +503,7 @@ class AnalysisViewSet(viewsets.GenericViewSet):
 
             series = [
                 {
-                    "period": row["bucket"].strftime(label_format) if row["bucket"] else None,
+                    "period": str(row["bucket"]) if row["bucket"] else None,
                     "total_value": row["total_value"] or 0,
                     "avg_power": row["avg_power"] or 0,
                     "records": row["records"],

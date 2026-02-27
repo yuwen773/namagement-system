@@ -6,11 +6,13 @@ import request from '@/utils/request'
 
 /**
  * Get dashboard data
+ * @param {Object} params - Query parameters (start_date, end_date, campus_id, building_id, room_id, energy_type, device_id)
  */
-export function getDashboardData() {
+export function getDashboardData(params) {
   return request({
     url: '/analysis/dashboard/',
     method: 'get',
+    params,
   })
 }
 

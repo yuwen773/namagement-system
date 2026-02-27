@@ -192,8 +192,7 @@ import { ref, shallowRef, onMounted, onUnmounted, watch, computed, nextTick } fr
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getBuildingTree } from '@/api/building'
-import { getLatestEnergyData } from '@/api/energy'
-import { getTrendData } from '@/api/analysis'
+import { getTrendData, getDashboardData } from '@/api/analysis'
 import { getDevices } from '@/api/device'
 
 // Tree ref
@@ -230,9 +229,9 @@ const breadcrumbPath = computed(() => {
 
 // Time range options (mapped to backend period values)
 const timeRanges = [
-  { label: '今日', value: 'day', days: 1 },
-  { label: '近7天', value: 'day', days: 7 },
-  { label: '近30天', value: 'day', days: 30 },
+  { label: '今日', value: 'today', days: 1 },
+  { label: '近7天', value: 'week', days: 7 },
+  { label: '近30天', value: 'month', days: 30 },
 ]
 
 const activeTimeRange = ref('day')
@@ -242,49 +241,61 @@ const activeTimeRangeDays = ref(1)
 const dataCards = ref([
   {
     label: '实时功率',
-    value: 2458,
+    value: 0,
     unit: 'kW',
-    change: '+3.2%',
+    change: '0%',
     trend: 'up',
     color: '#f97316',
     live: true,
-    displayValue: '2,458',
-    sparkline: [5, 8, 12, 10, 15, 13, 18, 14, 16, 12],
+    displayValue: '--',
+    sparkline: [],
+    previousValue: 0,
   },
   {
     label: '今日用电',
-    value: 18542,
+    value: 0,
     unit: 'kWh',
-    change: '+5.8%',
+    change: '0%',
     trend: 'up',
     color: '#eab308',
     live: false,
-    displayValue: '18,542',
-    sparkline: [8, 10, 8, 12, 14, 10, 8, 12, 15, 12],
+    displayValue: '--',
+    sparkline: [],
+    previousValue: 0,
   },
   {
     label: '今日用水',
-    value: 125,
+    value: 0,
     unit: 'm³',
-    change: '-2.1%',
+    change: '0%',
     trend: 'down',
     color: '#3b82f6',
     live: false,
-    displayValue: '125',
-    sparkline: [12, 10, 14, 8, 10, 12, 10, 8, 10, 8],
+    displayValue: '--',
+    sparkline: [],
+    previousValue: 0,
   },
   {
     label: '今日用气',
-    value: 42,
+    value: 0,
     unit: 'm³',
-    change: '+1.5%',
+    change: '0%',
     trend: 'up',
     color: '#ef4444',
     live: false,
-    displayValue: '42',
-    sparkline: [6, 8, 6, 10, 8, 6, 8, 6, 8, 6],
+    displayValue: '--',
+    sparkline: [],
+    previousValue: 0,
   },
 ])
+
+// Store previous values for calculating change
+const previousDataValues = ref({
+  power: 0,
+  electricity: 0,
+  water: 0,
+  gas: 0,
+})
 
 // Devices at selected location
 const locationDevices = ref([])
@@ -311,7 +322,6 @@ async function loadLocationData(node) {
   try {
     const roomIds = collectRoomIds(node)
     const devices = await loadDevicesByNode(node, roomIds)
-    const latestItems = await loadLatestDataByNode(node, roomIds)
 
     locationDevices.value = devices.map(device => ({
         id: device.id,
@@ -324,7 +334,8 @@ async function loadLocationData(node) {
         icon: getEnergyIcon(device.energy_type_detail?.code || device.energy_type),
       }))
 
-    updateDataCards(latestItems)
+    // Load real-time power data from API
+    await loadRealTimePowerData(node)
 
     // Update trend chart
     await updateTrendChart(node)
@@ -355,6 +366,12 @@ function collectRoomIds(node) {
 }
 
 async function loadDevicesByNode(node, roomIds) {
+  // For campus, get all devices from all rooms
+  if (node.type === 'campus') {
+    const response = await getDevices({})
+    return response.code === 0 ? normalizeListData(response.data) : []
+  }
+
   if (node.type === 'room') {
     const response = await getDevices({ room_id: node.id })
     return response.code === 0 ? normalizeListData(response.data) : []
@@ -375,78 +392,130 @@ async function loadDevicesByNode(node, roomIds) {
   return Array.from(deviceMap.values())
 }
 
-async function loadLatestDataByNode(node, roomIds) {
-  if (node.type === 'room') {
-    const response = await getLatestEnergyData({ room_id: node.id })
-    return response.code === 0 ? normalizeListData(response.data) : []
-  }
-
-  if (roomIds.length === 0) return []
-
-  const responseList = await Promise.allSettled(roomIds.map(roomId => getLatestEnergyData({ room_id: roomId })))
-  const latestItems = []
-  responseList.forEach((result) => {
-    if (result.status !== 'fulfilled') return
-    const response = result.value
-    if (response.code !== 0) return
-    latestItems.push(...normalizeListData(response.data))
-  })
-  return latestItems
-}
-
 function normalizeListData(data) {
   if (Array.isArray(data)) return data
   if (data && Array.isArray(data.results)) return data.results
   return []
 }
 
-function updateDataCards(latestItems) {
-  const previous = new Map(dataCards.value.map(card => [card.label, card.value]))
+// Load real-time power data from API
+async function loadRealTimePowerData(node) {
+  try {
+    const today = new Date()
+    const todayStr = formatDate(today)
 
-  const totals = {
-    power: 0,
-    electricity: 0,
-    water: 0,
-    gas: 0,
+    const params = {
+      start_date: todayStr,
+      end_date: todayStr,
+    }
+
+    if (node.type === 'campus') {
+      params.campus_id = node.id
+    } else if (node.type === 'room') {
+      params.room_id = node.id
+    } else if (node.type === 'floor') {
+      params.floor_id = node.id
+    } else if (node.type === 'building') {
+      params.building_id = node.id
+    }
+
+    const response = await getDashboardData(params)
+    if (response.code === 0 && response.data) {
+      const data = response.data
+      const summary = data.summary || {}
+      const energyTotals = data.energy_totals || []
+
+      // Extract values by energy type
+      const electricity = energyTotals.find(e => e.energy_type__code === 'ELECTRICITY')
+      const water = energyTotals.find(e => e.energy_type__code === 'WATER')
+      const gas = energyTotals.find(e => e.energy_type__code === 'GAS')
+
+      // Store previous values before updating
+      previousDataValues.value = {
+        power: dataCards.value[0].value || 0,
+        electricity: dataCards.value[1].value || 0,
+        water: dataCards.value[2].value || 0,
+        gas: dataCards.value[3].value || 0,
+      }
+
+      // Update cards with real data
+      dataCards.value = [
+        {
+          label: '实时功率',
+          value: Number(summary.average_power) || 0,
+          unit: 'kW',
+          change: '0%',
+          trend: 'up',
+          color: '#f97316',
+          live: true,
+          displayValue: formatNumber(summary.average_power || 0),
+          sparkline: buildSparkline(summary.average_power || 0),
+          previousValue: previousDataValues.value.power,
+        },
+        {
+          label: '今日用电',
+          value: Number(electricity?.total_value) || 0,
+          unit: electricity?.energy_type__unit || 'kWh',
+          change: '0%',
+          trend: 'up',
+          color: '#eab308',
+          live: false,
+          displayValue: formatNumber(electricity?.total_value || 0),
+          sparkline: buildSparkline(electricity?.total_value || 0),
+          previousValue: previousDataValues.value.electricity,
+        },
+        {
+          label: '今日用水',
+          value: Number(water?.total_value) || 0,
+          unit: water?.energy_type__unit || 'm³',
+          change: '0%',
+          trend: 'down',
+          color: '#3b82f6',
+          live: false,
+          displayValue: formatNumber(water?.total_value || 0),
+          sparkline: buildSparkline(water?.total_value || 0),
+          previousValue: previousDataValues.value.water,
+        },
+        {
+          label: '今日用气',
+          value: Number(gas?.total_value) || 0,
+          unit: gas?.energy_type__unit || 'm³',
+          change: '0%',
+          trend: 'up',
+          color: '#ef4444',
+          live: false,
+          displayValue: formatNumber(gas?.total_value || 0),
+          sparkline: buildSparkline(gas?.total_value || 0),
+          previousValue: previousDataValues.value.gas,
+        },
+      ]
+
+      // Calculate changes
+      updateCardChanges()
+    }
+  } catch (error) {
+    console.error('Failed to load real-time power data:', error)
   }
-
-  latestItems.forEach((item) => {
-    const energyType = String(item.energy_type || '').toUpperCase()
-    const value = Number(item.value) || 0
-    const power = Number(item.power) || 0
-
-    totals.power += power
-    if (energyType === 'ELECTRICITY') totals.electricity += value
-    if (energyType === 'WATER') totals.water += value
-    if (energyType === 'GAS') totals.gas += value
-  })
-
-  dataCards.value = [
-    createDataCard('实时功率', totals.power, 'kW', '#f97316', true, previous.get('实时功率')),
-    createDataCard('今日用电', totals.electricity, 'kWh', '#eab308', false, previous.get('今日用电')),
-    createDataCard('今日用水', totals.water, 'm³', '#3b82f6', false, previous.get('今日用水')),
-    createDataCard('今日用气', totals.gas, 'm³', '#ef4444', false, previous.get('今日用气')),
-  ]
 }
 
-function createDataCard(label, value, unit, color, live, previousValue) {
-  const numericValue = Number.isFinite(value) ? value : 0
-  const diff = Number.isFinite(previousValue) ? numericValue - previousValue : 0
-  const base = previousValue && previousValue !== 0 ? previousValue : 1
-  const ratio = (diff / base) * 100
-  const absRatio = Math.abs(ratio)
+// Calculate and update card changes
+function updateCardChanges() {
+  dataCards.value.forEach((card, index) => {
+    const prev = card.previousValue || 0
+    const curr = card.value
+    if (prev > 0 && curr > 0) {
+      const diff = curr - prev
+      const ratio = (diff / prev) * 100
+      const absRatio = Math.abs(ratio)
+      card.change = `${ratio >= 0 ? '+' : '-'}${absRatio.toFixed(1)}%`
+      card.trend = diff >= 0 ? 'up' : 'down'
+    }
+  })
+}
 
-  return {
-    label,
-    value: numericValue,
-    unit,
-    change: `${ratio >= 0 ? '+' : '-'}${absRatio.toFixed(1)}%`,
-    trend: diff >= 0 ? 'up' : 'down',
-    color,
-    live,
-    displayValue: numericValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 }),
-    sparkline: buildSparkline(numericValue),
-  }
+// Format number with locale
+function formatNumber(num) {
+  return Number(num).toLocaleString('zh-CN', { maximumFractionDigits: 2 })
 }
 
 function buildSparkline(baseValue) {
@@ -507,7 +576,9 @@ async function updateTrendChart(node) {
       start_date: formatDate(startDate),
       end_date: formatDate(endDate),
     }
-    if (node.type === 'room') {
+    if (node.type === 'campus') {
+      params.campus_id = node.id
+    } else if (node.type === 'room') {
       params.room_id = node.id
     } else if (node.type === 'floor') {
       params.floor_id = node.id
@@ -517,19 +588,24 @@ async function updateTrendChart(node) {
 
     const response = await getTrendData(params)
     if (response.code === 0 && response.data) {
+      const series = response.data.series || []
+      // Transform backend series data to chart format
+      const categories = series.map(item => item.period)
+      const electricity = series.map(item => item.total_value || 0)
+
       chartData = {
-        categories: response.data.labels || response.data.categories || [],
-        electricity: response.data.electricity || response.data.current || [],
-        water: response.data.water || [],
+        categories,
+        electricity,
+        water: [], // Trend API doesn't separate by energy type, use total
       }
     }
   } catch (error) {
     console.error('Failed to load trend data from API:', error)
   }
 
-  // Fall back to generated data if API fails
+  // Initialize empty data if no data
   if (!chartData || !chartData.categories.length) {
-    chartData = generateTrendData(activeTimeRangeDays.value)
+    chartData = { categories: [], electricity: [], water: [] }
   }
 
   const option = {
@@ -596,39 +672,6 @@ async function updateTrendChart(node) {
   trendChart.value.setOption(option, true)
 }
 
-// Generate trend data based on time range
-function generateTrendData(days) {
-  let categories = []
-  const electricity = []
-  const water = []
-
-  if (days === 1) {
-    // Hourly data for today
-    for (let i = 0; i < 24; i++) {
-      categories.push(`${i}:00`)
-      electricity.push(Math.floor(100 + Math.random() * 200))
-      water.push(Math.floor(20 + Math.random() * 50))
-    }
-  } else if (days === 7) {
-    // Daily data for 7 days
-    const dayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-    categories = dayLabels
-    dayLabels.forEach(() => {
-      electricity.push(Math.floor(2000 + Math.random() * 1500))
-      water.push(Math.floor(400 + Math.random() * 300))
-    })
-  } else {
-    // Daily data for 30 days
-    for (let i = 1; i <= days; i++) {
-      categories.push(`${i}日`)
-      electricity.push(Math.floor(2000 + Math.random() * 1500))
-      water.push(Math.floor(400 + Math.random() * 300))
-    }
-  }
-
-  return { categories, electricity, water }
-}
-
 // Initialize trend chart
 function initTrendChart() {
   if (!trendChartRef.value) return
@@ -643,8 +686,11 @@ function initTrendChart() {
 // Handle time range change
 function handleTimeRangeChange(range) {
   const selected = timeRanges.find(r => r.value === range)
-  activeTimeRange.value = selected.value
   activeTimeRangeDays.value = selected.days
+
+  // Map to backend period value (all use 'day' for daily data)
+  activeTimeRange.value = 'day'
+
   if (selectedNode.value) {
     updateTrendChart(selectedNode.value)
   }
@@ -678,51 +724,7 @@ async function loadBuildingTree() {
     }
   } catch (error) {
     console.error('Failed to load building tree:', error)
-    // Use mock data
-    buildingTree.value = [
-      {
-        id: 1,
-        name: '主校区',
-        type: 'campus',
-        deviceCount: 142,
-        children: [
-          {
-            id: 11,
-            name: '教学楼A',
-            type: 'building',
-            deviceCount: 48,
-            children: [
-              { id: 111, name: '1层', type: 'floor', deviceCount: 16, children: [
-                { id: 1111, name: '101室', type: 'room', deviceCount: 4 },
-                { id: 1112, name: '102室', type: 'room', deviceCount: 4 },
-              ]},
-              { id: 112, name: '2层', type: 'floor', deviceCount: 16 },
-              { id: 113, name: '3层', type: 'floor', deviceCount: 16 },
-            ],
-          },
-          {
-            id: 12,
-            name: '实验楼',
-            type: 'building',
-            deviceCount: 35,
-            children: [
-              { id: 121, name: '1层', type: 'floor', deviceCount: 18 },
-              { id: 122, name: '2层', type: 'floor', deviceCount: 17 },
-            ],
-          },
-          {
-            id: 13,
-            name: '图书馆',
-            type: 'building',
-            deviceCount: 28,
-            children: [
-              { id: 131, name: '1层', type: 'floor', deviceCount: 14 },
-              { id: 132, name: '2层', type: 'floor', deviceCount: 14 },
-            ],
-          },
-        ],
-      },
-    ]
+    ElMessage.error('加载建筑树失败')
   }
 }
 
@@ -754,17 +756,11 @@ function buildTreeStructure(data) {
 // Auto refresh timer
 let refreshTimer = null
 
-// Setup auto refresh
+// Setup auto refresh - reload real-time data from API
 function setupAutoRefresh() {
   refreshTimer = setInterval(() => {
     if (selectedNode.value) {
-      // Update live data cards
-      dataCards.value.forEach(card => {
-        if (card.live) {
-          card.value = Math.floor(card.value * (0.95 + Math.random() * 0.1))
-          card.displayValue = card.value.toLocaleString()
-        }
-      })
+      loadRealTimePowerData(selectedNode.value)
     }
   }, 10000) // 10 seconds for live data
 }
@@ -1011,6 +1007,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .data-card {
@@ -1180,6 +1177,7 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .section-header {
@@ -1246,11 +1244,12 @@ onUnmounted(() => {
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .devices-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
   padding: 16px;
 }
@@ -1300,6 +1299,7 @@ onUnmounted(() => {
   height: 40px;
   border-radius: 10px;
   font-size: 18px;
+  flex-shrink: 0;
 }
 
 .device-info {
@@ -1312,15 +1312,22 @@ onUnmounted(() => {
   font-weight: 500;
   color: #1f2937;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .device-type {
   font-size: 11px;
   color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .device-value {
   text-align: right;
+  flex-shrink: 0;
 }
 
 .value-text {
