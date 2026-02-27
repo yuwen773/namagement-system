@@ -6,6 +6,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view, inline_serializer
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -222,7 +223,8 @@ class AdminTipsViewSet(viewsets.ModelViewSet):
     queryset = Notice.objects.filter(notice_type=NoticeType.KNOWLEDGE).order_by("-created_at", "-id")
     serializer_class = AdminTipSerializer
     permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend]
+    filterset_fields = ["is_published", "priority", "target_role", "category"]
     search_fields = ["title", "content", "category"]
     ordering_fields = ["id", "publish_time", "is_published", "created_at"]
     ordering = ["-created_at", "-id"]
@@ -256,6 +258,11 @@ class AdminTipsViewSet(viewsets.ModelViewSet):
         super().perform_destroy(instance)
         _write_operation_log(self.request, "delete_tip", f"notice:{tip_id}")
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"code": 0, "message": "删除成功", "data": None}, status=status.HTTP_200_OK)
+
 
 @extend_schema_view(
     list=extend_schema(summary="管理员获取公告列表"),
@@ -271,7 +278,8 @@ class AdminNoticeViewSet(viewsets.ModelViewSet):
     queryset = Notice.objects.select_related("publisher").all().order_by("-created_at", "-id")
     serializer_class = AdminNoticeSerializer
     permission_classes = [IsAdmin]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend]
+    filterset_fields = ["notice_type", "is_published", "priority", "target_role"]
     search_fields = ["title", "content"]
     ordering_fields = ["id", "publish_time", "priority", "is_published", "created_at"]
     ordering = ["-created_at", "-id"]
@@ -297,6 +305,11 @@ class AdminNoticeViewSet(viewsets.ModelViewSet):
         notice_id = instance.id
         super().perform_destroy(instance)
         _write_operation_log(self.request, "delete_notice", f"notice:{notice_id}")
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"code": 0, "message": "删除成功", "data": None}, status=status.HTTP_200_OK)
 
 
 @extend_schema_view(
@@ -403,20 +416,67 @@ class ProfileViewSet(viewsets.GenericViewSet):
         serializer = ProfileBindRoomsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         room_ids = serializer.validated_data["room_ids"]
-        current_room_ids = sorted(set(int(item) for item in profile.bind_rooms if str(item).isdigit()))
-        current_room_id_set = set(current_room_ids)
+        current_pending = sorted(set(int(item) for item in profile.pending_bind_rooms if str(item).isdigit()))
+        current_bound = sorted(set(int(item) for item in profile.bind_rooms if str(item).isdigit()))
 
         if request.method.lower() == "post":
-            updated = sorted(current_room_id_set.union(room_ids))
-            action_name = "bind_rooms"
+            # POST: 发起绑定申请（进入待审核状态）
+            # 过滤掉已绑定和已申请的
+            new_rooms = [r for r in room_ids if r not in current_bound and r not in current_pending]
+            if not new_rooms:
+                return Response({
+                    "message": "房间已在绑定中或已绑定",
+                    "pending_bind_rooms": current_pending,
+                    "bind_rooms": current_bound
+                })
+
+            updated_pending = sorted(set(current_pending + new_rooms))
+            profile.pending_bind_rooms = updated_pending
+            profile.save(update_fields=["pending_bind_rooms", "updated_at"])
+            _write_operation_log(request, "bind_room_request", f"rooms:{new_rooms}")
+            return Response({
+                "message": "绑定申请已提交，等待管理员审批",
+                "pending_bind_rooms": updated_pending
+            })
         else:
+            # DELETE: 直接解绑已绑定的房间
+            current_room_ids = current_bound
+            current_room_id_set = set(current_room_ids)
             updated = sorted(current_room_id_set.difference(room_ids))
             action_name = "unbind_rooms"
+            profile.bind_rooms = updated
+            profile.save(update_fields=["bind_rooms", "updated_at"])
+            _write_operation_log(request, action_name, f"user:{request.user.id}")
+            return Response({"bind_rooms": updated})
 
-        profile.bind_rooms = updated
-        profile.save(update_fields=["bind_rooms", "updated_at"])
-        _write_operation_log(request, action_name, f"user:{request.user.id}")
-        return Response({"bind_rooms": updated})
+    @action(detail=False, methods=["get"], url_path="pending-bind-requests")
+    @extend_schema(
+        summary="获取当前用户的待审核绑定申请",
+        responses={200: OpenApiResponse(description="待审核的房间绑定申请列表")},
+    )
+    def pending_bind_requests(self, request):
+        """获取当前用户的待审核绑定申请列表。"""
+        profile = self._profile_object()
+        pending_ids = sorted(set(int(item) for item in profile.pending_bind_rooms if str(item).isdigit()))
+
+        if not pending_ids:
+            return Response([])
+
+        room_map = {
+            room.id: room
+            for room in Room.objects.select_related("floor", "floor__building").filter(id__in=pending_ids)
+        }
+        rooms = []
+        for room_id in pending_ids:
+            room = room_map.get(room_id)
+            if room:
+                rooms.append({
+                    "id": room.id,
+                    "room_number": room.room_number,
+                    "building_name": room.floor.building.name,
+                    "floor_name": room.floor.name,
+                })
+        return Response(rooms)
 
     @action(detail=False, methods=["get", "put"], url_path="alarm-subscriptions")
     @extend_schema(
