@@ -2,8 +2,9 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.core.cache import cache
-from django.db.models import Avg, Count, Q, Sum
-from django.db.models.functions import ExtractHour, TruncMonth, TruncYear
+from django.db.models import Avg, Count, F, IntegerField, Q, Sum
+from django.db.models.functions import TruncMonth, TruncYear
+from django.db.models import Func
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -1002,7 +1003,7 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             ("20-24", 20, 24),
         ]
         rows = (
-            queryset.annotate(hour=ExtractHour("timestamp"))
+            queryset.annotate(hour=Func(F("timestamp"), function="HOUR", output_field=IntegerField()))
             .values("hour")
             .annotate(total_value=Sum("value"), records=Count("id"))
         )
