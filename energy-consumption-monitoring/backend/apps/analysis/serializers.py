@@ -26,6 +26,7 @@ class TrendQuerySerializer(BaseAnalysisQuerySerializer):
 
 class DistributionQuerySerializer(BaseAnalysisQuerySerializer):
     type = serializers.ChoiceField(choices=["area", "energy_type"], default="area")
+    period = serializers.ChoiceField(choices=["day", "month", "year"], required=False, default="month")
 
 
 class RankingQuerySerializer(BaseAnalysisQuerySerializer):

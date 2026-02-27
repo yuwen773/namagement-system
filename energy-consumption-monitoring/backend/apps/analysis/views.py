@@ -28,7 +28,7 @@ from apps.analysis.serializers import (
 )
 from apps.buildings.models import Room
 from apps.devices.models import Device
-from apps.energy.models import EnergyData
+from apps.energy.models import EnergyData, EnergyStatistics, PeriodType
 from energy_monitoring.permissions import IsAdmin, is_admin_user
 
 
@@ -560,41 +560,97 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         responses={200: OpenApiTypes.OBJECT},
     )
     def distribution(self, request):
-        """按区域或能源类型返回能耗占比分布。"""
+        """按区域或能源类型返回能耗占比分布（使用预聚合统计数据）。"""
         params = self._validate_query(DistributionQuerySerializer)
         distribution_type = params["type"]
+        period = params.get("period", "month")
 
-        energy_queryset = self._apply_common_filters(
-            EnergyData.objects.select_related("device", "energy_type"),
-            params,
-        )
+        # 将 period 转换为 PeriodType
+        period_type_map = {
+            "day": PeriodType.DAY,
+            "month": PeriodType.MONTH,
+            "year": PeriodType.YEAR,
+        }
+        period_type = period_type_map.get(period, PeriodType.MONTH)
+
+        # 使用预聚合的 EnergyStatistics 表查询
+        stats_queryset = EnergyStatistics.objects.select_related(
+            "device", "device__room", "device__room__floor", "device__room__floor__building", "energy_type"
+        ).filter(period_type=period_type)
+
+        # 应用时间范围过滤
+        start_date = params.get("start_date")
+        end_date = params.get("end_date")
+        if start_date:
+            stats_queryset = stats_queryset.filter(period_date__gte=start_date)
+        if end_date:
+            stats_queryset = stats_queryset.filter(period_date__lte=end_date)
+
+        # 应用其他过滤条件
+        device_tokens = [item.strip() for item in str(params.get("device_id", "")).split(",") if item.strip()]
+        if device_tokens:
+            device_ids = [int(item) for item in device_tokens if item.isdigit()]
+            device_codes = [item for item in device_tokens if not item.isdigit()]
+            query = Q()
+            if device_ids:
+                query |= Q(device_id__in=device_ids)
+            if device_codes:
+                query |= Q(device__device_id__in=device_codes)
+            stats_queryset = stats_queryset.filter(query)
+
+        energy_type = params.get("energy_type")
+        if energy_type:
+            if str(energy_type).isdigit():
+                stats_queryset = stats_queryset.filter(energy_type_id=int(energy_type))
+            else:
+                stats_queryset = stats_queryset.filter(energy_type__code__iexact=str(energy_type).strip())
+
+        campus_id = params.get("campus_id")
+        if campus_id:
+            stats_queryset = stats_queryset.filter(device__room__floor__building__campus_id=campus_id)
+
+        building_id = params.get("building_id")
+        if building_id:
+            stats_queryset = stats_queryset.filter(device__room__floor__building_id=building_id)
+
+        room_id = params.get("room_id")
+        if room_id:
+            stats_queryset = stats_queryset.filter(device__room_id=room_id)
+
+        # 权限过滤
+        if not is_admin_user(self.request.user):
+            room_ids = self._bound_room_ids()
+            if room_ids:
+                stats_queryset = stats_queryset.filter(device__room_id__in=room_ids)
+            else:
+                stats_queryset = stats_queryset.none()
 
         if distribution_type == "area":
             rows = (
-                energy_queryset
+                stats_queryset
                 .values("device__room__floor__building__area_type")
-                .annotate(total_value=Sum("value"))
+                .annotate(total_value=Sum("total_value"))
                 .order_by("-total_value")
             )
             data = [
                 {
                     "name": row["device__room__floor__building__area_type"] or "UNKNOWN",
-                    "value": row["total_value"] or 0,
+                    "value": float(row["total_value"] or 0),
                 }
                 for row in rows
             ]
         else:
             rows = (
-                energy_queryset
+                stats_queryset
                 .values("energy_type__code", "energy_type__name")
-                .annotate(total_value=Sum("value"))
+                .annotate(total_value=Sum("total_value"))
                 .order_by("-total_value")
             )
             data = [
                 {
                     "name": row["energy_type__code"],
                     "label": row["energy_type__name"],
-                    "value": row["total_value"] or 0,
+                    "value": float(row["total_value"] or 0),
                 }
                 for row in rows
             ]
