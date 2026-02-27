@@ -17,6 +17,10 @@ class EnergyTypeField(serializers.PrimaryKeyRelatedField):
         # 默认行为：处理整数 ID
         return super().to_internal_value(data)
 
+    def to_representation(self, value):
+        """输出时返回 code 字符串而不是 ID"""
+        return value.code
+
 
 class EnergyTypeSerializer(serializers.ModelSerializer):
     class Meta:
