@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
+    "django_filters",
     "apps.accounts.apps.AccountsConfig",
     "apps.buildings.apps.BuildingsConfig",
     "apps.devices.apps.DevicesConfig",
@@ -107,6 +108,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

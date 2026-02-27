@@ -1,14 +1,17 @@
 from decimal import Decimal
+from pathlib import Path
+from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view, inline_serializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, serializers, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes as drf_permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -46,6 +49,27 @@ BindRoomsResponseSerializer = inline_serializer(
         "bind_rooms": serializers.ListField(child=serializers.IntegerField()),
     },
 )
+AvatarUploadRequestSerializer = inline_serializer(
+    name="AvatarUploadRequest",
+    fields={
+        "avatar": serializers.FileField(),
+    },
+)
+AvatarUploadResponseSerializer = inline_serializer(
+    name="AvatarUploadResponse",
+    fields={
+        "avatar": serializers.CharField(),
+    },
+)
+
+AVATAR_MAX_FILE_SIZE = 2 * 1024 * 1024
+AVATAR_EXTENSION_MAP = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+}
+AVATAR_ALLOWED_EXTENSIONS = set(AVATAR_EXTENSION_MAP.values())
 
 
 def _client_ip(request):
@@ -499,8 +523,40 @@ class ProfileViewSet(viewsets.GenericViewSet):
         _write_operation_log(request, "update_alarm_subscriptions", f"user:{request.user.id}")
         return Response(ProfileAlarmSubscriptionSerializer(updated).data)
 
+    @action(detail=False, methods=["post"], url_path="avatar")
+    @extend_schema(
+        summary="Upload profile avatar",
+        request=AvatarUploadRequestSerializer,
+        responses={200: AvatarUploadResponseSerializer},
+    )
+    def upload_avatar(self, request):
+        profile = self._profile_object()
+        upload_file = request.FILES.get("avatar")
+        if upload_file is None:
+            raise serializers.ValidationError({"avatar": "Avatar file is required."})
+
+        if upload_file.size > AVATAR_MAX_FILE_SIZE:
+            raise serializers.ValidationError({"avatar": "Avatar size must be <= 2MB."})
+
+        content_type = str(upload_file.content_type or "").lower()
+        if content_type not in AVATAR_EXTENSION_MAP:
+            raise serializers.ValidationError({"avatar": "Only JPG, PNG, GIF, and WEBP are allowed."})
+
+        suffix = Path(upload_file.name or "").suffix.lower()
+        if suffix not in AVATAR_ALLOWED_EXTENSIONS:
+            suffix = AVATAR_EXTENSION_MAP[content_type]
+        file_name = f"{uuid4().hex}{suffix}"
+        file_path = f"avatars/user_{request.user.id}/{file_name}"
+        saved_path = default_storage.save(file_path, upload_file)
+        avatar_url = request.build_absolute_uri(default_storage.url(saved_path))
+
+        profile.avatar = avatar_url
+        profile.save(update_fields=["avatar", "updated_at"])
+        _write_operation_log(request, "upload_avatar", f"user:{request.user.id}")
+        return Response({"avatar": avatar_url})
+
     @action(detail=False, methods=["post"], url_path="approve-bind-request")
-    @permission_classes([IsAdmin])
+    @drf_permission_classes([IsAdmin])
     @extend_schema(
         summary="管理员批准或拒绝绑定申请",
         request=inline_serializer(
@@ -549,7 +605,7 @@ class ProfileViewSet(viewsets.GenericViewSet):
         return Response({"bind_rooms": profile.bind_rooms, "pending_bind_rooms": profile.pending_bind_rooms})
 
     @action(detail=False, methods=["get"], url_path="all-pending-bind-requests")
-    @permission_classes([IsAdmin])
+    @drf_permission_classes([IsAdmin])
     @extend_schema(
         summary="获取所有待审核的绑定申请（管理员）",
         responses={200: OpenApiResponse(description="所有待审核的房间绑定申请列表")},
