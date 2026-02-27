@@ -111,6 +111,7 @@
                 <option value="">全部类型</option>
                 <option value="NOTICE">通知</option>
                 <option value="ANNOUNCEMENT">公告</option>
+                <option value="KNOWLEDGE">知识</option>
               </select>
               <select v-model="noticeFilters.status" class="filter-select" @change="applyNoticeFilters">
                 <option value="">全部状态</option>
@@ -216,7 +217,7 @@
               <button
                 class="page-btn"
                 :disabled="noticePagination.page === 1"
-                @click="noticePagination.page--"
+                @click="noticePagination.page--; loadNotices()"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="15 18 9 12 15 6"/>
@@ -226,7 +227,7 @@
               <button
                 class="page-btn"
                 :disabled="noticePagination.page >= Math.ceil(noticePagination.total / noticePagination.pageSize)"
-                @click="noticePagination.page++"
+                @click="noticePagination.page++; loadNotices()"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="9 18 15 12 9 6"/>
@@ -356,7 +357,7 @@
               <button
                 class="page-btn"
                 :disabled="tipPagination.page === 1"
-                @click="tipPagination.page--"
+                @click="tipPagination.page--; loadTips()"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="15 18 9 12 15 6"/>
@@ -366,7 +367,7 @@
               <button
                 class="page-btn"
                 :disabled="tipPagination.page >= Math.ceil(tipPagination.total / tipPagination.pageSize)"
-                @click="tipPagination.page++"
+                @click="tipPagination.page++; loadTips()"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="9 18 15 12 9 6"/>
@@ -569,7 +570,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getNotices, getTips, createNotice, updateNotice, deleteNotice, createTip, updateTip, deleteTip } from '@/api/system'
+import { getAdminNotices, getAdminTips, createNotice, updateNotice, deleteNotice, createTip, updateTip, deleteTip } from '@/api/system'
 
 // Current date
 const currentDate = new Date().toLocaleDateString('zh-CN', {
@@ -751,18 +752,42 @@ function shortText(text, maxLength = 60) {
 
 function applyNoticeFilters() {
   noticePagination.value.page = 1
+  loadNotices()
 }
 
 function applyTipFilters() {
   tipPagination.value.page = 1
+  loadTips()
 }
 
 async function loadNotices() {
   noticeLoading.value = true
   try {
-    const response = await getNotices()
+    // 构建查询参数
+    const params = {
+      page: noticePagination.value.page,
+      page_size: noticePagination.value.pageSize,
+    }
+
+    // 添加搜索关键字
+    if (noticeFilters.value.search) {
+      params.search = noticeFilters.value.search
+    }
+
+    // 添加类型筛选 (notice_type)
+    if (noticeFilters.value.type) {
+      params.notice_type = noticeFilters.value.type
+    }
+
+    // 添加状态筛选 (is_published)
+    if (noticeFilters.value.status) {
+      params.is_published = noticeFilters.value.status === 'published'
+    }
+
+    const response = await getAdminNotices(params)
     if (response.code === 0 && response.data) {
       notices.value = response.data
+      noticePagination.value.total = response.total || response.data.length
       updateNoticeStats()
     }
   } catch (error) {
@@ -790,9 +815,31 @@ async function loadNotices() {
 async function loadTips() {
   tipLoading.value = true
   try {
-    const response = await getTips()
+    // 构建查询参数
+    const params = {
+      page: tipPagination.value.page,
+      page_size: tipPagination.value.pageSize,
+    }
+
+    // 添加搜索关键字
+    if (tipFilters.value.search) {
+      params.search = tipFilters.value.search
+    }
+
+    // 添加分类筛选 (category)
+    if (tipFilters.value.category) {
+      params.category = tipFilters.value.category
+    }
+
+    // 添加状态筛选 (is_published)
+    if (tipFilters.value.status) {
+      params.is_published = tipFilters.value.status === 'published'
+    }
+
+    const response = await getAdminTips(params)
     if (response.code === 0 && response.data) {
       tips.value = response.data
+      tipPagination.value.total = response.total || response.data.length
       updateTipStats()
     }
   } catch (error) {

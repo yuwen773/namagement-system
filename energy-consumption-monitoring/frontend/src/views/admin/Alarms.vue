@@ -684,20 +684,7 @@ async function loadAlarmRules() {
   }
 }
 
-async function loadStatistics() {
-  try {
-    const response = await getAlarmStatistics()
-    if (response.code === 0 && response.data) {
-      alarmStats.value[0].value = response.data.pending || 0
-      alarmStats.value[1].value = response.data.processed || 0
-      alarmStats.value[2].value = response.data.ignored || 0
-      alarmStats.value[3].value = response.data.today || 0
-    }
-  } catch (error) {
-    console.error('Failed to load statistics:', error)
-  }
-
-  // Calculate from current data
+function setStatsFromLocalAlarms() {
   alarmStats.value[0].value = alarms.value.filter(a => a.status === 'PENDING').length
   alarmStats.value[1].value = alarms.value.filter(a => a.status === 'PROCESSED').length
   alarmStats.value[2].value = alarms.value.filter(a => a.status === 'IGNORED').length
@@ -707,12 +694,44 @@ async function loadStatistics() {
   alarmStats.value[3].value = alarms.value.filter(a => new Date(a.alarm_time) >= today).length
 }
 
+async function loadStatistics() {
+  let hasRemoteStats = false
+  try {
+    const response = await getAlarmStatistics()
+    if (response.code === 0 && response.data) {
+      // Backend returns statistics under data.summary.
+      // Keep compatibility with legacy flat fields.
+      const summary = response.data.summary || response.data
+      const hasSummaryKeys =
+        summary.pending !== undefined ||
+        summary.processed !== undefined ||
+        summary.ignored !== undefined ||
+        summary.today !== undefined
+
+      if (hasSummaryKeys) {
+        alarmStats.value[0].value = Number(summary.pending) || 0
+        alarmStats.value[1].value = Number(summary.processed) || 0
+        alarmStats.value[2].value = Number(summary.ignored) || 0
+        alarmStats.value[3].value = Number(summary.today) || 0
+        hasRemoteStats = true
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load statistics:', error)
+  }
+
+  // Fallback: derive from loaded alarm list only when remote stats are unavailable.
+  if (!hasRemoteStats) {
+    setStatsFromLocalAlarms()
+  }
+}
+
 // Mock function removed - using real API
 
 // Actions
-function refreshAlarms() {
-  loadAlarms()
-  loadStatistics()
+async function refreshAlarms() {
+  await loadAlarms()
+  await loadStatistics()
 }
 
 function applyFilters() {
@@ -858,16 +877,15 @@ async function deleteRule(rule) {
 // Auto refresh
 function setupAutoRefresh() {
   refreshTimer = setInterval(() => {
-    loadAlarms()
-    loadStatistics()
+    refreshAlarms()
   }, 30000) // 30 seconds
 }
 
 // Lifecycle
-onMounted(() => {
-  loadAlarms()
+onMounted(async () => {
+  await loadAlarms()
   loadAlarmRules()
-  loadStatistics()
+  await loadStatistics()
   setupAutoRefresh()
 })
 

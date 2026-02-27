@@ -278,11 +278,36 @@
       </div>
     </div>
   </div>
+
+  <!-- Detail Dialog -->
+  <el-dialog
+    v-model="detailDialogVisible"
+    title="数据明细详情"
+    width="600px"
+    destroy-on-close
+  >
+    <el-descriptions :column="2" border v-if="currentDetail">
+      <el-descriptions-item label="日期">{{ currentDetail.date }}</el-descriptions-item>
+      <el-descriptions-item label="建筑">{{ currentDetail.building }}</el-descriptions-item>
+      <el-descriptions-item label="能源类型">{{ currentDetail.energyType }}</el-descriptions-item>
+      <el-descriptions-item label="能耗量">{{ currentDetail.consumption }}</el-descriptions-item>
+      <el-descriptions-item label="费用 (元)">{{ currentDetail.cost }}</el-descriptions-item>
+      <el-descriptions-item label="状态">
+        <span :class="['status-badge', `status-${currentDetail.status}`]">
+          {{ currentDetail.statusText }}
+        </span>
+      </el-descriptions-item>
+    </el-descriptions>
+    <template #footer>
+      <el-button @click="detailDialogVisible = false">关闭</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, shallowRef, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import { ElDialog, ElDescriptions, ElDescriptionsItem } from 'element-plus'
 import * as echarts from 'echarts'
 import {
   getTrendData,
@@ -367,6 +392,10 @@ const pagination = ref({
   size: 10,
   total: 0,
 })
+
+// Detail dialog
+const detailDialogVisible = ref(false)
+const currentDetail = ref(null)
 
 // Computed filtered table data
 const filteredTableData = computed(() => {
@@ -1225,7 +1254,8 @@ function handlePageChange(page) {
 
 // View detail
 function viewDetail(row) {
-  ElMessage.info(`查看详情: ${row.building} - ${row.date}`)
+  currentDetail.value = row
+  detailDialogVisible.value = true
 }
 
 // Handle window resize
