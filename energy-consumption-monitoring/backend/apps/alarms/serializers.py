@@ -6,7 +6,23 @@ from apps.devices.models import EnergyType
 from apps.devices.serializers import DeviceSerializer, EnergyTypeSerializer
 
 
+class EnergyTypeField(serializers.PrimaryKeyRelatedField):
+    """自定义能源类型字段，支持ID或code"""
+
+    def to_internal_value(self, data):
+        # 支持字符串 code
+        if isinstance(data, str):
+            try:
+                energy_type = EnergyType.objects.get(code=data)
+                return energy_type.pk
+            except EnergyType.DoesNotExist:
+                self.fail('does_not_exist')
+        # 默认行为：处理整数 ID
+        return super().to_internal_value(data)
+
+
 class AlarmRuleSerializer(serializers.ModelSerializer):
+    energy_type = EnergyTypeField(queryset=EnergyType.objects.all())
     energy_type_detail = EnergyTypeSerializer(source="energy_type", read_only=True)
 
     class Meta:
@@ -23,20 +39,6 @@ class AlarmRuleSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
-        extra_kwargs = {
-            "energy_type": {"required": True}
-        }
-
-    def validate_energy_type(self, value):
-        # 支持两种输入方式：
-        # 1. 整数 ID（原始行为）
-        # 2. 字符串 code（自动转换为 EnergyType 对象）
-        if isinstance(value, str):
-            try:
-                return EnergyType.objects.get(code=value)
-            except EnergyType.DoesNotExist:
-                raise serializers.ValidationError(f"能源类型代码 '{value}' 不存在")
-        return value
 
 
 class AlarmSerializer(serializers.ModelSerializer):
