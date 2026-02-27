@@ -79,3 +79,15 @@ export function exportEnergyData(params) {
     responseType: 'blob',
   })
 }
+
+/**
+ * Get energy data details (for data table in analysis page)
+ * @param {Object} params - Query parameters
+ */
+export function getEnergyDataDetails(params) {
+  return request({
+    url: '/energy-data/',
+    method: 'get',
+    params,
+  })
+}

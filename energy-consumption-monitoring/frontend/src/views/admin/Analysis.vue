@@ -217,28 +217,28 @@
         </div>
         <div class="card-body">
           <el-table
-            :data="paginatedTableData"
+            :data="tableData"
             stripe
             border
             style="width: 100%"
             :header-cell-style="{ background: '#f8fafc', color: '#64748b' }"
           >
-            <el-table-column prop="date" label="日期" width="120" />
-            <el-table-column prop="building" label="建筑" width="120" />
-            <el-table-column prop="energyType" label="能源类型" width="100">
+            <el-table-column prop="date" label="日期" min-width="160" />
+            <el-table-column prop="building" label="建筑" min-width="120" />
+            <el-table-column prop="energyType" label="能源类型" min-width="100">
               <template #default="{ row }">
                 <span class="type-badge" :style="{ background: `${getEnergyColor(row.energyType)}15`, color: getEnergyColor(row.energyType) }">
                   {{ row.energyType }}
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="consumption" label="能耗量" width="120">
+            <el-table-column prop="consumption" label="能耗量" min-width="120">
               <template #default="{ row }">
                 <span class="value-text">{{ row.consumption }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="cost" label="费用 (元)" width="120" />
-            <el-table-column prop="comparison" label="同比变化" width="100">
+            <el-table-column prop="cost" label="费用 (元)" min-width="120" />
+            <el-table-column prop="comparison" label="同比变化" min-width="100">
               <template #default="{ row }">
                 <span :class="['change-text', row.comparison >= 0 ? 'up' : 'down']">
                   <el-icon><icon-ep-caret-top v-if="row.comparison >= 0" /><icon-ep-caret-bottom v-else /></el-icon>
@@ -246,7 +246,7 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="80">
+            <el-table-column prop="status" label="状态" min-width="100">
               <template #default="{ row }">
                 <span :class="['status-badge', `status-${row.status}`]">
                   {{ row.statusText }}
@@ -293,7 +293,7 @@ import {
 } from '@/api/analysis'
 import { getBuildings } from '@/api/building'
 import { getEnergyTypes } from '@/api/device'
-import { exportEnergyData } from '@/api/energy'
+import { exportEnergyData, getEnergyDataDetails } from '@/api/energy'
 
 // Chart refs
 const trendChartRef = ref(null)
@@ -807,6 +807,12 @@ function updateForecastChartWithData(data) {
   const historyItems = data.history || []
   const forecastItems = data.forecast || []
 
+  // Handle empty data
+  if (historyItems.length === 0 && forecastItems.length === 0) {
+    updateForecastChartEmpty()
+    return
+  }
+
   // Extract dates for x-axis
   const categories = [
     ...historyItems.map(item => item.date || ''),
@@ -818,12 +824,17 @@ function updateForecastChartWithData(data) {
 
   // Forecast data - pad with null to align after historical data
   // The forecast should start from the last historical point
-  const lastHistoryValue = historicalData[historicalData.length - 1] || 0
-  const forecastData = [
-    ...Array(historicalData.length - 1).fill(null),
-    lastHistoryValue, // Connect to last historical point
-    ...forecastItems.map(item => item.predicted_value || 0)
-  ]
+  let forecastData = []
+  if (historicalData.length > 0) {
+    const lastHistoryValue = historicalData[historicalData.length - 1] || 0
+    forecastData = [
+      ...Array(historicalData.length - 1).fill(null),
+      lastHistoryValue, // Connect to last historical point
+      ...forecastItems.map(item => item.predicted_value || 0)
+    ]
+  } else {
+    forecastData = forecastItems.map(item => item.predicted_value || 0)
+  }
 
   const option = {
     grid: {
@@ -941,9 +952,82 @@ async function loadBuildingOptions() {
 
 // Load table data
 async function loadTableData() {
-  // TODO: Load from API
-  tableData.value = []
-  pagination.value.total = 0
+  try {
+    const params = {
+      page: pagination.value.page,
+      page_size: pagination.value.size,
+    }
+
+    // Add filters if any
+    if (filters.value.building?.length > 0) {
+      // Get building ID from selected building
+      params.building_id = filters.value.building[filters.value.building.length - 1]
+    }
+
+    if (filters.value.energyType) {
+      params.energy_type = filters.value.energyType
+    }
+
+    // Add date range if specified
+    if (filters.value.dateRange?.length === 2) {
+      params.start_date = filters.value.dateRange[0]
+      params.end_date = filters.value.dateRange[1]
+    }
+
+    const response = await getEnergyDataDetails(params)
+
+    if (response.code === 0 || response.data) {
+      // Backend returns { code: 0, data: [...], total: n }
+      const items = response.data || []
+      tableData.value = items.map((item) => {
+        const value = parseFloat(item.value) || 0
+        // Estimate cost based on energy type
+        const unitPrice = item.energy_type_code === 'ELECTRICITY' ? 0.8 :
+                         item.energy_type_code === 'WATER' ? 5.0 : 3.0
+        const cost = value * unitPrice
+        return {
+          id: item.id,
+          date: formatTimestamp(item.timestamp),
+          building: item.device_code || '-',
+          energyType: item.energy_type_code || '-',
+          consumption: value.toFixed(2),
+          cost: cost.toFixed(2),
+          comparison: 0, // Would need historical data to calculate
+          status: 'normal',
+          statusText: '正常',
+        }
+      })
+      pagination.value.total = response.total || 0
+    } else {
+      tableData.value = []
+      pagination.value.total = 0
+    }
+  } catch (error) {
+    console.error('Failed to load table data:', error)
+    tableData.value = []
+    pagination.value.total = 0
+  }
+}
+
+// Helper function to get energy type name
+function getEnergyTypeName(energyType) {
+  if (!energyType) return '-'
+  if (typeof energyType === 'object') {
+    return energyType.name || energyType.code || '-'
+  }
+  return energyType
+}
+
+// Helper function to format timestamp
+function formatTimestamp(timestamp) {
+  if (!timestamp) return '-'
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
 // Handle time range change
@@ -1033,20 +1117,70 @@ function updateTrendChartWithData(data) {
   const avgPowerData = series.map(item => item.avg_power || 0)
 
   trendChart.value.setOption({
-    xAxis: {
-      data: xAxisData
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '10%',
+      containLabel: true,
     },
-    series: [
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: '#f97316',
+      borderWidth: 1,
+      textStyle: { color: '#fff' },
+      axisPointer: { type: 'line' },
+    },
+    legend: {
+      bottom: 0,
+      textStyle: { color: chartColors.text },
+    },
+    xAxis: {
+      type: 'category',
+      data: xAxisData,
+      axisLine: { lineStyle: { color: chartColors.grid } },
+      axisLabel: { color: chartColors.text, fontSize: 10 },
+    },
+    yAxis: [
       {
-        data: totalValueData,
+        type: 'value',
         name: '能耗量',
+        position: 'left',
+        axisLine: { show: false },
+        axisLabel: { color: chartColors.text, fontSize: 11 },
+        splitLine: { lineStyle: { color: chartColors.grid, type: 'dashed' } },
       },
       {
-        data: avgPowerData,
+        type: 'value',
         name: '平均功率',
-      }
-    ]
-  })
+        position: 'right',
+        axisLine: { show: false },
+        axisLabel: { color: chartColors.text, fontSize: 11 },
+        splitLine: { show: false },
+      },
+    ],
+    series: [
+      {
+        name: '能耗量',
+        type: 'line',
+        yAxisIndex: 0,
+        data: totalValueData,
+        smooth: true,
+        lineStyle: { width: 2, color: chartColors.primary },
+        itemStyle: { color: chartColors.primary },
+      },
+      {
+        name: '平均功率',
+        type: 'line',
+        yAxisIndex: 1,
+        data: avgPowerData,
+        smooth: true,
+        lineStyle: { width: 2, color: chartColors.secondary, type: 'dashed' },
+        itemStyle: { color: chartColors.secondary },
+      },
+    ],
+  }, true)
 }
 
 // Handle export
@@ -1081,10 +1215,12 @@ async function handleExport(format) {
 function handleSizeChange(size) {
   pagination.value.size = size
   pagination.value.page = 1
+  loadTableData()
 }
 
 function handlePageChange(page) {
   pagination.value.page = page
+  loadTableData()
 }
 
 // View detail
@@ -1465,6 +1601,6 @@ onUnmounted(() => {
 }
 
 :deep(.el-table .cell) {
-  padding: 8px 0;
+  padding: 8px 12px;
 }
 </style>
