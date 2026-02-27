@@ -4,6 +4,20 @@ from rest_framework import serializers
 from apps.devices.models import Device, EnergyType
 
 
+class EnergyTypeField(serializers.PrimaryKeyRelatedField):
+    """自定义能源类型字段，支持ID或code"""
+
+    def to_internal_value(self, data):
+        # 支持字符串 code
+        if isinstance(data, str):
+            try:
+                return EnergyType.objects.get(code=data)
+            except EnergyType.DoesNotExist:
+                self.fail('does_not_exist')
+        # 默认行为：处理整数 ID
+        return super().to_internal_value(data)
+
+
 class EnergyTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = EnergyType
@@ -20,6 +34,7 @@ class EnergyTypeSerializer(serializers.ModelSerializer):
 
 
 class DeviceSerializer(serializers.ModelSerializer):
+    energy_type = EnergyTypeField(queryset=EnergyType.objects.all())
     energy_type_detail = EnergyTypeSerializer(source="energy_type", read_only=True)
     room_name = serializers.CharField(source="room.room_number", read_only=True)
     floor_name = serializers.CharField(source="room.floor.name", read_only=True)
