@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from apps.accounts.models import UserProfile, UserRole
+from apps.buildings.models import Room
 from apps.system.models import Notice, OperationLog
 
 
