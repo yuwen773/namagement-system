@@ -35,6 +35,8 @@ profile_alarm_subscriptions_view = ProfileViewSet.as_view(
     }
 )
 profile_balance_view = ProfileViewSet.as_view({"get": "balance"})
+profile_avatar_view = ProfileViewSet.as_view({"post": "upload_avatar"})
+profile_pending_bind_requests_view = ProfileViewSet.as_view({"get": "pending_bind_requests"})
 profile_approve_bind_request_view = ProfileViewSet.as_view({"post": "approve_bind_request"})
 profile_all_pending_bind_requests_view = ProfileViewSet.as_view({"get": "all_pending_bind_requests"})
 
@@ -48,6 +50,8 @@ urlpatterns = [
         name="profile-alarm-subscriptions",
     ),
     path("profile/balance/", profile_balance_view, name="profile-balance"),
+    path("profile/avatar/", profile_avatar_view, name="profile-avatar"),
+    path("profile/pending-bind-requests/", profile_pending_bind_requests_view, name="profile-pending-bind-requests"),
     path("profile/approve-bind-request/", profile_approve_bind_request_view, name="profile-approve-bind-request"),
     path("profile/all-pending-bind-requests/", profile_all_pending_bind_requests_view, name="profile-all-pending-bind-requests"),
 ]
