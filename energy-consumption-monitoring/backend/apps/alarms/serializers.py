@@ -13,8 +13,7 @@ class EnergyTypeField(serializers.PrimaryKeyRelatedField):
         # 支持字符串 code
         if isinstance(data, str):
             try:
-                energy_type = EnergyType.objects.get(code=data)
-                return energy_type.pk
+                return EnergyType.objects.get(code=data)
             except EnergyType.DoesNotExist:
                 self.fail('does_not_exist')
         # 默认行为：处理整数 ID
