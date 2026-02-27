@@ -88,6 +88,11 @@
             <el-icon><icon-ep-tools /></el-icon>
             <template #title>系统管理</template>
           </el-menu-item>
+
+          <el-menu-item index="/admin/notices">
+            <el-icon><icon-ep-bell /></el-icon>
+            <template #title>公告管理</template>
+          </el-menu-item>
         </el-menu>
       </nav>
 

@@ -113,6 +113,16 @@ const routes = [
           roles: ['ADMIN'],
         },
       },
+      {
+        path: 'notices',
+        name: 'AdminNotices',
+        component: () => import('@/views/admin/Notices.vue'),
+        meta: {
+          title: 'Notice Management - Energy Monitoring',
+          requiresAuth: true,
+          roles: ['ADMIN'],
+        },
+      },
     ],
   },
   {
@@ -157,7 +167,7 @@ const routes = [
       },
       {
         path: 'notices',
-        name: 'Notices',
+        name: 'UserNotices',
         component: () => import('@/views/user/Notices.vue'),
         meta: {
           title: 'Notices - Energy Monitoring',

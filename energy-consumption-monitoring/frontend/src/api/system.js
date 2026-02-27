@@ -230,3 +230,50 @@ export function getTips(params) {
     params,
   })
 }
+
+/**
+ * Get tip detail
+ * @param {number} id - Tip ID
+ */
+export function getTip(id) {
+  return request({
+    url: `/tips/${id}/`,
+    method: 'get',
+  })
+}
+
+/**
+ * Create tip (Admin)
+ * @param {Object} data - Tip data
+ */
+export function createTip(data) {
+  return request({
+    url: '/admin/tips/',
+    method: 'post',
+    data,
+  })
+}
+
+/**
+ * Update tip (Admin)
+ * @param {number} id - Tip ID
+ * @param {Object} data - Tip data
+ */
+export function updateTip(id, data) {
+  return request({
+    url: `/admin/tips/${id}/`,
+    method: 'put',
+    data,
+  })
+}
+
+/**
+ * Delete tip (Admin)
+ * @param {number} id - Tip ID
+ */
+export function deleteTip(id) {
+  return request({
+    url: `/admin/tips/${id}/`,
+    method: 'delete',
+  })
+}
