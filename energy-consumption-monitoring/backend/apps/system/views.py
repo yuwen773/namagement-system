@@ -498,3 +498,95 @@ class ProfileViewSet(viewsets.GenericViewSet):
         profile.save(update_fields=["alarm_subscriptions", "updated_at"])
         _write_operation_log(request, "update_alarm_subscriptions", f"user:{request.user.id}")
         return Response(ProfileAlarmSubscriptionSerializer(updated).data)
+
+    @action(detail=False, methods=["post"], url_path="approve-bind-request")
+    @permission_classes([IsAdmin])
+    @extend_schema(
+        summary="管理员批准或拒绝绑定申请",
+        request=inline_serializer(
+            name="ApproveBindRequest",
+            fields={
+                "user_id": serializers.IntegerField(),
+                "room_ids": serializers.ListField(child=serializers.IntegerField(), required=False),
+                "approve": serializers.BooleanField(default=True),
+            },
+        ),
+        responses={200: BindRoomsResponseSerializer},
+    )
+    def approve_bind_request(self, request):
+        """管理员批准或拒绝绑定申请"""
+        user_id = request.data.get("user_id")
+        room_ids = request.data.get("room_ids", [])
+        approve = request.data.get("approve", True)
+
+        if not user_id:
+            return Response({"error": "缺少user_id参数"}, status=400)
+
+        try:
+            profile = UserProfile.objects.get(user_id=user_id)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "用户不存在"}, status=400)
+
+        pending = set(int(item) for item in profile.pending_bind_rooms if str(item).isdigit())
+        current_bound = set(int(item) for item in profile.bind_rooms if str(item).isdigit())
+
+        room_ids_set = set(room_ids)
+
+        if approve:
+            # 批准：移到已绑定
+            new_bound = current_bound.union(room_ids_set)
+            new_pending = pending - room_ids_set
+            profile.bind_rooms = list(new_bound)
+            profile.pending_bind_rooms = list(new_pending)
+            _write_operation_log(request, "approve_bind_request", f"user:{user_id}, rooms:{room_ids}")
+        else:
+            # 拒绝：直接从待审核移除
+            new_pending = pending - room_ids_set
+            profile.pending_bind_rooms = list(new_pending)
+            _write_operation_log(request, "reject_bind_request", f"user:{user_id}, rooms:{room_ids}")
+
+        profile.save()
+        return Response({"bind_rooms": profile.bind_rooms, "pending_bind_rooms": profile.pending_bind_rooms})
+
+    @action(detail=False, methods=["get"], url_path="all-pending-bind-requests")
+    @permission_classes([IsAdmin])
+    @extend_schema(
+        summary="获取所有待审核的绑定申请（管理员）",
+        responses={200: OpenApiResponse(description="所有待审核的房间绑定申请列表")},
+    )
+    def all_pending_bind_requests(self, request):
+        """获取所有待审核的绑定申请（管理员）"""
+        profiles = UserProfile.objects.exclude(pending_bind_rooms=[]).select_related("user")
+
+        results = []
+        for profile in profiles:
+            pending_ids = [int(item) for item in profile.pending_bind_rooms if str(item).isdigit()]
+            if not pending_ids:
+                continue
+
+            room_map = {
+                room.id: room
+                for room in Room.objects.select_related("floor", "floor__building").filter(id__in=pending_ids)
+            }
+
+            rooms = []
+            for room_id in pending_ids:
+                room = room_map.get(room_id)
+                if room:
+                    rooms.append({
+                        "id": room.id,
+                        "room_number": room.room_number,
+                        "building_name": room.floor.building.name,
+                        "floor_name": room.floor.name,
+                    })
+
+            if rooms:
+                results.append({
+                    "user_id": profile.user_id,
+                    "username": profile.user.username,
+                    "real_name": profile.user.first_name or profile.user.username,
+                    "rooms": rooms,
+                    "pending_count": len(rooms),
+                })
+
+        return Response(results)
