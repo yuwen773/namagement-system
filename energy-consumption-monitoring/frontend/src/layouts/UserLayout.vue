@@ -162,7 +162,6 @@ const notices = ref([])
 const navItems = [
   { path: '/user/dashboard', label: '首页', icon: 'icon-ep-house' },
   { path: '/user/usage', label: '用能查询', icon: 'icon-ep-data-line' },
-  { path: '/user/cost', label: '费用充值', icon: 'icon-ep-wallet' },
   { path: '/user/comparison', label: '能耗对比', icon: 'icon-ep-trend-charts' },
   { path: '/user/notices', label: '公告', icon: 'icon-ep-bell' },
   { path: '/user/profile', label: '个人中心', icon: 'icon-ep-user' },

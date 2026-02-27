@@ -6,8 +6,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from apps.accounts.models import UserProfile, UserRole
-from apps.buildings.models import Room
-from apps.system.models import Bill, Notice, OperationLog, RechargeRecord
+from apps.system.models import Notice, OperationLog
 
 
 User = get_user_model()
@@ -159,34 +158,6 @@ class RoleSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
 
-class BillSerializer(serializers.ModelSerializer):
-    room_number = serializers.CharField(source="room.room_number", read_only=True)
-    building_name = serializers.CharField(source="room.floor.building.name", read_only=True)
-    energy_type_code = serializers.CharField(source="energy_type.code", read_only=True)
-    energy_type_name = serializers.CharField(source="energy_type.name", read_only=True)
-
-    class Meta:
-        model = Bill
-        fields = (
-            "id",
-            "room",
-            "room_number",
-            "building_name",
-            "energy_type",
-            "energy_type_code",
-            "energy_type_name",
-            "bill_period",
-            "usage",
-            "amount",
-            "status",
-            "due_date",
-            "paid_time",
-            "created_at",
-            "updated_at",
-        )
-        read_only_fields = ("id", "created_at", "updated_at")
-
-
 class UserNoticeSerializer(serializers.ModelSerializer):
     publisher_name = serializers.CharField(source="publisher.username", read_only=True)
 
@@ -280,46 +251,6 @@ class OperationLogSerializer(serializers.ModelSerializer):
             "create_time",
         )
         read_only_fields = fields
-
-
-class RechargeRecordSerializer(serializers.ModelSerializer):
-    room_number = serializers.CharField(source="room.room_number", read_only=True)
-    building_name = serializers.CharField(source="room.floor.building.name", read_only=True)
-    operator_name = serializers.CharField(source="operator.username", read_only=True)
-
-    class Meta:
-        model = RechargeRecord
-        fields = (
-            "id",
-            "room",
-            "room_number",
-            "building_name",
-            "amount",
-            "payment_method",
-            "recharge_time",
-            "operator",
-            "operator_name",
-            "remark",
-            "created_at",
-            "updated_at",
-        )
-        read_only_fields = ("id", "operator", "recharge_time", "created_at", "updated_at")
-
-
-class RechargeSimulateSerializer(serializers.Serializer):
-    room_id = serializers.IntegerField(min_value=1)
-    amount = serializers.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        min_value=Decimal("0.01"),
-    )
-    payment_method = serializers.CharField(max_length=32, required=False, allow_blank=True)
-    remark = serializers.CharField(max_length=255, required=False, allow_blank=True)
-
-    def validate_room_id(self, value):
-        if not Room.objects.filter(id=value).exists():
-            raise serializers.ValidationError("房间不存在。")
-        return value
 
 
 class ProfileSerializer(serializers.Serializer):

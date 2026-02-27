@@ -1,14 +1,6 @@
 from django.conf import settings
 from django.db import models
 
-from apps.buildings.models import Room
-from apps.devices.models import EnergyType
-
-
-class BillStatus(models.TextChoices):
-    UNPAID = "UNPAID", "Unpaid"
-    PAID = "PAID", "Paid"
-
 
 class NoticeType(models.TextChoices):
     NOTICE = "NOTICE", "Notice"
@@ -27,101 +19,6 @@ class NoticeTargetRole(models.TextChoices):
     ALL = "ALL", "All"
     ADMIN = "ADMIN", "Admin"
     USER = "USER", "User"
-
-
-class Bill(models.Model):
-    room = models.ForeignKey(
-        Room,
-        on_delete=models.CASCADE,
-        related_name="bills",
-        verbose_name="room",
-    )
-    energy_type = models.ForeignKey(
-        EnergyType,
-        on_delete=models.PROTECT,
-        related_name="bills",
-        verbose_name="energy type",
-    )
-    bill_period = models.CharField(max_length=7, verbose_name="bill period")
-    usage = models.DecimalField(
-        max_digits=18,
-        decimal_places=6,
-        default=0,
-        verbose_name="usage",
-    )
-    amount = models.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        default=0,
-        verbose_name="amount",
-    )
-    status = models.CharField(
-        max_length=16,
-        choices=BillStatus.choices,
-        default=BillStatus.UNPAID,
-        verbose_name="status",
-    )
-    due_date = models.DateField(blank=True, null=True, verbose_name="due date")
-    paid_time = models.DateTimeField(blank=True, null=True, verbose_name="paid time")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="created at")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="updated at")
-
-    class Meta:
-        db_table = "em_bills"
-        verbose_name = "bill"
-        verbose_name_plural = "bills"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["room", "energy_type", "bill_period"],
-                name="uk_em_bills_room_energy_period",
-            )
-        ]
-        indexes = [
-            models.Index(fields=["status"], name="idx_em_bills_status"),
-            models.Index(fields=["due_date"], name="idx_em_bills_due_date"),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.room_id}-{self.energy_type_id}-{self.bill_period}"
-
-
-class RechargeRecord(models.Model):
-    room = models.ForeignKey(
-        Room,
-        on_delete=models.CASCADE,
-        related_name="recharge_records",
-        verbose_name="room",
-    )
-    amount = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="amount")
-    payment_method = models.CharField(max_length=32, verbose_name="payment method")
-    recharge_time = models.DateTimeField(verbose_name="recharge time")
-    operator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        db_column="operator_user_id",
-        related_name="recharge_records",
-        verbose_name="operator",
-    )
-    remark = models.CharField(max_length=255, blank=True, null=True, verbose_name="remark")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="created at")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="updated at")
-
-    class Meta:
-        db_table = "em_recharge_records"
-        verbose_name = "recharge record"
-        verbose_name_plural = "recharge records"
-        indexes = [
-            models.Index(fields=["room"], name="idx_recharge_records_room"),
-            models.Index(
-                fields=["recharge_time"],
-                name="idx_recharge_records_time",
-            ),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.room_id}-{self.amount}-{self.recharge_time}"
 
 
 class Notice(models.Model):

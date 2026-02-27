@@ -1,38 +1,6 @@
 from django.contrib import admin
 
-from apps.system.models import Bill, Notice, OperationLog, RechargeRecord
-
-
-@admin.register(Bill)
-class BillAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "room",
-        "energy_type",
-        "bill_period",
-        "usage",
-        "amount",
-        "status",
-        "due_date",
-        "created_at",
-    )
-    list_filter = ("status", "energy_type", "bill_period", "due_date")
-    search_fields = ("room__room_number", "room__floor__building__name", "bill_period")
-
-
-@admin.register(RechargeRecord)
-class RechargeRecordAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "room",
-        "amount",
-        "payment_method",
-        "recharge_time",
-        "operator",
-        "created_at",
-    )
-    list_filter = ("payment_method", "recharge_time")
-    search_fields = ("room__room_number", "remark")
+from apps.system.models import Notice, OperationLog
 
 
 @admin.register(Notice)
