@@ -455,7 +455,10 @@ async function initHourlyChart() {
   try {
     const response = await getHourlyDistribution({})
     if (response.code === 0 && response.data && response.data.buckets) {
-      hourlyData = response.data.buckets.map(bucket => parseFloat(bucket.total_value.toFixed(2)))
+      hourlyData = response.data.buckets.map((bucket) => {
+        const totalValue = Number(bucket.total_value || 0)
+        return Number(totalValue.toFixed(2))
+      })
     }
   } catch (error) {
     console.error('Failed to load hourly distribution:', error)

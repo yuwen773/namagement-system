@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import ExtractHour, TruncMonth, TruncYear
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -69,9 +70,12 @@ def _safe_rate(current_value, previous_value):
     return (float(current_value) - float(previous_value)) / float(previous_value) * 100
 
 
-def _floor_time_to_interval(dt: datetime, interval_minutes: int):
-    minute = (dt.minute // interval_minutes) * interval_minutes
-    return dt.replace(minute=minute, second=0, microsecond=0)
+def _ensure_aware_datetime(value: datetime | None):
+    if value is None:
+        return None
+    if timezone.is_naive(value):
+        return timezone.make_aware(value, timezone.get_current_timezone())
+    return value
 
 
 DEFAULT_ACHIEVEMENTS = [
@@ -271,6 +275,63 @@ class AnalysisViewSet(viewsets.GenericViewSet):
 
         return queryset
 
+    def _period_type_by_granularity(self, period: str):
+        return {
+            "day": PeriodType.DAY,
+            "month": PeriodType.MONTH,
+            "year": PeriodType.YEAR,
+        }.get(period, PeriodType.DAY)
+
+    def _apply_statistics_filters(self, queryset, params, period_type: str):
+        queryset = queryset.filter(period_type=period_type)
+
+        device_tokens = [item.strip() for item in str(params.get("device_id", "")).split(",") if item.strip()]
+        if device_tokens:
+            device_ids = [int(item) for item in device_tokens if item.isdigit()]
+            device_codes = [item for item in device_tokens if not item.isdigit()]
+            query = Q()
+            if device_ids:
+                query |= Q(device_id__in=device_ids)
+            if device_codes:
+                query |= Q(device__device_id__in=device_codes)
+            queryset = queryset.filter(query)
+
+        energy_type = params.get("energy_type")
+        if energy_type:
+            if str(energy_type).isdigit():
+                queryset = queryset.filter(energy_type_id=int(energy_type))
+            else:
+                queryset = queryset.filter(energy_type__code__iexact=str(energy_type).strip())
+
+        campus_id = params.get("campus_id")
+        if campus_id:
+            queryset = queryset.filter(device__room__floor__building__campus_id=campus_id)
+
+        building_id = params.get("building_id")
+        if building_id:
+            queryset = queryset.filter(device__room__floor__building_id=building_id)
+
+        room_id = params.get("room_id")
+        if room_id:
+            queryset = queryset.filter(device__room_id=room_id)
+
+        start_date = params.get("start_date")
+        if start_date:
+            queryset = queryset.filter(period_date__gte=start_date)
+
+        end_date = params.get("end_date")
+        if end_date:
+            queryset = queryset.filter(period_date__lte=end_date)
+
+        if not is_admin_user(self.request.user):
+            room_ids = self._bound_room_ids()
+            if room_ids:
+                queryset = queryset.filter(device__room_id__in=room_ids)
+            else:
+                queryset = queryset.none()
+
+        return queryset
+
     def _apply_alarm_filters(self, queryset, params):
         device_tokens = [item.strip() for item in str(params.get("device_id", "")).split(",") if item.strip()]
         if device_tokens:
@@ -364,23 +425,23 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             (yoy_start, yoy_end),
         )
 
-    def _comparison_summary_payload(self, energy_queryset, period: str, anchor_date: date):
+    def _comparison_summary_payload(self, stats_queryset, period: str, anchor_date: date):
         (current_start, current_end), (previous_start, previous_end), (yoy_start, yoy_end) = self._comparison_ranges(
             period,
             anchor_date,
         )
-        current_total = energy_queryset.filter(
-            timestamp__gte=current_start,
-            timestamp__lte=current_end,
-        ).aggregate(total=Sum("value"))["total"] or 0
-        previous_total = energy_queryset.filter(
-            timestamp__gte=previous_start,
-            timestamp__lte=previous_end,
-        ).aggregate(total=Sum("value"))["total"] or 0
-        yoy_total = energy_queryset.filter(
-            timestamp__gte=yoy_start,
-            timestamp__lte=yoy_end,
-        ).aggregate(total=Sum("value"))["total"] or 0
+        current_total = stats_queryset.filter(
+            period_date__gte=current_start.date(),
+            period_date__lte=current_end.date(),
+        ).aggregate(total=Sum("total_value"))["total"] or 0
+        previous_total = stats_queryset.filter(
+            period_date__gte=previous_start.date(),
+            period_date__lte=previous_end.date(),
+        ).aggregate(total=Sum("total_value"))["total"] or 0
+        yoy_total = stats_queryset.filter(
+            period_date__gte=yoy_start.date(),
+            period_date__lte=yoy_end.date(),
+        ).aggregate(total=Sum("total_value"))["total"] or 0
         return {
             "period": period,
             "anchor_date": anchor_date.isoformat(),
@@ -417,27 +478,28 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         if cached is not None:
             return Response(cached)
 
-        energy_queryset = self._apply_common_filters(
-            EnergyData.objects.select_related("energy_type", "device"),
+        stats_queryset = self._apply_statistics_filters(
+            EnergyStatistics.objects.select_related("energy_type", "device"),
             params,
+            PeriodType.DAY,
         )
 
-        totals = energy_queryset.values(
+        totals = stats_queryset.values(
             "energy_type__code",
             "energy_type__name",
             "energy_type__unit",
         ).annotate(
-            total_value=Sum("value"),
+            total_value=Sum("total_value"),
         ).order_by("energy_type__code")
 
-        overall = energy_queryset.aggregate(
-            total_value=Sum("value"),
-            avg_power=Avg("power"),
+        overall = stats_queryset.aggregate(
+            total_value=Sum("total_value"),
+            avg_power=Avg("avg_value"),
             records=Count("id"),
         )
 
         total_devices = Device.objects.count()
-        covered_devices = energy_queryset.values("device_id").distinct().count()
+        covered_devices = stats_queryset.values("device_id").distinct().count()
         coverage_rate = (covered_devices / total_devices * 100) if total_devices else 0
 
         alarm_queryset = Alarm.objects.select_related("device")
@@ -478,72 +540,65 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         params = self._validate_query(TrendQuerySerializer)
         period = params["period"]
 
-        energy_queryset = self._apply_common_filters(
-            EnergyData.objects.select_related("device", "energy_type"),
+        stats_queryset = self._apply_statistics_filters(
+            EnergyStatistics.objects.select_related("device", "energy_type"),
             params,
+            PeriodType.DAY,
         )
 
-        series = []
-
         if period == "day":
-            # Daily trend using CONVERT_TZ to handle timezone correctly
             rows = (
-                energy_queryset
-                .extra(
-                    select={"bucket": "DATE(CONVERT_TZ(timestamp, '+00:00', '+08:00'))"}
+                stats_queryset.values("period_date")
+                .annotate(
+                    total_value=Sum("total_value"),
+                    avg_power=Avg("avg_value"),
+                    records=Count("id"),
                 )
+                .order_by("period_date")
+            )
+            series = [
+                {
+                    "period": row["period_date"].isoformat() if row["period_date"] else None,
+                    "total_value": row["total_value"] or 0,
+                    "avg_power": row["avg_power"] or 0,
+                    "records": row["records"],
+                }
+                for row in rows
+            ]
+        elif period == "month":
+            rows = (
+                stats_queryset.annotate(bucket=TruncMonth("period_date"))
                 .values("bucket")
                 .annotate(
-                    total_value=Sum("value"),
-                    avg_power=Avg("power"),
+                    total_value=Sum("total_value"),
+                    avg_power=Avg("avg_value"),
                     records=Count("id"),
                 )
                 .order_by("bucket")
             )
-
             series = [
                 {
-                    "period": str(row["bucket"]) if row["bucket"] else None,
+                    "period": row["bucket"].strftime("%Y-%m") if row["bucket"] else None,
                     "total_value": row["total_value"] or 0,
                     "avg_power": row["avg_power"] or 0,
                     "records": row["records"],
                 }
                 for row in rows
             ]
-
-        elif period == "month":
-            # Monthly trend - use database-specific format to avoid timezone issues
-            rows = energy_queryset.extra(
-                select={"month": "DATE_FORMAT(timestamp, '%%Y-%%m')"}
-            ).values("month").annotate(
-                total_value=Sum("value"),
-                avg_power=Avg("power"),
-                records=Count("id"),
-            ).order_by("month")
-
-            series = [
-                {
-                    "period": row["month"],
-                    "total_value": row["total_value"] or 0,
-                    "avg_power": row["avg_power"] or 0,
-                    "records": row["records"],
-                }
-                for row in rows
-            ]
-
         else:  # year
-            # Yearly trend - use database-specific format
-            rows = energy_queryset.extra(
-                select={"year": "DATE_FORMAT(timestamp, '%%Y')"}
-            ).values("year").annotate(
-                total_value=Sum("value"),
-                avg_power=Avg("power"),
-                records=Count("id"),
-            ).order_by("year")
-
+            rows = (
+                stats_queryset.annotate(bucket=TruncYear("period_date"))
+                .values("bucket")
+                .annotate(
+                    total_value=Sum("total_value"),
+                    avg_power=Avg("avg_value"),
+                    records=Count("id"),
+                )
+                .order_by("bucket")
+            )
             series = [
                 {
-                    "period": row["year"],
+                    "period": row["bucket"].strftime("%Y") if row["bucket"] else None,
                     "total_value": row["total_value"] or 0,
                     "avg_power": row["avg_power"] or 0,
                     "records": row["records"],
@@ -669,16 +724,17 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         ranking_type = params["type"]
         limit = params["limit"]
 
-        energy_queryset = self._apply_common_filters(
-            EnergyData.objects.select_related("device", "energy_type"),
+        stats_queryset = self._apply_statistics_filters(
+            EnergyStatistics.objects.select_related("device", "energy_type"),
             params,
+            PeriodType.DAY,
         )
 
         if ranking_type == "building":
             all_rows = (
-                energy_queryset
+                stats_queryset
                 .values("device__room__floor__building_id", "device__room__floor__building__name")
-                .annotate(total_value=Sum("value"))
+                .annotate(total_value=Sum("total_value"))
                 .order_by("-total_value")
             )
             normalized = [
@@ -691,9 +747,9 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             ]
         elif ranking_type == "room":
             all_rows = (
-                energy_queryset
+                stats_queryset
                 .values("device__room_id", "device__room__room_number", "device__room__floor__building__name")
-                .annotate(total_value=Sum("value"))
+                .annotate(total_value=Sum("total_value"))
                 .order_by("-total_value")
             )
             normalized = [
@@ -706,9 +762,9 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             ]
         else:
             all_rows = (
-                energy_queryset
+                stats_queryset
                 .values("device__room__department")
-                .annotate(total_value=Sum("value"))
+                .annotate(total_value=Sum("total_value"))
                 .order_by("-total_value")
             )
             normalized = [
@@ -758,8 +814,13 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         anchor_date = params.get("anchor_date", timezone.localdate())
         view = params.get("view", "summary")
 
-        energy_queryset = self._apply_common_filters(EnergyData.objects.all(), params)
-        summary_payload = self._comparison_summary_payload(energy_queryset, period, anchor_date)
+        period_type = self._period_type_by_granularity(period)
+        stats_queryset = self._apply_statistics_filters(
+            EnergyStatistics.objects.select_related("device", "energy_type"),
+            params,
+            period_type,
+        )
+        summary_payload = self._comparison_summary_payload(stats_queryset, period, anchor_date)
         if view == "summary":
             summary_payload["view"] = "summary"
             return Response(summary_payload)
@@ -767,24 +828,29 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         if view == "radar":
             compare_type = params.get("type") or request.query_params.get("type") or "school"
             compare_type = str(compare_type).strip().lower()
+            (current_start, current_end), _, _ = self._comparison_ranges(period, anchor_date)
+            period_stats_queryset = stats_queryset.filter(
+                period_date__gte=current_start.date(),
+                period_date__lte=current_end.date(),
+            )
             room_ids = self._bound_room_ids()
-            my_queryset = energy_queryset.filter(device__room_id__in=room_ids)
-            benchmark_queryset = energy_queryset
+            my_queryset = period_stats_queryset.filter(device__room_id__in=room_ids)
+            benchmark_queryset = period_stats_queryset
             if compare_type == "building" and room_ids:
                 building_ids = list(
                     Room.objects.filter(id__in=room_ids).values_list("floor__building_id", flat=True).distinct()
                 )
-                benchmark_queryset = energy_queryset.filter(device__room__floor__building_id__in=building_ids)
+                benchmark_queryset = period_stats_queryset.filter(device__room__floor__building_id__in=building_ids)
             elif compare_type == "similar" and room_ids:
                 departments = list(
                     Room.objects.filter(id__in=room_ids).values_list("department", flat=True).distinct()
                 )
-                benchmark_queryset = energy_queryset.filter(device__room__department__in=departments)
+                benchmark_queryset = period_stats_queryset.filter(device__room__department__in=departments)
 
             def _metric_vector(target_queryset):
                 energy_map = {
                     str(item["energy_type__code"]): float(item["total"] or 0)
-                    for item in target_queryset.values("energy_type__code").annotate(total=Sum("value"))
+                    for item in target_queryset.values("energy_type__code").annotate(total=Sum("total_value"))
                 }
                 total_usage = sum(energy_map.values())
                 total_cost = 0.0
@@ -830,54 +896,91 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             )
 
         if view == "trend":
-            trend_series = []
+            month_stats_queryset = self._apply_statistics_filters(
+                EnergyStatistics.objects.select_related("device", "energy_type"),
+                params,
+                PeriodType.MONTH,
+            )
+            month_points = []
             cursor = anchor_date.replace(day=1)
             for _ in range(6):
-                payload = self._comparison_summary_payload(energy_queryset, "month", cursor)
+                month_points.append(cursor)
+                cursor = (cursor - timedelta(days=1)).replace(day=1)
+            lookup_months = set(month_points)
+            for month_point in month_points:
+                lookup_months.add((month_point - timedelta(days=1)).replace(day=1))
+                lookup_months.add(_shift_year(month_point, -1).replace(day=1))
+            min_month = min(lookup_months)
+            max_month = max(lookup_months)
+            totals_by_month = {
+                row["period_date"]: row["total_value"] or 0
+                for row in month_stats_queryset.filter(period_date__gte=min_month, period_date__lte=max_month)
+                .values("period_date")
+                .annotate(total_value=Sum("total_value"))
+            }
+            trend_series = []
+            for month_point in month_points:
+                chain_month = (month_point - timedelta(days=1)).replace(day=1)
+                yoy_month = _shift_year(month_point, -1).replace(day=1)
+                current_total = totals_by_month.get(month_point, 0)
+                chain_total = totals_by_month.get(chain_month, 0)
+                yoy_total = totals_by_month.get(yoy_month, 0)
                 trend_series.append(
                     {
-                        "period": cursor.strftime("%Y-%m"),
-                        "current_total": payload["current_total"],
-                        "chain_total": payload["chain_total"],
-                        "yoy_total": payload["yoy_total"],
-                        "chain_change_rate": payload["chain_change_rate"],
-                        "yoy_change_rate": payload["yoy_change_rate"],
+                        "period": month_point.strftime("%Y-%m"),
+                        "current_total": current_total,
+                        "chain_total": chain_total,
+                        "yoy_total": yoy_total,
+                        "chain_change_rate": _safe_rate(current_total, chain_total),
+                        "yoy_change_rate": _safe_rate(current_total, yoy_total),
                     }
                 )
-                cursor = (cursor - timedelta(days=1)).replace(day=1)
             trend_series.reverse()
             return Response({"view": "trend", "period": "month", "series": trend_series})
 
         my_target_id = self._my_target("building")
         if my_target_id is None:
             return Response({"view": "history_rank", "target_id": None, "series": []})
-        history_series = []
+        month_stats_queryset = self._apply_statistics_filters(
+            EnergyStatistics.objects.select_related("device", "energy_type"),
+            params,
+            PeriodType.MONTH,
+        )
+        month_points = []
         month_cursor = anchor_date.replace(day=1)
-        previous_rank = None
         for _ in range(6):
-            month_start, month_end = _month_range(month_cursor)
-            month_rows = (
-                energy_queryset.filter(timestamp__gte=month_start, timestamp__lte=month_end)
-                .values("device__room__floor__building_id")
-                .annotate(total_value=Sum("value"))
-                .order_by("-total_value")
-            )
+            month_points.append(month_cursor)
+            month_cursor = (month_cursor - timedelta(days=1)).replace(day=1)
+        month_rows = (
+            month_stats_queryset.filter(period_date__in=month_points)
+            .values("period_date", "device__room__floor__building_id")
+            .annotate(total_value=Sum("total_value"))
+            .order_by("period_date", "-total_value")
+        )
+        grouped_rows = {}
+        for row in month_rows:
+            period_date = row["period_date"]
+            grouped_rows.setdefault(period_date, []).append(row)
+
+        history_series = []
+        previous_rank = None
+        for month_point in month_points:
+            period_rows = grouped_rows.get(month_point, [])
             rank = None
-            total_targets = 0
-            for idx, row in enumerate(month_rows, start=1):
-                total_targets += 1
+            total_targets = len(period_rows)
+            for idx, row in enumerate(period_rows, start=1):
                 if str(row["device__room__floor__building_id"]) == str(my_target_id):
                     rank = idx
+                    break
             history_series.append(
                 {
-                    "period": month_cursor.strftime("%Y-%m"),
+                    "period": month_point.strftime("%Y-%m"),
                     "rank": rank,
                     "rank_change": (previous_rank - rank) if rank and previous_rank else None,
                     "total_targets": total_targets,
                 }
             )
             previous_rank = rank
-            month_cursor = (month_cursor - timedelta(days=1)).replace(day=1)
         history_series.reverse()
         return Response({"view": "history_rank", "target_id": my_target_id, "series": history_series})
 
@@ -898,16 +1001,35 @@ class AnalysisViewSet(viewsets.GenericViewSet):
             ("16-20", 16, 20),
             ("20-24", 20, 24),
         ]
+        rows = (
+            queryset.annotate(hour=ExtractHour("timestamp"))
+            .values("hour")
+            .annotate(total_value=Sum("value"), records=Count("id"))
+        )
+        bucket_stats = {
+            label: {"total_value": 0, "records": 0}
+            for label, _, _ in buckets
+        }
+        for row in rows:
+            hour = row["hour"]
+            if hour is None:
+                continue
+            bucket_index = min(hour // 4, len(buckets) - 1)
+            label = buckets[bucket_index][0]
+            bucket_stats[label]["total_value"] += row["total_value"] or 0
+            bucket_stats[label]["records"] += row["records"] or 0
+
         data = []
-        for label, start_hour, end_hour in buckets:
-            bucket_queryset = queryset.filter(timestamp__hour__gte=start_hour, timestamp__hour__lt=end_hour)
-            stats = bucket_queryset.aggregate(total_value=Sum("value"), avg_value=Avg("value"), records=Count("id"))
+        for label, _, _ in buckets:
+            total_value = bucket_stats[label]["total_value"]
+            records = bucket_stats[label]["records"]
+            avg_value = total_value / records if records else 0
             data.append(
                 {
                     "time_range": label,
-                    "total_value": stats["total_value"] or 0,
-                    "avg_value": stats["avg_value"] or 0,
-                    "records": stats["records"] or 0,
+                    "total_value": total_value,
+                    "avg_value": avg_value,
+                    "records": records,
                 }
             )
         return Response({"buckets": data})
@@ -961,36 +1083,33 @@ class AnalysisViewSet(viewsets.GenericViewSet):
                 .order_by("forecast_date")
             )
 
-        energy_queryset = self._apply_common_filters(
-            EnergyData.objects.select_related("device", "energy_type"),
+        stats_queryset = self._apply_statistics_filters(
+            EnergyStatistics.objects.select_related("device", "energy_type"),
             params,
+            PeriodType.DAY,
         )
         if target == "campus" and target_id:
-            energy_queryset = energy_queryset.filter(device__room__floor__building__campus_id=target_id)
+            stats_queryset = stats_queryset.filter(device__room__floor__building__campus_id=target_id)
         if target == "building" and target_id:
-            energy_queryset = energy_queryset.filter(device__room__floor__building_id=target_id)
+            stats_queryset = stats_queryset.filter(device__room__floor__building_id=target_id)
         if target == "meter" and target_id:
             if str(target_id).isdigit():
-                energy_queryset = energy_queryset.filter(device_id=int(target_id))
+                stats_queryset = stats_queryset.filter(device_id=int(target_id))
             else:
-                energy_queryset = energy_queryset.filter(device__device_id=target_id)
+                stats_queryset = stats_queryset.filter(device__device_id=target_id)
 
         end_date = timezone.localdate()
         start_date = end_date - timedelta(days=max(horizon * 2, 14))
         history_rows = (
-            energy_queryset.filter(
-                timestamp__gte=_day_range(start_date)[0],
-                timestamp__lte=_day_range(end_date)[1],
-            )
-            .extra(select={"day": "DATE(timestamp)"})
-            .values("day")
-            .annotate(total_value=Sum("value"))
-            .order_by("day")
+            stats_queryset.filter(period_date__gte=start_date, period_date__lte=end_date)
+            .values("period_date")
+            .annotate(total_value=Sum("total_value"))
+            .order_by("period_date")
         )
         history_items = [
-            {"date": row["day"].isoformat(), "value": round(float(row["total_value"] or 0), 6)}
+            {"date": row["period_date"].isoformat(), "value": round(float(row["total_value"] or 0), 6)}
             for row in history_rows
-            if row["day"] is not None
+            if row["period_date"] is not None
         ]
         forecast_items = [
             {"date": row["forecast_date"].isoformat(), "predicted_value": round(float(row["forecast_value"] or 0), 6)}
@@ -1042,31 +1161,41 @@ class AnalysisViewSet(viewsets.GenericViewSet):
         queryset = self._apply_common_filters(EnergyData.objects.all(), params)
         queryset = queryset.filter(timestamp__gte=start_time, timestamp__lte=end_time).exclude(power__isnull=True)
 
-        buckets = {}
-        for ts, power, device_id in queryset.values_list("timestamp", "power", "device_id").iterator(chunk_size=2000):
-            bucket = _floor_time_to_interval(ts, interval_minutes)
-            item = buckets.setdefault(
-                bucket,
-                {
-                    "timestamp": bucket,
-                    "total_power": 0.0,
-                    "sample_count": 0,
-                    "devices": set(),
-                },
+        interval_seconds = interval_minutes * 60
+        bucket_rows = (
+            queryset.extra(
+                select={
+                    "bucket": (
+                        f"FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(timestamp) / {interval_seconds}) * {interval_seconds})"
+                    )
+                }
             )
-            item["total_power"] += float(power or 0)
-            item["sample_count"] += 1
-            item["devices"].add(device_id)
-
-        series = [
-            {
-                "timestamp": item["timestamp"].isoformat(),
-                "total_power": round(item["total_power"], 3),
-                "avg_power": round(item["total_power"] / item["sample_count"], 3) if item["sample_count"] else 0,
-                "device_count": len(item["devices"]),
-            }
-            for item in sorted(buckets.values(), key=lambda val: val["timestamp"])
-        ]
+            .values("bucket")
+            .annotate(
+                total_power=Sum("power"),
+                sample_count=Count("id"),
+                device_count=Count("device_id", distinct=True),
+            )
+            .order_by("bucket")
+        )
+        series = []
+        for row in bucket_rows:
+            bucket = row["bucket"]
+            if isinstance(bucket, datetime):
+                bucket = _ensure_aware_datetime(bucket)
+                timestamp_value = bucket.isoformat()
+            else:
+                timestamp_value = str(bucket) if bucket is not None else None
+            sample_count = row["sample_count"] or 0
+            total_power = float(row["total_power"] or 0)
+            series.append(
+                {
+                    "timestamp": timestamp_value,
+                    "total_power": round(total_power, 3),
+                    "avg_power": round(total_power / sample_count, 3) if sample_count else 0,
+                    "device_count": row["device_count"] or 0,
+                }
+            )
 
         latest_record = queryset.values(
             "timestamp", "power", "device_id", "device__device_id", "device__name"
@@ -1077,8 +1206,9 @@ class AnalysisViewSet(viewsets.GenericViewSet):
 
         latest_snapshot = None
         if latest_record:
+            latest_ts = _ensure_aware_datetime(latest_record["timestamp"])
             latest_snapshot = {
-                "timestamp": latest_record["timestamp"].isoformat(),
+                "timestamp": latest_ts.isoformat() if latest_ts else None,
                 "power": float(latest_record["power"] or 0),
                 "device_id": latest_record["device_id"],
                 "device_code": latest_record["device__device_id"],
@@ -1087,8 +1217,9 @@ class AnalysisViewSet(viewsets.GenericViewSet):
 
         peak_snapshot = None
         if peak_record:
+            peak_ts = _ensure_aware_datetime(peak_record["timestamp"])
             peak_snapshot = {
-                "timestamp": peak_record["timestamp"].isoformat(),
+                "timestamp": peak_ts.isoformat() if peak_ts else None,
                 "power": float(peak_record["power"] or 0),
                 "device_id": peak_record["device_id"],
                 "device_code": peak_record["device__device_id"],

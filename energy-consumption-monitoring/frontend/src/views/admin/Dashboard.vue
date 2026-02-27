@@ -589,15 +589,16 @@ async function loadTrendData() {
   try {
     const response = await getTrendData({ period: 'day' })
     if (response.code === 0 && response.data && trendChart.value) {
-      const labels = response.data.labels || ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-      const electricityData = response.data.electricity || [3200, 3800, 3500, 4200, 3900, 3100, 2800]
-      const waterData = response.data.water || [2100, 2400, 2200, 2800, 2600, 2000, 1800]
+      const trendSeries = response.data.series || []
+      const labels = trendSeries.map(item => item.period || '')
+      const electricityData = trendSeries.map(item => Number(item.total_value || 0))
+      const waterData = trendSeries.map(item => Number(item.avg_power || 0))
 
       trendChart.value.setOption({
         xAxis: { data: labels },
         series: [
-          { data: electricityData },
-          { data: waterData },
+          { name: '总能耗', data: electricityData },
+          { name: '平均功率', data: waterData },
         ],
       })
     }

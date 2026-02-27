@@ -512,8 +512,8 @@ async function loadTrendData() {
     if (response.code === 0 && response.data && response.data.series) {
       if (trendChart.value) {
         const months = response.data.series.map(s => s.period?.substring(5) + '月' || '')
-        const yoyData = response.data.series.map(s => s.yoy_change || 0)
-        const momData = response.data.series.map(s => s.mom_change || 0)
+        const yoyData = response.data.series.map(s => s.yoy_change_rate ?? s.yoy_change ?? 0)
+        const momData = response.data.series.map(s => s.chain_change_rate ?? s.mom_change ?? 0)
 
         trendChart.value.setOption({
           xAxis: { data: months },
