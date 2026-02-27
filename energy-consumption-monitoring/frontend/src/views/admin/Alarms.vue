@@ -104,14 +104,14 @@
               :empty-text="emptyText"
             >
               <el-table-column type="index" label="#" width="50" />
-              <el-table-column prop="alarm_type" label="类型" width="100">
+              <el-table-column prop="alarm_type" label="类型" width="80">
                 <template #default="{ row }">
                   <el-tag :type="getAlarmTypeTag(row.alarm_type)" size="small">
                     {{ getAlarmTypeLabel(row.alarm_type) }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="级别" width="80">
+              <el-table-column label="级别" width="70">
                 <template #default="{ row }">
                   <div class="severity-indicator" :class="`severity-${getSeverity(row)}`">
                     <span class="severity-dot"></span>
@@ -119,7 +119,7 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="device_name" label="设备" width="150">
+              <el-table-column prop="device_name" label="设备" min-width="120">
                 <template #default="{ row }">
                   <div class="device-cell">
                     <span class="device-name">{{ row.device_name || row.device || '--' }}</span>
@@ -127,22 +127,22 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="alarm_value" label="告警值" width="100" align="right">
+              <el-table-column prop="alarm_value" label="告警值" width="90" align="right">
                 <template #default="{ row }">
                   <span class="alarm-value">{{ formatAlarmValue(row) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="threshold_value" label="阈值" width="100" align="right">
+              <el-table-column prop="threshold_value" label="阈值" width="80" align="right">
                 <template #default="{ row }">
                   <span class="threshold-value">{{ row.threshold_value || '--' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="alarm_time" label="告警时间" width="170">
+              <el-table-column prop="alarm_time" label="告警时间" width="150">
                 <template #default="{ row }">
                   <span class="alarm-time">{{ formatTime(row.alarm_time) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="status" label="状态" width="90">
+              <el-table-column prop="status" label="状态" width="80">
                 <template #default="{ row }">
                   <el-tag :type="getStatusTag(row.status)" size="small" effect="plain">
                     {{ getStatusLabel(row.status) }}
@@ -228,7 +228,7 @@
                 <span class="rule-separator">→</span>
                 <span class="rule-condition">{{ getConditionLabel(rule.condition_type) }}</span>
                 <span class="rule-separator">→</span>
-                <span class="rule-threshold">{{ rule.threshold_value }}</span>
+                <span class="rule-threshold">{{ Number(rule.threshold_value).toFixed(2) }}</span>
               </div>
             </div>
 
@@ -1045,6 +1045,12 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 1fr 340px;
   gap: 16px;
+  min-width: 0;
+}
+
+.alarms-section,
+.rules-section {
+  min-width: 0;
 }
 
 .section-card {
@@ -1126,9 +1132,12 @@ onUnmounted(() => {
 }
 
 .filter-group :deep(.el-select),
-.filter-group :deep(.el-input),
+.filter-group :deep(.el-input) {
+  width: 140px;
+}
+
 .filter-group :deep(.el-date-editor) {
-  width: 160px;
+  width: 320px;
 }
 
 .filter-group :deep(.el-input__wrapper) {
@@ -1140,6 +1149,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 400px;
+  min-width: 0;
 }
 
 .alarms-table {
@@ -1282,17 +1292,23 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .rule-name {
   font-size: 13px;
   font-weight: 500;
   color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rule-actions {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .rule-detail {
@@ -1301,6 +1317,7 @@ onUnmounted(() => {
   gap: 6px;
   font-size: 12px;
   color: #64748b;
+  flex-wrap: wrap;
 }
 
 .rule-separator {
