@@ -106,3 +106,13 @@ export function getMyBalance() {
     method: 'get',
   })
 }
+
+/**
+ * Get my pending bind requests
+ */
+export function getMyPendingBindRequests() {
+  return request({
+    url: '/profile/pending-bind-requests/',
+    method: 'get',
+  })
+}

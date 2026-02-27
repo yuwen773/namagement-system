@@ -198,6 +198,32 @@
                 </el-button>
               </el-empty>
             </div>
+
+            <!-- Pending Bind Requests -->
+            <div v-if="pendingRooms.length > 0" class="pending-section">
+              <div class="section-header">
+                <h3 class="section-title">待审核申请</h3>
+              </div>
+              <el-alert type="warning" :closable="false" class="pending-alert">
+                您有 {{ pendingRooms.length }} 个房间绑定申请正在审核中
+              </el-alert>
+              <div class="room-list">
+                <div v-for="room in pendingRooms" :key="room.id" class="room-card pending">
+                  <div class="room-icon pending-icon">
+                    <el-icon><icon-ep-clock /></el-icon>
+                  </div>
+                  <div class="room-info">
+                    <h4 class="room-name">{{ room.room_number || room.name }}</h4>
+                    <p class="room-detail">
+                      <span>{{ room.building_name || room.building }}</span>
+                      <span class="separator">·</span>
+                      <span>{{ room.floor_name || room.floor }}</span>
+                    </p>
+                  </div>
+                  <el-tag type="warning">待审核</el-tag>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Alarm Subscription Tab -->
@@ -326,6 +352,7 @@ import {
   getMyBindRooms,
   bindRoom as bindRoomApi,
   unbindRoom as unbindRoomApi,
+  getMyPendingBindRequests,
   getMyAlarmSubscriptions,
   updateAlarmSubscriptions,
   uploadAvatar,
@@ -392,6 +419,7 @@ const bindRules = {
 
 // Data
 const boundRooms = ref([])
+const pendingRooms = ref([])
 const availableBuildings = ref([])
 const availableFloors = ref([])
 const availableRooms = ref([])
@@ -518,6 +546,18 @@ async function loadBoundRooms() {
     boundRooms.value = [
       { id: 1, room_number: '301', building_name: '学生宿舍A栋', floor_name: '3层', department: '计算机学院' },
     ]
+  }
+}
+
+async function loadPendingRooms() {
+  try {
+    const response = await getMyPendingBindRequests()
+    if (response.code === 0 && response.data) {
+      pendingRooms.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to load pending rooms:', error)
+    pendingRooms.value = []
   }
 }
 
@@ -661,6 +701,7 @@ async function saveSubscriptions() {
 onMounted(() => {
   loadProfile()
   loadBoundRooms()
+  loadPendingRooms()
   loadSubscriptions()
   loadAvailableBuildings()
 })
@@ -1148,6 +1189,35 @@ onMounted(() => {
 .room-action-btn.unbind:hover {
   background: #ef4444;
   color: white;
+}
+
+/* Pending Section */
+.pending-section {
+  margin-top: 24px;
+}
+
+.pending-section .section-header {
+  margin-bottom: 12px;
+}
+
+.pending-section .section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.pending-alert {
+  margin-bottom: 12px;
+}
+
+.room-card.pending {
+  opacity: 0.85;
+  border-left: 3px solid #e6a23c;
+}
+
+.room-icon.pending-icon {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
 }
 
 /* ========================================
