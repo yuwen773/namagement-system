@@ -28,6 +28,12 @@ class UserProfile(models.Model):
         verbose_name="绑定房间",
         help_text="阶段2.3临时存储房间ID列表，阶段2.4完成后升级为ManyToMany到buildings.Room",
     )
+    pending_bind_rooms = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="待审核绑定申请",
+        help_text="用户发起但待管理员审批的房间ID列表",
+    )
     alarm_subscriptions = models.JSONField(
         default=dict,
         blank=True,

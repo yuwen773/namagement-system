@@ -11,6 +11,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         "phone",
         "role",
         "bind_rooms",
+        "pending_bind_rooms",
         "alarm_subscriptions",
         "created_at",
         "updated_at",
