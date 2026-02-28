@@ -1,0 +1,10 @@
+{
+  "running": false,
+  "mode": "demo",
+  "limit": 100,
+  "collected": 100,
+  "message": "完成! 采集 100 条",
+  "start_time": null,
+  "output_file": "D:\\work\\code\\personal\\namagement-system\\question-answer-information-collection-system\\backend\\exports\\crawler_demo_20260228_142935.csv",
+  "csv_ready": true
+}

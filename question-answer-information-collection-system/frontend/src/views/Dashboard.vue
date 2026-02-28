@@ -251,13 +251,14 @@
           <div class="progress-section" v-if="crawlerData.has_active_task">
             <div class="progress-info">
               <span class="progress-label">采集进度</span>
-              <span class="progress-percent">{{ crawlerData.current_task?.progress || 0 }}%</span>
+              <span class="progress-percent">{{ crawlerProgress }}%</span>
             </div>
             <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: `${crawlerData.current_task?.progress || 0}%` }"></div>
+              <div class="progress-fill" :style="{ width: `${crawlerProgress}%` }"></div>
             </div>
             <p class="progress-detail">
-              已采集 {{ crawlerData.current_task?.collected || 0 }} / {{ crawlerData.current_task?.total || 0 }} 条
+              已采集 {{ crawlerData.collected || 0 }} / {{ crawlerData.limit || 0 }} 条
+              <span class="progress-mode">({{ crawlerData.mode === 'demo' ? '演示模式' : '完整模式' }})</span>
             </p>
           </div>
 
@@ -287,10 +288,25 @@
               </span>
               <span>停止采集</span>
             </button>
+            <button
+              class="crawler-btn download"
+              :disabled="crawlerLoading"
+              @click="handleDownloadCSV"
+            >
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </span>
+              <span>{{ downloadLoading ? '下载中...' : '导出 CSV' }}</span>
+            </button>
           </div>
 
           <div v-if="crawlerMessage" class="crawler-message" :class="crawlerMessageType">
             {{ crawlerMessage }}
+            <span v-if="crawlerData.output_file" class="output-file">{{ crawlerData.output_file }}</span>
           </div>
         </div>
       </div>
@@ -299,7 +315,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, onMounted, onUnmounted, h } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import request from '@/utils/request'
 import ECharts from '@/components/ECharts.vue'
@@ -338,13 +354,30 @@ const hotQuestionsData = ref([])
 const answerDistributionData = ref([])
 
 const crawlerLoading = ref(false)
+const downloadLoading = ref(false)
+const statusPolling = ref(null)
 const crawlerData = ref({
   has_active_task: false,
-  current_task: null,
-  resume_available: false
+  mode: null,
+  limit: 0,
+  collected: 0,
+  message: '空闲',
+  start_time: null,
+  output_file: null,
+  csv_ready: false
 })
 const crawlerMessage = ref('')
 const crawlerMessageType = ref('info')
+
+// Computed for progress calculation
+const crawlerProgress = computed(() => {
+  if (!crawlerData.value.has_active_task) {
+    return 0
+  }
+  const total = crawlerData.value.limit || 1
+  const collected = crawlerData.value.collected || 0
+  return Math.min(Math.round((collected / total) * 100), 100)
+})
 
 // Computed
 const userInitials = computed(() => {
@@ -395,10 +428,13 @@ const crawlerStatusClass = computed(() => {
 })
 
 const crawlerStatusText = computed(() => {
-  if (!crawlerData.value.has_active_task) return '空闲中'
-  const status = crawlerData.value.current_task?.status
-  if (status === 'running') return '采集中'
-  return '已完成'
+  if (crawlerData.value.has_active_task) return '采集中'
+
+  // 检查是否有最近完成的任务
+  if (crawlerData.value.message && crawlerData.value.message.includes('完成')) {
+    return '已完成'
+  }
+  return '空闲中'
 })
 
 // Chart Options
@@ -810,10 +846,50 @@ const fetchCrawlerStatus = async () => {
   try {
     const res = await request.get('/api/crawler/status/')
     if (res.code === 0) {
-      crawlerData.value = res.data
+      const newData = res.data
+      const wasRunning = crawlerData.value.has_active_task ||
+                        crawlerData.value.message?.includes('正在') ||
+                        crawlerData.value.message?.includes('爬取')
+      crawlerData.value = newData
+
+      console.log('Status check:', { wasRunning, message: newData.message, has_active_task: newData.has_active_task })
+
+      // 检查是否完成：message 包含"完成"就触发下载
+      if (newData.message && newData.message.includes('完成') && wasRunning) {
+        crawlerMessage.value = newData.message || '采集已完成'
+        crawlerMessageType.value = 'success'
+        stopStatusPolling()
+        // 刷新统计数据
+        fetchOverview()
+
+        // 自动下载 CSV - 使用延迟确保状态已更新
+        setTimeout(() => {
+          console.log('Auto-downloading CSV...')
+          handleDownloadCSV()
+        }, 500)
+      }
     }
   } catch (e) {
     console.error('Failed to fetch crawler status:', e)
+  }
+}
+
+// Start polling for crawler status
+const startStatusPolling = () => {
+  // Clear existing interval if any
+  stopStatusPolling()
+
+  // Poll every 2 seconds
+  statusPolling.value = setInterval(() => {
+    fetchCrawlerStatus()
+  }, 2000)
+}
+
+// Stop polling
+const stopStatusPolling = () => {
+  if (statusPolling.value) {
+    clearInterval(statusPolling.value)
+    statusPolling.value = null
   }
 }
 
@@ -821,10 +897,14 @@ const handleStartCrawler = async (mode) => {
   crawlerLoading.value = true
   crawlerMessage.value = ''
   try {
-    const res = await request.post('/api/crawler/start/', { mode, limit: 20 })
+    // 使用较大的 limit 以便观察实时进度
+    const res = await request.post('/api/crawler/start/', { mode, limit: 100 })
     if (res.code === 0) {
-      crawlerMessage.value = '采集任务已启动'
+      crawlerMessage.value = '采集任务已启动，正在初始化...'
       crawlerMessageType.value = 'success'
+      // 启动轮询
+      startStatusPolling()
+      // 立即获取一次状态
       await fetchCrawlerStatus()
     } else {
       crawlerMessage.value = res.message || '启动失败'
@@ -844,8 +924,10 @@ const handleStopCrawler = async () => {
   try {
     const res = await request.post('/api/crawler/stop/')
     if (res.code === 0) {
-      crawlerMessage.value = '采集已停止'
+      crawlerMessage.value = '正在停止采集...'
       crawlerMessageType.value = 'info'
+      // 停止轮询
+      stopStatusPolling()
       await fetchCrawlerStatus()
     } else {
       crawlerMessage.value = res.message || '停止失败'
@@ -859,8 +941,75 @@ const handleStopCrawler = async () => {
   }
 }
 
+const handleDownloadCSV = async () => {
+  downloadLoading.value = true
+  try {
+    // 使用隐藏的 iframe 触发下载（更可靠，避免浏览器阻止）
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    iframe.src = '/api/crawler/download/'
+    document.body.appendChild(iframe)
+
+    // 清理 iframe
+    setTimeout(() => {
+      try {
+        document.body.removeChild(iframe)
+      } catch (e) {}
+      downloadLoading.value = false
+    }, 5000)
+
+    crawlerMessage.value = 'CSV 文件已开始下载'
+    crawlerMessageType.value = 'success'
+    return
+
+    // 以下是原来的 fetch 方式，保留作为备用
+    const response = await fetch('/api/crawler/download/', {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('下载失败')
+    }
+
+    // 获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = `questions_${new Date().toISOString().slice(0, 10)}.csv`
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="(.+)"/)
+      if (match) filename = match[1]
+    }
+
+    // 下载文件
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    crawlerMessage.value = 'CSV 文件已下载'
+    crawlerMessageType.value = 'success'
+  } catch (e) {
+    crawlerMessage.value = '下载失败，请稍后重试'
+    crawlerMessageType.value = 'error'
+  } finally {
+    downloadLoading.value = false
+  }
+}
+
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await fetchCrawlerStatus()
+  // 如果有任务在运行，启动轮询
+  if (crawlerData.value.has_active_task) {
+    startStatusPolling()
+  }
+  // 获取其他统计数据
   fetchOverview()
   fetchTrend()
   fetchAnswerers()
@@ -868,7 +1017,11 @@ onMounted(() => {
   fetchLocations()
   fetchHotQuestions()
   fetchAnswerDistribution()
-  fetchCrawlerStatus()
+})
+
+onUnmounted(() => {
+  // 组件销毁时停止轮询
+  stopStatusPolling()
 })
 </script>
 
@@ -1361,6 +1514,18 @@ onMounted(() => {
   margin-top: 0.5rem;
   font-size: 0.8rem;
   color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-mode {
+  padding: 0.125rem 0.5rem;
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .crawler-actions {
@@ -1406,6 +1571,16 @@ onMounted(() => {
   background: #e2e8f0;
 }
 
+.crawler-btn.download {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  color: #fff;
+}
+
+.crawler-btn.download:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+}
+
 .btn-icon {
   display: flex;
 }
@@ -1438,6 +1613,14 @@ onMounted(() => {
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   color: #64748b;
+}
+
+.output-file {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  word-break: break-all;
 }
 
 /* Responsive */

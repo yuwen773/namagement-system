@@ -1,41 +1,27 @@
 """
-爬虫状态 API 视图
+爬虫状态 API 视图 (简化版)
 
 提供前端调用的爬虫控制接口，实时反馈状态。
-支持启动、停止、查询状态和获取日志。
+支持启动、停止、查询状态。
+
+简化说明：
+- 移除 Celery 依赖，直接使用 subprocess + threading
+- 移除 Redis 依赖，使用内存变量存储状态
 """
 
 import json
-import redis
 from datetime import datetime
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
 
-from apps.crawler.tasks import (
-    run_spider_task,
-    get_task_status,
-    get_task_progress,
-    get_task_logs,
-    stop_spider,
-    get_resume_info,
-    REDIS_HOST,
-    REDIS_PORT,
-    REDIS_DB,
-    REDIS_KEY_PREFIX,
-)
 from apps.crawler.models import Question, Answer
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from django.db.models.functions import TruncDate
-
-
-def get_redis_client():
-    """获取 Redis 客户端"""
-    return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
 
 
 def make_response(code=0, data=None, message=None, total=None):
@@ -51,6 +37,44 @@ def make_response(code=0, data=None, message=None, total=None):
     return response_data
 
 
+# 爬虫状态（全局变量，简化版）
+_crawler_status = {
+    'running': False,
+    'mode': None,
+    'limit': 0,
+    'collected': 0,
+    'message': '空闲',
+    'start_time': None
+}
+
+# 状态文件路径
+import os
+from pathlib import Path
+CRAWLER_STATUS_FILE = Path(__file__).parent.parent.parent / 'apps' / 'crawler' / 'crawler_status.json'
+
+
+def _save_crawler_status():
+    """保存爬虫状态到文件"""
+    import json
+    try:
+        with open(CRAWLER_STATUS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(_crawler_status, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"保存状态失败: {e}")
+
+
+def _load_crawler_status():
+    """从文件加载爬虫状态"""
+    import json
+    try:
+        if CRAWLER_STATUS_FILE.exists():
+            with open(CRAWLER_STATUS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                _crawler_status.update(data)
+    except Exception as e:
+        print(f"加载状态失败: {e}")
+
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
     自定义权限：仅管理员可写，普通用户可读
@@ -63,13 +87,35 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 class CrawlerStatusView(APIView):
     """
-    爬虫状态 API
+    爬虫状态 API (简化版)
 
-    提供爬虫任务的状态查询和控制接口。
+    提供爬虫任务的状态查询接口。
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        # 每次获取状态时从文件加载最新状态
+        _load_crawler_status()
+
+        # 如果任务正在运行，从数据库获取实时进度
+        if _crawler_status.get('running'):
+            try:
+                from apps.crawler.models import Question
+                from django.db import connection
+
+                start_time = _crawler_status.get('start_time')
+                if start_time:
+                    with connection.cursor() as cursor:
+                        cursor.execute(
+                            "SELECT COUNT(*) FROM crawler_question WHERE created_at > %s",
+                            [start_time]
+                        )
+                        result = cursor.fetchone()
+                        if result:
+                            _crawler_status['collected'] = result[0]
+            except Exception as e:
+                print(f"获取实时进度失败: {e}")
+
         """
         获取当前爬虫状态
 
@@ -79,104 +125,77 @@ class CrawlerStatusView(APIView):
         {
             "code": 0,
             "data": {
-                "task_id": "abc123",
-                "status": "running",
-                "progress": 45,
-                "collected": 9000,
-                "total": 10000,
-                "start_time": "2026-02-07T10:30:00",
-                "message": "正在采集第 90 页..."
+                "has_active_task": true,
+                "mode": "demo",
+                "limit": 20,
+                "collected": 5,
+                "message": "正在爬取..."
             }
         }
         """
-        try:
-            redis_client = get_redis_client()
-            redis_client.ping()  # 测试连接
-        except Exception:
-            # Redis 不可用时返回默认状态
-            return Response(
-                make_response(code=0, data={
-                    "has_active_task": False,
-                    "current_task": None,
-                    "resume_available": False,
-                    "resume_info": None,
-                }),
-                status=status.HTTP_200_OK
-            )
+        crawler_state = _crawler_status
 
-        try:
-            # 获取所有活跃任务
-            pattern = f'{REDIS_KEY_PREFIX}status:*'
-            active_tasks = []
+        response_data = {
+            "has_active_task": crawler_state['running'],
+            "mode": crawler_state['mode'],
+            "limit": crawler_state['limit'],
+            "collected": crawler_state['collected'],
+            "message": crawler_state['message'],
+            "start_time": crawler_state['start_time']
+        }
 
-            for key in redis_client.scan_iter(match=pattern):
-                task_data = redis_client.get(key)
-                if task_data:
-                    task_info = json.loads(task_data)
-                    if task_info.get('status') in ['running', 'pending']:
-                        active_tasks.append(task_info)
-
-            # 获取当前运行的任务（如果有）
-            current_task = None
-            if active_tasks:
-                # 返回最新的运行任务
-                current_task = max(active_tasks, key=lambda x: x.get('start_time', ''))
-
-            # 获取断点信息
-            resume_info = get_resume_info('full')
-
-            response_data = {
-                "has_active_task": current_task is not None,
-                "current_task": current_task,
-                "resume_available": resume_info.get('has_resume', False),
-                "resume_info": resume_info if resume_info.get('has_resume') else None,
-            }
-
-            return Response(
-                make_response(code=0, data=response_data),
-                status=status.HTTP_200_OK
-            )
-
-        except Exception as e:
-            return Response(
-                make_response(code=-1, message="系统繁忙，请稍后重试"),
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        return Response(
+            make_response(code=0, data=response_data),
+            status=status.HTTP_200_OK
+        )
 
 
 class CrawlerStartView(APIView):
     """
-    启动爬虫任务 API
+    启动爬虫任务 API (使用 Django 管理命令)
 
     POST /api/crawler/start/
 
     请求参数:
     {
         "mode": "demo" | "full",  // 采集模式
-        "limit": 20,              // 采集数量限制
-        "api_only": false,        // 是否使用纯API模式
-        "resume": false           // 是否断点续传
+        "limit": 20               // 采集数量限制
     }
 
     响应示例:
     {
         "code": 0,
         "data": {
-            "task_id": "abc123-uuid",
-            "status": "pending",
-            "message": "任务已提交，请稍后查询状态"
+            "message": "爬虫任务已启动"
         }
     }
     """
     permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
 
     def post(self, request):
+        import subprocess
+        import threading
+        import sys
+        import os
+        from datetime import datetime
+        from pathlib import Path
+
         try:
             # 权限检查：仅管理员可启动爬虫
             if not hasattr(request.user, 'role') or request.user.role != 'admin':
                 return Response(
                     make_response(code=-1, message="仅管理员可以启动爬虫任务"),
                     status=status.HTTP_403_FORBIDDEN
+                )
+
+            # 检查是否已有任务在运行
+            if _crawler_status['running']:
+                return Response(
+                    make_response(
+                        code=-1,
+                        message=f"已有任务正在运行 (模式: {_crawler_status['mode']})",
+                    ),
+                    status=status.HTTP_409_CONFLICT
                 )
 
             # 获取请求参数
@@ -188,8 +207,6 @@ class CrawlerStartView(APIView):
                     make_response(code=-1, message="参数 limit 必须是整数"),
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            api_only = request.data.get('api_only', False)
-            resume = request.data.get('resume', False)
 
             # 参数验证
             if mode not in ['demo', 'full']:
@@ -204,55 +221,94 @@ class CrawlerStartView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # 检查是否有正在运行的任务
-            redis_client = get_redis_client()
-            pattern = f'{REDIS_KEY_PREFIX}status:*'
+            # 生成输出文件路径
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_filename = f'crawler_{mode}_{timestamp}.csv'
+            output_dir = Path(__file__).parent.parent.parent / 'exports'
+            output_dir.mkdir(exist_ok=True)
+            output_path = output_dir / output_filename
 
-            for key in redis_client.scan_iter(match=pattern):
-                task_data = redis_client.get(key)
-                if task_data:
-                    task_info = json.loads(task_data)
-                    if task_info.get('status') in ['running', 'pending']:
-                        return Response(
-                            make_response(
-                                code=-1,
-                                message=f"已有任务正在运行 (task_id: {task_info.get('task_id')})",
-                                data={"existing_task_id": task_info.get('task_id')}
-                            ),
-                            status=status.HTTP_409_CONFLICT
-                        )
+            # 更新状态
+            _crawler_status.update({
+                'running': True,
+                'mode': mode,
+                'limit': limit,
+                'collected': 0,
+                'message': '正在启动...',
+                'start_time': datetime.now().isoformat(),
+                'output_file': str(output_path)
+            })
 
-            # 启动 Celery 任务
-            task = run_spider_task.delay(
-                mode=mode,
-                limit=limit,
-                api_only=api_only,
-                resume=resume
-            )
+            # 在后台线程中运行爬虫
+            def run_crawler():
+                try:
+                    backend_dir = Path(__file__).parent.parent.parent
 
-            # 记录启动日志
-            log_entry = {
-                "timestamp": timezone.now().isoformat(),
-                "action": "start",
-                "mode": mode,
-                "limit": limit,
-                "user_id": request.user.id,
-                "task_id": task.id,
-            }
+                    # 使用 Django 管理命令运行爬虫
+                    cmd = [
+                        sys.executable, 'manage.py', 'run_crawler',
+                        '--mode', mode,
+                        '--limit', str(limit),
+                        '--output', str(output_path)
+                    ]
 
-            log_key = f'{REDIS_KEY_PREFIX}operation_logs'
-            redis_client.lpush(log_key, json.dumps(log_entry, ensure_ascii=False))
-            redis_client.ltrim(log_key, 0, 99)  # 保留最近100条日志
+                    _crawler_status['message'] = '正在爬取...'
+
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=3600,  # 1小时超时
+                        cwd=str(backend_dir),
+                        env=os.environ.copy()
+                    )
+
+                    # 解析结果
+                    collected = 0
+                    for line in result.stdout.split('\n'):
+                        if 'item_scraped_count' in line:
+                            try:
+                                collected = int(line.split('item_scraped_count')[-1].strip().rstrip(','))
+                            except:
+                                pass
+
+                    if result.returncode == 0:
+                        _crawler_status.update({
+                            'running': False,
+                            'collected': collected,
+                            'message': f'完成! 采集 {collected} 条',
+                            'output_file': str(output_path),
+                            'csv_ready': True
+                        })
+                    else:
+                        _crawler_status.update({
+                            'running': False,
+                            'collected': collected,
+                            'message': f'失败: {result.stderr[:200] if result.stderr else "未知错误"}'
+                        })
+                except subprocess.TimeoutExpired:
+                    _crawler_status.update({
+                        'running': False,
+                        'message': '超时: 任务运行超过1小时'
+                    })
+                except Exception as e:
+                    _crawler_status.update({
+                        'running': False,
+                        'message': f'错误: {str(e)}'
+                    })
+
+            # 启动后台线程
+            thread = threading.Thread(target=run_crawler, daemon=True)
+            thread.start()
 
             return Response(
                 make_response(
                     code=0,
                     data={
-                        "task_id": task.id,
-                        "status": "pending",
                         "mode": mode,
                         "limit": limit,
-                        "message": "任务已提交，请稍后查询状态"
+                        "message": "爬虫任务已启动，请稍后查看状态",
+                        "output_file": output_filename
                     },
                     message="爬虫任务已启动"
                 ),
@@ -261,82 +317,133 @@ class CrawlerStartView(APIView):
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message="系统繁忙，请稍后重试"),
+                make_response(code=-1, message=f"系统繁忙，请稍后重试: {str(e)}"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class CrawlerStopView(APIView):
     """
-    停止爬虫任务 API
+    停止爬虫任务 API (简化版)
 
     POST /api/crawler/stop/
 
-    请求参数:
-    {
-        "task_id": "abc123-uuid"  // 可选，不提供则停止所有运行中的任务
-    }
-
-    响应示例:
-    {
-        "code": 0,
-        "data": {
-            "task_id": "abc123-uuid",
-            "status": "stopped",
-            "message": "任务已停止"
-        }
-    }
+    注意：由于使用 subprocess 执行，实际无法强制终止。
+    此接口仅标记状态为已停止。
     """
     permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
 
     def post(self, request):
-        try:
-            # 权限检查：仅管理员可停止爬虫
-            if not hasattr(request.user, 'role') or request.user.role != 'admin':
-                return Response(
-                    make_response(code=-1, message="仅管理员可以停止爬虫任务"),
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-            task_id = request.data.get('task_id')
-
-            if not task_id:
-                # 如果没有指定 task_id，查找正在运行的任务
-                redis_client = get_redis_client()
-                pattern = f'{REDIS_KEY_PREFIX}status:*'
-
-                running_task_id = None
-                for key in redis_client.scan_iter(match=pattern):
-                    task_data = redis_client.get(key)
-                    if task_data:
-                        task_info = json.loads(task_data)
-                        if task_info.get('status') == 'running':
-                            running_task_id = task_info.get('task_id')
-                            break
-
-                if not running_task_id:
-                    return Response(
-                        make_response(code=-1, message="没有正在运行的爬虫任务"),
-                        status=status.HTTP_404_NOT_FOUND
-                    )
-
-                task_id = running_task_id
-
-            # 调用 Celery 停止任务
-            result = stop_spider(task_id)
-
+        # 权限检查：仅管理员可停止爬虫
+        if not hasattr(request.user, 'role') or request.user.role != 'admin':
             return Response(
-                make_response(
-                    code=0,
-                    data=result,
-                    message="爬虫任务已停止"
-                ),
-                status=status.HTTP_200_OK
+                make_response(code=-1, message="仅管理员可以停止爬虫任务"),
+                status=status.HTTP_403_FORBIDDEN
             )
+
+        # 检查是否有运行中的任务
+        if not _crawler_status['running']:
+            return Response(
+                make_response(code=-1, message="没有正在运行的爬虫任务"),
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 标记为已停止（注意：实际进程可能仍在运行）
+        _crawler_status.update({
+            'running': False,
+            'message': '已手动停止'
+        })
+
+        return Response(
+            make_response(
+                code=0,
+                data={
+                    "message": "爬虫任务已停止",
+                    "note": "由于使用 subprocess，进程可能仍在后台运行，请手动检查"
+                }
+            ),
+            status=status.HTTP_200_OK
+        )
+
+
+class CrawlerDownloadView(APIView):
+    """
+    下载爬取的 CSV 文件 API
+
+    GET /api/crawler/download/
+
+    返回最近的爬取结果 CSV 文件
+    """
+    permission_classes = [permissions.AllowAny]  # 允许任何人下载
+
+    def get(self, request):
+        from pathlib import Path
+        from django.http import FileResponse
+        import mimetypes
+
+        try:
+            # 获取输出目录 - 修正路径到 apps/crawler/exports/
+            output_dir = Path(__file__).parent.parent.parent / 'apps' / 'crawler' / 'exports'
+
+            # 查找最新的 CSV 文件
+            csv_files = list(output_dir.glob('crawler_*.csv'))
+
+            if not csv_files:
+                # 如果没有爬取生成的文件，从数据库生成 CSV
+                from apps.crawler.models import Question
+                import csv
+                from io import StringIO
+                from django.http import HttpResponse
+
+                # 获取最近采集的数据
+                questions = Question.objects.order_by('-created_at')[:1000]
+
+                # 创建 CSV
+                output = StringIO()
+                writer = csv.writer(output)
+
+                # 写入表头
+                writer.writerow([
+                    '问题ID', '标题', '分类', '回答数', '发布时间',
+                    '地理位置', '来源链接', '采集时间', '采集页码'
+                ])
+
+                # 写入数据
+                for q in questions:
+                    writer.writerow([
+                        q.question_id,
+                        q.title,
+                        q.category or '',
+                        q.answer_count,
+                        q.publish_time.strftime('%Y-%m-%d') if q.publish_time else '',
+                        q.location or '',
+                        q.source_url,
+                        q.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                        q.crawl_page
+                    ])
+
+                # 创建响应
+                response = HttpResponse(
+                    output.getvalue(),
+                    content_type='text/csv; charset=utf-8-sig'
+                )
+                response['Content-Disposition'] = f'attachment; filename="questions_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+                return response
+
+            # 获取最新文件
+            latest_file = max(csv_files, key=lambda p: p.stat().st_mtime)
+
+            # 返回文件
+            response = FileResponse(
+                open(latest_file, 'rb'),
+                content_type='text/csv'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{latest_file.name}"'
+            return response
 
         except Exception as e:
             return Response(
-                make_response(code=-1, message="系统繁忙，请稍后重试"),
+                make_response(code=-1, message=f"下载失败: {str(e)}"),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

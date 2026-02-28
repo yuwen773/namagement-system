@@ -10,6 +10,7 @@ from .views import (
     CrawlerStatusView,
     CrawlerStartView,
     CrawlerStopView,
+    CrawlerDownloadView,
     CrawlerProgressView,
     CrawlerLogsView,
     CrawlerResumeView,
@@ -40,6 +41,9 @@ urlpatterns = [
 
     # 停止爬虫任务
     path('crawler/stop/', CrawlerStopView.as_view(), name='crawler-stop'),
+
+    # 下载爬取的 CSV 文件
+    path('crawler/download/', CrawlerDownloadView.as_view(), name='crawler-download'),
 
     # 获取任务进度
     path('crawler/progress/<str:task_id>/', CrawlerProgressView.as_view(), name='crawler-progress'),
