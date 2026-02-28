@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   House, Grid, User as UserIcon, SwitchButton, Menu,
-  TrendCharts, Star, Bell
+  TrendCharts, Star, Bell, Message
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -30,6 +30,11 @@ const menuItems = computed(() => [
     path: '/user/announcements',
     icon: Bell,
     title: '公告中心'
+  },
+  {
+    path: '/user/feedback',
+    icon: Message,
+    title: '意见反馈'
   },
   {
     path: '/user/profile',

@@ -3,7 +3,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { authApi } from '@/api'
-import { User, Lock, Camera, Check, Close, Leaf, Sprout } from '@element-plus/icons-vue'
+import { User, Lock, Camera, Check, Close, Message } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const userStore = useUserStore()
 
@@ -166,6 +169,10 @@ onMounted(() => {
           </div>
         </div>
         <div class="header-right">
+          <button class="feedback-btn" @click="router.push('/user/feedback')">
+            <Message class="btn-icon" />
+            <span>意见反馈</span>
+          </button>
           <div class="user-status-badge">
             <span class="status-dot"></span>
             <span>在线</span>
@@ -594,6 +601,33 @@ onMounted(() => {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.feedback-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-light));
+  border: none;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.25);
+}
+
+.feedback-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(45, 106, 79, 0.35);
+}
+
+.feedback-btn .btn-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .user-status-badge {

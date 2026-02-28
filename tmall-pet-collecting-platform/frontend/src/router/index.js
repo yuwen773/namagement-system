@@ -19,6 +19,7 @@ const AdminUsers = () => import('@/views/admin/Users.vue')
 const AdminAnnouncements = () => import('@/views/admin/Announcements.vue')
 const AdminAnnouncementEdit = () => import('@/views/admin/AnnouncementEdit.vue')
 const AdminSettings = () => import('@/views/admin/Settings.vue')
+const AdminFeedback = () => import('@/views/admin/Feedback.vue')
 
 // 用户端页面
 const UserMarket = () => import('@/views/user/Market.vue')
@@ -26,6 +27,7 @@ const UserProducts = () => import('@/views/user/Products.vue')
 const UserProductDetail = () => import('@/views/user/ProductDetail.vue')
 const UserAnnouncements = () => import('@/views/user/Announcements.vue')
 const UserProfile = () => import('@/views/user/Profile.vue')
+const UserFeedback = () => import('@/views/user/Feedback.vue')
 
 const routes = [
   {
@@ -101,6 +103,12 @@ const routes = [
         name: 'AdminSettings',
         component: AdminSettings,
         meta: { requiresAuth: true, role: 'admin', title: '系统设置' }
+      },
+      {
+        path: 'feedback',
+        name: 'AdminFeedback',
+        component: AdminFeedback,
+        meta: { requiresAuth: true, role: 'admin', title: '反馈管理' }
       }
     ]
   },
@@ -143,6 +151,12 @@ const routes = [
         name: 'UserProfile',
         component: UserProfile,
         meta: { requiresAuth: true, role: 'user', title: '个人中心' }
+      },
+      {
+        path: 'feedback',
+        name: 'UserFeedback',
+        component: UserFeedback,
+        meta: { requiresAuth: true, role: 'user', title: '意见反馈' }
       }
     ]
   },

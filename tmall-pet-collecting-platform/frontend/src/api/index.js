@@ -228,3 +228,35 @@ export const adminAnnouncementApi = {
     return request.post(`/announcements/admin/${id}/unpublish/`)
   }
 }
+
+// 反馈管理
+export const feedbackApi = {
+  // 提交反馈
+  create(data) {
+    return request.post('/feedback/', data)
+  },
+  // 我的反馈列表
+  getMyList() {
+    return request.get('/feedback/my/')
+  },
+  // 管理员获取全部反馈
+  getList(params) {
+    return request.get('/feedback/', { params })
+  },
+  // 管理员获取详情
+  getDetail(id) {
+    return request.get(`/feedback/${id}/`)
+  },
+  // 管理员更新状态
+  updateStatus(id, status) {
+    return request.patch(`/feedback/${id}/`, { status })
+  },
+  // 管理员删除
+  delete(id) {
+    return request.delete(`/feedback/${id}/`)
+  },
+  // 标记为已处理
+  process(id) {
+    return request.post(`/feedback/${id}/process/`)
+  }
+}
