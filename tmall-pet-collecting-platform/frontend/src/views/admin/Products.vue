@@ -275,6 +275,11 @@ const formatTime = (timeStr) => {
   })
 }
 
+// 格式化数字（千分位）
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('zh-CN').format(num || 0)
+}
+
 // 表格列配置
 const columns = [
   {
@@ -333,49 +338,54 @@ onMounted(() => {
 
 <template>
   <div class="products-container">
-    <!-- 头部操作区 -->
-    <div class="header-section">
+    <!-- 页面头部 -->
+    <div class="page-header">
       <div class="header-left">
-        <div class="header-title">
-          <ShoppingCart class="title-icon" />
-          <h2>宠物商品管理</h2>
+        <div class="title-group">
+          <div class="title-icon-wrapper">
+            <ShoppingCart class="title-icon" />
+          </div>
+          <div class="title-text">
+            <h1 class="page-title">宠物商品管理</h1>
+            <p class="page-subtitle">采集数据浏览与管理</p>
+          </div>
         </div>
-        <div class="header-stats">
-          <span class="stat">共 <strong>{{ total }}</strong> 件商品</span>
-          <span v-if="selectedIds.length > 0" class="stat selected">
-            已选 <strong>{{ selectedIds.length }}</strong> 项
-          </span>
+        <div class="stats-badges">
+          <div class="stat-badge">
+            <span class="stat-label">商品总数</span>
+            <span class="stat-value">{{ formatNumber(total) }}</span>
+          </div>
+          <div v-if="selectedIds.length > 0" class="stat-badge stat-badge--active">
+            <span class="stat-label">已选择</span>
+            <span class="stat-value">{{ selectedIds.length }}</span>
+          </div>
         </div>
       </div>
       <div class="header-actions">
         <button
           v-if="selectedIds.length > 0"
-          class="btn btn-danger"
+          class="action-btn action-btn--danger"
           @click="handleBatchDelete"
         >
           <Delete class="btn-icon" />
           <span>批量删除</span>
         </button>
-        <!-- <button class="btn btn-primary" @click="handleExport">
-          <Download class="btn-icon" />
-          <span>导出CSV</span>
-        </button> -->
-        <button class="btn btn-secondary" @click="loadProducts">
+        <button class="action-btn action-btn--secondary" @click="loadProducts" :class="{ loading }">
           <Refresh class="btn-icon" :class="{ spinning: loading }" />
           <span>刷新</span>
         </button>
       </div>
     </div>
 
-    <!-- 搜索筛选区 -->
-    <div class="filter-section">
+    <!-- 筛选控制面板 -->
+    <div class="filter-panel">
       <div class="filter-bar">
-        <div class="search-input-wrapper">
+        <div class="search-group">
           <Search class="search-icon" />
           <input
             v-model="searchForm.search"
             type="text"
-            placeholder="搜索商品标题..."
+            placeholder="搜索商品标题、品牌..."
             class="search-input"
             @keyup.enter="handleSearch"
           />
@@ -383,138 +393,136 @@ onMounted(() => {
 
         <button
           class="filter-toggle"
-          :class="{ active: showFilters }"
+          :class="{ active: showFilters || hasActiveFilters }"
           @click="showFilters = !showFilters"
         >
           <Filter class="filter-icon" />
-          <span>筛选</span>
-          <span v-if="hasActiveFilters" class="filter-badge"></span>
+          <span>高级筛选</span>
+          <span v-if="hasActiveFilters" class="active-badge"></span>
         </button>
 
-        <select
-          v-model="searchForm.ordering"
-          class="sort-select"
-          @change="handleSortChange"
-        >
-          <option
-            v-for="option in sortOptions"
-            :key="option.value"
-            :value="option.value"
+        <div class="sort-group">
+          <select
+            v-model="searchForm.ordering"
+            class="sort-select"
+            @change="handleSortChange"
           >
-            {{ option.label }}
-          </option>
-        </select>
+            <option
+              v-for="option in sortOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
 
-        <button class="btn btn-search" @click="handleSearch">
-          <Search class="btn-icon" />
-          <span>搜索</span>
-        </button>
-
-        <button class="btn btn-reset" @click="handleReset">
-          <span>重置</span>
-        </button>
+        <div class="action-buttons">
+          <button class="search-btn" @click="handleSearch">
+            <Search class="btn-icon-sm" />
+            <span>搜索</span>
+          </button>
+          <button class="reset-btn" @click="handleReset">
+            <span>重置</span>
+          </button>
+        </div>
       </div>
 
       <!-- 展开的筛选条件 -->
-      <div v-if="showFilters" class="filter-panel">
-        <div class="filter-row">
-          <div class="filter-group">
-            <label>价格区间</label>
-            <div class="price-range">
-              <input
-                v-model.number="searchForm.min_price"
-                type="number"
-                placeholder="最低价"
-                class="filter-input"
-              />
-              <span class="range-separator">-</span>
-              <input
-                v-model.number="searchForm.max_price"
-                type="number"
-                placeholder="最高价"
-                class="filter-input"
-              />
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label>店铺名称</label>
+      <div v-if="showFilters" class="filter-grid">
+        <div class="filter-item">
+          <label class="filter-label">价格区间</label>
+          <div class="price-range-inputs">
             <input
-              v-model="searchForm.shop"
-              type="text"
-              placeholder="输入店铺名"
-              class="filter-input"
+              v-model.number="searchForm.min_price"
+              type="number"
+              placeholder="最低价"
+              class="range-input"
             />
-          </div>
-
-          <div class="filter-group">
-            <label>品牌</label>
+            <span class="range-divider">至</span>
             <input
-              v-model="searchForm.brand"
-              type="text"
-              placeholder="输入品牌名"
-              class="filter-input"
+              v-model.number="searchForm.max_price"
+              type="number"
+              placeholder="最高价"
+              class="range-input"
             />
           </div>
         </div>
 
-        <div class="filter-row">
-          <div class="filter-group">
-            <label>地区</label>
-            <input
-              v-model="searchForm.region"
-              type="text"
-              placeholder="如：广东、上海"
-              class="filter-input"
-            />
-          </div>
-
-          <div class="filter-group">
-            <label>类目</label>
-            <input
-              v-model="searchForm.category"
-              type="text"
-              placeholder="如：狗粮、猫砂"
-              class="filter-input"
-            />
-          </div>
-
-          <div class="filter-group">
-            <label>标签</label>
-            <input
-              v-model="searchForm.tags"
-              type="text"
-              placeholder="商品标签"
-              class="filter-input"
-            />
-          </div>
+        <div class="filter-item">
+          <label class="filter-label">店铺名称</label>
+          <input
+            v-model="searchForm.shop"
+            type="text"
+            placeholder="输入店铺名"
+            class="filter-input"
+          />
         </div>
 
-        <div class="filter-row">
-          <div class="filter-group">
-            <label>批次号</label>
-            <input
-              v-model="searchForm.batch_no"
-              type="text"
-              placeholder="采集批次号"
-              class="filter-input"
-            />
-          </div>
+        <div class="filter-item">
+          <label class="filter-label">品牌</label>
+          <input
+            v-model="searchForm.brand"
+            type="text"
+            placeholder="输入品牌名"
+            class="filter-input"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label class="filter-label">地区</label>
+          <input
+            v-model="searchForm.region"
+            type="text"
+            placeholder="如：广东、上海"
+            class="filter-input"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label class="filter-label">类目</label>
+          <input
+            v-model="searchForm.category"
+            type="text"
+            placeholder="如：狗粮、猫砂"
+            class="filter-input"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label class="filter-label">标签</label>
+          <input
+            v-model="searchForm.tags"
+            type="text"
+            placeholder="商品标签"
+            class="filter-input"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label class="filter-label">批次号</label>
+          <input
+            v-model="searchForm.batch_no"
+            type="text"
+            placeholder="采集批次号"
+            class="filter-input"
+          />
         </div>
       </div>
     </div>
 
-    <!-- 商品表格 -->
-    <div class="table-section">
-      <div class="table-container">
-        <table class="product-table">
+    <!-- 商品数据表格 -->
+    <div class="table-card">
+      <div class="table-wrapper">
+        <table class="data-table">
           <thead>
             <tr>
-              <th class="col-check">
+              <th class="col-checkbox">
                 <input
                   type="checkbox"
                   :checked="selectedIds.length > 0 && selectedIds.length === products.length"
                   @change="toggleSelectAll"
+                  class="checkbox-input"
                 />
               </th>
               <th class="col-product">商品信息</th>
@@ -530,93 +538,90 @@ onMounted(() => {
           <tbody>
             <tr v-if="products.length === 0 && !loading" class="empty-row">
               <td colspan="9">
-                <div class="empty-state">
-                  <ShoppingCart class="empty-icon" />
-                  <p>暂无商品数据</p>
-                  <small>点击"刷新"按钮加载数据</small>
+                <div class="empty-container">
+                  <div class="empty-icon-wrapper">
+                    <ShoppingCart class="empty-icon" />
+                  </div>
+                  <p class="empty-title">暂无商品数据</p>
+                  <p class="empty-hint">点击刷新按钮加载最新数据</p>
                 </div>
               </td>
             </tr>
             <tr
               v-for="product in products"
               :key="product.id"
-              class="product-row"
-              :class="{ selected: selectedIds.includes(product.id) }"
+              class="data-row"
+              :class="{ 'row-selected': selectedIds.includes(product.id) }"
             >
-              <td class="col-check">
+              <td class="col-checkbox">
                 <input
                   type="checkbox"
                   :checked="selectedIds.includes(product.id)"
                   @change="toggleSelect(product.id)"
+                  class="checkbox-input"
                 />
               </td>
               <td class="col-product">
-                <div class="product-cell">
-                  <div class="product-image">
+                <div class="product-wrapper">
+                  <div class="product-thumb">
                     <img
                       v-if="product.image_url"
                       :src="product.image_url"
                       :alt="product.title"
                       @error="handleImageError"
                     />
-                    <Picture v-else class="image-placeholder" />
+                    <Picture v-else class="thumb-placeholder" />
                   </div>
-                  <div class="product-info">
-                    <h4 class="product-title">{{ product.title }}</h4>
-                    <div class="product-meta">
-                      <span v-if="product.brand" class="product-brand">{{ product.brand }}</span>
-                      <span v-if="product.tags" class="product-tags">{{ product.tags }}</span>
+                  <div class="product-details">
+                    <h4 class="product-name">{{ product.title }}</h4>
+                    <div class="product-tags-row" v-if="product.brand || product.tags">
+                      <span v-if="product.brand" class="tag tag--brand">{{ product.brand }}</span>
+                      <span v-if="product.tags" class="tag tag--tag">{{ product.tags }}</span>
                     </div>
                   </div>
                 </div>
               </td>
               <td class="col-price">
-                <span class="price-value">{{ formatPrice(product.price) }}</span>
-                <span v-if="product.price_unit" class="price-unit">{{ product.price_unit }}</span>
+                <span class="price-display">{{ formatPrice(product.price) }}</span>
               </td>
               <td class="col-sales">
-                <div class="sales-value">
+                <div class="sales-display">
                   <TrendCharts class="sales-icon" />
                   <span>{{ formatSales(product.sales) }}</span>
                 </div>
               </td>
               <td class="col-shop">
-                <span class="shop-name" :title="product.shop">{{ product.shop || '-' }}</span>
-                <span v-if="product.seller_nick" class="seller-nick">{{ product.seller_nick }}</span>
+                <span class="shop-display" :title="product.shop">{{ product.shop || '-' }}</span>
               </td>
               <td class="col-brand">
-                <span class="brand-value">{{ product.brand || '-' }}</span>
+                <span class="brand-display">{{ product.brand || '-' }}</span>
               </td>
               <td class="col-region">
-                <span class="region-value">{{ product.region || '-' }}</span>
+                <span class="region-display">{{ product.region || '-' }}</span>
               </td>
               <td class="col-time">
-                <span class="time-value">{{ formatTime(product.crawl_time) }}</span>
-                <span v-if="product.batch_no" class="batch-no" :title="'批次: ' + product.batch_no">📦</span>
+                <span class="time-display">{{ formatTime(product.crawl_time) }}</span>
               </td>
               <td class="col-actions">
-                <div class="action-buttons">
-                  <!-- <button class="action-btn btn-edit" title="编辑" @click="handleEdit(product)">
-                    <Edit class="action-icon" />
-                  </button> -->
-                  <button class="action-btn btn-delete" title="删除" @click="handleDelete(product)">
-                    <Delete class="action-icon" />
-                  </button>
-                </div>
+                <button class="delete-btn" title="删除" @click="handleDelete(product)">
+                  <Delete class="delete-icon" />
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
 
-        <!-- 加载中遮罩 -->
-        <div v-if="loading" class="table-loading">
-          <div class="loading-spinner"></div>
-          <p>加载中...</p>
+        <!-- 加载状态 -->
+        <div v-if="loading" class="loading-overlay">
+          <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>加载中...</p>
+          </div>
         </div>
       </div>
 
-      <!-- 分页 -->
-      <div class="pagination-section">
+      <!-- 分页组件 -->
+      <div class="table-pagination">
         <Pagination
           :current-page="pagination.page"
           :page-size="pagination.page_size"
@@ -630,69 +635,166 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
 
+/* ============================================
+   Design Tokens & Base
+   ============================================ */
 .products-container {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.15);
+
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  animation: pageFadeIn 0.4s ease;
 }
 
-/* 头部区域 */
-.header-section {
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Page Header
+   ============================================ */
+.page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 20px 24px;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  gap: 24px;
 }
 
 .header-left {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-title .title-icon {
-  width: 28px;
-  height: 28px;
-  color: #FF6B35;
-}
-
-.header-title h2 {
-  font-size: 20px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
-}
-
-.header-stats {
-  display: flex;
   gap: 20px;
 }
 
-.header-stats .stat {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.header-stats .stat strong {
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 600;
+.title-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(123, 44, 191, 0.1));
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
 }
 
-.header-stats .stat.selected strong {
-  color: #FF6B35;
+.title-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 107, 53, 0.1));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.title-icon-wrapper:hover::before {
+  opacity: 1;
+}
+
+.title-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--primary-orange);
+  position: relative;
+  z-index: 1;
+}
+
+.title-text {
+  flex: 1;
+}
+
+.page-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin: 0;
+  font-weight: 400;
+}
+
+.stats-badges {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  transition: all 0.3s ease;
+}
+
+.stat-badge:hover {
+  border-color: var(--border-default);
+  transform: translateY(-2px);
+}
+
+.stat-badge--active {
+  background: rgba(255, 107, 53, 0.08);
+  border-color: rgba(255, 107, 53, 0.2);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-badge--active .stat-value {
+  color: var(--primary-orange);
 }
 
 .header-actions {
@@ -700,27 +802,54 @@ onMounted(() => {
   gap: 12px;
 }
 
-/* 按钮样式 */
-.btn {
+.action-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   padding: 12px 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: none;
 }
 
-.btn-icon {
+.action-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.action-btn--danger {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.2);
+  color: #FF6B6B;
+}
+
+.action-btn--danger:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.2);
+}
+
+.action-btn.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.action-btn .btn-icon {
   width: 16px;
   height: 16px;
+  transition: transform 0.3s ease;
 }
 
-.btn-icon.spinning {
+.action-btn .btn-icon.spinning {
   animation: spin 1s linear infinite;
 }
 
@@ -729,182 +858,21 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #FF6B35, #FF8C5A);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
-  color: white;
-}
-
-.btn-danger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-search {
-  background: linear-gradient(135deg, #7B2CBF, #9D4EDD);
-  color: white;
-}
-
-.btn-search:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(123, 44, 191, 0.4);
-}
-
-.btn-reset {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.btn-reset:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* 筛选区域 */
-.filter-section {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* ============================================
+   Filter Panel
+   ============================================ */
+.filter-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
   border-radius: 20px;
   overflow: hidden;
+  animation: panelSlideIn 0.4s ease;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
 }
 
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-}
-
-.search-input-wrapper {
-  position: relative;
-  flex: 1;
-  max-width: 400px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 14px 12px 44px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  font-family: 'Noto Sans SC', sans-serif;
-  transition: all 0.3s ease;
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #FF6B35;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
-}
-
-.filter-toggle {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.filter-toggle:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.filter-toggle.active {
-  background: rgba(255, 107, 53, 0.1);
-  border-color: #FF6B35;
-  color: #FF6B35;
-}
-
-.filter-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.filter-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  background: #FF6B35;
-  border-radius: 50%;
-}
-
-.sort-select {
-  padding: 12px 16px;
-  padding-right: 36px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  font-family: 'Noto Sans SC', sans-serif;
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff40' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-}
-
-.sort-select:focus {
-  outline: none;
-  border-color: #FF6B35;
-}
-
-.filter-panel {
-  padding: 0 20px 20px;
-  animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
+@keyframes panelSlideIn {
   from {
     opacity: 0;
     transform: translateY(-10px);
@@ -915,253 +883,471 @@ onMounted(() => {
   }
 }
 
-.filter-row {
+.filter-bar {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s ease;
 }
 
-.filter-group {
+.filter-bar + .filter-grid {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.search-group {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+
+.search-input {
+  width: 100%;
+  padding: 13px 16px 13px 48px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.search-input:focus + .search-icon {
+  color: var(--primary-orange);
+}
+
+.filter-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.filter-toggle.active {
+  background: rgba(255, 107, 53, 0.1);
+  border-color: rgba(255, 107, 53, 0.2);
+  color: var(--primary-orange);
+}
+
+.filter-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.active-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 6px;
+  height: 6px;
+  background: var(--primary-orange);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--primary-orange);
+}
+
+.sort-group {
+  position: relative;
+}
+
+.sort-select {
+  appearance: none;
+  padding: 13px 40px 13px 18px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff40' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.sort-select:hover {
+  border-color: var(--border-hover);
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.search-btn,
+.reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.search-btn {
+  background: linear-gradient(135deg, var(--primary-purple), var(--primary-orange));
+  color: white;
+}
+
+.search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+}
+
+.reset-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+}
+
+.reset-btn:hover {
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+
+.btn-icon-sm {
+  width: 14px;
+  height: 14px;
+}
+
+/* Filter Grid */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 24px;
+  animation: filterExpand 0.3s ease;
+}
+
+@keyframes filterExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-item {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex: 1;
 }
 
-.filter-group label {
-  font-size: 13px;
+.filter-label {
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .filter-input {
-  padding: 10px 14px;
+  padding: 11px 14px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
+  font-family: inherit;
   transition: all 0.3s ease;
+}
+
+.filter-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .filter-input:focus {
   outline: none;
-  border-color: #FF6B35;
+  border-color: var(--primary-orange);
+  background: rgba(0, 0, 0, 0.4);
 }
 
-.price-range {
+.price-range-inputs {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.range-separator {
-  color: rgba(255, 255, 255, 0.3);
+.range-input {
+  flex: 1;
+  padding: 11px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  text-align: center;
+  transition: all 0.3s ease;
 }
 
-/* 表格区域 */
-.table-section {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.range-input:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+}
+
+.range-divider {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ============================================
+   Table Card
+   ============================================ */
+.table-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
   border-radius: 20px;
   overflow: hidden;
+  animation: panelSlideIn 0.4s ease;
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
 }
 
-.table-container {
+.table-wrapper {
   position: relative;
   overflow-x: auto;
 }
 
-.product-table {
+.data-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.product-table thead {
+.data-table thead {
   background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.product-table th {
-  padding: 16px;
+.data-table th {
+  padding: 18px 20px;
   text-align: left;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
-.product-table tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
   transition: all 0.2s ease;
 }
 
-.product-table tbody tr:hover {
+.data-table tbody tr:hover {
   background: rgba(255, 107, 53, 0.03);
 }
 
-.product-table tbody tr.selected {
+.data-table tbody tr.row-selected {
   background: rgba(255, 107, 53, 0.08);
 }
 
-.product-table td {
-  padding: 16px;
+.data-table td {
+  padding: 18px 20px;
 }
 
-.col-check {
+.col-checkbox {
   width: 50px;
   text-align: center;
 }
 
-.col-check input[type="checkbox"] {
+.checkbox-input {
   width: 18px;
   height: 18px;
-  accent-color: #FF6B35;
+  accent-color: var(--primary-orange);
   cursor: pointer;
 }
 
 .col-product {
-  min-width: 300px;
+  min-width: 320px;
 }
 
-.product-cell {
+.product-wrapper {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
-.product-image {
-  width: 60px;
-  height: 60px;
+.product-thumb {
+  width: 56px;
+  height: 56px;
   flex-shrink: 0;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.product-image img {
+.product-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.image-placeholder {
+.thumb-placeholder {
   width: 24px;
   height: 24px;
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--text-tertiary);
 }
 
-.product-info {
+.product-details {
   flex: 1;
   min-width: 0;
 }
 
-.product-title {
+.product-name {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 4px 0;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
-.product-meta {
+.product-tags-row {
   display: flex;
   gap: 6px;
-  align-items: center;
+  flex-wrap: wrap;
 }
 
-.product-brand {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  background: rgba(123, 44, 191, 0.2);
-  padding: 2px 6px;
+.tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
   border-radius: 4px;
   white-space: nowrap;
 }
 
-.product-tags {
-  font-size: 11px;
-  color: rgba(255, 107, 53, 0.6);
+.tag--brand {
+  background: rgba(123, 44, 191, 0.15);
+  color: #9D4EDD;
+}
+
+.tag--tag {
   background: rgba(255, 107, 53, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
-  max-width: 100px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--primary-orange);
 }
 
 .col-price {
-  width: 100px;
+  width: 110px;
 }
 
-.price-value {
+.price-display {
   font-family: 'JetBrains Mono', monospace;
   font-size: 15px;
-  font-weight: 600;
-  color: #FF6B35;
-}
-
-.price-unit {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  margin-left: 2px;
+  font-weight: 700;
+  color: var(--primary-orange);
+  display: block;
 }
 
 .col-sales {
-  width: 90px;
+  width: 100px;
 }
 
-.sales-value {
+.sales-display {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .sales-icon {
   width: 14px;
   height: 14px;
-  color: #06FFA5;
+  color: var(--primary-cyan);
+}
+
+.sales-display span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .col-shop {
-  width: 150px;
+  width: 160px;
 }
 
-.shop-name {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+.shop-display {
+  font-size: 13px;
+  color: var(--text-secondary);
   display: block;
-  max-width: 140px;
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.seller-nick {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  display: block;
-  margin-top: 2px;
 }
 
 .col-brand {
   width: 100px;
 }
 
-.brand-value {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+.brand-display {
+  font-size: 13px;
+  color: var(--text-secondary);
   display: block;
   max-width: 90px;
   overflow: hidden;
@@ -1173,157 +1359,159 @@ onMounted(() => {
   width: 90px;
 }
 
-.region-value {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+.region-display {
+  font-size: 13px;
+  color: var(--text-tertiary);
 }
 
 .col-time {
   width: 150px;
 }
 
-.time-value {
+.time-display {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-family: 'JetBrains Mono', monospace;
   display: block;
 }
 
-.batch-no {
-  font-size: 12px;
-  margin-left: 4px;
-  cursor: help;
-}
-
 .col-actions {
-  width: 120px;
+  width: 80px;
   text-align: center;
 }
 
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.action-btn {
+.delete-btn {
   width: 36px;
   height: 36px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  border: none;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-radius: 10px;
+  color: #FF6B6B;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.action-icon {
+.delete-btn:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  transform: scale(1.05);
+}
+
+.delete-icon {
   width: 16px;
   height: 16px;
 }
 
-.btn-edit {
-  background: rgba(123, 44, 191, 0.15);
-  color: #9D4EDD;
-}
-
-.btn-edit:hover {
-  background: rgba(123, 44, 191, 0.3);
-  transform: scale(1.05);
-}
-
-.btn-delete {
-  background: rgba(255, 107, 107, 0.15);
-  color: #FF6B6B;
-}
-
-.btn-delete:hover {
-  background: rgba(255, 107, 107, 0.3);
-  transform: scale(1.05);
-}
-
-/* 空状态 */
+/* Empty State */
 .empty-row td {
-  padding: 80px 20px;
+  padding: 0;
 }
 
-.empty-state {
+.empty-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.3);
+  padding: 80px 40px;
+}
+
+.empty-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  margin-bottom: 24px;
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 16px;
+  width: 36px;
+  height: 36px;
+  color: var(--text-tertiary);
   opacity: 0.5;
 }
 
-.empty-state p {
+.empty-title {
   font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
 }
 
-.empty-state small {
+.empty-hint {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--text-tertiary);
+  margin: 0;
 }
 
-/* 加载遮罩 */
-.table-loading {
+/* Loading Overlay */
+.loading-overlay {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 15, 26, 0.8);
+  background: rgba(13, 13, 20, 0.85);
   backdrop-filter: blur(10px);
   z-index: 10;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #FF6B35;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--primary-orange);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-.table-loading p {
-  margin-top: 16px;
+.loading-content p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-/* 分页 */
-.pagination-section {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  justify-content: center;
+/* Table Pagination */
+.table-pagination {
+  padding: 20px 24px;
+  border-top: 1px solid var(--border-subtle);
 }
 
-/* 响应式 */
-@media (max-width: 1200px) {
-  .filter-row {
-    flex-direction: column;
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 1400px) {
+  .filter-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
+}
 
-  .header-section {
+@media (max-width: 1200px) {
+  .page-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
   }
 
   .header-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .filter-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1332,31 +1520,52 @@ onMounted(() => {
     flex-wrap: wrap;
   }
 
-  .search-input-wrapper {
+  .search-group {
     max-width: 100%;
     order: 1;
+    flex-basis: 100%;
   }
 
   .filter-toggle {
     order: 2;
   }
 
-  .sort-select {
+  .sort-group {
     order: 3;
   }
 
-  .btn-search,
-  .btn-reset {
+  .action-buttons {
     order: 4;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .search-btn,
+  .reset-btn {
+    flex: 1;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .title-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 
   .header-actions {
     flex-wrap: wrap;
   }
 
-  .btn {
+  .stats-badges {
+    width: 100%;
+  }
+
+  .stat-badge {
     flex: 1;
-    min-width: 120px;
+    min-width: 140px;
   }
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowUp, ArrowDown, Warning, TrendCharts, Star } from '@element-plus/icons-vue'
 import { statisticsApi } from '@/api'
@@ -15,6 +15,11 @@ const loading = ref(true)
 const topSales = ref([])
 const recentDrops = ref([])
 const hotTrends = ref([])
+
+// Chart refs
+const priceChartRef = ref(null)
+const salesDistChartRef = ref(null)
+const salesChartRef = ref(null)
 
 // Dashboard data from new API
 const overview = ref(null)
@@ -466,147 +471,217 @@ const loadData = async () => {
   // 优先使用仪表板接口
   await fetchDashboardData()
   loading.value = false
+
+  // 初始化图表
+  await nextTick()
+  initCharts()
+}
+
+// Chart instances
+const charts = {
+  price: null,
+  salesDist: null,
+  sales: null
+}
+
+const initCharts = () => {
+  // 初始化价格分布图
+  if (priceChartRef.value && priceDistributionChartOption.value) {
+    charts.price = echarts.init(priceChartRef.value)
+    charts.price.setOption(priceDistributionChartOption.value)
+  }
+
+  // 初始化销量分布图
+  if (salesDistChartRef.value && salesDistributionChartOption.value) {
+    charts.salesDist = echarts.init(salesDistChartRef.value)
+    charts.salesDist.setOption(salesDistributionChartOption.value)
+  }
+
+  // 初始化销量排行榜
+  if (salesChartRef.value && salesChartOption.value) {
+    charts.sales = echarts.init(salesChartRef.value)
+    charts.sales.setOption(salesChartOption.value)
+  }
+}
+
+const handleResize = () => {
+  Object.values(charts).forEach(chart => chart?.resize())
 }
 
 onMounted(() => {
   loadData()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  Object.values(charts).forEach(chart => {
+    chart?.dispose()
+  })
 })
 </script>
 
 <template>
-  <div class="market-page">
-    <!-- Page Header -->
-    <header class="page-header stagger-children">
+  <div class="market-container">
+    <!-- 顶部标题区 -->
+    <div class="market-header">
       <div class="header-content">
         <div class="header-badge">
           <TrendCharts class="badge-icon" />
           <span>LIVE DATA</span>
         </div>
-        <h1 class="page-title">
-          <span class="title-gradient">市场行情</span>
-          <span class="title-accent">大屏</span>
-        </h1>
-        <p class="page-subtitle">宠物用品消费决策数据 · 实时监控 · 智能分析</p>
+        <h1 class="header-title">市场行情</h1>
+        <p class="header-subtitle">宠物用品消费决策数据 · 实时监控 · 智能分析</p>
       </div>
       <div class="header-stats">
-        <div class="stat-mini">
-          <span class="stat-value">{{ overview?.total_products || topSales.length }}+</span>
-          <span class="stat-label">商品总数</span>
+        <div class="header-stat">
+          <span class="header-stat-value">{{ overview?.total_products || topSales.length }}+</span>
+          <span class="header-stat-label">商品总数</span>
         </div>
-        <div class="stat-mini">
-          <span class="stat-value">{{ overview?.total_shops || 0 }}</span>
-          <span class="stat-label">店铺总数</span>
+        <div class="header-stat">
+          <span class="header-stat-value">{{ overview?.total_shops || 0 }}</span>
+          <span class="header-stat-label">店铺总数</span>
         </div>
-        <div class="stat-mini">
-          <span class="stat-value">{{ overview?.total_brands || 0 }}</span>
-          <span class="stat-label">品牌数量</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- Metrics Row -->
-    <div class="metrics-grid stagger-children">
-      <div class="metric-card metric-hot">
-        <div class="metric-icon">
-          <TrendCharts />
-        </div>
-        <div class="metric-content">
-          <span class="metric-label">商品总数</span>
-          <span class="metric-value">{{ overview?.total_products || 0 }}</span>
-        </div>
-        <div class="metric-trend up">
-          <ArrowUp />
-          <span>LIVE</span>
-        </div>
-      </div>
-
-      <div class="metric-card metric-drops">
-        <div class="metric-icon">
-          <Warning />
-        </div>
-        <div class="metric-content">
-          <span class="metric-label">平均价格</span>
-          <span class="metric-value">¥{{ overview?.price?.avg?.toFixed(0) || 0 }}</span>
-        </div>
-        <div class="metric-trend" :class="overview?.price?.avg > 300 ? 'up' : 'down'">
-          <component :is="overview?.price?.avg > 300 ? ArrowUp : ArrowDown" />
-          <span>¥{{ overview?.price?.min?.toFixed(0) || 0 }}-{{ overview?.price?.max?.toFixed(0) || 0 }}</span>
-        </div>
-      </div>
-
-      <div class="metric-card metric-trends">
-        <div class="metric-icon">
-          <TrendCharts />
-        </div>
-        <div class="metric-content">
-          <span class="metric-label">总销量</span>
-          <span class="metric-value">{{ formatNumber(overview?.sales?.total || 0) }}</span>
-        </div>
-        <div class="metric-trend up">
-          <ArrowUp />
-          <span>{{ overview?.sales?.avg?.toFixed(0) || 0 }}/件</span>
+        <div class="header-stat">
+          <span class="header-stat-value">{{ overview?.total_brands || 0 }}</span>
+          <span class="header-stat-label">品牌数量</span>
         </div>
       </div>
     </div>
 
-    <!-- Charts Grid -->
-    <div class="charts-grid stagger-children">
-      <!-- Price Distribution Chart -->
-      <DataPanel
-        v-if="priceDistributionChartOption"
-        title="价格分布"
-        subtitle="商品价格区间分析"
-        :icon="TrendCharts"
-        :option="priceDistributionChartOption"
-        :loading="loading"
-        height="350px"
-        badge="实时"
-        badge-color="primary"
-      />
+    <!-- 统计指标卡片 -->
+    <div class="metrics-grid">
+      <div class="metric-card metric-card--orange" style="--i: 0">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <TrendCharts class="icon" />
+          </div>
+          <span class="metric-trend positive">LIVE</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">商品总数</p>
+          <p class="metric-value">{{ formatNumber(overview?.total_products || 0) }}</p>
+        </div>
+        <div class="metric-bg">📦</div>
+      </div>
 
-      <!-- Sales Distribution Chart -->
-      <DataPanel
-        v-if="salesDistributionChartOption"
-        title="销量分布"
-        subtitle="商品销量区间分析"
-        :icon="TrendCharts"
-        :option="salesDistributionChartOption"
-        :loading="loading"
-        height="350px"
-      />
+      <div class="metric-card metric-card--purple" style="--i: 1">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <Warning class="icon" />
+          </div>
+          <span class="metric-trend" :class="overview?.price?.avg > 300 ? 'positive' : 'neutral'">
+            ¥{{ overview?.price?.min?.toFixed(0) || 0 }}-{{ overview?.price?.max?.toFixed(0) || 0 }}
+          </span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">平均价格</p>
+          <p class="metric-value">¥{{ overview?.price?.avg?.toFixed(0) || 0 }}</p>
+        </div>
+        <div class="metric-bg">💰</div>
+      </div>
+
+      <div class="metric-card metric-card--gold" style="--i: 2">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <TrendCharts class="icon" />
+          </div>
+          <span class="metric-trend positive">{{ overview?.sales?.avg?.toFixed(0) || 0 }}/件</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">总销量</p>
+          <p class="metric-value">{{ formatNumber(overview?.sales?.total || 0) }}</p>
+        </div>
+        <div class="metric-bg">📈</div>
+      </div>
     </div>
 
-    <!-- Top Sales Ranking -->
-    <section class="ranking-section stagger-children" v-if="salesChartOption">
-      <DataPanel
-        title="销量 TOP 10"
-        subtitle="最热门的宠物用品排行"
-        :icon="TrendCharts"
-        :option="salesChartOption"
-        :loading="loading"
-        height="400px"
-        badge="实时"
-        badge-color="primary"
-      />
-    </section>
+    <!-- 图表区域 -->
+    <div class="charts-section">
+      <div class="chart-panel chart-panel--orange" style="--i: 0">
+        <div class="chart-panel-header">
+          <div class="chart-title-group">
+            <div class="chart-icon-wrapper chart-icon-wrapper--orange">
+              <TrendCharts class="icon" />
+            </div>
+            <div>
+              <h3 class="chart-title">价格区间分布</h3>
+              <p class="chart-subtitle">商品价格分布占比分析</p>
+            </div>
+          </div>
+          <div class="chart-badge">分布</div>
+        </div>
+        <div class="chart-panel-body">
+          <div v-if="loading" class="chart-loading">
+            <div class="loading-spinner"></div>
+            <p>加载数据中...</p>
+          </div>
+          <div v-else ref="priceChartRef" class="chart-container" style="height: 280px"></div>
+        </div>
+      </div>
 
-    <!-- Price Drops Section -->
-    <section class="drops-section stagger-children">
+      <div class="chart-panel chart-panel--purple" style="--i: 1">
+        <div class="chart-panel-header">
+          <div class="chart-title-group">
+            <div class="chart-icon-wrapper chart-icon-wrapper--purple">
+              <TrendCharts class="icon" />
+            </div>
+            <div>
+              <h3 class="chart-title">销量区间分布</h3>
+              <p class="chart-subtitle">商品销量分布占比分析</p>
+            </div>
+          </div>
+          <div class="chart-badge">排行</div>
+        </div>
+        <div class="chart-panel-body">
+          <div v-if="loading" class="chart-loading">
+            <div class="loading-spinner"></div>
+            <p>加载数据中...</p>
+          </div>
+          <div v-else ref="salesDistChartRef" class="chart-container" style="height: 280px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 销量排行榜 -->
+    <div class="ranking-panel" style="--i: 2">
+      <div class="ranking-panel-header">
+        <div class="chart-title-group">
+          <div class="chart-icon-wrapper chart-icon-wrapper--gold">
+            <Star class="icon" />
+          </div>
+          <div>
+            <h3 class="chart-title">销量 TOP 10</h3>
+            <p class="chart-subtitle">最热门的宠物用品排行</p>
+          </div>
+        </div>
+        <div class="chart-badge">实时</div>
+      </div>
+      <div class="ranking-panel-body">
+        <div v-if="loading" class="chart-loading">
+          <div class="loading-spinner"></div>
+          <p>加载数据中...</p>
+        </div>
+        <div v-else ref="salesChartRef" class="chart-container" style="height: 400px"></div>
+      </div>
+    </div>
+
+    <!-- 降价提醒区域 -->
+    <div class="drops-section">
       <div class="section-header">
         <div class="section-title-group">
-          <h2 class="section-title">
-            <span class="title-icon">⚡</span>
-            降价提醒
-          </h2>
-          <p class="section-subtitle">近期降价商品 · 值得入手</p>
+          <div class="section-icon-wrapper section-icon-wrapper--warning">
+            <Warning class="icon" />
+          </div>
+          <div>
+            <h3 class="section-title">降价提醒</h3>
+            <p class="section-subtitle">近期降价商品 · 值得入手</p>
+          </div>
         </div>
-        <ActionButton
-          variant="secondary"
-          icon="ArrowRight"
-          icon-position="right"
-        >
+        <button class="action-btn" @click="router.push('/user/products')">
           查看全部
-        </ActionButton>
+          <ArrowRight class="action-icon" />
+        </button>
       </div>
 
       <div class="drops-grid">
@@ -627,26 +702,24 @@ onMounted(() => {
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- Top Products Grid -->
-    <section class="products-section stagger-children">
+    <!-- 热门推荐区域 -->
+    <div class="products-section">
       <div class="section-header">
         <div class="section-title-group">
-          <h2 class="section-title">
-            <Star class="title-icon" />
-            热门推荐
-          </h2>
-          <p class="section-subtitle">销量领先的宠物用品</p>
+          <div class="section-icon-wrapper section-icon-wrapper--star">
+            <Star class="icon" />
+          </div>
+          <div>
+            <h3 class="section-title">热门推荐</h3>
+            <p class="section-subtitle">销量领先的宠物用品</p>
+          </div>
         </div>
-        <ActionButton
-          variant="secondary"
-          icon="ArrowRight"
-          icon-position="right"
-          @click="router.push('/user/products')"
-        >
+        <button class="action-btn" @click="router.push('/user/products')">
           浏览全部
-        </ActionButton>
+          <ArrowRight class="action-icon" />
+        </button>
       </div>
 
       <div class="products-grid">
@@ -657,30 +730,43 @@ onMounted(() => {
           :rank="index + 1"
         />
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* ========================================
-   Page Layout
-   ======================================== */
-.market-page {
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Design Tokens & Base
+   ============================================ */
+.market-container {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xl);
+  gap: 24px;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
 }
 
-/* ========================================
-   Page Header
-   ======================================== */
-.page-header {
+/* ============================================
+   Market Header
+   ============================================ */
+.market-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-lg);
-  padding: var(--space-xl) 0;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px 0;
 }
 
 .header-content {
@@ -690,111 +776,111 @@ onMounted(() => {
 .header-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-md);
+  gap: 8px;
+  padding: 6px 14px;
   background: rgba(255, 107, 53, 0.15);
   border: 1px solid rgba(255, 107, 53, 0.3);
-  border-radius: var(--radius-full);
-  margin-bottom: var(--space-md);
+  border-radius: 20px;
+  margin-bottom: 12px;
 }
 
 .header-badge .badge-icon {
   width: 14px;
   height: 14px;
-  color: var(--neon-orange);
+  color: var(--primary-orange);
 }
 
 .header-badge span {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: var(--neon-orange);
+  color: var(--primary-orange);
 }
 
-.page-title {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-sm);
-  margin: 0 0 var(--space-sm) 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-weight: 800;
-  line-height: 1.1;
+.header-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
 }
 
-.title-gradient {
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.title-accent {
-  font-size: 0.5em;
-  color: var(--neon-cyan);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.page-subtitle {
-  font-size: 0.9375rem;
+.header-subtitle {
+  font-size: 14px;
   color: var(--text-tertiary);
   margin: 0;
-  max-width: 600px;
 }
 
 .header-stats {
   display: flex;
-  gap: var(--space-md);
+  gap: 16px;
 }
 
-.stat-mini {
+.header-stat {
   text-align: center;
-  padding: var(--space-md);
-  background: var(--surface-glass);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  min-width: 80px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  min-width: 90px;
+  transition: all 0.3s ease;
 }
 
-.stat-mini .stat-value {
+.header-stat:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-default);
+  transform: translateY(-2px);
+}
+
+.header-stat-value {
   display: block;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--neon-orange);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-orange);
 }
 
-.stat-mini .stat-label {
-  font-size: 0.75rem;
+.header-stat-label {
+  font-size: 11px;
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-/* ========================================
+/* ============================================
    Metrics Grid
-   ======================================== */
+   ============================================ */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 .metric-card {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  background: var(--gradient-card);
+  padding: 24px;
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
   overflow: hidden;
-  transition: all var(--transition-base);
+  animation: metricSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 0.1s);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes metricSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .metric-card::before {
@@ -804,23 +890,28 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.metric-card.metric-hot::before {
-  background: linear-gradient(90deg, var(--neon-orange), var(--neon-pink));
-}
-
-.metric-card.metric-drops::before {
-  background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
-}
-
-.metric-card.metric-trends::before {
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
-}
+.metric-card--orange::before { background: linear-gradient(90deg, var(--primary-orange), transparent); }
+.metric-card--purple::before { background: linear-gradient(90deg, var(--primary-purple), transparent); }
+.metric-card--gold::before { background: linear-gradient(90deg, var(--primary-gold), transparent); }
 
 .metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-glow);
+  transform: translateY(-4px);
+  border-color: var(--border-default);
+}
+
+.metric-card:hover::before {
+  opacity: 1;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .metric-icon {
@@ -829,226 +920,490 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-glass);
-  border-radius: var(--radius-lg);
-  color: var(--text-primary);
+  border-radius: 14px;
 }
 
-.metric-icon :deep(svg) {
-  width: 24px;
-  height: 24px;
+.metric-card--orange .metric-icon { background: rgba(255, 107, 53, 0.15); }
+.metric-card--purple .metric-icon { background: rgba(123, 44, 191, 0.15); }
+.metric-card--gold .metric-icon { background: rgba(255, 215, 0, 0.15); }
+
+.metric-icon .icon {
+  width: 22px;
+  height: 22px;
 }
 
-.metric-content {
-  flex: 1;
+.metric-card--orange .metric-icon .icon { color: var(--primary-orange); }
+.metric-card--purple .metric-icon .icon { color: var(--primary-purple); }
+.metric-card--gold .metric-icon .icon { color: var(--primary-gold); }
+
+.metric-trend {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.metric-trend.positive {
+  background: rgba(6, 255, 165, 0.1);
+  color: var(--primary-cyan);
+}
+
+.metric-trend.neutral {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-tertiary);
+}
+
+.metric-body {
+  position: relative;
+  z-index: 1;
 }
 
 .metric-label {
-  display: block;
-  font-size: 0.8125rem;
+  font-size: 13px;
   color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-xs);
+  font-weight: 500;
+  margin: 0 0 8px 0;
 }
 
 .metric-value {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
+  font-weight: 700;
   color: var(--text-primary);
+  margin: 0;
+  line-height: 1;
 }
 
-.metric-trend {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-full);
-  font-size: 0.8125rem;
-  font-weight: 600;
+.metric-card--orange .metric-value { color: var(--primary-orange); }
+.metric-card--purple .metric-value { color: var(--primary-purple); }
+.metric-card--gold .metric-value { color: var(--primary-gold); }
+
+.metric-bg {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  font-size: 72px;
+  opacity: 0.04;
+  pointer-events: none;
+  filter: blur(1px);
 }
 
-.metric-trend.up {
-  background: rgba(6, 255, 165, 0.1);
-  color: var(--status-success);
-}
-
-.metric-trend.down {
-  background: rgba(255, 59, 48, 0.1);
-  color: var(--status-error);
-}
-
-.metric-trend :deep(svg) {
-  width: 14px;
-  height: 14px;
-}
-
-/* ========================================
-   Charts Grid
-   ======================================== */
-.charts-grid {
+/* ============================================
+   Charts Section
+   ============================================ */
+.charts-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
-/* ========================================
-   Ranking Section
-   ======================================== */
-.ranking-section {
-  margin-top: var(--space-lg);
+.chart-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  overflow: hidden;
+  animation: panelFadeIn 0.5s ease backwards;
+  animation-delay: calc(0.4s + var(--i) * 0.1s);
+  transition: all 0.3s ease;
 }
 
-/* ========================================
-   Section Headers
-   ======================================== */
+@keyframes panelFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.chart-panel:hover {
+  border-color: var(--border-default);
+}
+
+.chart-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.chart-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chart-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.chart-icon-wrapper--orange { background: rgba(255, 107, 53, 0.15); }
+.chart-icon-wrapper--purple { background: rgba(123, 44, 191, 0.15); }
+.chart-icon-wrapper--gold { background: rgba(255, 215, 0, 0.15); }
+
+.chart-icon-wrapper .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.chart-icon-wrapper--orange .icon { color: var(--primary-orange); }
+.chart-icon-wrapper--purple .icon { color: var(--primary-purple); }
+.chart-icon-wrapper--gold .icon { color: var(--primary-gold); }
+
+.chart-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.chart-subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.chart-badge {
+  padding: 6px 14px;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary-orange);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.chart-panel-body {
+  padding: 20px 24px;
+  min-height: 280px;
+}
+
+.chart-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 280px;
+  color: var(--text-tertiary);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-default);
+  border-top-color: var(--primary-orange);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.chart-loading p {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.chart-container {
+  width: 100%;
+}
+
+/* ============================================
+   Ranking Panel
+   ============================================ */
+.ranking-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  overflow: hidden;
+  animation: panelFadeIn 0.5s ease backwards;
+  animation-delay: calc(0.6s + var(--i) * 0.1s);
+  transition: all 0.3s ease;
+}
+
+.ranking-panel:hover {
+  border-color: var(--border-default);
+}
+
+.ranking-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.ranking-panel-body {
+  padding: 20px 24px;
+}
+
+/* ============================================
+   Drops Section
+   ============================================ */
+.drops-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-lg);
 }
 
 .section-title-group {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+  align-items: center;
+  gap: 14px;
 }
 
-.section-title {
+.section-icon-wrapper {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.section-icon-wrapper--warning { background: rgba(255, 59, 48, 0.15); }
+.section-icon-wrapper--star { background: rgba(255, 215, 0, 0.15); }
+
+.section-icon-wrapper .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.section-icon-wrapper--warning .icon { color: #FF3B30; }
+.section-icon-wrapper--star .icon { color: var(--primary-gold); }
+
+.section-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
   color: var(--text-primary);
-  margin: 0;
-}
-
-.section-title .title-icon {
-  width: 28px;
-  height: 28px;
-  color: var(--neon-cyan);
-}
-
-.title-icon {
-  width: 28px;
-  height: 28px;
+  margin: 0 0 2px 0;
 }
 
 .section-subtitle {
-  font-size: 0.875rem;
+  font-size: 13px;
   color: var(--text-tertiary);
   margin: 0;
-  padding-left: 36px;
 }
 
-/* ========================================
-   Drops Section
-   ======================================== */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
+  transform: translateY(-2px);
+}
+
+.action-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .drops-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 .drop-card {
   position: relative;
-  padding: var(--space-lg);
-  background: var(--gradient-card);
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 59, 48, 0.08), rgba(255, 107, 53, 0.04));
   backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 59, 48, 0.15);
+  border-radius: 20px;
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: all 0.3s ease;
   overflow: hidden;
 }
 
+.drop-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FF3B30, var(--primary-orange));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
 .drop-card:hover {
-  border-color: var(--status-error);
-  box-shadow: 0 0 30px rgba(255, 59, 48, 0.2);
-  transform: translateY(-2px);
+  border-color: rgba(255, 59, 48, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(255, 59, 48, 0.15);
+}
+
+.drop-card:hover::before {
+  opacity: 1;
 }
 
 .drop-badge {
   position: absolute;
-  top: var(--space-md);
-  right: var(--space-md);
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--status-error);
+  top: 16px;
+  right: 16px;
+  padding: 6px 12px;
+  background: #FF3B30;
   color: white;
-  font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
   font-weight: 700;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+}
+
+.drop-content {
+  padding-right: 50px;
 }
 
 .drop-title {
-  font-family: var(--font-display);
-  font-size: 1rem;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 var(--space-md) 0;
-  padding-right: var(--space-lg);
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .drop-price-group {
   display: flex;
   align-items: baseline;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .drop-current {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--neon-orange);
+  color: var(--primary-orange);
 }
 
 .drop-original {
-  font-size: 0.875rem;
+  font-size: 14px;
   color: var(--text-tertiary);
   text-decoration: line-through;
 }
 
 .drop-sales {
-  font-size: 0.8125rem;
+  font-size: 12px;
   color: var(--text-tertiary);
 }
 
-/* ========================================
-   Products Grid
-   ======================================== */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--space-lg);
+/* ============================================
+   Products Section
+   ============================================ */
+.products-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-/* ========================================
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* ============================================
    Responsive
-   ======================================== */
+   ============================================ */
+@media (max-width: 1400px) {
+  .metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .charts-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .drops-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 1024px) {
-  .page-header {
+  .market-header {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
 
   .header-stats {
     width: 100%;
     justify-content: flex-start;
   }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .drops-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
+  .market-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-stats {
+    flex-wrap: wrap;
+  }
+
   .metrics-grid {
     grid-template-columns: 1fr;
   }
 
-  .charts-grid {
+  .charts-section {
     grid-template-columns: 1fr;
   }
 
@@ -1057,18 +1412,13 @@ onMounted(() => {
   }
 
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: var(--space-md);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .section-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-md);
-  }
-
-  .section-subtitle {
-    padding-left: 0;
+    gap: 16px;
   }
 }
 </style>

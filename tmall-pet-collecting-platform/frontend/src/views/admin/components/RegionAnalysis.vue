@@ -153,9 +153,20 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Base Analysis
+   ============================================ */
 .region-analysis {
-  background: rgba(15, 15, 26, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  --primary-cyan: #06FFA5;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  background: rgba(20, 20, 32, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 24px;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -163,14 +174,17 @@ onMounted(() => {
 
 .region-analysis:hover {
   border-color: rgba(6, 255, 165, 0.15);
-  box-shadow: 0 10px 40px rgba(6, 255, 165, 0.1);
+  box-shadow: 0 10px 40px rgba(6, 255, 165, 0.08);
 }
 
+/* ============================================
+   Section Header
+   ============================================ */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(0, 0, 0, 0.2);
 }
@@ -178,59 +192,59 @@ onMounted(() => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .header-icon {
-  width: 24px;
-  height: 24px;
-  color: #06FFA5;
+  width: 22px;
+  height: 22px;
+  color: var(--primary-cyan);
 }
 
 .header-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .section-title {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 18px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .section-subtitle {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
 .header-badge {
-  padding: 8px 16px;
-  background: linear-gradient(135deg,
-    rgba(6, 255, 165, 0.15),
-    rgba(72, 219, 150, 0.15));
-  border: 1px solid rgba(6, 255, 165, 0.25);
+  padding: 6px 14px;
+  background: rgba(6, 255, 165, 0.1);
+  border: 1px solid rgba(6, 255, 165, 0.2);
   border-radius: 20px;
-  font-family: 'Exo 2', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #06FFA5;
-  letter-spacing: 1px;
+  color: var(--primary-cyan);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
+/* ============================================
+   Chart Container
+   ============================================ */
 .chart-container {
-  padding: 24px;
-  min-height: 400px;
+  padding: 20px 24px;
+  min-height: 320px;
 }
 
 .chart-wrapper {
   width: 100%;
-  height: 350px;
+  height: 280px;
 }
 
 .chart-empty {
@@ -238,30 +252,33 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 350px;
-  color: rgba(255, 255, 255, 0.3);
+  height: 280px;
+  color: var(--text-tertiary);
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  font-size: 56px;
+  margin-bottom: 12px;
   opacity: 0.5;
 }
 
 .empty-text {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 14px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
   margin: 0;
 }
 
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 768px) {
   .chart-container {
-    padding: 20px;
-    min-height: 350px;
+    padding: 18px 20px;
+    min-height: 280px;
   }
 
   .chart-wrapper {
-    height: 300px;
+    height: 240px;
   }
 }
 </style>

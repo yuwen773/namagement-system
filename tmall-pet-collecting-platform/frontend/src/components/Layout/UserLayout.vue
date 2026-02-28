@@ -66,35 +66,50 @@ onUnmounted(() => {
 <template>
   <div class="user-layout">
     <!-- Background Effects -->
-    <div class="user-layout__background">
-      <div class="bg-gradient-orb orb-1"></div>
-      <div class="bg-gradient-orb orb-2"></div>
-      <div class="bg-gradient-orb orb-3"></div>
-      <div class="bg-grid"></div>
+    <div class="layout-background">
+      <svg class="paw-grid" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="pawGrid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+            <g fill="none" stroke="rgba(255, 107, 53, 0.02)" stroke-width="1">
+              <circle cx="40" cy="40" r="6"/>
+              <circle cx="28" cy="32" r="3"/>
+              <circle cx="52" cy="32" r="3"/>
+              <circle cx="30" cy="48" r="3"/>
+              <circle cx="50" cy="48" r="3"/>
+            </g>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pawGrid)"/>
+      </svg>
+
+      <div class="ambient-glow glow-1"></div>
+      <div class="ambient-glow glow-2"></div>
     </div>
 
     <!-- Top Navigation -->
-    <header :class="['top-nav', { 'top-nav--scrolled': isScrolled }]">
+    <header :class="['top-nav', { 'is-scrolled': isScrolled }]">
       <div class="nav-container">
         <!-- Logo -->
         <router-link to="/user/market" class="nav-logo">
-          <div class="logo-icon">
+          <div class="logo-mark">
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="12" fill="url(#logo-gradient)"/>
-              <path d="M24 12L32 20L24 28L16 20L24 12Z" fill="white"/>
-              <path d="M20 28L24 32L28 28" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="24" cy="20" r="3" fill="#FF6B35"/>
+              <rect width="48" height="48" rx="12" fill="url(#navLogoGrad)"/>
+              <g transform="translate(12, 9)">
+                <path d="M12 3 L20 11 L12 19 L4 11 Z" fill="white"/>
+                <path d="M8 19 L12 23 L16 19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="11" r="3" fill="#FF6B35"/>
+              </g>
               <defs>
-                <linearGradient id="logo-gradient" x1="0" y1="0" x2="48" y2="48">
+                <linearGradient id="navLogoGrad" x1="0" y1="0" x2="48" y2="48">
                   <stop offset="0%" stop-color="#FF6B35"/>
                   <stop offset="100%" stop-color="#7B2CBF"/>
                 </linearGradient>
               </defs>
             </svg>
           </div>
-          <div class="logo-text">
+          <div class="logo-type">
             <span class="logo-title">宠物用品数据</span>
-            <span class="logo-subtitle">COLLECT DATA</span>
+            <span class="logo-tag">PET DATA</span>
           </div>
         </router-link>
 
@@ -104,27 +119,27 @@ onUnmounted(() => {
             v-for="item in menuItems"
             :key="item.path"
             :to="item.path"
-            class="nav-link"
+            class="nav-item"
             :class="{ active: activeMenu.startsWith(item.path) }"
           >
             <component :is="item.icon" class="nav-icon" />
-            <span class="nav-text">{{ item.title }}</span>
+            <span class="nav-label">{{ item.title }}</span>
             <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
-            <span class="nav-indicator"></span>
+            <span class="nav-dot"></span>
           </router-link>
         </nav>
 
         <!-- User Actions -->
         <div class="nav-actions">
-          <div class="user-mini-profile">
-            <div class="user-avatar">
+          <div class="user-chip">
+            <div class="user-chip-avatar">
               <UserIcon class="avatar-icon" />
             </div>
-            <span class="user-name">{{ userStore.userInfo?.username || 'Collector' }}</span>
+            <span class="user-chip-name">{{ userStore.userInfo?.username || '用户' }}</span>
           </div>
 
           <el-dropdown @command="handleLogout" trigger="click">
-            <button class="icon-btn">
+            <button class="nav-icon-btn">
               <SwitchButton class="icon" />
             </button>
             <template #dropdown>
@@ -137,7 +152,7 @@ onUnmounted(() => {
             </template>
           </el-dropdown>
 
-          <button class="mobile-menu-btn" @click="toggleMobileMenu">
+          <button class="mobile-toggle" @click="toggleMobileMenu">
             <Menu class="icon" />
           </button>
         </div>
@@ -145,14 +160,31 @@ onUnmounted(() => {
     </header>
 
     <!-- Mobile Menu Overlay -->
-    <transition name="mobile-menu">
-      <div v-if="isMobileMenuOpen" class="mobile-menu-overlay" @click="toggleMobileMenu">
+    <transition name="mobile-fade">
+      <div v-if="isMobileMenuOpen" class="mobile-overlay" @click="toggleMobileMenu">
         <div class="mobile-menu" @click.stop>
-          <div class="mobile-menu-header">
-            <div class="logo-icon-small"></div>
-            <span class="mobile-menu-title">导航菜单</span>
-            <button class="mobile-close-btn" @click="toggleMobileMenu">
-              ×
+          <div class="mobile-header">
+            <div class="mobile-logo">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="48" rx="12" fill="url(#mobileLogoGrad)"/>
+                <g transform="translate(12, 9)">
+                  <path d="M12 3 L20 11 L12 19 L4 11 Z" fill="white"/>
+                  <path d="M8 19 L12 23 L16 19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="11" r="3" fill="#FF6B35"/>
+                </g>
+                <defs>
+                  <linearGradient id="mobileLogoGrad" x1="0" y1="0" x2="48" y2="48">
+                    <stop offset="0%" stop-color="#FF6B35"/>
+                    <stop offset="100%" stop-color="#7B2CBF"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <span class="mobile-title">菜单</span>
+            <button class="mobile-close" @click="toggleMobileMenu">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
             </button>
           </div>
           <nav class="mobile-nav">
@@ -160,13 +192,13 @@ onUnmounted(() => {
               v-for="item in menuItems"
               :key="item.path"
               :to="item.path"
-              class="mobile-nav-link"
+              class="mobile-item"
               :class="{ active: activeMenu.startsWith(item.path) }"
               @click="toggleMobileMenu"
             >
-              <component :is="item.icon" class="nav-icon" />
-              <span class="nav-text">{{ item.title }}</span>
-              <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
+              <component :is="item.icon" class="mobile-icon" />
+              <span class="mobile-label">{{ item.title }}</span>
+              <span v-if="item.badge" class="mobile-badge">{{ item.badge }}</span>
             </router-link>
           </nav>
         </div>
@@ -176,7 +208,7 @@ onUnmounted(() => {
     <!-- Main Content -->
     <main class="main-content">
       <router-view v-slot="{ Component }">
-        <transition name="page-transition" mode="out-in">
+        <transition name="page-enter" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
@@ -184,30 +216,44 @@ onUnmounted(() => {
 
     <!-- Footer -->
     <footer class="layout-footer">
-      <p class="footer-text">
-        © 2025 天猫宠物用品数据采集系统 · Data Driven Decisions
-      </p>
+      <div class="footer-content">
+        <p class="footer-text">© 2025 天猫宠物用品数据采集系统</p>
+        <p class="footer-sub">Data-Driven Pet Market Insights</p>
+      </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
-/* ========================================
-   Layout Base
-   ======================================== */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Design Tokens
+   ============================================ */
 .user-layout {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --bg-primary: #0D0D14;
+  --bg-elevated: rgba(20, 20, 32, 0.8);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 107, 53, 0.3);
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
-  font-family: var(--font-body);
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
   position: relative;
 }
 
-/* ========================================
-   Background Effects
-   ======================================== */
-.user-layout__background {
+/* ============================================
+   Background
+   ============================================ */
+.layout-background {
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -215,133 +261,125 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.bg-gradient-orb {
+.paw-grid {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.15;
-  animation: float 20s ease-in-out infinite;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
 }
 
-.orb-1 {
-  width: 600px;
-  height: 600px;
-  background: var(--neon-orange);
-  top: -200px;
-  right: -200px;
+.ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.4;
+  animation: ambientPulse 20s ease-in-out infinite;
+}
+
+.glow-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.3) 0%, transparent 70%);
+  top: -150px;
+  right: -150px;
   animation-delay: 0s;
 }
 
-.orb-2 {
-  width: 500px;
-  height: 500px;
-  background: var(--neon-purple);
-  bottom: -150px;
-  left: -150px;
-  animation-delay: -7s;
-}
-
-.orb-3 {
+.glow-2 {
   width: 400px;
   height: 400px;
-  background: var(--neon-cyan);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation-delay: -14s;
+  background: radial-gradient(circle, rgba(123, 44, 191, 0.25) 0%, transparent 70%);
+  bottom: -100px;
+  left: -100px;
+  animation-delay: -10s;
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(30px, -30px) scale(1.05);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.95);
-  }
+@keyframes ambientPulse {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+  50% { transform: translate(30px, -20px) scale(1.1); opacity: 0.5; }
 }
 
-.bg-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
-}
-
-/* ========================================
+/* ============================================
    Top Navigation
-   ======================================== */
+   ============================================ */
 .top-nav {
   position: sticky;
   top: 0;
-  z-index: var(--z-sticky);
+  z-index: 100;
   background: transparent;
   border-bottom: 1px solid transparent;
-  transition: all var(--transition-base);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.top-nav--scrolled {
-  background: rgba(10, 10, 18, 0.85);
-  backdrop-filter: blur(20px);
+.top-nav.is-scrolled {
+  background: rgba(13, 13, 20, 0.85);
+  backdrop-filter: blur(24px);
   border-bottom-color: var(--border-subtle);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .nav-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-lg) var(--space-xl);
+  padding: 16px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xl);
+  gap: 32px;
 }
 
 /* Logo */
 .nav-logo {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: 14px;
   text-decoration: none;
-  transition: all var(--transition-base);
+  transition: transform 0.3s ease;
 }
 
-.nav-logo:hover .logo-icon {
-  transform: rotate(5deg) scale(1.05);
+.nav-logo:hover {
+  transform: scale(1.02);
 }
 
-.logo-icon {
+.nav-logo:hover .logo-mark {
+  transform: rotate(-5deg);
+}
+
+.logo-mark {
   width: 44px;
   height: 44px;
   flex-shrink: 0;
-  transition: transform var(--transition-base);
-  filter: drop-shadow(0 0 20px rgba(255, 107, 53, 0.4));
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 4px 16px rgba(255, 107, 53, 0.3));
 }
 
-.logo-text {
+.logo-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.logo-type {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
 .logo-title {
-  font-family: var(--font-display);
-  font-size: 1.125rem;
-  font-weight: 800;
-  background: var(--gradient-primary);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-orange), #FFD700);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
   line-height: 1;
 }
 
-.logo-subtitle {
-  font-size: 0.625rem;
+.logo-tag {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.15em;
   color: var(--text-tertiary);
@@ -352,91 +390,104 @@ onUnmounted(() => {
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 6px;
 }
 
-.nav-link {
+.nav-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  color: var(--text-tertiary);
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 600;
-  transition: all var(--transition-base);
-  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.nav-link:hover {
+.nav-item:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.05);
 }
 
-.nav-link.active {
-  color: var(--neon-orange);
+.nav-item.active {
+  color: var(--primary-orange);
+  background: rgba(255, 107, 53, 0.1);
 }
 
-.nav-link.active .nav-indicator {
+.nav-item.active .nav-dot {
   opacity: 1;
-  transform: scaleX(1);
+  transform: scale(1);
 }
 
 .nav-icon {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
+}
+
+.nav-label {
+  position: relative;
+  z-index: 1;
 }
 
 .nav-badge {
-  padding: 2px 6px;
-  background: var(--gradient-primary);
+  padding: 3px 8px;
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
   color: white;
-  font-family: var(--font-display);
-  font-size: 0.625rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
   font-weight: 700;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   letter-spacing: 0.05em;
 }
 
-.nav-indicator {
+.nav-dot {
   position: absolute;
-  bottom: 0;
-  left: var(--space-sm);
-  right: var(--space-sm);
-  height: 2px;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-full);
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  width: 4px;
+  height: 4px;
+  background: var(--primary-orange);
+  border-radius: 50%;
   opacity: 0;
-  transform: scaleX(0);
-  transition: all var(--transition-base);
+  transition: all 0.3s ease;
 }
 
-/* User Actions */
+/* Nav Actions */
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: 12px;
+  margin-left: auto;
 }
 
-.user-mini-profile {
+.user-chip {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--surface-glass);
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
+  border-radius: 24px;
+  transition: all 0.3s ease;
 }
 
-.user-avatar {
+.user-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-hover);
+}
+
+.user-chip-avatar {
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
   border-radius: 50%;
 }
 
@@ -446,64 +497,71 @@ onUnmounted(() => {
   color: white;
 }
 
-.user-name {
-  font-size: 0.875rem;
+.user-chip-name {
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.icon-btn {
+.nav-icon-btn {
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-glass);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: all 0.3s ease;
 }
 
-.icon-btn:hover {
-  color: var(--status-error);
-  border-color: rgba(255, 59, 48, 0.3);
-  background: rgba(255, 59, 48, 0.1);
+.nav-icon-btn:hover {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.3);
+  background: rgba(255, 107, 107, 0.1);
 }
 
-.icon-btn .icon {
+.nav-icon-btn .icon {
   width: 18px;
   height: 18px;
 }
 
-.mobile-menu-btn {
+.mobile-toggle {
   display: none;
   width: 40px;
   height: 40px;
   align-items: center;
   justify-content: center;
-  background: var(--surface-glass);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color: var(--text-tertiary);
+  border-radius: 12px;
+  color: var(--text-secondary);
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.mobile-menu-btn .icon {
+.mobile-toggle:hover {
+  background: rgba(255, 107, 53, 0.1);
+  border-color: var(--border-hover);
+  color: var(--primary-orange);
+}
+
+.mobile-toggle .icon {
   width: 20px;
   height: 20px;
 }
 
-/* ========================================
+/* ============================================
    Mobile Menu
-   ======================================== */
-.mobile-menu-overlay {
+   ============================================ */
+.mobile-overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--z-modal);
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
 }
 
 .mobile-menu {
@@ -511,186 +569,233 @@ onUnmounted(() => {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 280px;
-  max-width: 85vw;
-  background: var(--bg-secondary);
+  width: 300px;
+  max-width: 90vw;
+  background: var(--bg-elevated);
   border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(40px);
 }
 
-.mobile-menu-header {
+.mobile-header {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-lg);
+  gap: 14px;
+  padding: 20px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.logo-icon-small {
-  width: 32px;
-  height: 32px;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-md);
+.mobile-logo {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
 }
 
-.mobile-menu-title {
+.mobile-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-title {
   flex: 1;
-  font-family: var(--font-display);
-  font-size: 1rem;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.mobile-close-btn {
-  width: 32px;
-  height: 32px;
+.mobile-close {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
   color: var(--text-tertiary);
-  font-size: 1.5rem;
   cursor: pointer;
-  border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
 }
 
-.mobile-close-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+.mobile-close:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
 .mobile-nav {
   flex: 1;
-  padding: var(--space-md);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 4px;
+  overflow-y: auto;
 }
 
-.mobile-nav-link {
+.mobile-item {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 15px;
   font-weight: 600;
-  transition: all var(--transition-base);
+  transition: all 0.3s ease;
 }
 
-.mobile-nav-link:hover,
-.mobile-nav-link.active {
+.mobile-item:hover,
+.mobile-item.active {
   background: rgba(255, 107, 53, 0.1);
-  color: var(--neon-orange);
+  color: var(--primary-orange);
 }
 
-.mobile-nav-link .nav-icon {
+.mobile-icon {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 
-.mobile-nav-link .nav-badge {
-  margin-left: auto;
-  padding: 4px 8px;
-  background: var(--gradient-primary);
+.mobile-label {
+  flex: 1;
+}
+
+.mobile-badge {
+  padding: 4px 10px;
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
   color: white;
-  font-family: var(--font-display);
-  font-size: 0.625rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
   font-weight: 700;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
 }
 
-/* ========================================
+/* ============================================
    Main Content
-   ======================================== */
+   ============================================ */
 .main-content {
   flex: 1;
   position: relative;
   z-index: 1;
-  padding: var(--space-2xl) var(--space-xl);
+  padding: 32px;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* ========================================
+/* ============================================
    Footer
-   ======================================== */
+   ============================================ */
 .layout-footer {
   position: relative;
   z-index: 1;
-  padding: var(--space-lg);
-  text-align: center;
+  padding: 24px;
   border-top: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.footer-content {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .footer-text {
-  font-size: 0.8125rem;
+  font-size: 13px;
   color: var(--text-tertiary);
+  margin: 0 0 4px 0;
+}
+
+.footer-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  opacity: 0.6;
   margin: 0;
+  letter-spacing: 0.05em;
 }
 
-/* ========================================
+/* ============================================
    Animations
-   ======================================== */
-.mobile-menu-enter-active,
-.mobile-menu-leave-active {
-  transition: all var(--transition-base);
+   ============================================ */
+.mobile-fade-enter-active,
+.mobile-fade-leave-active {
+  transition: all 0.4s ease;
 }
 
-.mobile-menu-enter-from,
-.mobile-menu-leave-to {
+.mobile-fade-enter-from,
+.mobile-fade-leave-to {
   opacity: 0;
 }
 
-.mobile-menu-enter-from .mobile-menu,
-.mobile-menu-leave-to .mobile-menu {
+.mobile-fade-enter-from .mobile-menu,
+.mobile-fade-leave-to .mobile-menu {
   transform: translateX(100%);
 }
 
-.page-transition-enter-active,
-.page-transition-leave-active {
+.page-enter-enter-active,
+.page-enter-leave-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.page-transition-enter-from {
+.page-enter-enter-from {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(16px);
 }
 
-.page-transition-leave-to {
+.page-enter-leave-to {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(-16px);
 }
 
-/* ========================================
+/* ============================================
    Responsive
-   ======================================== */
+   ============================================ */
 @media (max-width: 1024px) {
   .desktop-nav {
     display: none;
   }
 
-  .mobile-menu-btn {
+  .mobile-toggle {
     display: flex;
   }
 
-  .user-mini-profile {
+  .user-chip {
     display: none;
+  }
+
+  .nav-container {
+    padding: 16px 20px;
   }
 }
 
 @media (max-width: 640px) {
   .main-content {
-    padding: var(--space-lg) var(--space-md);
+    padding: 20px 16px;
   }
 
   .nav-container {
-    padding: var(--space-md) var(--space-lg);
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .logo-type {
+    display: none;
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .mobile-toggle {
+    width: 36px;
+    height: 36px;
   }
 }
 </style>

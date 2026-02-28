@@ -141,20 +141,34 @@ const formatNumber = (num) => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Base Section
+   ============================================ */
 .top-products {
-  background: linear-gradient(135deg,
-    rgba(255, 107, 53, 0.05) 0%,
-    rgba(123, 44, 191, 0.05) 100%);
-  border: 1px solid rgba(255, 107, 53, 0.1);
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  background: rgba(20, 20, 32, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 24px;
   overflow: hidden;
 }
 
+/* ============================================
+   Section Header
+   ============================================ */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(0, 0, 0, 0.2);
 }
@@ -162,36 +176,39 @@ const formatNumber = (num) => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .header-icon {
-  width: 24px;
-  height: 24px;
-  color: #FFD700;
+  width: 22px;
+  height: 22px;
+  color: var(--primary-gold);
 }
 
 .header-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .section-title {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 18px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .section-subtitle {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
+/* ============================================
+   Sort Tabs
+   ============================================ */
 .sort-tabs {
   display: flex;
   gap: 8px;
@@ -201,51 +218,53 @@ const formatNumber = (num) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 10px 18px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  font-family: 'Exo 2', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .sort-tab:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 107, 53, 0.3);
-  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 107, 53, 0.2);
+  color: var(--text-primary);
 }
 
 .sort-tab--active {
   background: linear-gradient(135deg,
-    rgba(255, 107, 53, 0.2),
-    rgba(123, 44, 191, 0.2));
-  border-color: rgba(255, 107, 53, 0.4);
-  color: #FF6B35;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.2);
+    rgba(255, 107, 53, 0.15),
+    rgba(123, 44, 191, 0.15));
+  border-color: rgba(255, 107, 53, 0.3);
+  color: var(--primary-orange);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.15);
 }
 
 .tab-icon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
+/* ============================================
+   Products List
+   ============================================ */
 .products-list {
-  padding: 24px;
+  padding: 20px 24px;
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .product-card {
   display: grid;
-  grid-template-columns: auto 80px 1fr auto;
-  gap: 16px;
+  grid-template-columns: auto 72px 1fr auto;
+  gap: 14px;
   align-items: center;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.3s ease;
@@ -254,61 +273,61 @@ const formatNumber = (num) => {
 }
 
 .product-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 107, 53, 0.2);
-  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 107, 53, 0.15);
+  transform: translateX(3px);
 }
 
 .product-card--top {
   background: linear-gradient(135deg,
-    rgba(255, 215, 0, 0.08) 0%,
-    rgba(255, 107, 53, 0.05) 100%);
-  border-color: rgba(255, 215, 0, 0.2);
+    rgba(255, 215, 0, 0.06) 0%,
+    rgba(255, 107, 53, 0.03) 100%);
+  border-color: rgba(255, 215, 0, 0.15);
 }
 
 .product-rank {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Orbitron', monospace;
-  font-size: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
   font-weight: 700;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
   flex-shrink: 0;
 }
 
 .rank-1 {
   background: linear-gradient(135deg, #FFD700, #FFA500);
   color: #000;
-  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
 }
 
 .rank-2 {
   background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
   color: #000;
-  box-shadow: 0 8px 25px rgba(192, 192, 192, 0.4);
+  box-shadow: 0 6px 20px rgba(192, 192, 192, 0.3);
 }
 
 .rank-3 {
   background: linear-gradient(135deg, #CD7F32, #B87333);
   color: #000;
-  box-shadow: 0 8px 25px rgba(205, 127, 50, 0.4);
+  box-shadow: 0 6px 20px rgba(205, 127, 50, 0.3);
 }
 
 .rank-icon {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .rank-number {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
 }
 
 .product-image {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
 }
 
@@ -316,8 +335,8 @@ const formatNumber = (num) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .image-placeholder {
@@ -326,29 +345,29 @@ const formatNumber = (num) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .placeholder-icon {
-  width: 32px;
-  height: 32px;
-  color: rgba(255, 255, 255, 0.2);
+  width: 28px;
+  height: 28px;
+  color: rgba(255, 255, 255, 0.15);
 }
 
 .product-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .product-title {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 15px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -357,29 +376,29 @@ const formatNumber = (num) => {
 
 .product-meta {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .meta-item {
   display: flex;
-  gap: 4px;
-  font-size: 11px;
+  gap: 3px;
+  font-size: 10px;
 }
 
 .meta-label {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
 .meta-value {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .product-metrics {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
 }
 
@@ -388,21 +407,20 @@ const formatNumber = (num) => {
 }
 
 .metric-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  color: var(--text-tertiary);
   margin-bottom: 2px;
 }
 
 .metric-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
   font-weight: 700;
-  color: #FF6B35;
+  color: var(--primary-orange);
 }
 
 .product-card--top .metric-value {
-  color: #FFD700;
-  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  color: var(--primary-gold);
 }
 
 .product-decoration {
@@ -410,7 +428,7 @@ const formatNumber = (num) => {
   right: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 3px;
   background: linear-gradient(180deg,
     rgba(255, 107, 53, 0.6) 0%,
     rgba(123, 44, 191, 0.6) 100%);
@@ -427,54 +445,57 @@ const formatNumber = (num) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
-  color: rgba(255, 255, 255, 0.3);
+  min-height: 180px;
+  color: var(--text-tertiary);
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  font-size: 56px;
+  margin-bottom: 12px;
   opacity: 0.5;
 }
 
 .empty-text {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 14px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
   margin: 0;
 }
 
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 768px) {
   .section-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 14px;
   }
 
   .product-card {
-    grid-template-columns: auto 60px 1fr;
-    gap: 12px;
+    grid-template-columns: auto 56px 1fr;
+    gap: 10px;
   }
 
   .product-image {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
   }
 
   .product-metrics {
     grid-column: 2 / -1;
     flex-direction: row;
     justify-content: flex-start;
-    gap: 24px;
+    gap: 18px;
   }
 
   .product-rank {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
   }
 
   .rank-icon {
-    font-size: 20px;
+    font-size: 16px;
   }
 }
 </style>

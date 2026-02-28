@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productApi } from '@/api'
-import { Search, Filter, Grid, List, ArrowUp, ArrowDown, Star } from '@element-plus/icons-vue'
+import { Search, Filter, Grid, List, ArrowUp, ArrowDown, Star, TrendCharts, Shop, ArrowRight, ShoppingCart } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -156,6 +156,14 @@ const formatSales = (sales) => {
   return sales + '+'
 }
 
+// 格式化数字
+const formatNumber = (num) => {
+  if (num >= 10000) {
+    return (num / 10000).toFixed(1) + 'w'
+  }
+  return num.toString()
+}
+
 // 监听筛选变化
 watch([() => searchForm.keyword, () => searchForm.shop], () => {
   pagination.page = 1
@@ -174,116 +182,123 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="products-container">
-    <!-- 页面标题 -->
+  <div class="products-page">
+    <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-content">
-        <h1 class="main-title">
-          <span class="title-icon">🎨</span>
-          商品资源库
+        <div class="header-badge">
+          <Filter class="badge-icon" />
+          <span>商品库</span>
+        </div>
+        <h1 class="page-title">
+          <span class="title-gradient">商品资源库</span>
         </h1>
-        <p class="subtitle">探索海量宠物用品，发现心仪好物</p>
+        <p class="page-subtitle">探索海量宠物用品，发现心仪好物</p>
       </div>
       <div class="header-stats">
-        <span class="stat-item">共 {{ formatSales(total) }} 件商品</span>
+        <div class="stat-mini">
+          <span class="stat-value">{{ formatNumber(total) }}</span>
+          <span class="stat-label">商品总数</span>
+        </div>
       </div>
     </div>
 
-    <!-- 搜索和筛选区域 -->
-    <div class="filter-section">
-      <!-- 搜索栏 -->
-      <div class="search-bar">
-        <div class="search-input-wrapper">
+    <!-- 筛选控制面板 -->
+    <div class="filter-panel">
+      <div class="filter-bar">
+        <div class="search-group">
           <Search class="search-icon" />
           <input
             v-model="searchForm.keyword"
             type="text"
             placeholder="搜索商品名称、店铺..."
             class="search-input"
+            @keyup.enter="fetchProducts"
           />
         </div>
-        <button class="search-btn" @click="fetchProducts">搜索</button>
+
+        <div class="filter-group-inline">
+          <label class="filter-label">价格</label>
+          <el-select
+            v-model="selectedPriceRange"
+            placeholder="选择区间"
+            clearable
+            class="filter-select"
+            @change="handlePriceRangeChange"
+          >
+            <el-option
+              v-for="range in priceRanges"
+              :key="range.label"
+              :label="range.label"
+              :value="range"
+            />
+          </el-select>
+        </div>
+
+        <div class="filter-group-inline">
+          <label class="filter-label">店铺</label>
+          <input
+            v-model="searchForm.shop"
+            type="text"
+            placeholder="店铺名称"
+            class="filter-input-inline"
+          />
+        </div>
+
+        <div class="action-buttons">
+          <button class="search-btn" @click="fetchProducts">
+            <Search class="btn-icon-sm" />
+            <span>搜索</span>
+          </button>
+          <button class="reset-btn" @click="resetFilters">
+            <span>重置</span>
+          </button>
+        </div>
       </div>
 
-      <!-- 筛选工具栏 -->
-      <div class="filter-toolbar">
-        <div class="filter-left">
-          <!-- 价格区间 -->
-          <div class="filter-group">
-            <label class="filter-label">价格区间</label>
-            <el-select
-              v-model="selectedPriceRange"
-              placeholder="选择价格区间"
-              clearable
-              class="price-select"
-              @change="handlePriceRangeChange"
-            >
-              <el-option
-                v-for="range in priceRanges"
-                :key="range.label"
-                :label="range.label"
-                :value="range"
-              />
-            </el-select>
-          </div>
-
-          <!-- 店铺筛选 -->
-          <div class="filter-group">
-            <label class="filter-label">店铺</label>
-            <input
-              v-model="searchForm.shop"
-              type="text"
-              placeholder="输入店铺名称"
-              class="filter-input"
-            />
-          </div>
-
-          <button class="reset-btn" @click="resetFilters">
-            <span>🔄</span> 重置
+      <!-- 排序和视图切换 -->
+      <div class="toolbar-row">
+        <div class="sort-options">
+          <span class="sort-label">排序方式</span>
+          <button
+            class="sort-btn"
+            :class="{ active: searchForm.sortBy === 'sales' }"
+            @click="searchForm.sortBy = 'sales'; fetchProducts()"
+          >
+            <TrendCharts class="sort-icon" />
+            <span>销量</span>
+            <ArrowUp v-if="searchForm.sortBy === 'sales' && searchForm.sortOrder === 'desc'" class="order-icon" />
+            <ArrowDown v-else-if="searchForm.sortBy === 'sales' && searchForm.sortOrder === 'asc'" class="order-icon" />
+          </button>
+          <button
+            class="sort-btn"
+            :class="{ active: searchForm.sortBy === 'price' }"
+            @click="searchForm.sortBy = 'price'; fetchProducts()"
+          >
+            <span>¥</span>
+            <span>价格</span>
+            <ArrowUp v-if="searchForm.sortBy === 'price' && searchForm.sortOrder === 'asc'" class="order-icon" />
+            <ArrowDown v-else-if="searchForm.sortBy === 'price' && searchForm.sortOrder === 'desc'" class="order-icon" />
           </button>
         </div>
 
-        <div class="filter-right">
-          <!-- 排序 -->
-          <div class="sort-options">
-            <span class="sort-label">排序:</span>
-            <button
-              class="sort-btn"
-              :class="{ active: searchForm.sortBy === 'sales' }"
-              @click="searchForm.sortBy = 'sales'; fetchProducts()"
-            >
-              销量
-              <ArrowUp v-if="searchForm.sortBy === 'sales' && searchForm.sortOrder === 'desc'" class="sort-icon" />
-              <ArrowDown v-else-if="searchForm.sortBy === 'sales' && searchForm.sortOrder === 'asc'" class="sort-icon" />
-            </button>
-            <button
-              class="sort-btn"
-              :class="{ active: searchForm.sortBy === 'price' }"
-              @click="searchForm.sortBy = 'price'; fetchProducts()"
-            >
-              价格
-              <ArrowUp v-if="searchForm.sortBy === 'price' && searchForm.sortOrder === 'asc'" class="sort-icon" />
-              <ArrowDown v-else-if="searchForm.sortBy === 'price' && searchForm.sortOrder === 'desc'" class="sort-icon" />
-            </button>
-          </div>
-
-          <!-- 视图切换 -->
-          <div class="view-toggle">
-            <button
-              class="view-btn"
-              :class="{ active: viewMode === 'grid' }"
-              @click="viewMode = 'grid'"
-            >
-              <Grid />
-            </button>
-            <button
-              class="view-btn"
-              :class="{ active: viewMode === 'list' }"
-              @click="viewMode = 'list'"
-            >
-              <List />
-            </button>
-          </div>
+        <div class="view-toggle">
+          <button
+            class="view-btn"
+            :class="{ active: viewMode === 'grid' }"
+            @click="viewMode = 'grid'"
+          >
+            <Grid class="view-icon" />
+            <span>网格</span>
+          </button>
+          <button
+            class="view-btn"
+            :class="{ active: viewMode === 'list' }"
+            @click="viewMode = 'list'"
+          >
+            <List class="view-icon" />
+            <span>列表</span>
+          </button>
         </div>
       </div>
     </div>
@@ -304,26 +319,38 @@ onMounted(() => {
           class="product-card"
           @click="goToDetail(product.id)"
         >
-          <div class="card-image">
+          <div class="card-image-wrapper">
             <img :src="product.image_url || 'https://picsum.photos/seed/' + product.id + '/300/300'" :alt="product.title" />
-            <div class="card-badge" v-if="product.sales > 10000">🔥 热销</div>
+            <div class="card-badges">
+              <div v-if="product.sales > 10000" class="card-badge card-badge--hot">
+                🔥 热销
+              </div>
+              <div v-if="product.sales > 50000" class="card-badge card-badge--top">
+                TOP
+              </div>
+            </div>
           </div>
           <div class="card-content">
             <h3 class="card-title">{{ product.title }}</h3>
             <div class="card-meta">
-              <span class="shop-tag">{{ product.shop }}</span>
-              <div class="rating">
+              <span class="shop-tag">
+                <Shop class="shop-icon" />
+                {{ product.shop }}
+              </span>
+              <div class="rating" v-if="product.rating">
                 <Star class="star-icon" />
-                <span>{{ product.rating || '4.8' }}</span>
+                <span>{{ product.rating }}</span>
               </div>
             </div>
             <div class="card-footer">
               <div class="price-info">
-                <span class="price-label">价格</span>
-                <span class="price-value">{{ formatPrice(product.price) }}</span>
+                <span class="price-label">¥</span>
+                <span class="price-value">{{ Math.floor(product.price) }}</span>
+                <span class="price-decimal">.{{ (product.price % 1).toFixed(2).substring(2) }}</span>
               </div>
               <div class="sales-info">
-                销量 {{ formatSales(product.sales) }}
+                <TrendCharts class="sales-icon" />
+                <span>{{ formatSales(product.sales) }}</span>
               </div>
             </div>
           </div>
@@ -345,27 +372,33 @@ onMounted(() => {
             <h3 class="row-title">{{ product.title }}</h3>
             <div class="row-meta">
               <span class="shop-tag">{{ product.shop }}</span>
-              <span class="category-tag">{{ product.category || '宠物用品' }}</span>
+              <span v-if="product.category" class="category-tag">{{ product.category }}</span>
             </div>
           </div>
           <div class="row-price">
-            <span class="price-value">{{ formatPrice(product.price) }}</span>
+            <span class="price-symbol">¥</span>
+            <span class="price-value">{{ Math.floor(product.price) }}</span>
           </div>
           <div class="row-sales">
+            <TrendCharts class="sales-icon" />
             <span class="sales-value">{{ formatSales(product.sales) }}</span>
-            <span class="sales-label">销量</span>
           </div>
           <div class="row-action">
-            <button class="view-btn-detail">查看详情</button>
+            <button class="view-detail-btn">
+              <span>查看详情</span>
+              <ArrowRight class="arrow-icon" />
+            </button>
           </div>
         </div>
       </div>
 
       <!-- 空状态 -->
       <div v-if="!loading && products.length === 0" class="empty-state">
-        <div class="empty-icon">📦</div>
-        <h3>暂无商品</h3>
-        <p>调整筛选条件试试看</p>
+        <div class="empty-icon-wrapper">
+          <ShoppingCart class="empty-icon" />
+        </div>
+        <h3 class="empty-title">暂无商品</h3>
+        <p class="empty-hint">调整筛选条件试试看</p>
       </div>
     </div>
 
@@ -384,238 +417,370 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
 
-.products-container {
+/* ============================================
+   Design Tokens & Base
+   ============================================ */
+.products-page {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.15);
+
   display: flex;
   flex-direction: column;
   gap: 24px;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  animation: pageFadeIn 0.4s ease;
 }
 
-/* 页面标题 */
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Page Header
+   ============================================ */
 .page-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  padding: 24px 28px;
-  background: linear-gradient(135deg, rgba(123, 44, 191, 0.1) 0%, rgba(255, 107, 53, 0.08) 100%);
-  border: 1px solid rgba(255, 107, 53, 0.15);
-  border-radius: 20px;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 8px 0;
 }
 
 .header-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex: 1;
 }
 
-.main-title {
-  display: flex;
+.header-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 26px;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 107, 53, 0.15);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.header-badge .badge-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--primary-orange);
+}
+
+.header-badge span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
   font-weight: 700;
-  color: #fff;
-  margin: 0;
+  letter-spacing: 0.1em;
+  color: var(--primary-orange);
 }
 
-.title-icon {
+.page-title {
+  font-family: 'Noto Sans SC', sans-serif;
   font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.subtitle {
+.title-gradient {
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin: 0;
+  font-weight: 400;
 }
 
-.stat-item {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  padding: 8px 16px;
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid rgba(255, 107, 53, 0.2);
-  border-radius: 20px;
-}
-
-/* 筛选区域 */
-.filter-section {
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-}
-
-.search-bar {
+.header-stats {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
 }
 
-.search-input-wrapper {
-  flex: 1;
-  position: relative;
+.stat-mini {
+  text-align: center;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  min-width: 80px;
+}
+
+.stat-mini .stat-value {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-orange);
+}
+
+.stat-mini .stat-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================
+   Filter Panel
+   ============================================ */
+.filter-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: panelSlideIn 0.4s ease;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-bar {
   display: flex;
   align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.search-group {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 420px;
 }
 
 .search-icon {
   position: absolute;
   left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 18px;
   height: 18px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
+  pointer-events: none;
+  transition: color 0.3s ease;
 }
 
 .search-input {
   width: 100%;
-  padding: 14px 16px 14px 44px;
+  padding: 13px 16px 13px 48px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
+  color: var(--text-primary);
   font-size: 14px;
-  color: #fff;
-  outline: none;
+  font-family: inherit;
   transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  border-color: rgba(255, 107, 53, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
 .search-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
-.search-btn {
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #FF6B35, #FFD700);
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #000;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
-.search-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
-}
-
-.filter-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.filter-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.filter-group {
+.filter-group-inline {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .filter-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
-.price-select {
-  width: 140px;
+.filter-select {
+  width: 120px;
 }
 
-.price-select :deep(.el-input__wrapper) {
+.filter-select :deep(.el-input__wrapper) {
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  box-shadow: none;
 }
 
-.filter-input {
-  width: 140px;
-  padding: 8px 12px;
+.filter-select :deep(.el-input__inner) {
+  color: var(--text-primary);
+}
+
+.filter-input-inline {
+  width: 120px;
+  padding: 11px 14px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 13px;
-  color: #fff;
-  outline: none;
-}
-
-.filter-input:focus {
-  border-color: rgba(255, 107, 53, 0.5);
-}
-
-.reset-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
   transition: all 0.3s ease;
 }
 
-.reset-btn:hover {
-  border-color: rgba(255, 107, 53, 0.5);
-  color: #FF6B35;
+.filter-input-inline::placeholder {
+  color: var(--text-tertiary);
 }
 
-.filter-right {
+.filter-input-inline:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.search-btn,
+.reset-btn {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.search-btn {
+  background: linear-gradient(135deg, var(--primary-purple), var(--primary-orange));
+  color: white;
+}
+
+.search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+}
+
+.reset-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+}
+
+.reset-btn:hover {
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+
+.btn-icon-sm {
+  width: 14px;
+  height: 14px;
+}
+
+/* Toolbar Row */
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .sort-options {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .sort-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .sort-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.sort-btn:hover {
+  border-color: var(--border-default);
+  color: var(--text-primary);
 }
 
 .sort-btn.active {
   background: rgba(255, 107, 53, 0.15);
   border-color: rgba(255, 107, 53, 0.3);
-  color: #FF6B35;
+  color: var(--primary-orange);
 }
 
-.sort-icon {
+.sort-btn .sort-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.order-icon {
   width: 12px;
   height: 12px;
+  margin-left: 2px;
 }
 
 .view-toggle {
@@ -629,31 +794,35 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  gap: 6px;
+  padding: 8px 14px;
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.view-btn .view-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .view-btn.active {
-  background: linear-gradient(135deg, #FF6B35, #FFD700);
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-gold));
   color: #000;
 }
 
 .view-btn:hover:not(.active) {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
-.view-btn :deep(svg) {
-  width: 18px;
-  height: 18px;
-}
-
-/* 商品展示 */
+/* ============================================
+   Products Section
+   ============================================ */
 .products-section {
   min-height: 400px;
 }
@@ -664,14 +833,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
 .loading-spinner {
   width: 48px;
   height: 48px;
   border: 3px solid rgba(255, 107, 53, 0.2);
-  border-top-color: #FF6B35;
+  border-top-color: var(--primary-orange);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
@@ -681,20 +850,35 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 网格视图 */
+/* ============================================
+   Products Grid
+   ============================================ */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+  animation: gridFadeIn 0.5s ease;
+}
+
+@keyframes gridFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .product-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .product-card:hover {
@@ -703,32 +887,49 @@ onMounted(() => {
   box-shadow: 0 20px 40px rgba(255, 107, 53, 0.15);
 }
 
-.card-image {
+.card-image-wrapper {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
 }
 
-.card-image img {
+.card-image-wrapper img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s ease;
 }
 
-.product-card:hover .card-image img {
-  transform: scale(1.05);
+.product-card:hover .card-image-wrapper img {
+  transform: scale(1.08);
 }
 
-.card-badge {
+.card-badges {
   position: absolute;
   top: 12px;
   left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-badge {
   padding: 4px 10px;
-  background: linear-gradient(135deg, #FF6B35, #FFD700);
   border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(10px);
+}
+
+.card-badge--hot {
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-gold));
+  color: #000;
+}
+
+.card-badge--top {
+  background: linear-gradient(135deg, var(--primary-purple), var(--primary-cyan));
   color: #000;
 }
 
@@ -739,13 +940,14 @@ onMounted(() => {
 .card-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   margin: 0 0 12px 0;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 40px;
 }
 
 .card-meta {
@@ -756,11 +958,19 @@ onMounted(() => {
 }
 
 .shop-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  padding: 3px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  color: var(--text-tertiary);
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.shop-tag .shop-icon {
+  width: 12px;
+  height: 12px;
 }
 
 .rating {
@@ -768,10 +978,11 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #FFD700;
+  color: var(--primary-gold);
+  font-weight: 600;
 }
 
-.star-icon {
+.rating .star-icon {
   width: 14px;
   height: 14px;
 }
@@ -784,31 +995,52 @@ onMounted(() => {
 
 .price-info {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: 2px;
 }
 
 .price-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-orange);
 }
 
 .price-value {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
   font-weight: 700;
-  color: #FF6B35;
+  color: var(--primary-orange);
+  line-height: 1;
+}
+
+.price-decimal {
+  font-size: 14px;
+  color: var(--primary-orange);
+  opacity: 0.8;
 }
 
 .sales-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
-/* 列表视图 */
+.sales-info .sales-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--primary-cyan);
+}
+
+/* ============================================
+   Products List
+   ============================================ */
 .products-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: gridFadeIn 0.5s ease;
 }
 
 .product-row {
@@ -816,9 +1048,9 @@ onMounted(() => {
   align-items: center;
   gap: 20px;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -826,14 +1058,16 @@ onMounted(() => {
 .product-row:hover {
   border-color: rgba(255, 107, 53, 0.3);
   background: rgba(255, 107, 53, 0.05);
+  transform: translateX(4px);
 }
 
 .row-image {
   width: 80px;
   height: 80px;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .row-image img {
@@ -850,24 +1084,31 @@ onMounted(() => {
 .row-title {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   margin: 0 0 8px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .row-meta {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.shop-tag, .category-tag {
+.row-meta .shop-tag {
+  background: rgba(123, 44, 191, 0.1);
+  color: var(--primary-purple);
+}
+
+.row-meta .category-tag {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  padding: 3px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  color: var(--text-tertiary);
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
 }
 
 .row-price {
@@ -875,77 +1116,121 @@ onMounted(() => {
   text-align: right;
 }
 
+.row-price .price-symbol {
+  font-size: 14px;
+  color: var(--primary-orange);
+  font-weight: 600;
+}
+
 .row-price .price-value {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
   font-weight: 700;
-  color: #FF6B35;
+  color: var(--primary-orange);
 }
 
 .row-sales {
-  width: 80px;
-  text-align: center;
+  width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.sales-value {
-  display: block;
-  font-size: 14px;
+.row-sales .sales-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--primary-cyan);
+}
+
+.row-sales .sales-value {
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.sales-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
 }
 
 .row-action {
-  width: 100px;
+  width: 120px;
 }
 
-.view-btn-detail {
+.view-detail-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   padding: 10px 16px;
   background: transparent;
   border: 1px solid rgba(255, 107, 53, 0.3);
-  border-radius: 8px;
-  font-size: 12px;
-  color: #FF6B35;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-orange);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.view-btn-detail:hover {
+.view-detail-btn:hover {
   background: rgba(255, 107, 53, 0.15);
+  border-color: var(--primary-orange);
 }
 
-/* 空状态 */
+.view-detail-btn .arrow-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s ease;
+}
+
+.view-detail-btn:hover .arrow-icon {
+  transform: translateX(4px);
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
+}
+
+.empty-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  margin-bottom: 24px;
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  width: 36px;
+  height: 36px;
+  color: var(--text-tertiary);
+  opacity: 0.5;
 }
 
-.empty-state h3 {
+.empty-title {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
 }
 
-.empty-state p {
+.empty-hint {
   font-size: 14px;
   margin: 0;
 }
 
-/* 分页 */
+/* ============================================
+   Pagination
+   ============================================ */
 .pagination-wrapper {
   display: flex;
   justify-content: center;
@@ -956,9 +1241,9 @@ onMounted(() => {
   --el-pagination-bg-color: rgba(255, 255, 255, 0.05);
   --el-pagination-text-color: rgba(255, 255, 255, 0.7);
   --el-pagination-button-bg-color: rgba(255, 255, 255, 0.05);
-  --el-pagination-hover-color: #FF6B35;
+  --el-pagination-hover-color: var(--primary-orange);
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 8px 16px;
 }
@@ -968,11 +1253,13 @@ onMounted(() => {
 }
 
 .pagination-wrapper :deep(.el-pagination.is-background .el-pager li.is-active) {
-  background: linear-gradient(135deg, #FF6B35, #FFD700);
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-gold));
   color: #000;
 }
 
-/* 响应式 */
+/* ============================================
+   Responsive Design
+   ============================================ */
 @media (max-width: 1400px) {
   .products-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -983,31 +1270,94 @@ onMounted(() => {
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-stats {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-group {
+    max-width: 100%;
+  }
+
+  .action-buttons {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .search-btn,
+  .reset-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 768px) {
   .products-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
-  .filter-toolbar {
+  .toolbar-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 16px;
   }
 
-  .filter-left {
-    width: 100%;
+  .sort-options {
     flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .view-toggle {
+    justify-content: center;
   }
 
   .product-row {
     flex-wrap: wrap;
+    gap: 12px;
   }
 
-  .row-price, .row-sales, .row-action {
+  .row-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .row-content {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .row-price,
+  .row-sales,
+  .row-action {
     width: auto;
     flex: 1;
+  }
+
+  .row-price {
     text-align: left;
+  }
+
+  .filter-group-inline {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .filter-select,
+  .filter-input-inline {
+    width: 100%;
   }
 }
 </style>

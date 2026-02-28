@@ -194,24 +194,39 @@ const formatNumber = (num) => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Base Analysis
+   ============================================ */
 .brand-analysis {
-  background: rgba(15, 15, 26, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  --primary-purple: #7B2CBF;
+  --primary-orange: #FF6B35;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  background: rgba(20, 20, 32, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 24px;
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .brand-analysis:hover {
-  border-color: rgba(123, 44, 191, 0.2);
-  box-shadow: 0 10px 40px rgba(123, 44, 191, 0.1);
+  border-color: rgba(123, 44, 191, 0.15);
+  box-shadow: 0 10px 40px rgba(123, 44, 191, 0.08);
 }
 
+/* ============================================
+   Section Header
+   ============================================ */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(0, 0, 0, 0.2);
 }
@@ -219,65 +234,65 @@ const formatNumber = (num) => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .header-icon {
-  width: 24px;
-  height: 24px;
-  color: #7B2CBF;
+  width: 22px;
+  height: 22px;
+  color: var(--primary-purple);
 }
 
 .header-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .section-title {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 18px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .section-subtitle {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
 .header-badge {
-  padding: 8px 16px;
-  background: linear-gradient(135deg,
-    rgba(123, 44, 191, 0.15),
-    rgba(157, 78, 221, 0.15));
-  border: 1px solid rgba(123, 44, 191, 0.25);
+  padding: 6px 14px;
+  background: rgba(123, 44, 191, 0.1);
+  border: 1px solid rgba(123, 44, 191, 0.2);
   border-radius: 20px;
-  font-family: 'Exo 2', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: #9D4EDD;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
+/* ============================================
+   Analysis Content
+   ============================================ */
 .analysis-content {
-  padding: 24px;
+  padding: 20px 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 20px;
 }
 
 .radar-chart {
-  min-height: 350px;
+  min-height: 320px;
 }
 
 .chart-wrapper {
   width: 100%;
-  height: 350px;
+  height: 320px;
 }
 
 .chart-empty {
@@ -285,119 +300,122 @@ const formatNumber = (num) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 350px;
-  color: rgba(255, 255, 255, 0.3);
+  height: 320px;
+  color: var(--text-tertiary);
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  font-size: 56px;
+  margin-bottom: 12px;
   opacity: 0.5;
 }
 
 .empty-text {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 14px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
   margin: 0;
 }
 
+/* ============================================
+   Brand List
+   ============================================ */
 .brand-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 350px;
+  gap: 10px;
+  max-height: 320px;
   overflow-y: auto;
   padding-right: 8px;
 }
 
 .brand-list::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .brand-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 3px;
 }
 
 .brand-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 3px;
 }
 
 .brand-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .brand-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.3s ease;
 }
 
 .brand-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(123, 44, 191, 0.2);
-  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(123, 44, 191, 0.15);
+  transform: translateX(3px);
 }
 
 .brand-item--top {
   background: linear-gradient(135deg,
-    rgba(123, 44, 191, 0.1) 0%,
-    rgba(255, 107, 53, 0.05) 100%);
-  border-color: rgba(123, 44, 191, 0.2);
+    rgba(123, 44, 191, 0.08) 0%,
+    rgba(255, 107, 53, 0.04) 100%);
+  border-color: rgba(123, 44, 191, 0.15);
 }
 
 .brand-rank {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Orbitron', monospace;
-  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
   font-weight: 700;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
 .rank-1 {
   background: linear-gradient(135deg, #FFD700, #FFA500);
   color: #000;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 3px 12px rgba(255, 215, 0, 0.25);
 }
 
 .rank-2 {
   background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
   color: #000;
-  box-shadow: 0 4px 15px rgba(192, 192, 192, 0.3);
+  box-shadow: 0 3px 12px rgba(192, 192, 192, 0.25);
 }
 
 .rank-3 {
   background: linear-gradient(135deg, #CD7F32, #B87333);
   color: #000;
-  box-shadow: 0 4px 15px rgba(205, 127, 50, 0.3);
+  box-shadow: 0 3px 12px rgba(205, 127, 50, 0.25);
 }
 
 .brand-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .brand-name {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 14px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -405,28 +423,28 @@ const formatNumber = (num) => {
 
 .brand-metrics {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .metric {
   display: flex;
-  gap: 4px;
-  font-size: 11px;
+  gap: 3px;
+  font-size: 10px;
 }
 
 .metric-label {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
 .metric-value {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-weight: 600;
-  font-family: 'Orbitron', monospace;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .brand-bar {
-  width: 80px;
-  height: 4px;
+  width: 60px;
+  height: 3px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 2px;
   overflow: hidden;
@@ -436,24 +454,27 @@ const formatNumber = (num) => {
 .bar-fill {
   height: 100%;
   border-radius: 2px;
-  transition: width 0.6s ease;
+  transition: width 0.5s ease;
 }
 
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 1200px) {
   .analysis-content {
     grid-template-columns: 1fr;
   }
 
   .radar-chart {
-    min-height: 300px;
+    min-height: 280px;
   }
 
   .chart-wrapper {
-    height: 300px;
+    height: 280px;
   }
 
   .brand-list {
-    max-height: 250px;
+    max-height: 200px;
   }
 }
 </style>

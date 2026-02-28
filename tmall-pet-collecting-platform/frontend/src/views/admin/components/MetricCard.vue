@@ -34,20 +34,36 @@ const props = defineProps({
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Base Card
+   ============================================ */
 .metric-card {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
   position: relative;
-  background: rgba(15, 15, 26, 0.6);
+  background: rgba(20, 20, 32, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  animation: slideInUp 0.6s ease-out both;
+  animation: metricSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 0.1s);
 }
 
-@keyframes slideInUp {
+@keyframes metricSlideUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -55,10 +71,30 @@ const props = defineProps({
   }
 }
 
-.metric-card:hover {
-  transform: translateY(-8px) scale(1.02);
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: linear-gradient(90deg, var(--metric-color), transparent);
 }
 
+.metric-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.metric-card:hover::before {
+  opacity: 1;
+}
+
+/* ============================================
+   Card Background
+   ============================================ */
 .card-background {
   position: absolute;
   inset: 0;
@@ -73,14 +109,14 @@ const props = defineProps({
   top: -50%;
   right: -50%;
   border-radius: 50%;
-  opacity: 0.15;
+  opacity: 0.08;
   filter: blur(60px);
   transition: all 0.6s ease;
 }
 
 .metric-card:hover .gradient-orb {
-  opacity: 0.25;
-  transform: scale(1.2);
+  opacity: 0.15;
+  transform: scale(1.1);
 }
 
 .from-orange-500 {
@@ -117,77 +153,78 @@ const props = defineProps({
   opacity: 0.5;
 }
 
+/* ============================================
+   Card Content
+   ============================================ */
 .card-content {
   position: relative;
   z-index: 1;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .icon-wrapper {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
 .metric-card:hover .icon-wrapper {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.05);
   border-color: var(--metric-color);
-  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .icon {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   color: var(--metric-color);
-  filter: drop-shadow(0 2px 8px var(--metric-color));
 }
 
 .metric-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .metric-label {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 13px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 12px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
 }
 
 .metric-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 32px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1;
-  text-shadow: 0 0 30px var(--metric-color);
-  letter-spacing: -1px;
 }
 
 .metric-detail {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
+/* ============================================
+   Card Border & Glow
+   ============================================ */
 .card-border {
   position: absolute;
   inset: 0;
@@ -221,27 +258,30 @@ const props = defineProps({
 }
 
 .metric-card:hover .card-glow {
-  opacity: 0.3;
+  opacity: 0.2;
   bottom: -30%;
 }
 
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 768px) {
   .card-content {
-    padding: 20px;
+    padding: 18px;
   }
 
   .metric-value {
-    font-size: 28px;
+    font-size: 22px;
   }
 
   .icon-wrapper {
-    width: 48px;
-    height: 48px;
+    width: 42px;
+    height: 42px;
   }
 
   .icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
 }
 </style>

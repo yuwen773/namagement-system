@@ -1,161 +1,198 @@
 <template>
-  <div class="config-container">
-    <!-- 背景装饰 -->
-    <div class="bg-decoration">
-      <div class="gradient-orb orb-1"></div>
-      <div class="gradient-orb orb-2"></div>
-      <div class="grid-overlay"></div>
-      <div class="noise-texture"></div>
+  <div class="crawler-config-container">
+    <!-- 页面头部 -->
+    <div class="config-header">
+      <div class="header-content">
+        <h1 class="page-title">爬虫配置中心</h1>
+        <p class="page-subtitle">配置采集凭证以启用数据采集功能</p>
+      </div>
+      <div class="header-status">
+        <div class="status-badge" :class="statusClass">
+          <span class="status-dot"></span>
+          <span class="status-text">{{ statusText }}</span>
+        </div>
+      </div>
     </div>
 
-    <!-- 主标题区 -->
-    <header class="page-header">
-      <div class="header-content">
-        <div class="title-badge">
-          <span class="badge-icon">⚙️</span>
-          <span class="badge-text">SYSTEM CONFIG</span>
-        </div>
-        <h1 class="page-title">
-          <span class="title-gradient">爬虫配置中心</span>
-        </h1>
-        <p class="page-subtitle">配置淘宝 Cookie 以启用数据采集功能</p>
-      </div>
-      <div class="header-visual">
-        <div class="floating-icon icon-1">🦊</div>
-        <div class="floating-icon icon-2">🎮</div>
-        <div class="floating-icon icon-3">🎯</div>
-      </div>
-    </header>
-
-    <!-- 主内容区 -->
-    <div class="content-grid">
-      <!-- 左侧：配置卡片 -->
-      <div class="left-column">
+    <!-- 主内容网格 -->
+    <div class="config-layout">
+      <!-- 左侧：配置表单 -->
+      <div class="config-main">
         <!-- Cookie 配置卡片 -->
-        <div class="config-card glass-card">
+        <div class="config-card config-card--primary">
           <div class="card-header">
             <div class="header-left">
-              <div class="icon-wrapper cookie-icon">
-                <span>🍪</span>
+              <div class="card-icon card-icon--orange">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 6v6l4 2"></path>
+                </svg>
               </div>
-              <div>
-                <h3 class="card-title">Cookie 配置</h3>
+              <div class="header-text">
+                <h2 class="card-title">Cookie 配置</h2>
                 <p class="card-subtitle">淘宝/天猫 采集凭证</p>
               </div>
-            </div>
-            <div class="status-indicator" :class="statusClass">
-              <span class="status-dot"></span>
-              <span class="status-text">{{ statusText }}</span>
             </div>
           </div>
 
           <div class="card-body">
-            <!-- Cookie 输入区 -->
-            <div class="input-section">
-              <div class="input-label-row">
-                <label class="input-label">
-                  <span class="label-icon">🔑</span>
-                  Cookie 值
+            <!-- Cookie 输入 -->
+            <div class="form-group">
+              <div class="form-label-row">
+                <label class="form-label">
+                  <span class="label-text">Cookie 值</span>
+                  <span class="label-required">*</span>
                 </label>
-                <el-button
-                  :icon="showCookie ? Hide : View"
+                <button
+                  class="visibility-toggle"
                   @click="showCookie = !showCookie"
-                  class="toggle-btn"
-                  text
-                />
+                  type="button"
+                >
+                  <svg v-if="showCookie" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
               </div>
               <div class="input-wrapper">
                 <el-input
                   v-model="configForm.taobao_cookie"
                   :type="showCookie ? 'textarea' : 'password'"
-                  :rows="showCookie ? 6 : 2"
+                  :rows="showCookie ? 5 : 2"
                   placeholder="粘贴从浏览器获取的完整 Cookie..."
-                  class="cookie-input"
+                  class="config-input"
                 />
-                <div class="input-decoration"></div>
+                <div class="input-border"></div>
               </div>
-              <div class="input-hint">
-                <span class="hint-icon">💡</span>
-                <span>从浏览器开发者工具 Network 标签中复制</span>
-              </div>
+              <p class="form-hint">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                从浏览器开发者工具 Network 标签中复制请求头中的 Cookie
+              </p>
             </div>
 
-            <!-- 测试结果展示 -->
-            <transition name="result-fade">
-              <div v-if="configForm.test_result" class="result-section" :class="resultClass">
-                <div class="result-icon">{{ resultIcon }}</div>
+            <!-- 测试结果 -->
+            <transition name="result">
+              <div v-if="configForm.test_result" class="result-banner" :class="resultClass">
+                <div class="result-icon">
+                  <svg v-if="isTestSuccess" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                </div>
                 <div class="result-content">
-                  <h4 class="result-title">{{ resultTitle }}</h4>
-                  <p class="result-message">{{ configForm.test_result }}</p>
-                  <p v-if="configForm.last_test_time" class="result-time">
-                    测试时间: {{ formatTime(configForm.last_test_time) }}
-                  </p>
+                  <span class="result-title">{{ resultTitle }}</span>
+                  <span class="result-message">{{ configForm.test_result }}</span>
+                  <span v-if="configForm.last_test_time" class="result-time">{{ formatTime(configForm.last_test_time) }}</span>
                 </div>
               </div>
             </transition>
 
-            <!-- 操作按钮组 -->
-            <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="large"
+            <!-- 操作按钮 -->
+            <div class="form-actions">
+              <button
+                class="btn btn--primary"
                 @click="saveConfig"
-                :loading="saving"
-                class="save-btn"
+                :disabled="saving || !configForm.taobao_cookie"
+                :class="{ loading: saving }"
               >
-                <span class="btn-icon">💾</span>
+                <svg v-if="!saving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <svg v-else class="spinning" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="2" x2="12" y2="6"></line>
+                  <line x1="12" y1="18" x2="12" y2="22"></line>
+                  <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                  <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                  <line x1="2" y1="12" x2="6" y2="12"></line>
+                  <line x1="18" y1="12" x2="22" y2="12"></line>
+                  <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                  <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                </svg>
                 <span>{{ saving ? '保存中...' : '保存配置' }}</span>
-              </el-button>
-              <el-button
-                size="large"
+              </button>
+              <button
+                class="btn btn--secondary"
                 @click="testCookie"
-                :loading="testing"
-                :disabled="!configForm.taobao_cookie"
-                class="test-btn"
+                :disabled="testing || !configForm.taobao_cookie"
+                :class="{ loading: testing }"
               >
-                <span class="btn-icon">🧪</span>
-                <span>{{ testing ? '测试中...' : '测试 Cookie' }}</span>
-              </el-button>
+                <svg v-if="!testing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                </svg>
+                <svg v-else class="spinning" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="2" x2="12" y2="6"></line>
+                  <line x1="12" y1="18" x2="12" y2="22"></line>
+                  <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                  <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                  <line x1="2" y1="12" x2="6" y2="12"></line>
+                  <line x1="18" y1="12" x2="22" y2="12"></line>
+                  <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                  <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                </svg>
+                <span>{{ testing ? '测试中...' : '测试连接' }}</span>
+              </button>
             </div>
-          </div>
-
-          <!-- 卡片装饰 -->
-          <div class="card-decoration">
-            <div class="deco-line deco-1"></div>
-            <div class="deco-line deco-2"></div>
-            <div class="deco-dot"></div>
           </div>
         </div>
 
-        <!-- 快捷状态卡片 -->
-        <div class="status-cards">
-          <div class="mini-card" :class="{ active: configForm.cookie_status !== 'not_configured' }">
-            <span class="mini-icon">📊</span>
-            <div class="mini-content">
-              <span class="mini-label">配置状态</span>
-              <span class="mini-value">{{ statusText }}</span>
+        <!-- 状态概览卡片 -->
+        <div class="status-grid">
+          <div class="status-card" :class="{ active: configForm.cookie_status !== 'not_configured' }">
+            <div class="status-card-icon status-card-icon--orange">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <div class="status-card-content">
+              <span class="status-card-label">配置状态</span>
+              <span class="status-card-value">{{ statusText }}</span>
             </div>
           </div>
-          <div class="mini-card" :class="{ active: configForm.last_test_time }">
-            <span class="mini-icon">⏰</span>
-            <div class="mini-content">
-              <span class="mini-label">最后测试</span>
-              <span class="mini-value">{{ configForm.last_test_time ? formatTime(configForm.last_test_time) : '未测试' }}</span>
+          <div class="status-card" :class="{ active: configForm.last_test_time }">
+            <div class="status-card-icon status-card-icon--purple">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="status-card-content">
+              <span class="status-card-label">最后测试</span>
+              <span class="status-card-value">{{ configForm.last_test_time ? formatTime(configForm.last_test_time) : '未测试' }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 右侧：获取指南 -->
-      <div class="right-column">
-        <div class="guide-card glass-card">
-          <div class="card-header guide-header">
-            <div class="icon-wrapper guide-icon">
-              <span>📖</span>
+      <!-- 右侧：帮助信息 -->
+      <div class="config-sidebar">
+        <!-- 获取指南 -->
+        <div class="guide-card">
+          <div class="guide-header">
+            <div class="guide-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
             </div>
             <div>
-              <h3 class="card-title">获取指南</h3>
-              <p class="card-subtitle">如何获取 Cookie</p>
+              <h3 class="guide-title">Cookie 获取指南</h3>
+              <p class="guide-subtitle">按步骤操作获取有效凭证</p>
             </div>
           </div>
 
@@ -164,41 +201,36 @@
               v-for="(step, index) in cookieSteps"
               :key="index"
               class="guide-step"
-              :style="{ '--step-index': index }"
             >
-              <div class="step-number">{{ String(index + 1).padStart(2, '0') }}</div>
+              <span class="step-number">{{ String(index + 1).padStart(2, '0') }}</span>
               <div class="step-content">
-                <h4 class="step-title">{{ step.title }}</h4>
-                <p class="step-description">{{ step.description }}</p>
+                <span class="step-title">{{ step.title }}</span>
+                <span class="step-desc">{{ step.description }}</span>
               </div>
-              <div class="step-icon">{{ step.icon }}</div>
             </div>
           </div>
 
           <div class="guide-footer">
-            <div class="footer-tip">
-              <span class="tip-icon">🔒</span>
-              <span>Cookie 仅用于数据采集，请妥善保管</span>
-            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Cookie 仅用于数据采集，请妥善保管</span>
           </div>
         </div>
 
-        <!-- 提示卡片 -->
-        <div class="tips-card glass-card">
-          <h4 class="tips-title">⚡ 快速提示</h4>
+        <!-- 快速提示 -->
+        <div class="tips-card">
+          <h4 class="tips-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            快速提示
+          </h4>
           <ul class="tips-list">
-            <li class="tip-item">
-              <span class="tip-bullet">→</span>
-              <span>Cookie 有效期通常为 7-30 天</span>
-            </li>
-            <li class="tip-item">
-              <span class="tip-bullet">→</span>
-              <span>测试失败请重新获取 Cookie</span>
-            </li>
-            <li class="tip-item">
-              <span class="tip-bullet">→</span>
-              <span>配置后无需重启服务即可生效</span>
-            </li>
+            <li class="tips-item">Cookie 有效期通常为 7-30 天</li>
+            <li class="tips-item">测试失败请重新获取 Cookie</li>
+            <li class="tips-item">配置后无需重启服务即可生效</li>
           </ul>
         </div>
       </div>
@@ -209,7 +241,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { View, Hide } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 
 const configForm = reactive({
@@ -226,33 +257,27 @@ const testing = ref(false)
 const cookieSteps = [
   {
     title: '打开淘宝网站',
-    description: '访问 www.taobao.com 并登录账号',
-    icon: '🌐'
+    description: '访问 www.taobao.com 并登录账号'
   },
   {
     title: '打开开发者工具',
-    description: '按 F12 或右键选择"检查"',
-    icon: '🛠️'
+    description: '按 F12 或右键选择"检查"'
   },
   {
     title: '切换 Network 标签',
-    description: '在开发者工具中找到 Network 选项',
-    icon: '📡'
+    description: '在开发者工具中找到 Network 选项'
   },
   {
     title: '刷新或搜索',
-    description: '按 F5 刷新或搜索任意商品',
-    icon: '🔄'
+    description: '按 F5 刷新或搜索任意商品'
   },
   {
     title: '查找请求',
-    description: '点击列表中的任意请求',
-    icon: '🔍'
+    description: '点击列表中的任意请求'
   },
   {
     title: '复制 Cookie',
-    description: 'Headers → Request Headers → Cookie',
-    icon: '📋'
+    description: 'Headers → Request Headers → Cookie'
   }
 ]
 
@@ -280,18 +305,14 @@ const statusText = computed(() => {
 const isTestSuccess = computed(() => {
   if (!configForm.test_result) return false
   const result = configForm.test_result.toLowerCase()
-  return result.includes('成功') || 
-         result.includes('success') || 
-         result.includes('通过') || 
+  return result.includes('成功') ||
+         result.includes('success') ||
+         result.includes('通过') ||
          result.includes('有效')
 })
 
 const resultClass = computed(() => {
   return isTestSuccess.value ? 'result-success' : 'result-error'
-})
-
-const resultIcon = computed(() => {
-  return isTestSuccess.value ? '✅' : '❌'
 })
 
 const resultTitle = computed(() => {
@@ -314,10 +335,7 @@ const loadConfig = async () => {
     const response = await request.get('/users/configs/crawler/')
     if (response.code === 0) {
       const data = response.data || {}
-      // 注意：后端返回的是截断的 Cookie（仅用于显示），不要覆盖用户输入
-      // 只有当用户没有输入时才显示占位符
       if (!configForm.taobao_cookie && data.taobao_cookie) {
-        // 如果 Cookie 包含省略号，说明是截断的，不加载到表单
         if (!data.taobao_cookie.includes('...')) {
           configForm.taobao_cookie = data.taobao_cookie
         }
@@ -327,7 +345,6 @@ const loadConfig = async () => {
       configForm.test_result = data.test_result || ''
     }
   } catch (error) {
-    // 400错误可能表示配置不存在，这是正常的
     console.log('Config not yet set:', error.message)
     configForm.cookie_status = 'not_configured'
   }
@@ -370,7 +387,6 @@ const testCookie = async () => {
       loadConfig()
     }
   } catch (error) {
-    // 尝试从响应中获取详细错误信息
     let errorMsg = '测试失败'
     if (error.response && error.response.data && error.response.data.message) {
       errorMsg = error.response.data.message
@@ -390,590 +406,622 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
 
-/* ========== 全局样式 ========== */
-.config-container {
-  min-height: 100vh;
-  padding: 24px;
-  position: relative;
-  overflow-x: hidden;
-  font-family: 'Noto Sans SC', sans-serif;
-}
+/* ============================================
+   Design Tokens
+   ============================================ */
+.crawler-config-container {
+  --orange: #FF6B35;
+  --orange-rgb: 255, 107, 53;
+  --purple: #7B2CBF;
+  --purple-rgb: 123, 44, 191;
+  --gold: #FFD700;
+  --cyan: #06FFA5;
+  --red: #FF3B30;
 
-/* ========== 背景装饰 ========== */
-.bg-decoration {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --bg-input: rgba(0, 0, 0, 0.25);
 
-.gradient-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  animation: float 20s ease-in-out infinite;
-}
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
 
-.orb-1 {
-  width: 600px;
-  height: 600px;
-  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
-  top: -200px;
-  right: -200px;
-  animation-delay: 0s;
-}
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(var(--orange-rgb), 0.5);
 
-.orb-2 {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(225deg, #06FFA5 0%, #FF6B35 100%);
-  bottom: -100px;
-  left: -100px;
-  animation-delay: -10s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -30px) scale(1.05); }
-  66% { transform: translate(-20px, 20px) scale(0.95); }
-}
-
-.grid-overlay {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 107, 53, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 107, 53, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-
-.noise-texture {
-  position: absolute;
-  inset: 0;
-  opacity: 0.02;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-}
-
-/* ========== 页面头部 ========== */
-.page-header {
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
   display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================
+   Header
+   ============================================ */
+.config-header {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-  position: relative;
-  z-index: 1;
+  padding: 8px 0;
 }
 
 .header-content {
   flex: 1;
 }
 
-.title-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid rgba(255, 107, 53, 0.3);
-  border-radius: 20px;
-  margin-bottom: 16px;
-}
-
-.badge-icon {
-  font-size: 16px;
-}
-
-.badge-text {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: #FF6B35;
-  font-family: 'Orbitron', sans-serif;
-}
-
 .page-title {
-  font-size: 42px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 28px;
   font-weight: 700;
-  margin: 0 0 12px 0;
-  line-height: 1.1;
-}
-
-.title-gradient {
-  background: linear-gradient(135deg, #FF6B35 0%, #FFD700 50%, #7B2CBF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
 }
 
 .page-subtitle {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
-.header-visual {
-  position: relative;
-  width: 200px;
-  height: 100px;
-}
-
-.floating-icon {
-  position: absolute;
-  font-size: 32px;
-  animation: iconFloat 3s ease-in-out infinite;
-}
-
-.icon-1 { top: 0; right: 0; animation-delay: 0s; }
-.icon-2 { top: 30px; right: 60px; animation-delay: 0.5s; }
-.icon-3 { top: 50px; right: 20px; animation-delay: 1s; }
-
-@keyframes iconFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(5deg); }
-}
-
-/* ========== 内容网格 ========== */
-.content-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-@media (max-width: 1200px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-  .page-header {
-    flex-direction: column;
-    gap: 24px;
-  }
-  .header-visual {
-    display: none;
-  }
-}
-
-/* ========== 玻璃态卡片 ========== */
-.glass-card {
-  background: rgba(26, 26, 46, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-}
-
-.glass-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-    rgba(255, 107, 53, 0.05) 0%,
-    transparent 50%,
-    rgba(123, 44, 191, 0.05) 100%
-  );
-  pointer-events: none;
-}
-
-/* ========== 配置卡片 ========== */
-.config-card {
-  margin-bottom: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-.header-left {
+.header-status {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
-.icon-wrapper {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  font-size: 24px;
-}
-
-.cookie-icon {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(255, 107, 53, 0.05));
-  border: 1px solid rgba(255, 107, 53, 0.3);
-}
-
-.guide-icon {
-  background: linear-gradient(135deg, rgba(6, 255, 165, 0.2), rgba(6, 255, 165, 0.05));
-  border: 1px solid rgba(6, 255, 165, 0.3);
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 4px 0;
-}
-
-.card-subtitle {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
-  margin: 0;
-}
-
-.status-indicator {
+.status-badge {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
+  background: var(--bg-card);
+  border-radius: 24px;
+  font-size: 13px;
   font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-.status-empty { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.4); }
-.status-pending { background: rgba(255, 215, 0, 0.15); color: #FFD700; }
-.status-success { background: rgba(6, 255, 165, 0.15); color: #06FFA5; }
-.status-error { background: rgba(255, 107, 107, 0.15); color: #FF6B6B; }
+.status-badge.status-empty {
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-subtle);
+}
+
+.status-badge.status-pending {
+  color: var(--gold);
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.status-badge.status-success {
+  color: var(--cyan);
+  background: rgba(6, 255, 165, 0.1);
+  border: 1px solid rgba(6, 255, 165, 0.2);
+}
+
+.status-badge.status-error {
+  color: var(--red);
+  background: rgba(255, 59, 48, 0.1);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+}
 
 .status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
-  animation: pulse 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
+.status-badge.status-success .status-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.4; }
 }
 
-/* ========== 输入区 ========== */
-.card-body {
+/* ============================================
+   Layout
+   ============================================ */
+.config-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+}
+
+@media (max-width: 1200px) {
+  .config-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   Config Card
+   ============================================ */
+.config-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.config-card--primary {
   position: relative;
-  z-index: 1;
 }
 
-.input-section {
+.config-card--primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--orange), var(--purple));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.config-card--primary:hover::before {
+  opacity: 1;
+}
+
+.config-card:hover {
+  border-color: var(--border-default);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.card-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.card-icon--orange {
+  background: rgba(var(--orange-rgb), 0.15);
+  color: var(--orange);
+}
+
+.card-icon--purple {
+  background: rgba(var(--purple-rgb), 0.15);
+  color: var(--purple);
+}
+
+.card-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.card-subtitle {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 20px;
 }
 
-.input-label-row {
+.form-label-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: space-between;
 }
 
-.input-label {
+.form-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
-.label-icon {
-  font-size: 16px;
+.label-required {
+  color: var(--red);
 }
 
-.toggle-btn {
-  color: rgba(255, 255, 255, 0.4);
+.visibility-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.toggle-btn:hover {
-  color: rgba(255, 255, 255, 0.7);
+.visibility-toggle:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
 }
 
 .input-wrapper {
   position: relative;
 }
 
-.cookie-input {
-  --el-input-bg-color: rgba(0, 0, 0, 0.3);
-  --el-input-border-color: rgba(255, 255, 255, 0.1);
-  --el-input-text-color: rgba(255, 255, 255, 0.9);
-  --el-input-placeholder-color: rgba(255, 255, 255, 0.3);
+.config-input {
+  --el-input-bg-color: var(--bg-input);
+  --el-input-border-color: var(--border-subtle);
+  --el-input-text-color: var(--text-primary);
+  --el-input-placeholder-color: var(--text-tertiary);
+  --el-input-focus-border-color: var(--border-focus);
 }
 
-.cookie-input :deep(.el-textarea__inner) {
+.config-input :deep(.el-textarea__inner) {
   border-radius: 12px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   line-height: 1.6;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
 }
 
-.input-decoration {
+.config-input :deep(.el-textarea__inner):focus {
+  box-shadow: 0 0 0 3px rgba(var(--orange-rgb), 0.1);
+}
+
+.input-border {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 107, 53, 0.5) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent, var(--orange), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.input-hint {
+.config-input:focus-within + .input-border {
+  opacity: 0.5;
+}
+
+.form-hint {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 10px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
+  margin: 0;
 }
 
-.hint-icon {
-  font-size: 14px;
+.form-hint svg {
+  flex-shrink: 0;
+  color: var(--purple);
 }
 
-/* ========== 测试结果 ========== */
-.result-section {
+/* ============================================
+   Result Banner
+   ============================================ */
+.result-banner {
   display: flex;
-  gap: 16px;
-  padding: 16px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
   border-radius: 12px;
   margin-bottom: 20px;
   border: 1px solid;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .result-success {
-  background: rgba(6, 255, 165, 0.1);
   border-color: rgba(6, 255, 165, 0.3);
+  background: rgba(6, 255, 165, 0.05);
 }
 
 .result-error {
-  background: rgba(255, 107, 107, 0.1);
-  border-color: rgba(255, 107, 107, 0.3);
+  border-color: rgba(255, 59, 48, 0.3);
+  background: rgba(255, 59, 48, 0.05);
 }
 
 .result-icon {
-  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
   flex-shrink: 0;
 }
 
+.result-success .result-icon {
+  color: var(--cyan);
+}
+
+.result-error .result-icon {
+  color: var(--red);
+}
+
 .result-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   flex: 1;
 }
 
 .result-title {
   font-size: 14px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
+  font-weight: 600;
 }
 
-.result-success .result-title { color: #06FFA5; }
-.result-error .result-title { color: #FF6B6B; }
+.result-success .result-title {
+  color: var(--cyan);
+}
+
+.result-error .result-title {
+  color: var(--red);
+}
 
 .result-message {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 4px 0;
+  color: var(--text-secondary);
 }
 
 .result-time {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  margin: 0;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.result-fade-enter-active,
-.result-fade-leave-active {
+.result-enter-active,
+.result-leave-active {
   transition: all 0.3s ease;
 }
 
-.result-fade-enter-from,
-.result-fade-leave-to {
+.result-enter-from,
+.result-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-8px);
 }
 
-/* ========== 操作按钮 ========== */
-.action-buttons {
+/* ============================================
+   Buttons
+   ============================================ */
+.form-actions {
   display: flex;
   gap: 12px;
 }
 
-.save-btn,
-.test-btn {
-  flex: 1;
-  height: 48px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  border: none;
+.btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.3s ease;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
 }
 
-.save-btn {
-  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
+.btn--primary {
+  background: linear-gradient(135deg, var(--orange), var(--purple));
+  border: none;
   color: white;
 }
 
-.save-btn:hover:not(:disabled) {
+.btn--primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 8px 20px rgba(var(--orange-rgb), 0.3);
 }
 
-.test-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+.btn--primary:disabled,
+.btn--primary.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
-.test-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+.btn--secondary {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
 }
 
-.test-btn:disabled {
+.btn--secondary:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.btn--secondary:disabled,
+.btn--secondary.loading {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.btn-icon {
-  font-size: 16px;
+.btn svg {
+  flex-shrink: 0;
 }
 
-/* ========== 卡片装饰 ========== */
-.card-decoration {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
-.deco-line {
-  position: absolute;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 107, 53, 0.3) 50%,
-    transparent 100%
-  );
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.deco-1 {
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.deco-2 {
-  bottom: 0;
-  left: 0;
-  right: 0;
-}
-
-.deco-dot {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: #FF6B35;
-  border-radius: 50%;
-  top: 20px;
-  right: 20px;
-  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
-}
-
-/* ========== 状态小卡片 ========== */
-.status-cards {
+/* ============================================
+   Status Grid
+   ============================================ */
+.status-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
+  margin-top: 24px;
 }
 
-.mini-card {
-  background: rgba(26, 26, 46, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 16px;
+.status-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
   transition: all 0.3s ease;
 }
 
-.mini-card.active {
-  border-color: rgba(255, 107, 53, 0.3);
-  background: rgba(255, 107, 53, 0.05);
+.status-card.active {
+  border-color: rgba(var(--orange-rgb), 0.3);
+  background: rgba(var(--orange-rgb), 0.05);
 }
 
-.mini-icon {
-  font-size: 20px;
+.status-card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.status-card-icon--orange {
+  background: rgba(var(--orange-rgb), 0.15);
+  color: var(--orange);
+}
+
+.status-card-icon--purple {
+  background: rgba(var(--purple-rgb), 0.15);
+  color: var(--purple);
+}
+
+.status-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.status-card-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.status-card-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   Sidebar
+   ============================================ */
+.config-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================
+   Guide Card
+   ============================================ */
+.guide-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.guide-icon {
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--purple-rgb), 0.15);
+  color: var(--purple);
   border-radius: 10px;
 }
 
-.mini-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.mini-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  margin-bottom: 2px;
-}
-
-.mini-value {
-  font-size: 13px;
+.guide-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
 }
 
-/* ========== 指南卡片 ========== */
-.guide-card {
-  margin-bottom: 20px;
-}
-
-.guide-header {
-  margin-bottom: 20px;
+.guide-subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 0;
 }
 
 .guide-steps {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .guide-step {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 16px;
-  align-items: center;
-  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
   position: relative;
+  padding-left: 44px;
 }
 
 .guide-step::before {
@@ -983,129 +1031,137 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg,
-    #FF6B35 0%,
-    #7B2CBF 100%
-  );
-  border-radius: 12px 0 0 12px;
+  background: linear-gradient(180deg, var(--orange), var(--purple));
+  border-radius: 3px 0 0 3px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .guide-step:hover {
-  background: rgba(255, 107, 53, 0.05);
-  border-color: rgba(255, 107, 53, 0.2);
-  transform: translateX(4px);
+  border-color: rgba(var(--orange-rgb), 0.2);
+  background: rgba(var(--orange-rgb), 0.05);
+}
+
+.guide-step:hover::before {
+  opacity: 1;
 }
 
 .step-number {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  position: absolute;
+  left: 8px;
+  top: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
   font-weight: 700;
-  color: #FF6B35;
+  color: var(--orange);
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .step-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 4px 0;
+  color: var(--text-secondary);
 }
 
-.step-description {
+.step-desc {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-}
-
-.step-icon {
-  font-size: 24px;
-  opacity: 0.8;
+  color: var(--text-tertiary);
 }
 
 .guide-footer {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.footer-tip {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
-.tip-icon {
-  font-size: 14px;
+.guide-footer svg {
+  flex-shrink: 0;
+  color: var(--purple);
 }
 
-/* ========== 提示卡片 ========== */
+/* ============================================
+   Tips Card
+   ============================================ */
 .tips-card {
-  background: rgba(6, 255, 165, 0.05);
-  border-color: rgba(6, 255, 165, 0.15);
+  background: linear-gradient(135deg, rgba(6, 255, 165, 0.05), rgba(6, 255, 165, 0.02));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(6, 255, 165, 0.1);
+  border-radius: 20px;
+  padding: 20px;
 }
 
 .tips-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #06FFA5;
-  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cyan);
+  margin: 0 0 14px 0;
+}
+
+.tips-title svg {
+  flex-shrink: 0;
 }
 
 .tips-list {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-.tip-item {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 10px;
-  padding: 10px 0;
+}
+
+.tips-item {
+  position: relative;
+  padding-left: 16px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
-.tip-item:last-child {
-  border-bottom: none;
+.tips-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
 }
 
-.tip-bullet {
-  color: #06FFA5;
-  font-weight: 700;
-}
-
-/* ========== 响应式 ========== */
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 768px) {
-  .config-container {
-    padding: 16px;
-  }
-
-  .page-title {
-    font-size: 28px;
-  }
-
-  .content-grid {
-    grid-template-columns: 1fr;
+  .config-header {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 16px;
   }
 
-  .action-buttons {
-    flex-direction: column;
-  }
-
-  .status-cards {
+  .status-grid {
     grid-template-columns: 1fr;
   }
 
-  .guide-step {
-    grid-template-columns: auto 1fr;
+  .form-actions {
+    flex-direction: column;
   }
 
-  .step-icon {
-    display: none;
+  .btn {
+    width: 100%;
   }
 }
 </style>

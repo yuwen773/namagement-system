@@ -55,19 +55,19 @@ const handlePageSizeChange = (size) => {
 const getPriorityConfig = (priority) => {
   const configs = {
     1: {
-      color: '#3b82f6',
+      color: '#60a5fa',
       bg: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
       text: '普通',
       icon: '📢'
     },
     2: {
-      color: '#f59e0b',
+      color: '#fbbf24',
       bg: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
       text: '重要',
       icon: '⚠️'
     },
     3: {
-      color: '#ef4444',
+      color: '#f87171',
       bg: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
       text: '紧急',
       icon: '🔔'
@@ -232,7 +232,7 @@ onMounted(() => {
 <style scoped>
 .announcement-center-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #0a0a0f;
 }
 
 /* Hero Header */
@@ -245,14 +245,14 @@ onMounted(() => {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
 }
 
 .hero-gradient {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(255, 107, 53, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 70% 80%, rgba(123, 44, 191, 0.3) 0%, transparent 50%);
+  background: radial-gradient(circle at 30% 20%, rgba(255, 107, 53, 0.4) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(123, 44, 191, 0.4) 0%, transparent 50%);
 }
 
 .hero-pattern {
@@ -336,32 +336,32 @@ onMounted(() => {
 }
 
 .section-header.pinned h2 {
-  color: #f59e0b;
+  color: #FF6B35;
 }
 
 .header-icon {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
 }
 
 .section-header h2 {
   margin: 0 0 4px 0;
   font-size: 22px;
   font-weight: 700;
-  color: #1e293b;
+  color: #fff;
 }
 
 .section-header p {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* Pinned Section */
@@ -377,19 +377,20 @@ onMounted(() => {
 
 .pinned-card {
   position: relative;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   transition: all 0.3s ease;
-  border: 2px solid transparent;
 }
 
 .pinned-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 40px rgba(255, 107, 53, 0.15);
   border-color: var(--priority-color);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .card-decoration {
@@ -399,7 +400,7 @@ onMounted(() => {
   width: 120px;
   height: 120px;
   background: radial-gradient(circle at top right, var(--priority-color) 0%, transparent 70%);
-  opacity: 0.1;
+  opacity: 0.15;
 }
 
 .card-header {
@@ -430,7 +431,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #f59e0b;
+  color: #FF6B35;
   font-size: 12px;
   font-weight: 600;
 }
@@ -439,26 +440,26 @@ onMounted(() => {
   margin: 0 0 12px 0;
   font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: #fff;
   line-height: 1.4;
 }
 
 .card-content {
   margin: 0 0 16px 0;
   font-size: 14px;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.6);
   line-height: 1.7;
   white-space: pre-wrap;
 }
 
 .card-footer {
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .time-badge {
   font-size: 13px;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* Normal Section */
@@ -467,10 +468,11 @@ onMounted(() => {
 }
 
 .announcement-list {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .announcement-item {
@@ -496,13 +498,13 @@ onMounted(() => {
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
 }
 
 .timeline-line {
   flex: 1;
   width: 2px;
-  background: linear-gradient(180deg, #e2e8f0 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
   min-height: 40px;
 }
 
@@ -527,20 +529,20 @@ onMounted(() => {
 
 .item-time {
   font-size: 13px;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .item-title {
   margin: 0 0 10px 0;
   font-size: 17px;
   font-weight: 700;
-  color: #1e293b;
+  color: #fff;
 }
 
 .item-text {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.6);
   line-height: 1.7;
   white-space: pre-wrap;
 }
@@ -566,15 +568,16 @@ onMounted(() => {
 .empty-illustration p {
   margin: 0;
   font-size: 16px;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* Pagination */
 .pagination-section {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .pagination-section :deep(.el-pagination) {
@@ -582,19 +585,33 @@ onMounted(() => {
 }
 
 .pagination-section :deep(.el-pager li) {
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 600;
 }
 
+.pagination-section :deep(.el-pager li:hover) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .pagination-section :deep(.el-pager li.is-active) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
+  border-color: transparent;
   color: #fff;
 }
 
 .pagination-section :deep(.btn-prev),
 .pagination-section :deep(.btn-next) {
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pagination-section :deep(.btn-prev:hover),
+.pagination-section :deep(.btn-next:hover) {
+  background: rgba(255, 255, 255, 0.1);
 }
 </style>

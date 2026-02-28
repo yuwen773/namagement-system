@@ -163,79 +163,74 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="statistics-dashboard">
+  <div class="stats-dashboard">
+    <!-- Dashboard Header -->
     <div class="dashboard-header">
       <div class="header-content">
-        <div class="header-left">
-          <h1 class="dashboard-title">
-            <DataAnalysis class="title-icon" />
-            宠物用品统计分析
-          </h1>
-          <p class="dashboard-subtitle">天猫宠物用品数据洞察与可视化分析</p>
-        </div>
-        <div class="header-actions">
-          <el-button
-            :loading="refreshing"
-            :icon="Refresh"
-            @click="handleRefresh"
-            class="refresh-btn"
-          >
-            刷新数据
-          </el-button>
-        </div>
+        <h1 class="header-title">宠物用品统计分析</h1>
+        <p class="header-subtitle">天猫宠物用品数据洞察与可视化分析</p>
       </div>
-
-      <div class="filter-bar">
-        <div class="filter-group">
-          <label class="filter-label">
-            <Location class="filter-icon" />
-            地区筛选
-          </label>
-          <el-select
-            v-model="selectedRegion"
-            placeholder="全部地区"
-            clearable
-            @change="handleFilterChange"
-            class="filter-select"
-          >
-            <el-option
-              v-for="region in availableRegions"
-              :key="region"
-              :label="region || '未分类'"
-              :value="region"
-            />
-          </el-select>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label">
-            <Collection class="filter-icon" />
-            品牌筛选
-          </label>
-          <el-select
-            v-model="selectedBrand"
-            placeholder="全部品牌"
-            clearable
-            @change="handleFilterChange"
-            class="filter-select"
-          >
-            <el-option
-              v-for="brand in availableBrands"
-              :key="brand"
-              :label="brand || '未分类'"
-              :value="brand"
-            />
-          </el-select>
-        </div>
+      <div class="header-actions">
+        <button class="refresh-btn" @click="handleRefresh" :class="{ loading: refreshing }">
+          <Loading class="icon" :class="{ spinning: refreshing }" />
+          <span>刷新数据</span>
+        </button>
       </div>
     </div>
 
-    <div v-if="loading" class="loading-container">
-      <Loading class="loading-icon" />
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label class="filter-label">
+          <Location class="filter-icon" />
+          地区筛选
+        </label>
+        <el-select
+          v-model="selectedRegion"
+          placeholder="全部地区"
+          clearable
+          @change="handleFilterChange"
+          class="filter-select"
+        >
+          <el-option
+            v-for="region in availableRegions"
+            :key="region"
+            :label="region || '未分类'"
+            :value="region"
+          />
+        </el-select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">
+          <Collection class="filter-icon" />
+          品牌筛选
+        </label>
+        <el-select
+          v-model="selectedBrand"
+          placeholder="全部品牌"
+          clearable
+          @change="handleFilterChange"
+          class="filter-select"
+        >
+          <el-option
+            v-for="brand in availableBrands"
+            :key="brand"
+            :label="brand || '未分类'"
+            :value="brand"
+          />
+        </el-select>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-state">
+      <Loading class="loading-icon spinning" />
       <p class="loading-text">加载数据中...</p>
     </div>
 
-    <div v-else-if="error" class="error-container">
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
       <div class="error-content">
         <span class="error-icon">⚠️</span>
         <p class="error-message">{{ error }}</p>
@@ -243,18 +238,21 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- Dashboard Content -->
     <div v-else class="dashboard-content">
+      <!-- Metrics Section -->
       <section class="metrics-section">
         <div class="metrics-grid">
           <MetricCard
             v-for="(metric, index) in overviewMetrics"
             :key="metric.label"
             :metric="metric"
-            :style="{ animationDelay: `${index * 0.1}s` }"
+            :style="{ '--i': index }"
           />
         </div>
       </section>
 
+      <!-- Charts Section -->
       <section class="charts-section">
         <div class="charts-row">
           <ChartSection
@@ -262,7 +260,8 @@ onUnmounted(() => {
             subtitle="商品价格区间分布情况"
             type="price-distribution"
             :data="dashboardData?.price_distribution"
-            class="chart-item price-chart"
+            class="chart-panel"
+            style="--i: 0"
           />
 
           <ChartSection
@@ -270,33 +269,38 @@ onUnmounted(() => {
             subtitle="商品销量区间分布情况"
             type="sales-distribution"
             :data="dashboardData?.sales_distribution"
-            class="chart-item sales-chart"
+            class="chart-panel"
+            style="--i: 1"
           />
         </div>
 
         <div class="charts-row">
           <BrandAnalysis
             :data="dashboardData?.top_brands"
-            class="chart-item brand-analysis"
+            class="chart-panel"
+            style="--i: 2"
           />
 
           <RegionAnalysis
             :data="dashboardData?.top_regions"
-            class="chart-item region-analysis"
+            class="chart-panel"
+            style="--i: 3"
           />
         </div>
 
-        <div class="charts-row full-width">
+        <div class="charts-row charts-row--full">
           <ChartSection
             title="价格-销量关联分析"
             subtitle="不同价格区间的平均销量表现"
             type="price-sales-correlation"
             :data="dashboardData?.price_sales_correlation"
-            class="chart-item correlation-chart"
+            class="chart-panel"
+            style="--i: 4"
           />
         </div>
       </section>
 
+      <!-- Products Section -->
       <section class="products-section">
         <TopProducts
           :sales-products="dashboardData?.top_products_sales"
@@ -306,6 +310,7 @@ onUnmounted(() => {
         />
       </section>
 
+      <!-- Insights Section -->
       <section class="insights-section">
         <MarketInsights
           :insights="dashboardData?.market_insights"
@@ -316,113 +321,108 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
 
-.statistics-dashboard {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
-  position: relative;
-  overflow-x: hidden;
+/* ============================================
+   Design Tokens & Base
+   ============================================ */
+.stats-dashboard {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
 }
 
-.statistics-dashboard::before {
-  content: '';
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background:
-    radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(123, 44, 191, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(6, 255, 165, 0.03) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-  animation: gradientShift 20s ease-in-out infinite;
-}
-
-@keyframes gradientShift {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(-2%, -2%) rotate(5deg); }
-}
-
+/* ============================================
+   Dashboard Header
+   ============================================ */
 .dashboard-header {
-  position: relative;
-  z-index: 1;
-  background: rgba(15, 15, 26, 0.6);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 32px 40px;
-  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
 }
 
 .header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  flex: 1;
 }
 
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.dashboard-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-family: 'Exo 2', sans-serif;
-  font-size: 32px;
+.header-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
 }
 
-.title-icon {
-  width: 36px;
-  height: 36px;
-  color: #FF6B35;
-  filter: drop-shadow(0 0 20px rgba(255, 107, 53, 0.5));
-}
-
-.dashboard-subtitle {
-  font-family: 'Exo 2', sans-serif;
+.header-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin: 0;
-  padding-left: 52px;
-  font-weight: 400;
 }
 
 .header-actions {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 
 .refresh-btn {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(123, 44, 191, 0.2));
-  border: 1px solid rgba(255, 107, 53, 0.3);
-  color: #FF6B35;
-  font-family: 'Exo 2', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
   font-weight: 600;
-  padding: 12px 24px;
+  font-family: inherit;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .refresh-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.3), rgba(123, 44, 191, 0.3));
-  border-color: rgba(255, 107, 53, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+  background: var(--bg-card-hover);
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
 }
 
+.refresh-btn .icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.refresh-btn .icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Filter Bar
+   ============================================ */
 .filter-bar {
   display: flex;
-  gap: 32px;
-  padding-left: 52px;
+  gap: 24px;
+  padding: 16px 0;
 }
 
 .filter-group {
@@ -435,16 +435,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Exo 2', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .filter-icon {
   width: 16px;
   height: 16px;
-  color: #FF6B35;
+  color: var(--primary-orange);
 }
 
 .filter-select {
@@ -452,45 +451,60 @@ onUnmounted(() => {
 }
 
 .filter-select :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
   box-shadow: none;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.filter-select :deep(.el-input__wrapper:hover) {
+  border-color: rgba(255, 107, 53, 0.3);
+}
+
+.filter-select :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--primary-orange);
 }
 
 .filter-select :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.9);
-  font-family: 'Exo 2', sans-serif;
+  color: var(--text-primary);
 }
 
-.loading-container,
-.error-container {
-  position: relative;
-  z-index: 1;
+.filter-select :deep(.el-input__inner::placeholder) {
+  color: var(--text-tertiary);
+}
+
+.filter-select :deep(.el-select__placeholder) {
+  color: var(--text-tertiary);
+}
+
+/* ============================================
+   Loading & Error States
+   ============================================ */
+.loading-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
+  min-height: 50vh;
   padding: 40px;
 }
 
 .loading-icon {
-  width: 64px;
-  height: 64px;
-  color: #FF6B35;
-  animation: spin 1s linear infinite;
-  margin-bottom: 24px;
+  width: 48px;
+  height: 48px;
+  color: var(--primary-orange);
+  margin-bottom: 16px;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.loading-icon.spinning {
+  animation: spin 1s linear infinite;
 }
 
 .loading-text {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
@@ -499,32 +513,31 @@ onUnmounted(() => {
 }
 
 .error-icon {
-  font-size: 64px;
+  font-size: 48px;
   display: block;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .error-message {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 32px 0;
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
 }
 
+/* ============================================
+   Dashboard Content
+   ============================================ */
 .dashboard-content {
-  position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  padding: 0 40px 40px 40px;
-  animation: fadeInUp 0.6s ease-out;
+  gap: 24px;
+  animation: contentFadeIn 0.5s ease-out;
 }
 
-@keyframes fadeInUp {
+@keyframes contentFadeIn {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -532,8 +545,11 @@ onUnmounted(() => {
   }
 }
 
+/* ============================================
+   Metrics Section
+   ============================================ */
 .metrics-section {
-  animation: fadeInUp 0.6s ease-out 0.1s both;
+  animation: sectionSlideIn 0.6s ease-out 0.1s both;
 }
 
 .metrics-grid {
@@ -542,32 +558,68 @@ onUnmounted(() => {
   gap: 20px;
 }
 
+/* ============================================
+   Charts Section
+   ============================================ */
 .charts-section {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  animation: fadeInUp 0.6s ease-out 0.2s both;
+  gap: 20px;
+  animation: sectionSlideIn 0.6s ease-out 0.2s both;
 }
 
 .charts-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
 
-.charts-row.full-width {
+.charts-row--full {
   grid-template-columns: 1fr;
 }
 
-.chart-item {
-  min-height: 400px;
+.chart-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  overflow: hidden;
+  animation: panelFadeIn 0.5s ease backwards;
+  animation-delay: calc(var(--i) * 0.1s);
+  transition: all 0.3s ease;
 }
 
+@keyframes panelFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.chart-panel:hover {
+  border-color: var(--border-default);
+}
+
+/* ============================================
+   Products & Insights Sections
+   ============================================ */
 .products-section,
 .insights-section {
-  animation: fadeInUp 0.6s ease-out 0.3s both;
+  animation: sectionSlideIn 0.6s ease-out 0.3s both;
 }
 
+@keyframes sectionSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 1600px) {
   .metrics-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -586,27 +638,18 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .dashboard-header {
-    padding: 24px 20px;
-  }
-
-  .dashboard-content {
-    padding: 0 20px 24px 20px;
-  }
-
-  .header-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
-  .dashboard-title {
-    font-size: 24px;
+  .header-title {
+    font-size: 22px;
   }
 
   .filter-bar {
     flex-direction: column;
     gap: 16px;
-    padding-left: 0;
   }
 
   .filter-select {

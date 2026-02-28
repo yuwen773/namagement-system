@@ -322,6 +322,19 @@ const formatDateTime = (dateStr) => {
   })
 }
 
+const formatLogTimestamp = () => {
+  const now = new Date()
+  return now.toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+const getLogLineClass = (log) => {
+  if (log.includes('失败') || log.includes('错误') || log.includes('✗')) return 'terminal-line--error'
+  if (log.includes('成功') || log.includes('完成') || log.includes('✓')) return 'terminal-line--success'
+  if (log.includes('警告') || log.includes('提示')) return 'terminal-line--warning'
+  if (log.includes('启动') || log.includes('开始')) return 'terminal-line--info'
+  return ''
+}
+
 // 生命周期
 onMounted(() => {
   loadRecentLogs()
@@ -333,204 +346,294 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="crawler-container">
-    <!-- 控制面板 -->
-    <div class="control-panel">
-      <div class="control-header">
-        <div class="header-title">
-          <VideoPlay class="title-icon" />
-          <h2>宠物数据采集</h2>
+  <div class="crawler-console">
+    <!-- Console Header -->
+    <div class="console-header">
+      <div class="header-content">
+        <div class="header-icon-wrapper">
+          <VideoPlay class="header-icon" />
+          <div class="icon-pulse"></div>
         </div>
-        <div class="header-actions">
-          <el-button
-            type="primary"
-            :icon="Setting"
-            @click="router.push('/admin/crawler/config')"
-            class="config-btn"
-          >
-            爬虫配置
-          </el-button>
-          <div class="status-badge" :style="{
-            background: statusConfig.bg,
-            borderColor: statusConfig.border,
-            color: statusConfig.color
-          }">
-            <component :is="statusConfig.icon" class="status-icon" :class="{ spinning: taskStatus === 'running' }" />
-            <span>{{ statusConfig.label }}</span>
-          </div>
+        <div class="header-text">
+          <h1 class="header-title">数据采集控制台</h1>
+          <p class="header-subtitle">Data Collection Console</p>
         </div>
       </div>
-
-      <div class="control-content">
-        <!-- 采集参数 -->
-        <div class="params-section">
-          <!-- 关键词输入 -->
-          <div class="keywords-input">
-            <label>搜索关键词</label>
-            <input
-              v-model="keywords"
-              type="text"
-              placeholder="例如: 狗粮、猫砂、玩具"
-              class="input-field"
-            />
+      <div class="header-controls">
+        <button class="control-btn control-btn--config" @click="router.push('/admin/crawler/config')">
+          <Setting class="control-btn-icon" />
+          <span>配置</span>
+        </button>
+        <div class="status-indicator" :class="`status-indicator--${taskStatus}`">
+          <div class="status-dot-wrapper">
+            <div class="status-dot"></div>
+            <div class="status-pulse-ring"></div>
           </div>
-
-          <!-- 页数限制 -->
-          <div class="page-count-input">
-            <label>采集页数（最多3页）</label>
-            <div class="page-control">
-              <button
-                class="page-btn"
-                :disabled="pageCount <= 1"
-                @click="pageCount--"
-              >-</button>
-              <span class="page-value">{{ pageCount }}</span>
-              <button
-                class="page-btn"
-                :disabled="pageCount >= 3"
-                @click="pageCount++"
-              >+</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 操作按钮 -->
-        <div class="action-buttons">
-          <button
-            v-if="taskStatus === 'idle' || taskStatus === 'success' || taskStatus === 'failed'"
-            class="btn btn-primary"
-            :disabled="isLoading"
-            @click="startCrawl"
-          >
-            <VideoPlay class="btn-icon" />
-            <span>{{ isLoading ? '启动中...' : '开始采集' }}</span>
-          </button>
-
-          <button
-            v-if="taskStatus === 'running'"
-            class="btn btn-danger"
-            @click="stopCrawl"
-          >
-            <VideoPause class="btn-icon" />
-            <span>停止任务</span>
-          </button>
-
-          <button
-            class="btn btn-success"
-            @click="manualExport"
-          >
-            <Download class="btn-icon" />
-            <span>{{ lastBatchNo ? '导出CSV' : '导出已有数据' }}</span>
-          </button>
-
-          <button
-            class="btn btn-secondary"
-            @click="loadRecentLogs"
-          >
-            <Refresh class="btn-icon" :class="{ spinning: logsLoading }" />
-            <span>刷新记录</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 进度条 -->
-      <div v-if="taskStatus === 'running'" class="progress-section">
-        <div class="progress-header">
-          <span class="progress-label">{{ currentTask?.current_stage || '采集中...' }}</span>
-          <span class="progress-value">{{ progressPercent }}%</span>
-        </div>
-        <div class="progress-bar">
-          <div
-            class="progress-fill"
-            :style="{ width: progressPercent + '%' }"
-          >
-            <div class="progress-glow"></div>
-          </div>
-        </div>
-        <div class="progress-stats">
-          <span>已采集: <strong>{{ currentTask?.items_collected || 0 }}</strong></span>
-          <span>成功: <strong>{{ currentTask?.items_success || 0 }}</strong></span>
-          <span>失败: <strong>{{ currentTask?.items_failed || 0 }}</strong></span>
+          <span class="status-text">{{ statusConfig.label }}</span>
         </div>
       </div>
     </div>
 
-    <!-- 主内容区 -->
-    <div class="content-row">
-      <!-- 实时日志 -->
-      <div class="log-panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <Document class="title-icon" />
-            <h3>实时日志</h3>
+    <!-- Control Dashboard -->
+    <div class="control-dashboard">
+      <!-- Parameter Input Panel -->
+      <div class="param-panel">
+        <div class="param-panel-header">
+          <div class="param-header-icon">⚙</div>
+          <div>
+            <h3 class="param-panel-title">采集参数</h3>
+            <p class="param-panel-subtitle">Collection Parameters</p>
           </div>
-          <label class="auto-scroll-toggle">
-            <input type="checkbox" v-model="autoScroll" />
-            <span>自动滚动</span>
-          </label>
         </div>
-        <div
-          ref="logContainer"
-          class="log-content"
-          :class="{ 'empty-logs': logs.length === 0 }"
-        >
-          <div v-if="logs.length === 0" class="log-empty">
-            <Document class="empty-icon" />
-            <p>暂无日志记录</p>
-            <small>启动采集任务后，日志将实时显示在这里</small>
+
+        <div class="param-inputs">
+          <!-- Keyword Input -->
+          <div class="input-group">
+            <label class="input-label">
+              <span class="label-text">搜索关键词</span>
+              <span class="label-hint">Keywords</span>
+            </label>
+            <div class="input-wrapper">
+              <input
+                v-model="keywords"
+                type="text"
+                placeholder="例如: 狗粮、猫砂、玩具"
+                class="console-input"
+              />
+              <div class="input-focus-line"></div>
+            </div>
           </div>
-          <div
-            v-for="(log, index) in logs"
-            :key="index"
-            class="log-line"
-          >
-            <span class="log-time">{{ formatDateTime(new Date()) }}</span>
-            <span class="log-text">{{ log }}</span>
+
+          <!-- Page Count Control -->
+          <div class="input-group input-group--compact">
+            <label class="input-label">
+              <span class="label-text">采集页数</span>
+              <span class="label-hint">Max Pages: 3</span>
+            </label>
+            <div class="page-stepper">
+              <button
+                class="stepper-btn stepper-btn--decrement"
+                :disabled="pageCount <= 1"
+                @click="pageCount--"
+              >
+                <span></span>
+              </button>
+              <div class="stepper-value">
+                <span class="value-number">{{ pageCount }}</span>
+                <span class="value-unit">页</span>
+              </div>
+              <button
+                class="stepper-btn stepper-btn--increment"
+                :disabled="pageCount >= 3"
+                @click="pageCount++"
+              >
+                <span></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 历史记录 -->
-      <div class="history-panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <Clock class="title-icon" />
-            <h3>最近记录</h3>
+      <!-- Action Buttons -->
+      <div class="action-panel">
+        <button
+          v-if="taskStatus === 'idle' || taskStatus === 'success' || taskStatus === 'failed'"
+          class="action-btn action-btn--primary"
+          :class="{ 'action-btn--loading': isLoading }"
+          :disabled="isLoading"
+          @click="startCrawl"
+        >
+          <span class="action-btn-bg"></span>
+          <VideoPlay class="action-btn-icon" />
+          <span class="action-btn-text">{{ isLoading ? '启动中...' : '开始采集' }}</span>
+          <div class="action-btn-glow"></div>
+        </button>
+
+        <button
+          v-if="taskStatus === 'running'"
+          class="action-btn action-btn--danger"
+          @click="stopCrawl"
+        >
+          <span class="action-btn-bg"></span>
+          <VideoPause class="action-btn-icon" />
+          <span class="action-btn-text">停止任务</span>
+          <div class="action-btn-glow"></div>
+        </button>
+
+        <button
+          class="action-btn action-btn--success"
+          @click="manualExport"
+        >
+          <span class="action-btn-bg"></span>
+          <Download class="action-btn-icon" />
+          <span class="action-btn-text">{{ lastBatchNo ? '导出CSV' : '导出数据' }}</span>
+          <div class="action-btn-glow"></div>
+        </button>
+
+        <button
+          class="action-btn action-btn--secondary"
+          @click="loadRecentLogs"
+        >
+          <span class="action-btn-bg"></span>
+          <Refresh class="action-btn-icon" :class="{ 'action-btn-icon--spinning': logsLoading }" />
+          <span class="action-btn-text">刷新</span>
+          <div class="action-btn-glow"></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress Monitor (shown when running) -->
+    <div v-if="taskStatus === 'running'" class="progress-monitor">
+      <div class="progress-monitor-header">
+        <div class="progress-stage-wrapper">
+          <div class="progress-stage-icon">
+            <Loading class="spinning-icon" />
+          </div>
+          <div class="progress-stage-info">
+            <span class="progress-stage-label">当前阶段</span>
+            <span class="progress-stage-value">{{ currentTask?.current_stage || '采集中...' }}</span>
           </div>
         </div>
+        <div class="progress-percentage">{{ progressPercent }}%</div>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-bar-wrapper">
+          <div
+            class="progress-bar-fill"
+            :style="{ width: progressPercent + '%' }"
+          >
+            <div class="progress-shimmer"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress-metrics">
+        <div class="metric-chip">
+          <span class="metric-chip-label">已采集</span>
+          <span class="metric-chip-value metric-chip-value--primary">{{ currentTask?.items_collected || 0 }}</span>
+        </div>
+        <div class="metric-chip">
+          <span class="metric-chip-label">成功</span>
+          <span class="metric-chip-value metric-chip-value--success">{{ currentTask?.items_success || 0 }}</span>
+        </div>
+        <div class="metric-chip">
+          <span class="metric-chip-label">失败</span>
+          <span class="metric-chip-value metric-chip-value--error">{{ currentTask?.items_failed || 0 }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Console Panels Grid -->
+    <div class="console-grid">
+      <!-- Terminal Log Panel -->
+      <div class="console-panel console-panel--terminal">
+        <div class="console-panel-header">
+          <div class="terminal-header-left">
+            <div class="terminal-controls">
+              <span class="terminal-control terminal-control--close"></span>
+              <span class="terminal-control terminal-control--minimize"></span>
+              <span class="terminal-control terminal-control--maximize"></span>
+            </div>
+            <div class="terminal-title">
+              <Document class="terminal-icon" />
+              <span>实时日志 / Real-time Logs</span>
+            </div>
+          </div>
+          <label class="scroll-toggle">
+            <input type="checkbox" v-model="autoScroll" class="toggle-checkbox" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">自动滚动</span>
+          </label>
+        </div>
+
+        <div
+          ref="logContainer"
+          class="terminal-content"
+          :class="{ 'terminal-content--empty': logs.length === 0 }"
+        >
+          <div v-if="logs.length === 0" class="terminal-empty">
+            <div class="empty-terminal-icon">
+              <Document class="icon" />
+            </div>
+            <p class="empty-text">等待采集任务启动...</p>
+            <p class="empty-hint">Logs will appear here when crawling starts</p>
+          </div>
+          <div v-else class="terminal-lines">
+            <div
+              v-for="(log, index) in logs"
+              :key="index"
+              class="terminal-line"
+              :class="getLogLineClass(log)"
+            >
+              <span class="line-timestamp">{{ formatLogTimestamp() }}</span>
+              <span class="line-prompt">›</span>
+              <span class="line-content">{{ log }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-footer">
+          <div class="terminal-prompt-line">
+            <span class="prompt-user">root@crawler</span>
+            <span class="prompt-separator">:</span>
+            <span class="prompt-path">~</span>
+            <span class="prompt-indicator">$</span>
+            <span class="prompt-cursor"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Records Panel -->
+      <div class="console-panel console-panel--history">
+        <div class="console-panel-header">
+          <div class="history-header-left">
+            <div class="history-icon-wrapper">
+              <Clock class="history-icon" />
+            </div>
+            <div class="history-title-group">
+              <h3 class="history-title">历史记录</h3>
+              <p class="history-subtitle">Collection History</p>
+            </div>
+          </div>
+          <div class="history-count">{{ recentLogs.length }} 条记录</div>
+        </div>
+
         <div class="history-content">
           <div v-if="recentLogs.length === 0" class="history-empty">
             <Clock class="empty-icon" />
-            <p>暂无历史记录</p>
+            <p class="empty-text">暂无采集记录</p>
+            <p class="empty-hint">Start a collection task to see history</p>
           </div>
           <div v-else class="history-list">
             <div
               v-for="log in recentLogs"
               :key="log.id"
-              class="history-item"
+              class="history-card"
+              :class="`history-card--${log.status}`"
             >
-              <div class="history-main">
-                <div class="history-status" :class="getStatusClass(log.status)">
-                  <span class="status-dot"></span>
+              <div class="history-card-left">
+                <div class="history-status-indicator" :class="`history-status-indicator--${log.status}`">
+                  <div class="status-dot-inner"></div>
                 </div>
-                <div class="history-info">
-                  <p class="history-keywords">{{ log.keywords || '未指定' }}</p>
-                  <p class="history-time">{{ formatDateTime(log.created_at) }}</p>
+                <div class="history-card-info">
+                  <p class="history-keyword">{{ log.keywords || '未指定' }}</p>
+                  <p class="history-datetime">{{ formatDateTime(log.created_at) }}</p>
                 </div>
               </div>
-              <div class="history-stats">
-                <span class="stat-item">
-                  <span class="stat-label">采集</span>
-                  <strong>{{ log.items_collected || 0 }}</strong>
-                </span>
-                <span class="stat-item success">
-                  <span class="stat-label">成功</span>
-                  <strong>{{ log.items_success || 0 }}</strong>
-                </span>
-                <span class="stat-item failed" v-if="log.items_failed > 0">
-                  <span class="stat-label">失败</span>
-                  <strong>{{ log.items_failed }}</strong>
-                </span>
+              <div class="history-card-metrics">
+                <div class="history-metric">
+                  <span class="metric-label">采集</span>
+                  <span class="metric-value">{{ log.items_collected || 0 }}</span>
+                </div>
+                <div class="history-metric history-metric--success">
+                  <span class="metric-label">成功</span>
+                  <span class="metric-value">{{ log.items_success || 0 }}</span>
+                </div>
+                <div v-if="log.items_failed > 0" class="history-metric history-metric--failed">
+                  <span class="metric-label">失败</span>
+                  <span class="metric-value">{{ log.items_failed }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -541,7 +644,1249 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Design Tokens & Variables
+   ============================================ */
+.crawler-console {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --primary-red: #FF6B6B;
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --bg-terminal: rgba(10, 10, 16, 0.8);
+  --console-grid: rgba(255, 107, 53, 0.03);
+
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  position: relative;
+}
+
+/* Circuit Pattern Background */
+.crawler-console::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--console-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--console-grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================================
+   Console Header
+   ============================================ */
+.console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-icon-wrapper {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(123, 44, 191, 0.15));
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 16px;
+}
+
+.header-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--primary-orange);
+  position: relative;
+  z-index: 1;
+}
+
+.icon-pulse {
+  position: absolute;
+  inset: 8px;
+  background: radial-gradient(circle, var(--primary-orange) 0%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  animation: iconPulse 3s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 0.3; transform: scale(1); }
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 2px 0 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.control-btn--config {
+  background: rgba(123, 44, 191, 0.1);
+  border-color: rgba(123, 44, 191, 0.3);
+  color: #B983FF;
+}
+
+.control-btn--config:hover {
+  background: rgba(123, 44, 191, 0.2);
+  border-color: rgba(123, 44, 191, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(123, 44, 191, 0.3);
+}
+
+.control-btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+.status-indicator--idle {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: var(--primary-gold);
+}
+
+.status-indicator--running {
+  background: rgba(6, 255, 165, 0.1);
+  border: 1px solid rgba(6, 255, 165, 0.3);
+  color: var(--primary-cyan);
+}
+
+.status-indicator--success {
+  background: rgba(6, 255, 165, 0.1);
+  border: 1px solid rgba(6, 255, 165, 0.3);
+  color: var(--primary-cyan);
+}
+
+.status-indicator--failed {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: var(--primary-red);
+}
+
+.status-dot-wrapper {
+  position: relative;
+  width: 12px;
+  height: 12px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: currentColor;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.status-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  opacity: 0;
+}
+
+.status-indicator--running .status-pulse-ring {
+  animation: statusPulse 2s ease-out infinite;
+}
+
+@keyframes statusPulse {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ============================================
+   Control Dashboard
+   ============================================ */
+.control-dashboard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: start;
+}
+
+.param-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  padding: 24px;
+  animation: panelSlideIn 0.5s ease backwards;
+  animation-delay: 0.1s;
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.param-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.param-header-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(123, 44, 191, 0.15));
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 12px;
+  font-size: 20px;
+}
+
+.param-panel-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.param-panel-subtitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.param-inputs {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.input-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.label-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.console-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.console-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.console-input:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.input-focus-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary-orange), var(--primary-purple));
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.console-input:focus ~ .input-focus-line {
+  width: 100%;
+}
+
+/* Page Stepper */
+.page-stepper {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.stepper-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.stepper-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 107, 53, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.stepper-btn:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.stepper-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.stepper-btn span {
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+  clip-path: polygon(50% 0%, 0% 50%, 50% 100%, 50% 65%, 85% 50%, 50% 35%);
+  color: var(--text-secondary);
+}
+
+.stepper-btn--decrement span {
+  transform: rotate(180deg);
+}
+
+.stepper-value {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+.value-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.value-unit {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+/* Action Panel */
+.action-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: panelSlideIn 0.5s ease backwards;
+  animation-delay: 0.2s;
+}
+
+.action-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.action-btn-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.action-btn--primary .action-btn-bg {
+  background: linear-gradient(135deg, var(--primary-orange), #FF8C5A);
+}
+
+.action-btn--danger .action-btn-bg {
+  background: linear-gradient(135deg, var(--primary-red), #FF8E8E);
+}
+
+.action-btn--success .action-btn-bg {
+  background: linear-gradient(135deg, var(--primary-cyan), #06D4A5);
+}
+
+.action-btn--secondary .action-btn-bg {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-default);
+}
+
+.action-btn-icon,
+.action-btn-text {
+  position: relative;
+  z-index: 1;
+}
+
+.action-btn--primary,
+.action-btn--danger,
+.action-btn--success {
+  color: white;
+}
+
+.action-btn--secondary {
+  color: var(--text-secondary);
+}
+
+.action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+}
+
+.action-btn--primary:hover:not(:disabled) .action-btn-glow,
+.action-btn--danger:hover:not(:disabled) .action-btn-glow,
+.action-btn--success:hover:not(:disabled) .action-btn-glow {
+  opacity: 1;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn--loading {
+  pointer-events: none;
+}
+
+.action-btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.action-btn-icon--spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.action-btn-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+/* ============================================
+   Progress Monitor
+   ============================================ */
+.progress-monitor {
+  background: linear-gradient(135deg, rgba(6, 255, 165, 0.05), rgba(123, 44, 191, 0.03));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(6, 255, 165, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+  animation: panelSlideIn 0.5s ease backwards;
+  animation-delay: 0.3s;
+}
+
+.progress-monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.progress-stage-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.progress-stage-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 255, 165, 0.15);
+  border-radius: 12px;
+  color: var(--primary-cyan);
+}
+
+.spinning-icon {
+  width: 20px;
+  height: 20px;
+  animation: spin 2s linear infinite;
+}
+
+.progress-stage-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.progress-stage-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.progress-stage-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progress-percentage {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-cyan);
+}
+
+.progress-track {
+  margin-bottom: 20px;
+}
+
+.progress-bar-wrapper {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-purple), var(--primary-orange), var(--primary-cyan));
+  border-radius: 10px;
+  position: relative;
+  transition: width 0.5s ease;
+}
+
+.progress-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-metrics {
+  display: flex;
+  gap: 16px;
+}
+
+.metric-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.metric-chip-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.metric-chip-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.metric-chip-value--primary { color: var(--primary-orange); }
+.metric-chip-value--success { color: var(--primary-cyan); }
+.metric-chip-value--error { color: var(--primary-red); }
+
+/* ============================================
+   Console Grid
+   ============================================ */
+.console-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+.console-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: panelSlideIn 0.5s ease backwards;
+  animation-delay: 0.4s;
+}
+
+/* ============================================
+   Terminal Panel
+   ============================================ */
+.console-panel--terminal {
+  animation-delay: 0.4s;
+}
+
+.console-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.terminal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.terminal-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-control {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminal-control--close { background: #FF5F57; }
+.terminal-control--minimize { background: #FFBD2E; }
+.terminal-control--maximize { background: #28CA42; }
+
+.terminal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.terminal-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--primary-orange);
+}
+
+.scroll-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.toggle-checkbox {
+  display: none;
+}
+
+.toggle-slider {
+  width: 36px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: var(--primary-orange);
+}
+
+.toggle-checkbox:checked + .toggle-slider::after {
+  left: 18px;
+  background: var(--primary-orange);
+  box-shadow: 0 0 10px var(--primary-orange);
+}
+
+.terminal-content {
+  flex: 1;
+  background: var(--bg-terminal);
+  padding: 16px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 320px;
+}
+
+.terminal-content--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.terminal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.empty-terminal-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 53, 0.1);
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.empty-terminal-icon .icon {
+  width: 24px;
+  height: 24px;
+  color: var(--primary-orange);
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+}
+
+.empty-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.terminal-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.terminal-line {
+  display: flex;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.terminal-line:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.line-timestamp {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.line-prompt {
+  color: var(--primary-orange);
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.line-content {
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.terminal-line--info .line-content {
+  color: #7DD3FC;
+}
+
+.terminal-line--success .line-content {
+  color: var(--primary-cyan);
+}
+
+.terminal-line--warning .line-content {
+  color: var(--primary-gold);
+}
+
+.terminal-line--error .line-content {
+  color: var(--primary-red);
+}
+
+.terminal-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.terminal-prompt-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+
+.prompt-user {
+  color: var(--primary-cyan);
+  font-weight: 600;
+}
+
+.prompt-separator {
+  color: var(--text-tertiary);
+}
+
+.prompt-path {
+  color: var(--primary-purple);
+  font-weight: 600;
+}
+
+.prompt-indicator {
+  color: var(--primary-orange);
+  font-weight: 600;
+}
+
+.prompt-cursor {
+  width: 8px;
+  height: 16px;
+  background: var(--text-tertiary);
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ============================================
+   History Panel
+   ============================================ */
+.console-panel--history {
+  animation-delay: 0.5s;
+}
+
+.history-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.history-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(123, 44, 191, 0.15);
+  border-radius: 12px;
+}
+
+.history-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--primary-purple);
+}
+
+.history-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.history-subtitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.history-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+
+.history-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 320px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.history-empty .empty-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+.history-empty .empty-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+}
+
+.history-empty .empty-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.history-card:hover {
+  border-color: rgba(255, 107, 53, 0.3);
+  background: rgba(255, 107, 53, 0.05);
+  transform: translateX(4px);
+}
+
+.history-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.history-status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.history-status-indicator--pending {
+  background: var(--primary-gold);
+  box-shadow: 0 0 12px var(--primary-gold);
+}
+
+.history-status-indicator--running {
+  background: var(--primary-cyan);
+  box-shadow: 0 0 12px var(--primary-cyan);
+  animation: runningPulse 2s ease-in-out infinite;
+}
+
+@keyframes runningPulse {
+  0%, 100% { box-shadow: 0 0 12px var(--primary-cyan); }
+  50% { box-shadow: 0 0 20px var(--primary-cyan); }
+}
+
+.history-status-indicator--success {
+  background: var(--primary-cyan);
+  box-shadow: 0 0 12px var(--primary-cyan);
+}
+
+.history-status-indicator--failed {
+  background: var(--primary-red);
+  box-shadow: 0 0 12px var(--primary-red);
+}
+
+.history-status-indicator--cancelled {
+  background: var(--text-tertiary);
+}
+
+.history-card-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-keyword {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.history-datetime {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.history-card-metrics {
+  display: flex;
+  gap: 12px;
+}
+
+.history-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  min-width: 50px;
+}
+
+.history-metric--success {
+  background: rgba(6, 255, 165, 0.1);
+  border: 1px solid rgba(6, 255, 165, 0.2);
+}
+
+.history-metric--failed {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.history-metric .metric-label {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.history-metric .metric-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.history-metric--success .metric-value {
+  color: var(--primary-cyan);
+}
+
+.history-metric--failed .metric-value {
+  color: var(--primary-red);
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 1400px) {
+  .console-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .control-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .action-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  .console-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .param-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .action-panel {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .console-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .history-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .history-card-metrics {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
 
 .crawler-container {
   display: flex;

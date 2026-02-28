@@ -124,20 +124,33 @@ const insightCards = computed(() => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Base Section
+   ============================================ */
 .market-insights {
-  background: linear-gradient(135deg,
-    rgba(6, 255, 165, 0.02) 0%,
-    rgba(123, 44, 191, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  --primary-cyan: #4CC9F0;
+  --primary-purple: #7B2CBF;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  background: rgba(20, 20, 32, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 24px;
   overflow: hidden;
 }
 
+/* ============================================
+   Section Header
+   ============================================ */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(0, 0, 0, 0.2);
 }
@@ -145,73 +158,74 @@ const insightCards = computed(() => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .header-icon {
-  width: 24px;
-  height: 24px;
-  color: #4CC9F0;
+  width: 22px;
+  height: 22px;
+  color: var(--primary-cyan);
 }
 
 .header-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .section-title {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 18px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .section-subtitle {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
 .header-badge {
-  padding: 8px 16px;
-  background: linear-gradient(135deg,
-    rgba(76, 201, 240, 0.15),
-    rgba(123, 44, 191, 0.15));
-  border: 1px solid rgba(76, 201, 240, 0.25);
+  padding: 6px 14px;
+  background: rgba(76, 201, 240, 0.1);
+  border: 1px solid rgba(76, 201, 240, 0.2);
   border-radius: 20px;
-  font-family: 'Exo 2', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #4CC9F0;
-  letter-spacing: 1px;
+  color: var(--primary-cyan);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
+/* ============================================
+   Insights Grid
+   ============================================ */
 .insights-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  padding: 24px;
+  gap: 18px;
+  padding: 20px 24px;
 }
 
 .insight-card {
   position: relative;
-  padding: 24px;
-  background: rgba(15, 15, 26, 0.6);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px;
+  background: rgba(20, 20, 32, 0.6);
+  backdrop-filter: blur(20px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  animation: fadeInUp 0.6s ease-out both;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: insightFadeIn 0.5s ease-out both;
 }
 
-@keyframes fadeInUp {
+@keyframes insightFadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(15px);
   }
   to {
     opacity: 1;
@@ -220,9 +234,9 @@ const insightCards = computed(() => {
 }
 
 .insight-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-4px);
   border-color: var(--card-color);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
 }
 
 .card-glow {
@@ -237,12 +251,12 @@ const insightCards = computed(() => {
     transparent 70%);
   opacity: 0;
   filter: blur(40px);
-  transition: opacity 0.4s ease;
+  transition: opacity 0.3s ease;
   pointer-events: none;
 }
 
 .insight-card:hover .card-glow {
-  opacity: 0.3;
+  opacity: 0.25;
 }
 
 .card-background {
@@ -250,55 +264,61 @@ const insightCards = computed(() => {
   inset: 0;
   background-image:
     radial-gradient(circle at 20% 80%, var(--card-color) 0%, transparent 50%);
-  opacity: 0.05;
+  opacity: 0.04;
   pointer-events: none;
 }
 
+/* ============================================
+   Card Header
+   ============================================ */
 .card-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 16px;
   position: relative;
   z-index: 1;
 }
 
 .icon-wrapper {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.3s ease;
 }
 
 .insight-card:hover .icon-wrapper {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border-color: var(--card-color);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .card-icon {
-  width: 24px;
-  height: 24px;
-  filter: drop-shadow(0 2px 8px var(--card-color));
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 2px 6px var(--card-color));
 }
 
 .card-title {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 16px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
   margin: 0;
 }
 
+/* ============================================
+   Card Metrics
+   ============================================ */
 .card-metrics {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   position: relative;
   z-index: 1;
 }
@@ -307,18 +327,18 @@ const insightCards = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
   transition: all 0.3s ease;
-  animation: slideInRight 0.4s ease-out both;
+  animation: metricSlideIn 0.4s ease-out both;
 }
 
-@keyframes slideInRight {
+@keyframes metricSlideIn {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(-8px);
   }
   to {
     opacity: 1;
@@ -327,28 +347,27 @@ const insightCards = computed(() => {
 }
 
 .insight-card:hover .metric-row {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .metric-label {
-  font-family: 'Exo 2', sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  color: var(--text-tertiary);
 }
 
 .metric-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
   font-weight: 700;
   color: var(--card-color);
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .card-decoration {
   position: absolute;
   inset: 0;
-  border-radius: 20px;
+  border-radius: 18px;
   padding: 1px;
   background: linear-gradient(135deg,
     var(--card-color) 0%,
@@ -363,9 +382,12 @@ const insightCards = computed(() => {
 }
 
 .insight-card:hover .card-decoration {
-  opacity: 0.3;
+  opacity: 0.2;
 }
 
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 1400px) {
   .insights-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -378,10 +400,10 @@ const insightCards = computed(() => {
   }
 
   .section-header {
-    padding: 20px;
+    padding: 18px 20px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 14px;
   }
 }
 </style>

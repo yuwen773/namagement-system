@@ -16,9 +16,12 @@ const loading = ref(false)
 const total = ref(0)
 
 const searchForm = ref({
+  search: '',
   status: '',
   priority: ''
 })
+
+const showFilters = ref(false)
 
 const pagination = ref({
   page: 1,
@@ -68,7 +71,8 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  searchForm.value = { status: '', priority: '' }
+  searchForm.value = { search: '', status: '', priority: '' }
+  showFilters.value = false
   pagination.value.page = 1
   loadAnnouncements()
 }
@@ -169,155 +173,298 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="announcements-page">
-    <!-- Header -->
-    <div class="page-header">
+  <div class="announcements-container">
+    <!-- 顶部欢迎区 -->
+    <div class="dashboard-header">
       <div class="header-content">
-        <div class="title-section">
-          <div class="icon-wrapper">
-            <Bell :size="24" />
+        <h1 class="header-title">公告管理</h1>
+        <p class="header-subtitle">管理系统通知与公告发布，支持优先级和置顶设置</p>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn action-btn--primary" @click="handleCreate">
+          <Plus class="icon" />
+          <span>新建公告</span>
+        </button>
+        <button class="action-btn action-btn--secondary" @click="loadAnnouncements" :class="{ loading }">
+          <Refresh class="icon" :class="{ spinning: loading }" />
+          <span>刷新数据</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 统计指标卡片 -->
+    <div class="metrics-grid">
+      <div class="metric-card metric-card--orange" style="--i: 0">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <Bell class="icon" />
+          </div>
+          <span class="metric-badge">总计</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">公告总数</p>
+          <p class="metric-value">{{ total }}</p>
+        </div>
+        <div class="metric-bg">📢</div>
+      </div>
+
+      <div class="metric-card metric-card--cyan" style="--i: 1">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <CircleCheck class="icon" />
+          </div>
+          <span class="metric-badge metric-badge--success">已发布</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">已发布</p>
+          <p class="metric-value">{{ announcements.filter(a => a.status === 'published').length }}</p>
+        </div>
+        <div class="metric-bg">✓</div>
+      </div>
+
+      <div class="metric-card metric-card--purple" style="--i: 2">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <Top class="icon" />
+          </div>
+          <span class="metric-badge metric-badge--admin">置顶</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">置顶公告</p>
+          <p class="metric-value">{{ announcements.filter(a => a.is_pinned).length }}</p>
+        </div>
+        <div class="metric-bg">📌</div>
+      </div>
+
+      <div class="metric-card metric-card--gold" style="--i: 3">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <Edit class="icon" />
+          </div>
+          <span class="metric-badge metric-badge--warning">草稿</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">草稿箱</p>
+          <p class="metric-value">{{ announcements.filter(a => a.status === 'draft').length }}</p>
+        </div>
+        <div class="metric-bg">📝</div>
+      </div>
+    </div>
+
+    <!-- 搜索筛选区 -->
+    <div class="filter-panel" style="--i: 0">
+      <div class="filter-header">
+        <div class="filter-search">
+          <Search class="search-icon" />
+          <input
+            v-model="searchForm.search"
+            type="text"
+            placeholder="搜索公告标题或内容..."
+            class="search-input"
+            @keyup.enter="handleSearch"
+          />
+        </div>
+        <div class="filter-actions">
+          <button
+            class="filter-toggle"
+            :class="{ active: showFilters || searchForm.priority || searchForm.status !== '' }"
+            @click="showFilters = !showFilters"
+          >
+            <Filter class="icon" />
+            <span>筛选条件</span>
+            <span v-if="searchForm.priority || searchForm.status !== ''" class="filter-count">
+              {{ [searchForm.priority, searchForm.status !== '' ? searchForm.status : null].filter(Boolean).length }}
+            </span>
+          </button>
+          <button class="filter-btn filter-btn--search" @click="handleSearch">
+            <Search class="icon" />
+          </button>
+          <button class="filter-btn filter-btn--reset" @click="handleReset">
+            <span>重置</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 展开的筛选条件 -->
+      <div v-if="showFilters" class="filter-body">
+        <div class="filter-group">
+          <label class="filter-label">
+            <Bell class="label-icon" />
+            <span>公告状态</span>
+          </label>
+          <div class="filter-options">
+            <button
+              v-for="option in [{value: '', label: '全部'}, {value: 'published', label: '已发布'}, {value: 'draft', label: '草稿'}]"
+              :key="option.value"
+              class="filter-option"
+              :class="{ active: searchForm.status === option.value }"
+              @click="searchForm.status = option.value"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+          <label class="filter-label">
+            <Top class="label-icon" />
+            <span>优先级别</span>
+          </label>
+          <div class="filter-options">
+            <button
+              v-for="option in [{value: '', label: '全部'}, {value: 1, label: '普通'}, {value: 2, label: '重要'}, {value: 3, label: '紧急'}]"
+              :key="option.value"
+              class="filter-option"
+              :class="{ active: searchForm.priority === option.value }"
+              @click="searchForm.priority = option.value"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 公告列表 -->
+    <div class="announcements-panel" style="--i: 1">
+      <div class="announcements-panel-header">
+        <div class="panel-title-group">
+          <div class="panel-icon-wrapper panel-icon-wrapper--orange">
+            <Bell class="icon" />
           </div>
           <div>
-            <h1>公告管理</h1>
-            <p class="subtitle">管理系统通知与公告发布</p>
+            <h3 class="panel-title">公告列表</h3>
+            <p class="panel-subtitle">管理所有系统公告和通知消息</p>
           </div>
         </div>
-        <div class="actions">
-          <el-button type="primary" :icon="Plus" @click="handleCreate" class="create-btn">
-            新建公告
-          </el-button>
-          <el-button :icon="Refresh" @click="loadAnnouncements" class="refresh-btn">
-            刷新
-          </el-button>
+        <div class="panel-badge">列表</div>
+      </div>
+
+      <div class="announcements-list-wrapper">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="loading-overlay">
+          <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>加载中...</p>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-      <div class="filter-tabs">
-        <button
-          :class="['filter-tab', { active: searchForm.status === '' }]"
-          @click="searchForm.status = ''; loadAnnouncements()"
-        >
-          全部
-        </button>
-        <button
-          :class="['filter-tab', { active: searchForm.status === 'published' }]"
-          @click="searchForm.status = 'published'; loadAnnouncements()"
-        >
-          已发布
-        </button>
-        <button
-          :class="['filter-tab', { active: searchForm.status === 'draft' }]"
-          @click="searchForm.status = 'draft'; loadAnnouncements()"
-        >
-          草稿
-        </button>
-      </div>
-      <div class="filter-controls">
-        <el-select
-          v-model="searchForm.priority"
-          placeholder="优先级"
-          clearable
-          class="priority-select"
-        >
-          <el-option
-            v-for="item in priorityOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
-        <el-button type="primary" :icon="Filter" @click="handleSearch" class="filter-btn">
-          筛选
-        </el-button>
-      </div>
-    </div>
+        <!-- 空状态 -->
+        <div v-else-if="announcements.length === 0" class="empty-state">
+          <div class="empty-icon-wrapper">
+            <Bell class="empty-icon" />
+          </div>
+          <p class="empty-title">暂无公告数据</p>
+          <p class="empty-desc">点击"新建公告"按钮创建第一个公告</p>
+          <button class="empty-action-btn" @click="handleCreate">
+            <Plus class="icon" />
+            <span>创建第一个公告</span>
+          </button>
+        </div>
 
-    <!-- Table Section -->
-    <div class="table-section">
-      <div v-loading="loading" class="table-container">
-        <div class="announcement-list">
+        <!-- 公告卡片列表 -->
+        <div v-else class="announcement-cards">
           <div
-            v-for="item in announcements"
-            :key="item.id"
-            class="announcement-row"
-            :class="{ pinned: item.is_pinned }"
+            v-for="(announcement, index) in announcements"
+            :key="announcement.id"
+            class="announcement-card"
+            :class="{
+              'card--pinned': announcement.is_pinned,
+              'card--draft': announcement.status === 'draft',
+              'card--urgent': announcement.priority === 3,
+              'card--important': announcement.priority === 2
+            }"
+            :style="{ '--i': index }"
           >
-            <div class="row-main">
-              <div class="row-header">
-                <div class="priority-badge" :style="getPriorityConfig(item.priority)">
-                  {{ getPriorityConfig(item.priority).text }}
+            <!-- 卡片左侧装饰条 -->
+            <div class="card-accent" :data-priority="announcement.priority"></div>
+
+            <!-- 卡片内容区 -->
+            <div class="card-main">
+              <!-- 卡片顶部 -->
+              <div class="card-header">
+                <div class="header-left">
+                  <div class="priority-indicator" :class="`priority--${announcement.priority}`">
+                    <span class="priority-dot"></span>
+                    <span class="priority-text">{{ getPriorityConfig(announcement.priority).text }}</span>
+                  </div>
+
+                  <div class="status-indicator" :class="`status--${announcement.status}`">
+                    <component :is="announcement.status === 'published' ? CircleCheck : Edit" class="status-icon" />
+                    <span class="status-text">{{ getStatusConfig(announcement.status).text }}</span>
+                  </div>
+
+                  <div v-if="announcement.is_pinned" class="pin-badge">
+                    <Top class="pin-icon" />
+                    <span>置顶</span>
+                  </div>
                 </div>
-                <div class="status-dot" :style="{ backgroundColor: getStatusConfig(item.status).color }"></div>
-                <h3 class="announcement-title">{{ item.title }}</h3>
-                <Top v-if="item.is_pinned" :size="16" class="pin-icon" />
+
+                <div class="header-right">
+                  <span class="card-id">#{{ announcement.id }}</span>
+                </div>
               </div>
-              <p class="announcement-preview">{{ item.content }}</p>
-              <div class="row-meta">
-                <span class="meta-item">
-                  <span class="meta-label">状态:</span>
-                  <span :style="{ color: getStatusConfig(item.status).color }">
-                    {{ getStatusConfig(item.status).text }}
-                  </span>
-                </span>
-                <span class="meta-item">
-                  <span class="meta-label">创建:</span>
-                  {{ formatTime(item.created_at) }}
-                </span>
-                <span v-if="item.published_at" class="meta-item">
-                  <span class="meta-label">发布:</span>
-                  {{ formatTime(item.published_at) }}
-                </span>
+
+              <!-- 卡片主体 -->
+              <div class="card-body">
+                <h3 class="card-title">{{ announcement.title }}</h3>
+                <p class="card-content">{{ announcement.content }}</p>
+
+                <div class="card-meta">
+                  <div class="meta-item">
+                    <span class="meta-icon">📅</span>
+                    <span class="meta-label">创建于</span>
+                    <span class="meta-value">{{ formatTime(announcement.created_at) }}</span>
+                  </div>
+                  <div v-if="announcement.published_at" class="meta-item">
+                    <span class="meta-icon">✈️</span>
+                    <span class="meta-label">发布于</span>
+                    <span class="meta-value">{{ formatTime(announcement.published_at) }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="row-actions">
-              <el-button :icon="View" size="small" text @click="handleView(item.id)">
-                查看
-              </el-button>
-              <el-button :icon="Edit" size="small" text @click="handleEdit(item.id)">
-                编辑
-              </el-button>
-              <el-button
-                v-if="item.status === 'draft'"
-                :icon="CircleCheck"
-                size="small"
-                type="success"
-                text
-                @click="handleTogglePublish(item)"
+
+            <!-- 卡片操作区 -->
+            <div class="card-actions">
+              <button class="action-icon-btn action-icon-btn--view" title="查看" @click="handleView(announcement.id)">
+                <View class="icon" />
+              </button>
+              <button class="action-icon-btn action-icon-btn--edit" title="编辑" @click="handleEdit(announcement.id)">
+                <Edit class="icon" />
+              </button>
+              <button
+                v-if="announcement.status === 'draft'"
+                class="action-icon-btn action-icon-btn--publish"
+                title="发布"
+                @click="handleTogglePublish(announcement)"
               >
-                发布
-              </el-button>
-              <el-button
+                <CircleCheck class="icon" />
+              </button>
+              <button
                 v-else
-                :icon="CircleClose"
-                size="small"
-                type="warning"
-                text
-                @click="handleTogglePublish(item)"
+                class="action-icon-btn action-icon-btn--unpublish"
+                title="撤回"
+                @click="handleTogglePublish(announcement)"
               >
-                撤回
-              </el-button>
-              <el-button :icon="Delete" size="small" type="danger" text @click="handleDelete(item)">
-                删除
-              </el-button>
+                <CircleClose class="icon" />
+              </button>
+              <button
+                class="action-icon-btn action-icon-btn--delete"
+                title="删除"
+                @click="handleDelete(announcement)"
+              >
+                <Delete class="icon" />
+              </button>
             </div>
           </div>
         </div>
-
-        <!-- Empty State -->
-        <div v-if="!loading && announcements.length === 0" class="empty-state">
-          <div class="empty-icon">📢</div>
-          <p>暂无公告</p>
-          <el-button type="primary" :icon="Plus" @click="handleCreate">
-            创建第一个公告
-          </el-button>
-        </div>
       </div>
 
-      <!-- Pagination -->
-      <div v-if="total > 0" class="pagination-wrapper">
+      <!-- 分页 -->
+      <div v-if="total > 0" class="announcements-pagination">
         <Pagination
           :current-page="pagination.page"
           :page-size="pagination.page_size"
@@ -331,264 +478,728 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.announcements-page {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Design Tokens & Base
+   ============================================ */
+.announcements-container {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.15);
+
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  animation: pageFadeIn 0.4s ease;
 }
 
-/* Header */
-.page-header {
-  margin-bottom: 24px;
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Dashboard Header
+   ============================================ */
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  animation: slideInDown 0.5s ease;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .header-content {
+  flex: 1;
+}
+
+.header-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin: 0;
+  font-weight: 400;
+}
+
+.header-actions {
   display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.action-btn--primary {
+  background: linear-gradient(135deg, var(--primary-purple), var(--primary-orange));
+  border: none;
+  color: white;
+}
+
+.action-btn--primary:hover {
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+}
+
+.action-btn--secondary {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-subtle);
+}
+
+.action-btn.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.action-btn .icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.action-btn .icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Metrics Grid
+   ============================================ */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  animation: fadeInUp 0.5s ease;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.metric-card {
+  position: relative;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 24px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  animation: metricSlideIn 0.5s ease backwards;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+
+@keyframes metricSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-default);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.metric-card--orange {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.08), transparent);
+  border-color: rgba(255, 107, 53, 0.15);
+}
+
+.metric-card--orange:hover {
+  border-color: rgba(255, 107, 53, 0.3);
+  box-shadow: 0 12px 40px rgba(255, 107, 53, 0.15);
+}
+
+.metric-card--cyan {
+  background: linear-gradient(135deg, rgba(6, 255, 165, 0.06), transparent);
+  border-color: rgba(6, 255, 165, 0.12);
+}
+
+.metric-card--cyan:hover {
+  border-color: rgba(6, 255, 165, 0.25);
+  box-shadow: 0 12px 40px rgba(6, 255, 165, 0.1);
+}
+
+.metric-card--purple {
+  background: linear-gradient(135deg, rgba(123, 44, 191, 0.08), transparent);
+  border-color: rgba(123, 44, 191, 0.15);
+}
+
+.metric-card--purple:hover {
+  border-color: rgba(123, 44, 191, 0.3);
+  box-shadow: 0 12px 40px rgba(123, 44, 191, 0.15);
+}
+
+.metric-card--gold {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.06), transparent);
+  border-color: rgba(255, 215, 0, 0.12);
+}
+
+.metric-card--gold:hover {
+  border-color: rgba(255, 215, 0, 0.25);
+  box-shadow: 0 12px 40px rgba(255, 215, 0, 0.1);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
+  margin-bottom: 20px;
 }
 
-.title-section {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.icon-wrapper {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
+.metric-icon {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
-}
-
-h1 {
-  margin: 0 0 4px 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.5px;
-}
-
-.subtitle {
-  margin: 0;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-}
-
-.create-btn {
-  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
-  border: none;
-  padding: 12px 24px;
-  font-weight: 600;
-}
-
-.create-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.refresh-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-.refresh-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Filter Section */
-.filter-section {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.metric-icon .icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+}
+
+.metric-card--orange .metric-icon {
+  background: rgba(255, 107, 53, 0.1);
+  border-color: rgba(255, 107, 53, 0.2);
+}
+
+.metric-card--orange .metric-icon .icon {
+  color: var(--primary-orange);
+}
+
+.metric-card--cyan .metric-icon {
+  background: rgba(6, 255, 165, 0.1);
+  border-color: rgba(6, 255, 165, 0.2);
+}
+
+.metric-card--cyan .metric-icon .icon {
+  color: var(--primary-cyan);
+}
+
+.metric-card--purple .metric-icon {
+  background: rgba(123, 44, 191, 0.1);
+  border-color: rgba(123, 44, 191, 0.2);
+}
+
+.metric-card--purple .metric-icon .icon {
+  color: #9D4EDD;
+}
+
+.metric-card--gold .metric-icon {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.2);
+}
+
+.metric-card--gold .metric-icon .icon {
+  color: var(--primary-gold);
+}
+
+.metric-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-tertiary);
+}
+
+.metric-badge--success {
+  background: rgba(6, 255, 165, 0.1);
+  color: var(--primary-cyan);
+}
+
+.metric-badge--admin {
+  background: rgba(123, 44, 191, 0.1);
+  color: #9D4EDD;
+}
+
+.metric-badge--warning {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--primary-gold);
+}
+
+.metric-body {
+  position: relative;
+  z-index: 1;
+}
+
+.metric-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1;
+}
+
+.metric-bg {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  font-size: 80px;
+  opacity: 0.03;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ============================================
+   Filter Panel
+   ============================================ */
+.filter-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: panelSlideIn 0.4s ease;
+  animation-delay: calc(0.15s + var(--i) * 0.05s);
+  animation-fill-mode: both;
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  padding: 20px 24px;
 }
 
-.filter-tabs {
+.filter-header + .filter-body {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.filter-search {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+
+.search-input {
+  width: 100%;
+  padding: 13px 16px 13px 48px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-orange);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.search-input:focus ~ .search-icon {
+  color: var(--primary-orange);
+}
+
+.filter-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  align-items: center;
 }
 
-.filter-tab {
-  padding: 10px 20px;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+.filter-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
-  border-radius: 10px;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
-.filter-tab:hover {
+.filter-toggle:hover {
   background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  border-color: var(--border-default);
+  color: var(--text-primary);
 }
 
-.filter-tab.active {
-  background: rgba(255, 107, 53, 0.15);
-  color: #FF6B35;
+.filter-toggle.active {
+  background: rgba(255, 107, 53, 0.1);
+  border-color: rgba(255, 107, 53, 0.2);
+  color: var(--primary-orange);
 }
 
-.filter-controls {
+.filter-toggle .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.filter-count {
   display: flex;
-  gap: 12px;
   align-items: center;
-}
-
-.priority-select {
-  width: 120px;
-}
-
-.priority-select :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  background: var(--primary-orange);
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
 }
 
 .filter-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-/* Table Section */
-.table-section {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.filter-btn--search {
+  width: 46px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-btn--search .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.filter-body {
+  padding: 24px;
+  animation: filterExpand 0.3s ease;
+}
+
+@keyframes filterExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.filter-label .label-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.filter-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-option {
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.filter-option.active {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
+}
+
+.filter-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 20px 0;
+}
+
+/* ============================================
+   Announcements Panel
+   ============================================ */
+.announcements-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: panelSlideIn 0.4s ease;
+  animation-delay: calc(0.2s + var(--i) * 0.05s);
+  animation-fill-mode: both;
+}
+
+.announcements-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.panel-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 14px;
+  position: relative;
   overflow: hidden;
 }
 
-.table-container {
+.panel-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 107, 53, 0.1));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.panel-icon-wrapper:hover::before {
+  opacity: 1;
+}
+
+.panel-icon-wrapper .icon {
+  width: 22px;
+  height: 22px;
+  color: var(--primary-orange);
+  position: relative;
+  z-index: 1;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.panel-subtitle {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.panel-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 16px;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 20px;
+  color: var(--primary-orange);
+}
+
+.announcements-list-wrapper {
+  position: relative;
   min-height: 400px;
 }
 
-.announcement-list {
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 13, 20, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.loading-content {
   display: flex;
   flex-direction: column;
-}
-
-.announcement-row {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
-  gap: 24px;
+  gap: 16px;
 }
 
-.announcement-row:last-child {
-  border-bottom: none;
-}
-
-.announcement-row:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.announcement-row.pinned {
-  background: linear-gradient(90deg, rgba(255, 107, 53, 0.08) 0%, transparent 100%);
-  border-left: 3px solid #FF6B35;
-}
-
-.row-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.row-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.priority-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--primary-orange);
   border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
-.announcement-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pin-icon {
-  color: #FF6B35;
-  flex-shrink: 0;
-}
-
-.announcement-preview {
-  margin: 0 0 12px 0;
+.loading-content p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.row-meta {
-  display: flex;
-  gap: 20px;
-  font-size: 13px;
-}
-
-.meta-item {
-  display: flex;
-  gap: 6px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.meta-label {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.row-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.row-actions .el-button {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.row-actions .el-button:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 /* Empty State */
@@ -597,41 +1208,540 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 20px;
+  padding: 80px 40px;
   text-align: center;
 }
 
+.empty-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  margin-bottom: 24px;
+}
+
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  width: 36px;
+  height: 36px;
+  color: var(--text-tertiary);
   opacity: 0.5;
 }
 
-.empty-state p {
-  margin: 0 0 20px 0;
+.empty-title {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin: 0 0 24px 0;
+}
+
+.empty-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--primary-purple), var(--primary-orange));
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.empty-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+}
+
+.empty-action-btn .icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Announcement Cards */
+.announcement-cards {
+  display: grid;
+  gap: 16px;
+  padding: 24px 28px;
+}
+
+.announcement-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 20px 24px;
+  transition: all 0.3s ease;
+  animation: cardSlideIn 0.4s ease backwards;
+  animation-delay: calc(var(--i) * 0.05s);
+  overflow: hidden;
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.announcement-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.announcement-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-default);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.announcement-card:hover::before {
+  opacity: 1;
+}
+
+.card-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--border-subtle);
+  transition: all 0.3s ease;
+}
+
+.card-accent[data-priority="1"] {
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
+}
+
+.card-accent[data-priority="2"] {
+  background: linear-gradient(180deg, #fbbf24, #f59e0b);
+}
+
+.card-accent[data-priority="3"] {
+  background: linear-gradient(180deg, #f87171, #ef4444);
+}
+
+.announcement-card:hover .card-accent {
+  width: 5px;
+}
+
+.card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.priority-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.priority-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.priority-indicator.priority--1 .priority-dot {
+  background: #60a5fa;
+}
+
+.priority-indicator.priority--2 .priority-dot {
+  background: #fbbf24;
+}
+
+.priority-indicator.priority--3 .priority-dot {
+  background: #f87171;
+}
+
+.priority-text {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.priority-indicator.priority--1 .priority-text {
+  color: #60a5fa;
+}
+
+.priority-indicator.priority--2 .priority-text {
+  color: #fbbf24;
+}
+
+.priority-indicator.priority--3 .priority-text {
+  color: #f87171;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.status-indicator .status-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.status-indicator.status--published .status-icon {
+  color: var(--primary-cyan);
+}
+
+.status-indicator.status--draft .status-icon {
+  color: var(--text-tertiary);
+}
+
+.status-text {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.status-indicator.status--published .status-text {
+  color: var(--primary-cyan);
+}
+
+.status-indicator.status--draft .status-text {
+  color: var(--text-tertiary);
+}
+
+.pin-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 6px;
+}
+
+.pin-badge .pin-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--primary-orange);
+}
+
+.pin-badge span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary-orange);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.card-content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.meta-icon {
+  font-size: 14px;
+}
+
+.meta-label {
+  color: var(--text-tertiary);
+}
+
+.meta-value {
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Card Actions */
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: center;
+}
+
+.action-icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-icon-btn .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+  transition: all 0.3s ease;
+}
+
+.action-icon-btn:hover {
+  transform: scale(1.1);
+}
+
+.action-icon-btn--view:hover {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.action-icon-btn--view:hover .icon {
+  color: #60a5fa;
+}
+
+.action-icon-btn--edit:hover {
+  background: rgba(123, 44, 191, 0.1);
+  border-color: rgba(123, 44, 191, 0.3);
+}
+
+.action-icon-btn--edit:hover .icon {
+  color: #9D4EDD;
+}
+
+.action-icon-btn--publish:hover {
+  background: rgba(6, 255, 165, 0.1);
+  border-color: rgba(6, 255, 165, 0.3);
+}
+
+.action-icon-btn--publish:hover .icon {
+  color: var(--primary-cyan);
+}
+
+.action-icon-btn--unpublish:hover {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.action-icon-btn--unpublish:hover .icon {
+  color: var(--primary-gold);
+}
+
+.action-icon-btn--delete:hover {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.action-icon-btn--delete:hover .icon {
+  color: #FF6B6B;
+}
+
+/* Card Special States */
+.card--pinned {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.06), rgba(0, 0, 0, 0.2));
+  border-color: rgba(255, 107, 53, 0.15);
+}
+
+.card--pinned:hover {
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(0, 0, 0, 0.2));
+  border-color: rgba(255, 107, 53, 0.25);
+}
+
+.card--draft {
+  opacity: 0.85;
+}
+
+.card--draft .card-title {
+  color: var(--text-secondary);
+}
+
+.card--urgent {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.06), rgba(0, 0, 0, 0.2));
+  border-color: rgba(248, 113, 113, 0.15);
+}
+
+.card--urgent:hover {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.1), rgba(0, 0, 0, 0.2));
+  border-color: rgba(248, 113, 113, 0.25);
+}
+
+.card--important {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.06), rgba(0, 0, 0, 0.2));
+  border-color: rgba(251, 191, 36, 0.15);
+}
+
+.card--important:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(0, 0, 0, 0.2));
+  border-color: rgba(251, 191, 36, 0.25);
 }
 
 /* Pagination */
-.pagination-wrapper {
-  padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+.announcements-pagination {
+  padding: 20px 28px;
+  border-top: 1px solid var(--border-subtle);
 }
 
-.pagination-wrapper :deep(.el-pagination) {
-  justify-content: center;
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 1400px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.pagination-wrapper :deep(.el-pager li) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
+@media (max-width: 1200px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .filter-header {
+    flex-wrap: wrap;
+  }
+
+  .filter-search {
+    max-width: 100%;
+    order: 1;
+    flex-basis: 100%;
+  }
+
+  .filter-actions {
+    order: 2;
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
-.pagination-wrapper :deep(.el-pager li.is-active) {
-  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
-  border-color: transparent;
-  color: #fff;
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .announcement-card {
+    grid-template-columns: 1fr;
+  }
+
+  .card-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .filter-options {
+    flex-direction: column;
+  }
+
+  .filter-option {
+    width: 100%;
+  }
+
+  .panel-title-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 }
 </style>

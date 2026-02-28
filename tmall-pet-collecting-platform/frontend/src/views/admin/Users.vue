@@ -267,33 +267,87 @@ onMounted(() => {
 
 <template>
   <div class="users-container">
-    <!-- 头部操作区 -->
-    <div class="header-section">
-      <div class="header-left">
-        <div class="header-title">
-          <User class="title-icon" />
-          <h2>用户管理</h2>
-        </div>
-        <div class="header-stats">
-          <span class="stat">共 <strong>{{ total }}</strong> 位用户</span>
-        </div>
+    <!-- 顶部欢迎区 -->
+    <div class="dashboard-header">
+      <div class="header-content">
+        <h1 class="header-title">用户管理</h1>
+        <p class="header-subtitle">管理系统用户账户与权限配置</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-primary" @click="openAddDialog">
-          <Plus class="btn-icon" />
+        <button class="action-btn action-btn--primary" @click="openAddDialog">
+          <Plus class="icon" />
           <span>新增用户</span>
         </button>
-        <button class="btn btn-secondary" @click="loadUsers">
-          <Refresh class="btn-icon" :class="{ spinning: loading }" />
-          <span>刷新</span>
+        <button class="action-btn action-btn--secondary" @click="loadUsers" :class="{ loading }">
+          <Refresh class="icon" :class="{ spinning: loading }" />
+          <span>刷新数据</span>
         </button>
       </div>
     </div>
 
+    <!-- 统计指标卡片 -->
+    <div class="metrics-grid">
+      <div class="metric-card metric-card--orange" style="--i: 0">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <User class="icon" />
+          </div>
+          <span class="metric-badge">总计</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">用户总数</p>
+          <p class="metric-value">{{ total }}</p>
+        </div>
+        <div class="metric-bg">👥</div>
+      </div>
+
+      <div class="metric-card metric-card--cyan" style="--i: 1">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <CircleCheck class="icon" />
+          </div>
+          <span class="metric-badge metric-badge--success">活跃</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">正常用户</p>
+          <p class="metric-value">{{ users.filter(u => u.status === 'active').length }}</p>
+        </div>
+        <div class="metric-bg">✓</div>
+      </div>
+
+      <div class="metric-card metric-card--purple" style="--i: 2">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <Tools class="icon" />
+          </div>
+          <span class="metric-badge metric-badge--admin">管理</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">管理员</p>
+          <p class="metric-value">{{ users.filter(u => u.role === 'admin').length }}</p>
+        </div>
+        <div class="metric-bg">🔧</div>
+      </div>
+
+      <div class="metric-card metric-card--gold" style="--i: 3">
+        <div class="metric-header">
+          <div class="metric-icon">
+            <Lock class="icon" />
+          </div>
+          <span class="metric-badge metric-badge--warning">冻结</span>
+        </div>
+        <div class="metric-body">
+          <p class="metric-label">已冻结</p>
+          <p class="metric-value">{{ users.filter(u => u.status === 'frozen').length }}</p>
+        </div>
+        <div class="metric-bg">🔒</div>
+      </div>
+    </div>
+
     <!-- 搜索筛选区 -->
-    <div class="filter-section">
-      <div class="filter-bar">
-        <div class="search-input-wrapper">
+    <div class="filter-panel" style="--i: 0">
+      <div class="filter-header">
+        <div class="filter-search">
           <Search class="search-icon" />
           <input
             v-model="searchForm.search"
@@ -303,60 +357,92 @@ onMounted(() => {
             @keyup.enter="handleSearch"
           />
         </div>
-
-        <button
-          class="filter-toggle"
-          :class="{ active: showFilters || searchForm.role || searchForm.status }"
-          @click="showFilters = !showFilters"
-        >
-          <Filter class="filter-icon" />
-          <span>筛选</span>
-        </button>
-
-        <button class="btn btn-search" @click="handleSearch">
-          <Search class="btn-icon" />
-          <span>搜索</span>
-        </button>
-
-        <button class="btn btn-reset" @click="handleReset">
-          <span>重置</span>
-        </button>
+        <div class="filter-actions">
+          <button
+            class="filter-toggle"
+            :class="{ active: showFilters || searchForm.role || searchForm.status }"
+            @click="showFilters = !showFilters"
+          >
+            <Filter class="icon" />
+            <span>筛选条件</span>
+            <span v-if="searchForm.role || searchForm.status" class="filter-count">
+              {{ [searchForm.role, searchForm.status].filter(Boolean).length }}
+            </span>
+          </button>
+          <button class="filter-btn filter-btn--search" @click="handleSearch">
+            <Search class="icon" />
+          </button>
+          <button class="filter-btn filter-btn--reset" @click="handleReset">
+            <span>重置</span>
+          </button>
+        </div>
       </div>
 
       <!-- 展开的筛选条件 -->
-      <div v-if="showFilters" class="filter-panel">
-        <div class="filter-row">
-          <div class="filter-group">
-            <label>角色</label>
-            <select v-model="searchForm.role" class="filter-select">
-              <option value="">全部</option>
-              <option value="admin">管理员</option>
-              <option value="user">普通用户</option>
-            </select>
+      <div v-if="showFilters" class="filter-body">
+        <div class="filter-group">
+          <label class="filter-label">
+            <UserFilled class="label-icon" />
+            <span>用户角色</span>
+          </label>
+          <div class="filter-options">
+            <button
+              v-for="option in [{value: '', label: '全部'}, {value: 'admin', label: '管理员'}, {value: 'user', label: '普通用户'}]"
+              :key="option.value"
+              class="filter-option"
+              :class="{ active: searchForm.role === option.value }"
+              @click="searchForm.role = option.value"
+            >
+              {{ option.label }}
+            </button>
           </div>
+        </div>
 
-          <div class="filter-group">
-            <label>状态</label>
-            <select v-model="searchForm.status" class="filter-select">
-              <option value="">全部</option>
-              <option value="active">正常</option>
-              <option value="frozen">已冻结</option>
-            </select>
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+          <label class="filter-label">
+            <CircleCheck class="label-icon" />
+            <span>账户状态</span>
+          </label>
+          <div class="filter-options">
+            <button
+              v-for="option in [{value: '', label: '全部'}, {value: 'active', label: '正常'}, {value: 'frozen', label: '已冻结'}]"
+              :key="option.value"
+              class="filter-option"
+              :class="{ active: searchForm.status === option.value }"
+              @click="searchForm.status = option.value"
+            >
+              {{ option.label }}
+            </button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 用户列表 -->
-    <div class="table-section">
-      <div class="table-container">
-        <table class="user-table">
+    <div class="users-panel" style="--i: 1">
+      <div class="users-panel-header">
+        <div class="panel-title-group">
+          <div class="panel-icon-wrapper panel-icon-wrapper--orange">
+            <UserFilled class="icon" />
+          </div>
+          <div>
+            <h3 class="panel-title">用户列表</h3>
+            <p class="panel-subtitle">管理系统中的所有用户账户</p>
+          </div>
+        </div>
+        <div class="panel-badge">列表</div>
+      </div>
+
+      <div class="users-table-wrapper">
+        <table class="users-table">
           <thead>
             <tr>
-              <th class="col-user">用户</th>
-              <th class="col-email">邮箱</th>
-              <th class="col-role">角色</th>
-              <th class="col-status">状态</th>
+              <th class="col-user">用户信息</th>
+              <th class="col-email">邮箱地址</th>
+              <th class="col-role">角色权限</th>
+              <th class="col-status">账户状态</th>
               <th class="col-time">注册时间</th>
               <th class="col-actions">操作</th>
             </tr>
@@ -365,68 +451,82 @@ onMounted(() => {
             <tr v-if="users.length === 0 && !loading" class="empty-row">
               <td colspan="6">
                 <div class="empty-state">
-                  <User class="empty-icon" />
-                  <p>暂无用户数据</p>
-                  <small>点击"新增用户"按钮添加用户</small>
+                  <div class="empty-icon-wrapper">
+                    <User class="empty-icon" />
+                  </div>
+                  <p class="empty-title">暂无用户数据</p>
+                  <p class="empty-desc">点击"新增用户"按钮添加第一个用户</p>
                 </div>
               </td>
             </tr>
             <tr
-              v-for="user in users"
+              v-for="(user, index) in users"
               :key="user.id"
               class="user-row"
+              :style="{ '--i': index }"
             >
               <td class="col-user">
-                <div class="user-cell">
-                  <div class="user-avatar">
-                    <UserFilled v-if="!user.avatar" class="avatar-placeholder" />
+                <div class="user-profile">
+                  <div class="user-avatar" :class="`avatar-${user.role}`">
+                    <UserFilled v-if="!user.avatar" class="avatar-icon" />
                     <img v-else :src="user.avatar" :alt="user.username" />
                   </div>
-                  <div class="user-info">
+                  <div class="user-details">
                     <h4 class="user-name">{{ user.username }}</h4>
+                    <span class="user-id">ID: {{ user.id }}</span>
                   </div>
                 </div>
               </td>
               <td class="col-email">
-                <span class="email-value">{{ user.email || '-' }}</span>
+                <span class="email-text">{{ user.email || '-' }}</span>
               </td>
               <td class="col-role">
                 <span
-                  class="role-badge"
-                  :style="{
-                    background: getRoleDisplay(user.role).bg,
-                    color: getRoleDisplay(user.role).color
-                  }"
+                  class="role-tag"
+                  :class="`role-tag--${user.role}`"
                 >
                   {{ getRoleDisplay(user.role).label }}
                 </span>
               </td>
               <td class="col-status">
-                <div class="status-indicator" :style="{ color: getStatusDisplay(user.status).color }">
+                <div class="status-badge" :class="`status-badge--${user.status}`">
+                  <div class="status-dot"></div>
                   <component :is="getStatusDisplay(user.status).icon" class="status-icon" />
                   <span>{{ getStatusDisplay(user.status).label }}</span>
                 </div>
               </td>
               <td class="col-time">
-                <span class="time-value">{{ formatTime(user.created_at) }}</span>
+                <span class="time-text">{{ formatTime(user.created_at) }}</span>
               </td>
               <td class="col-actions">
-                <div class="action-buttons">
+                <div class="row-actions">
                   <button
-                    class="action-btn"
-                    :class="user.status === 'active' ? 'btn-freeze' : 'btn-unfreeze'"
+                    class="row-action-btn"
+                    :class="user.status === 'active' ? 'row-action-btn--freeze' : 'row-action-btn--unfreeze'"
                     :title="user.status === 'active' ? '冻结用户' : '解冻用户'"
                     @click="handleToggleStatus(user)"
                   >
                     <component :is="user.status === 'active' ? Lock : Unlock" class="action-icon" />
                   </button>
-                  <button class="action-btn btn-password" title="重置密码" @click="openPasswordDialog(user)">
+                  <button
+                    class="row-action-btn row-action-btn--password"
+                    title="重置密码"
+                    @click="openPasswordDialog(user)"
+                  >
                     <Tools class="action-icon" />
                   </button>
-                  <button class="action-btn btn-edit" title="编辑" @click="openEditDialog(user)">
+                  <button
+                    class="row-action-btn row-action-btn--edit"
+                    title="编辑用户"
+                    @click="openEditDialog(user)"
+                  >
                     <Tools class="action-icon" />
                   </button>
-                  <button class="action-btn btn-delete" title="删除" @click="handleDelete(user)">
+                  <button
+                    class="row-action-btn row-action-btn--delete"
+                    title="删除用户"
+                    @click="handleDelete(user)"
+                  >
                     <Delete class="action-icon" />
                   </button>
                 </div>
@@ -436,14 +536,16 @@ onMounted(() => {
         </table>
 
         <!-- 加载中遮罩 -->
-        <div v-if="loading" class="table-loading">
-          <div class="loading-spinner"></div>
-          <p>加载中...</p>
+        <div v-if="loading" class="table-loading-overlay">
+          <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>正在加载用户数据...</p>
+          </div>
         </div>
       </div>
 
       <!-- 分页 -->
-      <div class="pagination-section">
+      <div class="users-pagination">
         <Pagination
           :current-page="pagination.page"
           :page-size="pagination.page_size"
@@ -455,16 +557,37 @@ onMounted(() => {
     </div>
 
     <!-- 重置密码对话框 -->
-    <div v-if="showPasswordDialog" class="dialog-overlay" @click.self="showPasswordDialog = false">
-      <div class="dialog">
-        <div class="dialog-header">
-          <h3>重置密码</h3>
-          <button class="dialog-close" @click="showPasswordDialog = false">×</button>
+    <div v-if="showPasswordDialog" class="modal-overlay" @click.self="showPasswordDialog = false">
+      <div class="modal-dialog modal-dialog--password">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <div class="modal-icon-wrapper modal-icon-wrapper--password">
+              <Tools class="modal-icon" />
+            </div>
+            <div>
+              <h3 class="modal-title">重置密码</h3>
+              <p class="modal-subtitle">为用户设置新的登录密码</p>
+            </div>
+          </div>
+          <button class="modal-close" @click="showPasswordDialog = false">
+            <span>✕</span>
+          </button>
         </div>
-        <div class="dialog-body">
-          <p class="dialog-desc">为用户 <strong>{{ passwordForm.username }}</strong> 设置新密码</p>
-          <div class="form-group">
-            <label>新密码</label>
+        <div class="modal-body">
+          <div class="password-user-info">
+            <div class="password-user-avatar">
+              <UserFilled class="avatar-icon" />
+            </div>
+            <div class="password-user-details">
+              <p class="password-user-label">目标用户</p>
+              <p class="password-user-name">{{ passwordForm.username }}</p>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">
+              <Lock class="label-icon" />
+              <span>新密码</span>
+            </label>
             <input
               v-model="passwordForm.newPassword"
               type="password"
@@ -473,23 +596,40 @@ onMounted(() => {
             />
           </div>
         </div>
-        <div class="dialog-footer">
-          <button class="btn btn-secondary" @click="showPasswordDialog = false">取消</button>
-          <button class="btn btn-primary" @click="handleResetPassword">确定</button>
+        <div class="modal-footer">
+          <button class="modal-btn modal-btn--cancel" @click="showPasswordDialog = false">
+            <span>取消</span>
+          </button>
+          <button class="modal-btn modal-btn--confirm" @click="handleResetPassword">
+            <span>确认重置</span>
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- 编辑用户对话框 -->
-    <div v-if="showEditDialog" class="dialog-overlay" @click.self="showEditDialog = false">
-      <div class="dialog">
-        <div class="dialog-header">
-          <h3>{{ editForm.id ? '编辑用户' : '新增用户' }}</h3>
-          <button class="dialog-close" @click="showEditDialog = false">×</button>
+    <!-- 编辑/新增用户对话框 -->
+    <div v-if="showEditDialog" class="modal-overlay" @click.self="showEditDialog = false">
+      <div class="modal-dialog modal-dialog--user">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <div class="modal-icon-wrapper" :class="editForm.id ? 'modal-icon-wrapper--edit' : 'modal-icon-wrapper--add'">
+              <component :is="editForm.id ? Tools : Plus" class="modal-icon" />
+            </div>
+            <div>
+              <h3 class="modal-title">{{ editForm.id ? '编辑用户' : '新增用户' }}</h3>
+              <p class="modal-subtitle">{{ editForm.id ? '修改用户信息和权限' : '创建新的系统用户' }}</p>
+            </div>
+          </div>
+          <button class="modal-close" @click="showEditDialog = false">
+            <span>✕</span>
+          </button>
         </div>
-        <div class="dialog-body">
-          <div class="form-group">
-            <label>用户名</label>
+        <div class="modal-body">
+          <div class="form-field">
+            <label class="form-label">
+              <UserFilled class="label-icon" />
+              <span>用户名</span>
+            </label>
             <input
               v-model="editForm.username"
               type="text"
@@ -498,8 +638,11 @@ onMounted(() => {
               :disabled="!!editForm.id"
             />
           </div>
-          <div class="form-group">
-            <label>邮箱</label>
+          <div class="form-field">
+            <label class="form-label">
+              <span class="label-icon">@</span>
+              <span>邮箱地址</span>
+            </label>
             <input
               v-model="editForm.email"
               type="email"
@@ -507,47 +650,62 @@ onMounted(() => {
               class="form-input"
             />
           </div>
-          <div class="form-group">
-            <label>角色</label>
-            <select v-model="editForm.role" class="form-select">
-              <option value="user">普通用户</option>
-              <option value="admin">管理员</option>
-            </select>
+          <div class="form-field">
+            <label class="form-label">
+              <Tools class="label-icon" />
+              <span>用户角色</span>
+            </label>
+            <div class="role-selector">
+              <button
+                v-for="role in [{value: 'user', label: '普通用户', icon: User}, {value: 'admin', label: '管理员', icon: Tools}]"
+                :key="role.value"
+                class="role-option"
+                :class="{ active: editForm.role === role.value }"
+                @click="editForm.role = role.value"
+              >
+                <component :is="role.icon" class="role-icon" />
+                <span>{{ role.label }}</span>
+                <div v-if="editForm.role === role.value" class="role-check">
+                  <CircleCheck class="check-icon" />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
-        <div class="dialog-footer">
-          <button class="btn btn-secondary" @click="showEditDialog = false">取消</button>
-          <button class="btn btn-primary" @click="handleUpdateUser">确定</button>
+        <div class="modal-footer">
+          <button class="modal-btn modal-btn--cancel" @click="showEditDialog = false">
+            <span>取消</span>
+          </button>
+          <button class="modal-btn modal-btn--confirm" @click="handleUpdateUser">
+            <span>{{ editForm.id ? '保存修改' : '创建用户' }}</span>
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- 通用确认对话框 -->
-    <div v-if="showConfirmDialog" class="dialog-overlay" @click.self="showConfirmDialog = false">
-      <div class="dialog confirm-dialog">
-        <div class="dialog-header">
-          <h3>{{ confirmConfig.title }}</h3>
-          <button class="dialog-close" @click="showConfirmDialog = false">×</button>
-        </div>
-        <div class="dialog-body">
-          <div class="confirm-content">
-            <div class="confirm-icon-wrapper" :class="confirmConfig.type">
-              <component 
-                :is="confirmConfig.type === 'danger' ? Delete : (confirmConfig.type === 'warning' ? Lock : User)" 
-                class="confirm-icon" 
-              />
-            </div>
-            <p class="confirm-message">{{ confirmConfig.message }}</p>
+    <!-- 确认操作对话框 -->
+    <div v-if="showConfirmDialog" class="modal-overlay" @click.self="showConfirmDialog = false">
+      <div class="modal-dialog modal-dialog--confirm" :class="`modal-dialog--${confirmConfig.type}`">
+        <div class="confirm-body">
+          <div class="confirm-icon-wrapper" :class="`confirm-icon-wrapper--${confirmConfig.type}`">
+            <component
+              :is="confirmConfig.type === 'danger' ? Delete : (confirmConfig.type === 'warning' ? Lock : CircleCheck)"
+              class="confirm-icon"
+            />
           </div>
+          <h3 class="confirm-title">{{ confirmConfig.title }}</h3>
+          <p class="confirm-message">{{ confirmConfig.message }}</p>
         </div>
-        <div class="dialog-footer">
-          <button class="btn btn-secondary" @click="showConfirmDialog = false">取消</button>
-          <button 
-            class="btn" 
-            :class="confirmConfig.type === 'danger' ? 'btn-danger' : 'btn-primary'"
+        <div class="modal-footer modal-footer--confirm">
+          <button class="modal-btn modal-btn--cancel" @click="showConfirmDialog = false">
+            <span>取消</span>
+          </button>
+          <button
+            class="modal-btn modal-btn--confirm"
+            :class="`modal-btn--${confirmConfig.type}`"
             @click="handleConfirmAction"
           >
-            确定
+            <span>确认操作</span>
           </button>
         </div>
       </div>
@@ -556,125 +714,69 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
 
-.confirm-dialog {
-  max-width: 400px;
-}
-
-.confirm-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 16px;
-  padding: 10px 0;
-}
-
-.confirm-icon-wrapper {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.confirm-icon-wrapper.warning {
-  background: rgba(255, 107, 53, 0.1);
-  color: #FF6B35;
-}
-
-.confirm-icon-wrapper.danger {
-  background: rgba(255, 59, 48, 0.1);
-  color: #FF3B30;
-}
-
-.confirm-icon-wrapper.info {
-  background: rgba(6, 255, 165, 0.1);
-  color: #06FFA5;
-}
-
-.confirm-icon {
-  width: 30px;
-  height: 30px;
-}
-
-.confirm-message {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #FF3B30, #FF6B6B);
-  color: white;
-}
-
-.btn-danger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 59, 48, 0.4);
-}
-
+/* ============================================
+   Design Tokens & Base
+   ============================================ */
 .users-container {
+  --primary-orange: #FF6B35;
+  --primary-purple: #7B2CBF;
+  --primary-gold: #FFD700;
+  --primary-cyan: #06FFA5;
+  --bg-card: rgba(20, 20, 32, 0.6);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
 }
 
-/* 头部区域 */
-.header-section {
+/* ============================================
+   Dashboard Header
+   ============================================ */
+.dashboard-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  padding: 8px 0;
+  animation: fadeInDown 0.5s ease;
 }
 
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header-content {
+  flex: 1;
 }
 
 .header-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-title .title-icon {
-  width: 28px;
-  height: 28px;
-  color: #FF6B35;
-}
-
-.header-title h2 {
-  font-size: 20px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 28px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.header-subtitle {
+  font-size: 14px;
+  color: var(--text-tertiary);
   margin: 0;
-}
-
-.header-stats {
-  display: flex;
-  gap: 20px;
-}
-
-.header-stats .stat {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.header-stats .stat strong {
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 600;
 }
 
 .header-actions {
@@ -682,27 +784,27 @@ onMounted(() => {
   gap: 12px;
 }
 
-/* 按钮样式 */
-.btn {
+.action-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   padding: 12px 20px;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
 }
 
-.btn-icon {
+.action-btn .icon {
   width: 16px;
   height: 16px;
+  transition: transform 0.3s ease;
 }
 
-.btn-icon.spinning {
+.action-btn .icon.spinning {
   animation: spin 1s linear infinite;
 }
 
@@ -711,113 +813,262 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #FF6B35, #FF8C5A);
+.action-btn--primary {
+  background: linear-gradient(135deg, var(--primary-orange), #FF8C5A);
   color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
 }
 
-.btn-primary:hover {
+.action-btn--primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
 }
 
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+.action-btn--secondary {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+.action-btn--secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
 }
 
-.btn-search {
-  background: linear-gradient(135deg, #7B2CBF, #9D4EDD);
-  color: white;
+/* ============================================
+   Metrics Grid
+   ============================================ */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
-.btn-search:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(123, 44, 191, 0.4);
-}
-
-.btn-reset {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.btn-reset:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* 筛选区域 */
-.filter-section {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.metric-card {
+  position: relative;
+  padding: 24px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
   border-radius: 20px;
   overflow: hidden;
+  animation: metricSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 0.1s);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.filter-bar {
+@keyframes metricSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.metric-card--orange::before { background: linear-gradient(90deg, var(--primary-orange), transparent); }
+.metric-card--purple::before { background: linear-gradient(90deg, var(--primary-purple), transparent); }
+.metric-card--gold::before { background: linear-gradient(90deg, var(--primary-gold), transparent); }
+.metric-card--cyan::before { background: linear-gradient(90deg, var(--primary-cyan), transparent); }
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-default);
+}
+
+.metric-card:hover::before {
+  opacity: 1;
+}
+
+.metric-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-.search-input-wrapper {
+.metric-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.metric-card--orange .metric-icon { background: rgba(255, 107, 53, 0.15); }
+.metric-card--purple .metric-icon { background: rgba(123, 44, 191, 0.15); }
+.metric-card--gold .metric-icon { background: rgba(255, 215, 0, 0.15); }
+.metric-card--cyan .metric-icon { background: rgba(6, 255, 165, 0.15); }
+
+.metric-icon .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.metric-card--orange .metric-icon .icon { color: var(--primary-orange); }
+.metric-card--purple .metric-icon .icon { color: var(--primary-purple); }
+.metric-card--gold .metric-icon .icon { color: var(--primary-gold); }
+.metric-card--cyan .metric-icon .icon { color: var(--primary-cyan); }
+
+.metric-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 107, 53, 0.1);
+  color: var(--primary-orange);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.metric-badge--success {
+  background: rgba(6, 255, 165, 0.1);
+  color: var(--primary-cyan);
+  border-color: rgba(6, 255, 165, 0.2);
+}
+
+.metric-badge--admin {
+  background: rgba(123, 44, 191, 0.1);
+  color: var(--primary-purple);
+  border-color: rgba(123, 44, 191, 0.2);
+}
+
+.metric-badge--warning {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--primary-gold);
+  border-color: rgba(255, 215, 0, 0.2);
+}
+
+.metric-body {
+  position: relative;
+  z-index: 1;
+}
+
+.metric-label {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  margin: 0 0 8px 0;
+}
+
+.metric-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1;
+}
+
+.metric-card--orange .metric-value { color: var(--primary-orange); }
+.metric-card--purple .metric-value { color: var(--primary-purple); }
+.metric-card--gold .metric-value { color: var(--primary-gold); }
+.metric-card--cyan .metric-value { color: var(--primary-cyan); }
+
+.metric-bg {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  font-size: 72px;
+  opacity: 0.04;
+  pointer-events: none;
+  filter: blur(1px);
+}
+
+/* ============================================
+   Filter Panel
+   ============================================ */
+.filter-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  overflow: hidden;
+  animation: panelFadeIn 0.5s ease backwards;
+  animation-delay: calc(var(--i) * 0.1s + 0.2s);
+}
+
+@keyframes panelFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.filter-search {
   position: relative;
   flex: 1;
   max-width: 400px;
 }
 
-.search-icon {
+.filter-search .search-icon {
   position: absolute;
-  left: 14px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
   width: 18px;
   height: 18px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
+  pointer-events: none;
 }
 
-.search-input {
+.filter-search .search-input {
   width: 100%;
-  padding: 12px 14px 12px 44px;
+  padding: 12px 16px 12px 48px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: inherit;
   transition: all 0.3s ease;
 }
 
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+.filter-search .search-input::placeholder {
+  color: var(--text-tertiary);
 }
 
-.search-input:focus {
+.filter-search .search-input:focus {
   outline: none;
-  border-color: #FF6B35;
+  border-color: var(--primary-orange);
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
 }
 
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .filter-toggle {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -826,22 +1077,83 @@ onMounted(() => {
 
 .filter-toggle:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--border-default);
 }
 
 .filter-toggle.active {
   background: rgba(255, 107, 53, 0.1);
-  border-color: #FF6B35;
-  color: #FF6B35;
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
 }
 
-.filter-icon {
+.filter-toggle .icon {
   width: 16px;
   height: 16px;
 }
 
-.filter-panel {
-  padding: 0 20px 20px;
+.filter-toggle .filter-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--primary-orange);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-default);
+}
+
+.filter-btn--search {
+  background: linear-gradient(135deg, var(--primary-purple), #9D4EDD);
+  border: none;
+  color: white;
+}
+
+.filter-btn--search:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(123, 44, 191, 0.4);
+}
+
+.filter-btn--search .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.filter-btn--reset {
+  padding: 0 16px;
+  width: auto;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.filter-btn--reset:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-secondary);
+}
+
+.filter-body {
+  padding: 0 24px 20px;
   animation: slideDown 0.3s ease;
 }
 
@@ -856,98 +1168,201 @@ onMounted(() => {
   }
 }
 
-.filter-row {
-  display: flex;
-  gap: 20px;
-}
-
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  flex: 1;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.filter-group label {
+.filter-group:last-of-type {
+  margin-bottom: 0;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
-.filter-select,
-.form-select {
-  padding: 10px 14px;
+.filter-label .label-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+}
+
+.filter-options {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-option {
+  padding: 10px 18px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff40' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
+  transition: all 0.3s ease;
 }
 
-.filter-select:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #FF6B35;
+.filter-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-default);
 }
 
-/* 表格区域 */
-.table-section {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+.filter-option.active {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
+}
+
+.filter-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 20px 0;
+}
+
+/* ============================================
+   Users Panel
+   ============================================ */
+.users-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
   overflow: hidden;
+  animation: panelFadeIn 0.5s ease backwards;
+  animation-delay: calc(var(--i) * 0.1s + 0.3s);
 }
 
-.table-container {
+.users-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.panel-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.panel-icon-wrapper--orange {
+  background: rgba(255, 107, 53, 0.15);
+}
+
+.panel-icon-wrapper .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.panel-icon-wrapper--orange .icon {
+  color: var(--primary-orange);
+}
+
+.panel-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.panel-subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.panel-badge {
+  padding: 6px 14px;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary-orange);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ============================================
+   Users Table
+   ============================================ */
+.users-table-wrapper {
   position: relative;
   overflow-x: auto;
 }
 
-.user-table {
+.users-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.user-table thead {
+.users-table thead {
   background: rgba(0, 0, 0, 0.3);
 }
 
-.user-table th {
-  padding: 16px;
+.users-table th {
+  padding: 16px 20px;
   text-align: left;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.user-table tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+.users-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
   transition: all 0.2s ease;
+  animation: rowFadeIn 0.4s ease backwards;
+  animation-delay: calc(var(--i) * 0.03s);
 }
 
-.user-table tbody tr:hover {
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.users-table tbody tr:hover {
   background: rgba(255, 107, 53, 0.03);
 }
 
-.user-table td {
-  padding: 16px;
+.users-table td {
+  padding: 16px 20px;
 }
 
 .col-user {
-  min-width: 200px;
+  min-width: 220px;
 }
 
-.user-cell {
+.user-profile {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -957,12 +1372,39 @@ onMounted(() => {
   width: 48px;
   height: 48px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  background: linear-gradient(135deg, #7B2CBF, #FF6B35);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.user-avatar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+}
+
+.user-avatar.avatar-admin {
+  background: linear-gradient(135deg, var(--primary-purple), #9D4EDD);
+}
+
+.user-avatar.avatar-user {
+  background: linear-gradient(135deg, var(--primary-orange), var(--primary-gold));
+}
+
+.user-avatar .avatar-icon {
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .user-avatar img {
@@ -971,68 +1413,110 @@ onMounted(() => {
   object-fit: cover;
 }
 
-.avatar-placeholder {
-  width: 24px;
-  height: 24px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.user-info {
+.user-details {
   flex: 1;
 }
 
 .user-name {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.user-id {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .col-email {
   min-width: 200px;
 }
 
-.email-value {
+.email-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .col-role {
-  width: 120px;
+  width: 140px;
 }
 
-.role-badge {
-  display: inline-block;
-  padding: 6px 12px;
+.role-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
 }
 
-.col-status {
-  width: 120px;
+.role-tag--admin {
+  background: rgba(123, 44, 191, 0.15);
+  color: var(--primary-purple);
+  border: 1px solid rgba(123, 44, 191, 0.2);
 }
 
-.status-indicator {
-  display: flex;
+.role-tag--user {
+  background: rgba(255, 107, 53, 0.15);
+  color: var(--primary-orange);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.col-status {
+  width: 140px;
+}
+
+.status-badge {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
 }
 
-.status-icon {
-  width: 16px;
-  height: 16px;
+.status-badge--active {
+  background: rgba(6, 255, 165, 0.1);
+  color: var(--primary-cyan);
+  border: 1px solid rgba(6, 255, 165, 0.2);
+}
+
+.status-badge--active .status-dot {
+  background: var(--primary-cyan);
+  box-shadow: 0 0 8px var(--primary-cyan);
+}
+
+.status-badge--frozen {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--primary-gold);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.status-badge--frozen .status-dot {
+  background: var(--primary-gold);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-badge .status-icon {
+  width: 14px;
+  height: 14px;
 }
 
 .col-time {
   width: 140px;
 }
 
-.time-value {
+.time-text {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   font-family: 'JetBrains Mono', monospace;
 }
 
@@ -1041,13 +1525,13 @@ onMounted(() => {
   text-align: center;
 }
 
-.action-buttons {
+.row-actions {
   display: flex;
   justify-content: center;
   gap: 6px;
 }
 
-.action-btn {
+.row-action-btn {
   width: 36px;
   height: 36px;
   display: flex;
@@ -1059,62 +1543,62 @@ onMounted(() => {
   transition: all 0.2s ease;
 }
 
-.action-icon {
+.row-action-btn .action-icon {
   width: 16px;
   height: 16px;
 }
 
-.btn-freeze {
+.row-action-btn--freeze {
   background: rgba(255, 215, 0, 0.15);
-  color: #FFD700;
+  color: var(--primary-gold);
 }
 
-.btn-freeze:hover {
+.row-action-btn--freeze:hover {
   background: rgba(255, 215, 0, 0.3);
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
-.btn-unfreeze {
+.row-action-btn--unfreeze {
   background: rgba(6, 255, 165, 0.15);
-  color: #06FFA5;
+  color: var(--primary-cyan);
 }
 
-.btn-unfreeze:hover {
+.row-action-btn--unfreeze:hover {
   background: rgba(6, 255, 165, 0.3);
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
-.btn-password {
+.row-action-btn--password {
   background: rgba(123, 44, 191, 0.15);
-  color: #9D4EDD;
+  color: var(--primary-purple);
 }
 
-.btn-password:hover {
+.row-action-btn--password:hover {
   background: rgba(123, 44, 191, 0.3);
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
-.btn-edit {
+.row-action-btn--edit {
   background: rgba(255, 107, 53, 0.15);
-  color: #FF6B35;
+  color: var(--primary-orange);
 }
 
-.btn-edit:hover {
+.row-action-btn--edit:hover {
   background: rgba(255, 107, 53, 0.3);
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
-.btn-delete {
+.row-action-btn--delete {
   background: rgba(255, 107, 107, 0.15);
   color: #FF6B6B;
 }
 
-.btn-delete:hover {
+.row-action-btn--delete:hover {
   background: rgba(255, 107, 107, 0.3);
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
-/* 空状态 */
+/* Empty State */
 .empty-row td {
   padding: 80px 20px;
 }
@@ -1124,64 +1608,86 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-tertiary);
+}
+
+.empty-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 53, 0.05);
+  border-radius: 20px;
+  margin-bottom: 20px;
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 16px;
+  width: 40px;
+  height: 40px;
+  color: var(--text-tertiary);
   opacity: 0.5;
 }
 
-.empty-state p {
+.empty-title {
   font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
 }
 
-.empty-state small {
+.empty-desc {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--text-tertiary);
+  margin: 0;
 }
 
-/* 加载遮罩 */
-.table-loading {
+/* Loading Overlay */
+.table-loading-overlay {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 15, 26, 0.8);
+  background: rgba(13, 13, 20, 0.8);
   backdrop-filter: blur(10px);
   z-index: 10;
 }
 
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
 .loading-spinner {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #FF6B35;
+  border-top-color: var(--primary-orange);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-.table-loading p {
-  margin-top: 16px;
+.loading-content p {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
+  margin: 0;
 }
 
-/* 分页 */
-.pagination-section {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+/* Pagination */
+.users-pagination {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   justify-content: center;
 }
 
-/* 对话框 */
-.dialog-overlay {
+/* ============================================
+   Modal Dialog
+   ============================================ */
+.modal-overlay {
   position: fixed;
   inset: 0;
   display: flex;
@@ -1191,25 +1697,29 @@ onMounted(() => {
   backdrop-filter: blur(10px);
   z-index: 1000;
   padding: 20px;
+  animation: fadeIn 0.2s ease;
 }
 
-.dialog {
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-dialog {
   width: 100%;
   max-width: 480px;
-  background: linear-gradient(135deg,
-    rgba(30, 30, 46, 0.95) 0%,
-    rgba(20, 20, 32, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(30, 30, 46, 0.95), rgba(20, 20, 32, 0.98));
+  border: 1px solid var(--border-default);
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-  animation: dialogIn 0.3s ease;
+  animation: modalIn 0.3s ease;
 }
 
-@keyframes dialogIn {
+@keyframes modalIn {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(-20px);
+    transform: scale(0.95) translateY(-20px);
   }
   to {
     opacity: 1;
@@ -1217,22 +1727,73 @@ onMounted(() => {
   }
 }
 
-.dialog-header {
+.modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.dialog-header h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.modal-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.modal-icon-wrapper--add {
+  background: rgba(6, 255, 165, 0.15);
+}
+
+.modal-icon-wrapper--add .modal-icon {
+  color: var(--primary-cyan);
+}
+
+.modal-icon-wrapper--edit {
+  background: rgba(255, 107, 53, 0.15);
+}
+
+.modal-icon-wrapper--edit .modal-icon {
+  color: var(--primary-orange);
+}
+
+.modal-icon-wrapper--password {
+  background: rgba(123, 44, 191, 0.15);
+}
+
+.modal-icon-wrapper--password .modal-icon {
+  color: var(--primary-purple);
+}
+
+.modal-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
-.dialog-close {
+.modal-close {
   width: 32px;
   height: 32px;
   display: flex;
@@ -1241,68 +1802,107 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.05);
   border: none;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 24px;
+  color: var(--text-tertiary);
+  font-size: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.dialog-close:hover {
+.modal-close:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
-.dialog-body {
+.modal-body {
   padding: 24px;
 }
 
-.dialog-desc {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  margin: 0 0 20px 0;
+.password-user-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 14px;
+  margin-bottom: 20px;
 }
 
-.dialog-desc strong {
-  color: #FF6B35;
+.password-user-avatar {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-purple), var(--primary-orange));
+  border-radius: 12px;
 }
 
-.form-group {
+.password-user-avatar .avatar-icon {
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.password-user-details {
+  flex: 1;
+}
+
+.password-user-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 0 0 4px 0;
+}
+
+.password-user-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary-orange);
+  margin: 0;
+}
+
+.form-field {
   margin-bottom: 16px;
 }
 
-.form-group:last-child {
+.form-field:last-child {
   margin-bottom: 0;
 }
 
-.form-group label {
-  display: block;
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
-.form-input,
-.form-select {
+.form-label .label-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+}
+
+.form-input {
   width: 100%;
   padding: 12px 16px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-size: 14px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: inherit;
   transition: all 0.3s ease;
 }
 
 .form-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-tertiary);
 }
 
-.form-input:focus,
-.form-select:focus {
+.form-input:focus {
   outline: none;
-  border-color: #FF6B35;
+  border-color: var(--primary-orange);
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
 }
 
@@ -1311,25 +1911,226 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.dialog-footer {
+.role-selector {
+  display: flex;
+  gap: 12px;
+}
+
+.role-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.role-option:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-default);
+}
+
+.role-option.active {
+  background: rgba(255, 107, 53, 0.08);
+  border-color: var(--primary-orange);
+}
+
+.role-option .role-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--text-tertiary);
+  transition: color 0.3s ease;
+}
+
+.role-option.active .role-icon {
+  color: var(--primary-orange);
+}
+
+.role-option span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.role-option.active span {
+  color: var(--primary-orange);
+}
+
+.role-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.role-check .check-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-orange);
+}
+
+.modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-subtle);
 }
 
-.dialog-footer .btn {
-  min-width: 80px;
+.modal-footer--confirm {
+  justify-content: center;
+  padding: 0 24px 24px;
+  border-top: none;
 }
 
-/* 响应式 */
-@media (max-width: 1200px) {
-  .filter-row {
-    flex-direction: column;
+.modal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  min-width: 100px;
+}
+
+.modal-btn--cancel {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.modal-btn--cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-btn--confirm {
+  background: linear-gradient(135deg, var(--primary-orange), #FF8C5A);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.modal-btn--confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+}
+
+.modal-btn--warning {
+  background: linear-gradient(135deg, var(--primary-gold), #FFA500);
+  color: #1a1a1a;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.modal-btn--warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+}
+
+.modal-btn--danger {
+  background: linear-gradient(135deg, #FF3B30, #FF6B6B);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3);
+}
+
+.modal-btn--danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 59, 48, 0.4);
+}
+
+/* Confirm Dialog */
+.modal-dialog--confirm {
+  max-width: 420px;
+}
+
+.modal-dialog--confirm .modal-header {
+  display: none;
+}
+
+.confirm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.confirm-icon-wrapper {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-bottom: 20px;
+}
+
+.confirm-icon-wrapper--warning {
+  background: rgba(255, 215, 0, 0.15);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.confirm-icon-wrapper--warning .confirm-icon {
+  color: var(--primary-gold);
+}
+
+.confirm-icon-wrapper--danger {
+  background: rgba(255, 59, 48, 0.15);
+  border: 2px solid rgba(255, 59, 48, 0.3);
+}
+
+.confirm-icon-wrapper--danger .confirm-icon {
+  color: #FF3B30;
+}
+
+.confirm-icon-wrapper--info {
+  background: rgba(6, 255, 165, 0.15);
+  border: 2px solid rgba(6, 255, 165, 0.3);
+}
+
+.confirm-icon-wrapper--info .confirm-icon {
+  color: var(--primary-cyan);
+}
+
+.confirm-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.confirm-title {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.confirm-message {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 1400px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .header-section {
+@media (max-width: 1024px) {
+  .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
@@ -1342,31 +2143,48 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .filter-bar {
-    flex-wrap: wrap;
+  .metrics-grid {
+    grid-template-columns: 1fr;
   }
 
-  .search-input-wrapper {
+  .filter-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-search {
     max-width: 100%;
-    order: 1;
+  }
+
+  .filter-actions {
+    justify-content: space-between;
   }
 
   .filter-toggle {
-    order: 2;
+    flex: 1;
+    justify-content: center;
   }
 
-  .btn-search,
-  .btn-reset {
-    order: 3;
-  }
-
-  .header-actions {
+  .filter-options {
     flex-wrap: wrap;
   }
 
-  .btn {
-    flex: 1;
-    min-width: 120px;
+  .users-table {
+    font-size: 14px;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 12px 16px;
+  }
+
+  .role-selector {
+    flex-direction: column;
+  }
+
+  .modal-dialog {
+    max-width: 100%;
+    margin: 20px;
   }
 }
 </style>
