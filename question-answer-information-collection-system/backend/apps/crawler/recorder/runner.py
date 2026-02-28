@@ -422,9 +422,130 @@ class Runner:
             list_item: 列表页提取的基础数据
             detail_data: 详情页提取的完整数据
         """
-        # Task 6 会完善数据保存逻辑
-        # 这里先占位，使用 pass
-        pass
+        try:
+            # 获取详情页URL
+            url = list_item.get('detail_url', '')
+
+            # 1. 从 URL 提取 question_id
+            match = re.search(r'/q/(\d+)', url)
+            question_id = match.group(1) if match else list_item.get('id')
+
+            if not question_id:
+                logger.warning(f"Cannot extract question_id from URL: {url}")
+                return
+
+            # 转换时间格式 (YYYY.MM.DD -> date)
+            time_str = list_item.get('time', '')
+            publish_time = None
+            if time_str:
+                try:
+                    publish_time = datetime.strptime(time_str, '%Y.%m.%d').date()
+                except ValueError:
+                    pass
+
+            # 2. 创建或更新 Question
+            # 使用 asyncio.to_thread 处理同步 Django ORM
+            await asyncio.to_thread(
+                self._save_question,
+                question_id=question_id,
+                list_item=list_item,
+                detail_data=detail_data,
+                url=url,
+                publish_time=publish_time
+            )
+
+            logger.info(f"Saved question {question_id} to database")
+
+        except Exception as e:
+            logger.error(f"Failed to save to database: {e}")
+            # 不抛出异常，避免中断爬取流程
+
+    def _save_question(
+        self,
+        question_id: str,
+        list_item: Dict,
+        detail_data: Dict,
+        url: str,
+        publish_time
+    ) -> None:
+        """
+        同步保存问题到数据库（内部方法）
+
+        Args:
+            question_id: 问题ID
+            list_item: 列表页数据
+            detail_data: 详情页数据
+            url: 详情页URL
+            publish_time: 发布时间
+        """
+        from django.db import close_old_connections
+
+        try:
+            # 构建 Question 默认值
+            # title 从列表项获取，description 从详情页获取
+            question_defaults = {
+                'title': list_item.get('title', ''),
+                'description': detail_data.get('description', ''),
+                'category': list_item.get('category', ''),
+                'source_url': url,
+                'answer_count': len(detail_data.get('answers', [])),
+                'publish_time': publish_time,
+                'location': list_item.get('location', ''),
+                'crawl_page': list_item.get('page', 1),
+            }
+
+            # 创建或更新 Question
+            question, created = Question.objects.update_or_create(
+                question_id=question_id,
+                defaults=question_defaults
+            )
+
+            # 3. 保存答案
+            self._save_answers(question, detail_data)
+
+        finally:
+            # 关闭旧连接，避免异步环境下的连接问题
+            close_old_connections()
+
+    def _save_answers(self, question: Question, detail_data: Dict) -> None:
+        """
+        保存答案到数据库（内部方法）
+
+        Args:
+            question: Question 实例
+            detail_data: 详情页数据
+        """
+        answers_data = detail_data.get('answers', [])
+
+        for answer_data in answers_data:
+            try:
+                # 转换时间格式
+                answer_time = None
+                time_text = answer_data.get('time', '')
+                if time_text:
+                    try:
+                        # 尝试多种常见时间格式
+                        for fmt in ['%Y.%m.%d', '%Y-%m-%d', '%Y/%m/%d']:
+                            try:
+                                answer_time = datetime.strptime(time_text, fmt)
+                                break
+                            except ValueError:
+                                continue
+                    except Exception:
+                        pass
+
+                Answer.objects.update_or_create(
+                    question=question,
+                    source_order=answer_data.get('order', 1),
+                    defaults={
+                        'content': answer_data.get('content', ''),
+                        'answerer': answer_data.get('answerer', ''),
+                        'answer_time': answer_time,
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Failed to save answer: {e}")
+                continue
 
     async def _click_next_page(self, config: Dict) -> bool:
         """
