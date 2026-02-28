@@ -438,34 +438,31 @@ const handleRegister = async () => {
 /* ============================================
    Design Tokens - 清新自然
    ============================================ */
-:root {
-  --primary-green: #2D6A4F;
-  --primary-green-light: #40916C;
-  --primary-green-lighter: #52B788;
-  --accent-green: #74C69D;
-  --accent-blue: #00B4D8;
-  --accent-blue-light: #90E0EF;
-  --bg-cream: #FAFAF9;
-  --bg-sand: #F5F5F4;
-  --bg-card: #FFFFFF;
-  --text-primary: #1C1917;
-  --text-secondary: #57534E;
-  --text-tertiary: #A8A29E;
-  --border-light: #E7E5E4;
-  --border-focus: #74C69D;
-  --shadow-soft: 0 4px 20px rgba(45, 106, 79, 0.08);
-  --shadow-hover: 0 8px 30px rgba(45, 106, 79, 0.12);
-}
-
-/* ============================================
-   Container
-   ============================================ */
 .login-container {
+  /* Variables */
+  --login-primary: #2D6A4F;
+  --login-primary-light: #40916C;
+  --login-primary-lighter: #52B788;
+  --login-accent-green: #74C69D;
+  --login-accent-blue: #00B4D8;
+  --login-accent-blue-light: #90E0EF;
+  --login-bg-cream: #FAFAF9;
+  --login-bg-sand: #F5F5F4;
+  --login-bg-card: #FFFFFF;
+  --login-text-primary: #1C1917;
+  --login-text-secondary: #57534E;
+  --login-text-tertiary: #A8A29E;
+  --login-border-light: #E7E5E4;
+  --login-border-focus: #74C69D;
+  --login-shadow-soft: 0 4px 20px rgba(45, 106, 79, 0.08);
+  --login-shadow-hover: 0 8px 30px rgba(45, 106, 79, 0.12);
+
+  /* Layout */
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-cream);
+  background: var(--login-bg-cream);
   font-family: 'Nunito', 'Noto Serif SC', -apple-system, sans-serif;
   position: relative;
   overflow: hidden;
@@ -635,7 +632,7 @@ const handleRegister = async () => {
   font-family: 'Noto Serif SC', serif;
   font-size: 40px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--login-text-primary);
   margin: 0 0 12px 0;
   letter-spacing: -0.02em;
   line-height: 1.3;
@@ -643,7 +640,7 @@ const handleRegister = async () => {
 
 .brand-tagline {
   font-size: 16px;
-  color: var(--text-secondary);
+  color: var(--login-text-secondary);
   margin: 0 0 48px 0;
   font-weight: 400;
   font-family: 'Nunito', sans-serif;
@@ -661,7 +658,7 @@ const handleRegister = async () => {
   gap: 16px;
   padding: 18px 20px;
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--login-border-light);
   border-radius: 16px;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
@@ -669,8 +666,8 @@ const handleRegister = async () => {
 
 .feature-card:hover {
   background: rgba(255, 255, 255, 0.9);
-  border-color: var(--accent-green);
-  box-shadow: var(--shadow-soft);
+  border-color: var(--login-accent-green);
+  box-shadow: var(--login-shadow-soft);
   transform: translateX(8px);
 }
 
@@ -680,32 +677,32 @@ const handleRegister = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--accent-green), var(--primary-green-lighter));
+  background: linear-gradient(135deg, var(--login-accent-green), var(--login-primary-lighter));
   border-radius: 12px;
   color: white;
   flex-shrink: 0;
 }
 
 .feature-card:nth-child(2) .feature-icon {
-  background: linear-gradient(135deg, var(--accent-blue-light), var(--accent-blue));
+  background: linear-gradient(135deg, var(--login-accent-blue-light), var(--login-accent-blue));
 }
 
 .feature-card:nth-child(3) .feature-icon {
-  background: linear-gradient(135deg, var(--primary-green-lighter), var(--primary-green-light));
+  background: linear-gradient(135deg, var(--login-primary-lighter), var(--login-primary-light));
 }
 
 .feature-title {
   display: block;
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--login-text-primary);
   margin-bottom: 2px;
 }
 
 .feature-desc {
   display: block;
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--login-text-tertiary);
 }
 
 .deco-number {
@@ -733,7 +730,7 @@ const handleRegister = async () => {
 .auth-card {
   width: 100%;
   max-width: 440px;
-  background: var(--bg-card);
+  background: var(--login-bg-card);
   border-radius: 28px;
   padding: 40px;
   box-shadow:
@@ -763,17 +760,17 @@ const handleRegister = async () => {
 }
 
 .deco-leaf-1 {
-  background: var(--primary-green-lighter);
+  background: var(--login-primary-lighter);
   animation-delay: 0s;
 }
 
 .deco-leaf-2 {
-  background: var(--accent-green);
+  background: var(--login-accent-green);
   animation-delay: 0.5s;
 }
 
 .deco-leaf-3 {
-  background: var(--accent-blue-light);
+  background: var(--login-accent-blue-light);
   animation-delay: 1s;
 }
 
@@ -806,13 +803,13 @@ const handleRegister = async () => {
   font-family: 'Noto Serif SC', serif;
   font-size: 24px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--login-text-primary);
   margin: 0 0 4px 0;
 }
 
 .card-subtitle {
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--login-text-tertiary);
   margin: 0;
   font-family: 'Nunito', sans-serif;
 }
@@ -821,11 +818,11 @@ const handleRegister = async () => {
 .tab-switcher {
   position: relative;
   display: flex;
-  background: var(--bg-sand);
+  background: var(--login-bg-sand);
   border-radius: 14px;
   padding: 4px;
   margin-bottom: 28px;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--login-border-light);
 }
 
 .tab-btn {
@@ -838,14 +835,20 @@ const handleRegister = async () => {
   font-family: 'Nunito', sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: #78716C; /* 使用更深的灰色 */
   transition: all 0.3s ease;
   position: relative;
   z-index: 1;
 }
 
+.tab-btn:hover {
+  color: #1C1917; /* 悬浮时使用深黑色 */
+  background: rgba(45, 106, 79, 0.06); /* 添加浅绿色背景 */
+}
+
 .tab-btn.active {
-  color: var(--primary-green);
+  color: var(--login-primary);
+  font-weight: 700;
 }
 
 .tab-indicator {
@@ -877,7 +880,7 @@ const handleRegister = async () => {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--login-text-secondary);
   margin-bottom: 8px;
   font-family: 'Nunito', sans-serif;
 }
@@ -893,45 +896,51 @@ const handleRegister = async () => {
   left: 14px;
   width: 20px;
   height: 20px;
-  color: var(--text-tertiary);
+  color: var(--login-text-tertiary);
   transition: color 0.3s ease;
   z-index: 1;
 }
 
 .field-input :deep(.el-input__wrapper) {
-  background: var(--bg-sand);
-  border: 1px solid var(--border-light);
+  background: #FFFFFF;
+  border: 2px solid var(--login-border-light);
   border-radius: 12px;
   padding: 0 14px 0 46px;
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   min-height: 48px;
 }
 
 .field-input :deep(.el-input__wrapper:hover) {
-  border-color: var(--accent-green);
-  background: white;
+  border-color: #52B788;
+  background: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(45, 106, 79, 0.1);
 }
 
 .field-input :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--primary-green-light);
-  background: white;
-  box-shadow: 0 0 0 4px rgba(116, 198, 157, 0.1);
+  border-color: #2D6A4F;
+  background: #FFFFFF !important;
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.25), 0 2px 8px rgba(45, 106, 79, 0.15);
+}
+
+.field-input :deep(.el-input__wrapper.is-focus .el-input__inner) {
+  color: var(--login-text-primary) !important;
 }
 
 .field-input :deep(.el-input__inner) {
-  color: var(--text-primary);
+  color: var(--login-text-primary);
   font-size: 14px;
   font-weight: 500;
   font-family: inherit;
 }
 
 .field-input :deep(.el-input__inner::placeholder) {
-  color: var(--text-tertiary);
+  color: var(--login-text-tertiary);
 }
 
 .field-input-wrapper:focus-within .field-icon {
-  color: var(--primary-green-light);
+  color: var(--login-primary);
+  transform: scale(1.1);
 }
 
 /* Submit Button */
@@ -941,14 +950,14 @@ const handleRegister = async () => {
   margin-top: 16px;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--primary-green-light), var(--primary-green));
+  background: linear-gradient(135deg, var(--login-primary-light), var(--login-primary));
   color: white;
   font-size: 15px;
   font-weight: 700;
   font-family: 'Nunito', sans-serif;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--login-shadow-soft);
   position: relative;
   overflow: hidden;
 }
@@ -957,7 +966,7 @@ const handleRegister = async () => {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, var(--primary-green-lighter), var(--primary-green-light));
+  background: linear-gradient(135deg, var(--login-primary-lighter), var(--login-primary-light));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -981,7 +990,7 @@ const handleRegister = async () => {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--login-shadow-hover);
 }
 
 .submit-btn:active:not(:disabled) {
@@ -1033,13 +1042,13 @@ const handleRegister = async () => {
 
 .footer-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+  background: linear-gradient(90deg, transparent, var(--login-border-light), transparent);
   margin-bottom: 16px;
 }
 
 .footer-text {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: var(--login-text-tertiary);
   margin: 0;
   font-family: 'Nunito', sans-serif;
 }
