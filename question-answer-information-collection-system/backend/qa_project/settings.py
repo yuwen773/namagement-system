@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.crawler.apps.CrawlerConfig",
     "apps.api.apps.ApiConfig",
     "apps.notices.apps.NoticesConfig",
+    "apps.feedbacks.apps.FeedbacksConfig",
 ]
 
 MIDDLEWARE = [

@@ -29,8 +29,10 @@ urlpatterns = [
     ),
     # JWT Auth URLs (will be added by accounts app)
     path("api/auth/", include("apps.accounts.urls")),
-    # Crawler API URLs
-    path("api/", include("apps.api.urls")),
     # Notices API URLs
     path("api/notices/", include("apps.notices.urls")),
+    # Feedbacks API URLs
+    path("api/feedbacks/", include("apps.feedbacks.urls")),
+    # Crawler API URLs (keep last as it has root-level routes)
+    path("api/", include("apps.api.urls")),
 ]

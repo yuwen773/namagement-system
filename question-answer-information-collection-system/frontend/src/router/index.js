@@ -5,6 +5,7 @@ import Dashboard from '@/views/Dashboard.vue'
 import DataCenter from '@/views/DataCenter.vue'
 import UserManagement from '@/views/UserManagement.vue'
 import NoticeManagement from '@/views/NoticeManagement.vue'
+import FeedbackManagement from '@/views/FeedbackManagement.vue'
 import Profile from '@/views/Profile.vue'
 import Register from '@/views/Register.vue'
 
@@ -71,6 +72,13 @@ const routes = [
     name: 'NoticeManagement',
     component: NoticeManagement,
     meta: { requiresAuth: true, title: '通知公告' }
+  },
+  // Feedback Management - accessible to all authenticated users
+  {
+    path: '/feedbacks',
+    name: 'FeedbackManagement',
+    component: FeedbackManagement,
+    meta: { requiresAuth: true, title: '反馈建议' }
   },
   // Profile - accessible to all
   {
