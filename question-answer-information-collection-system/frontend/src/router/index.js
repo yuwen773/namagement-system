@@ -8,6 +8,8 @@ import NoticeManagement from '@/views/NoticeManagement.vue'
 import FeedbackManagement from '@/views/FeedbackManagement.vue'
 import Profile from '@/views/Profile.vue'
 import Register from '@/views/Register.vue'
+import Recorder from '@/views/crawler/Recorder.vue'
+import TaskManager from '@/views/crawler/TaskManager.vue'
 
 // Routes with lazy loading
 const routes = [
@@ -86,6 +88,20 @@ const routes = [
     name: 'Profile',
     component: Profile,
     meta: { requiresAuth: true, title: '个人中心' }
+  },
+  // Crawler - Recorder
+  {
+    path: '/crawler/recorder',
+    name: 'Recorder',
+    component: Recorder,
+    meta: { requiresAuth: true, roles: ['admin'], layout: 'admin', title: '录制管理' }
+  },
+  // Crawler - Task Manager
+  {
+    path: '/crawler/tasks',
+    name: 'TaskManager',
+    component: TaskManager,
+    meta: { requiresAuth: true, roles: ['admin'], layout: 'admin', title: '任务管理' }
   }
 ]
 
