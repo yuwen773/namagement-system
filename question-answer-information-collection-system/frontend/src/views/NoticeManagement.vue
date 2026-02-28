@@ -263,28 +263,6 @@
       </div>
     </section>
 
-      <!-- Pagination -->
-      <div class="pagination-wrapper" v-if="total > 0">
-        <div class="pagination-info">
-          显示第 <span class="info-highlight">{{ (currentPage - 1) * pageSize + 1 }}</span> 到
-          <span class="info-highlight">{{ Math.min(currentPage * pageSize, total) }}</span> 条，
-          共 <span class="info-highlight">{{ total }}</span> 条
-        </div>
-        <div class="pagination-controls">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[10, 20, 50]"
-            :total="total"
-            layout="prev, pager, next, sizes, jumper"
-            background
-            @size-change="handleSizeChange"
-            @current-change="handlePageChange"
-          />
-        </div>
-      </div>
-    </section>
-
     <!-- Add/Edit Notice Dialog -->
     <el-dialog
       v-model="dialogVisible"

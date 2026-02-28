@@ -97,10 +97,6 @@
             还没有账号？
             <router-link to="/register" class="link">立即注册</router-link>
           </p>
-          <p class="demo-hint">
-            <span class="hint-icon">●</span>
-            演示账号: <code>admin</code> / <code>admin123</code>
-          </p>
         </div>
       </div>
     </div>
