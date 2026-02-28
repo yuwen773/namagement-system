@@ -734,22 +734,27 @@ class StatisticsTrendView(APIView):
 
         try:
             # 按日期分组统计问答数量
-            trend_data = (
-                Question.objects
-                .annotate(date=TruncDate('created_at'))
-                .filter(date__isnull=False)
-                .values('date')
-                .annotate(count=Count('id'))
-                .order_by('date')
-            )
+            # 优先使用 publish_time（问题的发布时间），如果没有则使用 created_at（入库时间）
+            from django.db.models import Count
+            from collections import defaultdict
 
-            # 转换为列表格式
+            # 使用 publish_time 进行统计
+            trend_dict = defaultdict(int)
+
+            # 获取所有有 publish_time 的记录
+            questions_with_date = Question.objects.filter(
+                publish_time__isnull=False
+            ).values_list('publish_time', flat=True)
+
+            for date in questions_with_date:
+                # publish_time 是 DateField，直接使用
+                date_str = date.strftime('%Y-%m-%d')
+                trend_dict[date_str] += 1
+
+            # 转换为排序列表
             trend_list = [
-                {
-                    "date": item['date'].strftime('%Y-%m-%d'),
-                    "count": item['count']
-                }
-                for item in trend_data
+                {"date": date, "count": count}
+                for date, count in sorted(trend_dict.items())
             ]
 
             return Response(
