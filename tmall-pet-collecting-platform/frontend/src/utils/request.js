@@ -41,7 +41,7 @@ const refreshToken = async () => {
     const response = await axiosWithoutInterceptor.post('/api/users/token/refresh/', {
       refresh
     })
-    const newAccessToken = response.data.access
+    const newAccessToken = response.data.access_token
     localStorage.setItem('access_token', newAccessToken)
     return newAccessToken
   } catch (error) {
