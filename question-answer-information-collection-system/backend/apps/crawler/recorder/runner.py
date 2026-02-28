@@ -68,8 +68,25 @@ class Runner:
         self._is_paused = False
         self._should_stop = False
 
+        # User-Agent 列表
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+        ]
+
         # 加载任务配置
         self._load_task()
+
+    def _get_user_agent(self) -> str:
+        """
+        获取随机 User-Agent
+
+        Returns:
+            随机选择的 User-Agent 字符串
+        """
+        return random.choice(self.user_agents)
 
     def _load_task(self) -> None:
         """加载任务配置"""
@@ -108,7 +125,7 @@ class Runner:
 
             # 设置 User-Agent
             await self.page.set_extra_http_headers({
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0'
+                'User-Agent': self._get_user_agent()
             })
 
             # 设置运行标志
@@ -120,6 +137,10 @@ class Runner:
 
             # 执行采集主循环
             await self._run()
+
+            # 完成任务（标记任务完成状态）
+            self.task_manager.complete_task(self.task_id)
+            logger.info(f"Task {self.task_id} completed")
 
             return True
 
@@ -136,81 +157,87 @@ class Runner:
 
         logger.info(f"Starting crawl from page {current_page}, max pages: {max_pages}")
 
-        while not self._should_stop:
-            # 检查暂停状态
-            while self._is_paused and not self._should_stop:
-                await asyncio.sleep(0.5)
+        try:
+            while not self._should_stop:
+                # 检查暂停状态
+                while self._is_paused and not self._should_stop:
+                    await asyncio.sleep(0.5)
 
-            if self._should_stop:
-                break
-
-            # 检查是否达到最大页数
-            if current_page > max_pages:
-                logger.info(f"Reached max pages: {max_pages}")
-                break
-
-            # 构建列表页 URL
-            list_url = self._build_list_url(current_page)
-
-            try:
-                # 提取列表数据
-                list_items = await self._extract_list({
-                    'url': list_url,
-                    'page': current_page
-                })
-
-                if not list_items:
-                    logger.warning(f"No items found on page {current_page}, stopping")
+                if self._should_stop:
                     break
 
-                # 处理每个列表项
-                for item in list_items:
-                    if self._should_stop:
-                        break
-
-                    # 检查暂停状态
-                    while self._is_paused and not self._should_stop:
-                        await asyncio.sleep(0.5)
-
-                    if self._should_stop:
-                        break
-
-                    try:
-                        # 获取详情页 URL
-                        detail_url = item.get('detail_url')
-                        if not detail_url:
-                            continue
-
-                        # 处理详情页
-                        await self._process_detail(detail_url, item)
-
-                    except Exception as e:
-                        logger.error(f"Failed to process detail: {e}")
-                        self.task_manager.add_error(self.task_id, f"Detail error: {e}")
-                        self.task_manager.update_progress(
-                            self.task_id,
-                            failed_items=self.status.get('progress', {}).get('failed_items', 0) + 1
-                        )
-
-                    # 智能间隔
-                    await self._smart_interval()
-
-                # 更新页码
-                current_page += 1
-                self.task_manager.update_progress(self.task_id, current_page=current_page)
-
-                # 点击下一页
-                if not await self._click_next_page({'page': current_page}):
-                    logger.info("No more pages available")
+                # 检查是否达到最大页数
+                if current_page > max_pages:
+                    logger.info(f"Reached max pages: {max_pages}")
                     break
 
-            except Exception as e:
-                logger.error(f"Error on page {current_page}: {e}")
-                self.task_manager.add_error(self.task_id, f"Page {current_page} error: {e}")
-                current_page += 1
+                # 构建列表页 URL
+                list_url = self._build_list_url(current_page)
 
-        # 完成任务
-        await self._complete()
+                try:
+                    # 提取列表数据
+                    list_items = await self._extract_list({
+                        'url': list_url,
+                        'page': current_page
+                    })
+
+                    if not list_items:
+                        logger.warning(f"No items found on page {current_page}, stopping")
+                        break
+
+                    # 处理每个列表项
+                    for item in list_items:
+                        if self._should_stop:
+                            break
+
+                        # 检查暂停状态
+                        while self._is_paused and not self._should_stop:
+                            await asyncio.sleep(0.5)
+
+                        if self._should_stop:
+                            break
+
+                        try:
+                            # 获取详情页 URL
+                            detail_url = item.get('detail_url')
+                            if not detail_url:
+                                continue
+
+                            # 处理详情页
+                            await self._process_detail(detail_url, item)
+
+                        except Exception as e:
+                            logger.error(f"Failed to process detail: {e}")
+                            self.task_manager.add_error(self.task_id, f"Detail error: {e}")
+                            self.task_manager.update_progress(
+                                self.task_id,
+                                failed_items=self.status.get('progress', {}).get('failed_items', 0) + 1
+                            )
+
+                        # 智能间隔
+                        await self._smart_interval()
+
+                    # 更新页码
+                    current_page += 1
+                    self.task_manager.update_progress(self.task_id, current_page=current_page)
+
+                    # 点击下一页
+                    if not await self._click_next_page({'page': current_page}):
+                        logger.info("No more pages available")
+                        break
+
+                except Exception as e:
+                    logger.error(f"Error on page {current_page}: {e}")
+                    self.task_manager.add_error(self.task_id, f"Page {current_page} error: {e}")
+                    current_page += 1
+
+        except Exception as e:
+            logger.error(f"Fatal error in _run: {e}")
+            self.task_manager.add_error(self.task_id, f"Fatal error: {e}")
+            raise
+        finally:
+            # 确保资源清理
+            await self._cleanup()
 
     def _build_list_url(self, page: int) -> str:
         """
@@ -327,14 +354,14 @@ class Runner:
             # 打开新标签页访问详情页
             detail_page = await self.browser.new_page()
             await detail_page.set_extra_http_headers({
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0'
+                'User-Agent': self._get_user_agent()
             })
 
             try:
                 await detail_page.goto(url, wait_until='domcontentloaded', timeout=30000)
 
-                # 等待页面加载
-                await asyncio.sleep(1)
+                # 等待页面加载完成（使用 Playwright 显式等待）
+                await detail_page.wait_for_load_state('networkidle', timeout=15000)
 
                 # 提取详情数据
                 detail_data = await detail_page.evaluate('''
