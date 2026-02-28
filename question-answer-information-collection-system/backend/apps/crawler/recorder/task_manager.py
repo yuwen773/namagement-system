@@ -52,7 +52,7 @@ class TaskManager:
 
     def _validate_filename(self, filename: str) -> str:
         """验证文件名，防止路径遍历攻击"""
-        if '..' in filename or os.sep in filename or '/' in filename or '\\' in filename:
+        if '..' in filename or os.sep in filename or '/' in filename:
             raise ValueError("Invalid filename: path traversal not allowed")
         # 禁止特殊字符
         if any(c in filename for c in ['<', '>', ':', '"', '|', '?', '*']):
@@ -191,8 +191,10 @@ class TaskManager:
             if key in ['current_page', 'total_pages', 'items_collected', 'failed_items', 'last_item_index']:
                 if not isinstance(value, int) or value < 0:
                     raise ValueError(f"Invalid value for {key}: must be a non-negative integer")
+            if key == 'last_detail_url':
+                if value is not None and not isinstance(value, str):
+                    raise ValueError(f"Invalid value for {key}: must be a string or None")
             task_status['progress'][key] = value
-            task_status[key] = value
 
         task_status['updated_at'] = datetime.now().isoformat() + 'Z'
         self._save_task_status(task_id, task_status)
