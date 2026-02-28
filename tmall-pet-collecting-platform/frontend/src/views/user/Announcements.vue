@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 import { announcementApi } from '@/api'
 import Pagination from '@/components/common/Pagination.vue'
 import {
-  Bell, Top, Refresh, Sparkles
+  Bell, Top, Refresh, Star
 } from '@element-plus/icons-vue'
 
 const announcements = ref([])
@@ -124,7 +124,7 @@ onMounted(() => {
       </div>
       <div class="hero-content">
         <div class="hero-badge">
-          <Sparkles :size="16" />
+          <Star :size="16" />
           <span>系统公告</span>
         </div>
         <h1 class="hero-title">公告中心</h1>

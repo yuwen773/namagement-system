@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminAnnouncementApi } from '@/api'
-import { ArrowLeft, Check, View, Sparkles } from '@element-plus/icons-vue'
+import { ArrowLeft, Check, View } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
