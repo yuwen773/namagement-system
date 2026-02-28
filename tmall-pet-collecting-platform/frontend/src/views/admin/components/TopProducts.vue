@@ -49,7 +49,9 @@ const formatNumber = (num) => {
   <div class="top-products">
     <div class="section-header">
       <div class="header-left">
-        <Trophy class="header-icon" />
+        <div class="header-icon-wrapper">
+          <Trophy class="header-icon" />
+        </div>
         <div class="header-text">
           <h3 class="section-title">热门商品排行</h3>
           <p class="section-subtitle">市场热门商品追踪与对比</p>
@@ -115,17 +117,17 @@ const formatNumber = (num) => {
         <div class="product-metrics">
           <div class="metric-group">
             <div class="metric-label">{{ activeSort === 'sales' ? '销量' : '价格' }}</div>
-            <div class="metric-value">
+            <div class="metric-value primary">
               {{ activeSort === 'sales' ? formatNumber(product.sales) : formatPrice(product.price) }}
             </div>
           </div>
           <div v-if="activeSort === 'sales'" class="metric-group">
             <div class="metric-label">价格</div>
-            <div class="metric-value">{{ formatPrice(product.price) }}</div>
+            <div class="metric-value secondary">{{ formatPrice(product.price) }}</div>
           </div>
           <div v-else class="metric-group">
             <div class="metric-label">销量</div>
-            <div class="metric-value">{{ formatNumber(product.sales) }}</div>
+            <div class="metric-value secondary">{{ formatNumber(product.sales) }}</div>
           </div>
         </div>
 
@@ -141,24 +143,28 @@ const formatNumber = (num) => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Base Section
+   Base Section - 清新自然风格
    ============================================ */
 .top-products {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --primary-gold: #FFD700;
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --primary-green: #2D6A4F;
+  --primary-teal: #40916C;
+  --primary-light: #52B788;
+  --accent-green: #74C69D;
+  --accent-blue: #00B4D8;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
 
-  background: rgba(20, 20, 32, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(45, 106, 79, 0.06);
 }
 
 /* ============================================
@@ -168,21 +174,32 @@ const formatNumber = (num) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #F5F5F4 0%, transparent 100%);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+}
+
+.header-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1), rgba(116, 198, 157, 0.08));
+  border-radius: 10px;
+  border: 1px solid rgba(116, 198, 157, 0.2);
 }
 
 .header-icon {
-  width: 22px;
-  height: 22px;
-  color: var(--primary-gold);
+  width: 18px;
+  height: 18px;
+  color: var(--primary-green);
 }
 
 .header-text {
@@ -192,7 +209,7 @@ const formatNumber = (num) => {
 }
 
 .section-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
@@ -200,7 +217,7 @@ const formatNumber = (num) => {
 }
 
 .section-subtitle {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 11px;
   color: var(--text-tertiary);
   margin: 0;
@@ -218,30 +235,31 @@ const formatNumber = (num) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 12px;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s ease;
+  font-family: inherit;
 }
 
 .sort-tab:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 107, 53, 0.2);
-  color: var(--text-primary);
+  background: #F5F5F4;
+  border-color: var(--accent-green);
+  color: var(--primary-green);
 }
 
 .sort-tab--active {
   background: linear-gradient(135deg,
-    rgba(255, 107, 53, 0.15),
-    rgba(123, 44, 191, 0.15));
-  border-color: rgba(255, 107, 53, 0.3);
-  color: var(--primary-orange);
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.15);
+    rgba(45, 106, 79, 0.1),
+    rgba(116, 198, 157, 0.08));
+  border-color: var(--accent-green);
+  color: var(--primary-green);
+  box-shadow: 0 4px 15px rgba(116, 198, 157, 0.2);
 }
 
 .tab-icon {
@@ -253,36 +271,38 @@ const formatNumber = (num) => {
    Products List
    ============================================ */
 .products-list {
-  padding: 20px 24px;
+  padding: 18px 22px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .product-card {
   display: grid;
-  grid-template-columns: auto 72px 1fr auto;
+  grid-template-columns: auto 68px 1fr auto;
   gap: 14px;
   align-items: center;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.04);
 }
 
 .product-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 107, 53, 0.15);
-  transform: translateX(3px);
+  background: #F5F5F4;
+  border-color: var(--accent-green);
+  transform: translateX(4px);
+  box-shadow: 0 6px 20px rgba(45, 106, 79, 0.1);
 }
 
 .product-card--top {
   background: linear-gradient(135deg,
-    rgba(255, 215, 0, 0.06) 0%,
-    rgba(255, 107, 53, 0.03) 100%);
-  border-color: rgba(255, 215, 0, 0.15);
+    rgba(45, 106, 79, 0.04) 0%,
+    rgba(116, 198, 157, 0.02) 100%);
+  border-color: rgba(116, 198, 157, 0.3);
 }
 
 .product-rank {
@@ -295,7 +315,8 @@ const formatNumber = (num) => {
   font-size: 16px;
   font-weight: 700;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #F5F5F4;
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
@@ -326,8 +347,8 @@ const formatNumber = (num) => {
 }
 
 .product-image {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   flex-shrink: 0;
 }
 
@@ -336,7 +357,7 @@ const formatNumber = (num) => {
   height: 100%;
   object-fit: cover;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-light);
 }
 
 .image-placeholder {
@@ -345,15 +366,15 @@ const formatNumber = (num) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: #F5F5F4;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-light);
 }
 
 .placeholder-icon {
   width: 28px;
   height: 28px;
-  color: rgba(255, 255, 255, 0.15);
+  color: var(--text-tertiary);
 }
 
 .product-info {
@@ -364,7 +385,7 @@ const formatNumber = (num) => {
 }
 
 .product-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
@@ -416,11 +437,18 @@ const formatNumber = (num) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
   font-weight: 700;
-  color: var(--primary-orange);
 }
 
-.product-card--top .metric-value {
-  color: var(--primary-gold);
+.metric-value.primary {
+  color: var(--primary-green);
+}
+
+.metric-value.secondary {
+  color: var(--text-secondary);
+}
+
+.product-card--top .metric-value.primary {
+  color: var(--accent-green);
 }
 
 .product-decoration {
@@ -430,8 +458,8 @@ const formatNumber = (num) => {
   bottom: 0;
   width: 3px;
   background: linear-gradient(180deg,
-    rgba(255, 107, 53, 0.6) 0%,
-    rgba(123, 44, 191, 0.6) 100%);
+    var(--primary-green) 0%,
+    var(--accent-green) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -456,7 +484,7 @@ const formatNumber = (num) => {
 }
 
 .empty-text {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 13px;
   margin: 0;
 }

@@ -18,43 +18,43 @@ const menuItems = computed(() => [
     path: '/admin/dashboard',
     icon: DataBoard,
     title: '数据概览',
-    color: '#FF6B35'
+    color: '#2D6A4F'
   },
   {
     path: '/admin/statistics',
     icon: Histogram,
     title: '数据分析',
-    color: '#7B2CBF'
+    color: '#40916C'
   },
   {
     path: '/admin/crawler',
     icon: TrendCharts,
     title: '数据采集',
-    color: '#FFD700'
+    color: '#52B788'
   },
   {
     path: '/admin/crawler/config',
     icon: Setting,
     title: '爬虫配置',
-    color: '#06FFA5'
+    color: '#74C69D'
   },
   {
     path: '/admin/products',
     icon: ShoppingCart,
     title: '商品管理',
-    color: '#FF6B35'
+    color: '#00B4D8'
   },
   {
     path: '/admin/users',
     icon: User,
     title: '用户管理',
-    color: '#7B2CBF'
+    color: '#90E0EF'
   },
   {
     path: '/admin/announcements',
     icon: Bell,
     title: '公告管理',
-    color: '#FFD700'
+    color: '#2D6A4F'
   }
 ])
 
@@ -84,6 +84,38 @@ const handleLogout = () => {
 
 <template>
   <div class="admin-layout">
+    <!-- 自然背景装饰 -->
+    <div class="layout-background">
+      <div class="paper-texture"></div>
+      <div class="ambient-glow glow-1"></div>
+      <div class="ambient-glow glow-2"></div>
+
+      <!-- 叶片装饰 -->
+      <div class="leaf-decoration leaf-left">
+        <svg viewBox="0 0 80 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M40 10C40 10 70 30 70 60C70 90 55 110 40 110C25 110 10 90 10 60C10 30 40 10 40 10Z" fill="url(#leafGradLeft)" opacity="0.08"/>
+          <path d="M40 10L40 110" stroke="url(#leafGradLeft)" stroke-width="1" opacity="0.15"/>
+          <defs>
+            <linearGradient id="leafGradLeft" x1="40" y1="10" x2="40" y2="110">
+              <stop offset="0%" stop-color="#52B788"/>
+              <stop offset="100%" stop-color="#2D6A4F"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="leaf-decoration leaf-right">
+        <svg viewBox="0 0 60 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 8C30 8 52 24 52 50C52 76 40 92 30 92C20 92 8 76 8 50C8 24 30 8 30 8Z" fill="url(#leafGradRight)" opacity="0.06"/>
+          <defs>
+            <linearGradient id="leafGradRight" x1="30" y1="8" x2="30" y2="92">
+              <stop offset="0%" stop-color="#90E0EF"/>
+              <stop offset="100%" stop-color="#00B4D8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
     <!-- Sidebar -->
     <aside :class="['sidebar', { 'is-collapsed': isCollapsed }]">
       <!-- Sidebar Header -->
@@ -92,16 +124,25 @@ const handleLogout = () => {
           <div v-if="!isCollapsed" class="logo-full">
             <div class="logo-icon">
               <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="56" height="56" rx="16" fill="url(#adminLogoGrad)"/>
-                <g transform="translate(14, 11)">
-                  <path d="M14 4 L24 14 L14 24 L4 14 Z" fill="white"/>
-                  <path d="M10 24 L14 28 L18 24" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  <circle cx="14" cy="14" r="4" fill="#FF6B35"/>
+                <circle cx="28" cy="28" r="26" fill="url(#sidebarLogoBg)" fill-opacity="0.15"/>
+                <circle cx="28" cy="28" r="26" stroke="url(#sidebarLogoBorder)" stroke-width="1.5"/>
+                <g transform="translate(28, 28)">
+                  <path d="M0 -14C0 -14 12 -6 12 6C12 16 6 18 0 18C-6 18 -12 16 -12 6C-12 -6 0 -14 0 -14Z" fill="url(#sidebarLogoLeaf)"/>
+                  <path d="M0 -14L0 18" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+                  <circle cx="0" cy="-14" r="3" fill="#52B788"/>
                 </g>
                 <defs>
-                  <linearGradient id="adminLogoGrad" x1="0" y1="0" x2="56" y2="56">
-                    <stop offset="0%" stop-color="#FF6B35"/>
-                    <stop offset="100%" stop-color="#7B2CBF"/>
+                  <linearGradient id="sidebarLogoBg" x1="2" y1="2" x2="54" y2="54">
+                    <stop offset="0%" stop-color="#52B788"/>
+                    <stop offset="100%" stop-color="#2D6A4F"/>
+                  </linearGradient>
+                  <linearGradient id="sidebarLogoBorder" x1="2" y1="2" x2="54" y2="54">
+                    <stop offset="0%" stop-color="#74C69D"/>
+                    <stop offset="100%" stop-color="#40916C"/>
+                  </linearGradient>
+                  <linearGradient id="sidebarLogoLeaf" x1="-12" y1="-14" x2="12" y2="18">
+                    <stop offset="0%" stop-color="#74C69D"/>
+                    <stop offset="100%" stop-color="#40916C"/>
                   </linearGradient>
                 </defs>
               </svg>
@@ -114,17 +155,25 @@ const handleLogout = () => {
         </transition>
         <transition name="logo-shrink">
           <div v-if="isCollapsed" class="logo-mini">
-            <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="56" height="56" rx="16" fill="url(#adminLogoGradMini)"/>
-              <g transform="translate(14, 11)">
-                <path d="M14 4 L24 14 L14 24 L4 14 Z" fill="white"/>
-                <path d="M10 24 L14 28 L18 24" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="14" cy="14" r="4" fill="#FF6B35"/>
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="22" fill="url(#miniLogoBg)" fill-opacity="0.15"/>
+              <circle cx="24" cy="24" r="22" stroke="url(#miniLogoBorder)" stroke-width="1.5"/>
+              <g transform="translate(24, 24)">
+                <path d="M0 -12C0 -12 10 -5 10 5C10 14 5 16 0 16C-5 16 -10 14 -10 5C-10 -5 0 -12 0 -12Z" fill="url(#miniLogoLeaf)"/>
+                <circle cx="0" cy="-12" r="2.5" fill="#52B788"/>
               </g>
               <defs>
-                <linearGradient id="adminLogoGradMini" x1="0" y1="0" x2="56" y2="56">
-                  <stop offset="0%" stop-color="#FF6B35"/>
-                  <stop offset="100%" stop-color="#7B2CBF"/>
+                <linearGradient id="miniLogoBg" x1="2" y1="2" x2="46" y2="46">
+                  <stop offset="0%" stop-color="#52B788"/>
+                  <stop offset="100%" stop-color="#2D6A4F"/>
+                </linearGradient>
+                <linearGradient id="miniLogoBorder" x1="2" y1="2" x2="46" y2="46">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#40916C"/>
+                </linearGradient>
+                <linearGradient id="miniLogoLeaf" x1="-10" y1="-12" x2="10" y2="16">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#40916C"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -142,11 +191,13 @@ const handleLogout = () => {
           :class="{ active: isActive(item.path) }"
           :style="{ '--nav-color': item.color }"
         >
-          <component :is="item.icon" class="nav-icon" />
+          <div class="nav-icon-wrapper">
+            <component :is="item.icon" class="nav-icon" />
+          </div>
           <transition name="nav-text">
             <span v-if="!isCollapsed" class="nav-label">{{ item.title }}</span>
           </transition>
-          <span class="nav-glow" :style="{ background: item.color }"></span>
+          <span class="nav-indicator" :style="{ background: item.color }"></span>
         </router-link>
       </nav>
 
@@ -158,6 +209,15 @@ const handleLogout = () => {
             <span v-if="!isCollapsed" class="collapse-label">收起侧边栏</span>
           </transition>
         </button>
+
+        <!-- 装饰小植物 -->
+        <div v-if="!isCollapsed" class="footer-plant">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path d="M20 35V15" stroke="#74C69D" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M20 25C20 25 28 20 28 14C28 10 25 8 20 8C15 8 12 10 12 14C12 20 20 25 20 25Z" fill="#74C69D" fill-opacity="0.2"/>
+            <path d="M20 18C20 18 26 15 26 10C26 7 23 5 20 5C17 5 14 7 14 10C14 15 20 18 20 18Z" fill="#52B788" fill-opacity="0.3"/>
+          </svg>
+        </div>
       </div>
     </aside>
 
@@ -166,8 +226,15 @@ const handleLogout = () => {
       <!-- Top Header -->
       <header class="top-header">
         <div class="header-left">
-          <h1 class="page-title">{{ route.meta.title || '管理控制台' }}</h1>
-          <span class="page-breadcrumb">控制台 / {{ route.meta.title || '首页' }}</span>
+          <div class="page-info">
+            <h1 class="page-title">{{ route.meta.title || '管理控制台' }}</h1>
+            <span class="page-breadcrumb">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 2L2 7L7 12M12 7H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              控制台 / {{ route.meta.title || '首页' }}
+            </span>
+          </div>
         </div>
 
         <div class="header-right">
@@ -210,29 +277,105 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Design Tokens
+   Design Tokens - 清新自然
    ============================================ */
 .admin-layout {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --bg-primary: #0D0D14;
-  --bg-sidebar: rgba(15, 15, 24, 0.95);
-  --bg-elevated: rgba(255, 255, 255, 0.03);
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 107, 53, 0.3);
+  --primary-green: #2D6A4F;
+  --primary-green-light: #40916C;
+  --primary-green-lighter: #52B788;
+  --accent-green: #74C69D;
+  --accent-blue: #00B4D8;
+  --accent-blue-light: #90E0EF;
+  --bg-cream: #FAFAF9;
+  --bg-sand: #F5F5F4;
+  --bg-sidebar: rgba(255, 255, 255, 0.9);
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
+  --border-focus: #74C69D;
+  --shadow-soft: 0 4px 20px rgba(45, 106, 79, 0.08);
+  --shadow-hover: 0 8px 30px rgba(45, 106, 79, 0.12);
 
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-primary);
-  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg-cream);
+  font-family: 'Nunito', 'Noto Serif SC', -apple-system, sans-serif;
+  position: relative;
+}
+
+/* ============================================
+   Layout Background
+   ============================================ */
+.layout-background {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.paper-texture {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+.ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  animation: ambientDrift 40s ease-in-out infinite;
+}
+
+.glow-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(82, 183, 136, 0.15) 0%, transparent 70%);
+  top: -150px;
+  right: -150px;
+  animation-delay: 0s;
+}
+
+.glow-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(144, 224, 239, 0.12) 0%, transparent 70%);
+  bottom: -100px;
+  left: -100px;
+  animation-delay: -20s;
+}
+
+@keyframes ambientDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -20px) scale(1.05); }
+  50% { transform: translate(-20px, 30px) scale(0.95); }
+  75% { transform: translate(20px, 20px) scale(1.02); }
+}
+
+.leaf-decoration {
+  position: absolute;
+  opacity: 0.5;
+}
+
+.leaf-left {
+  top: 20%;
+  left: 280px;
+  width: 100px;
+  height: 150px;
+}
+
+.leaf-right {
+  bottom: 15%;
+  right: 60px;
+  width: 80px;
+  height: 133px;
 }
 
 /* ============================================
@@ -241,7 +384,7 @@ const handleLogout = () => {
 .sidebar {
   width: 280px;
   background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -261,7 +404,8 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   padding: 0 20px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, rgba(116, 198, 157, 0.03) 0%, transparent 100%);
 }
 
 .logo-full {
@@ -271,10 +415,15 @@ const handleLogout = () => {
 }
 
 .logo-icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
-  filter: drop-shadow(0 4px 16px rgba(255, 107, 53, 0.3));
+  animation: logoBreath 6s ease-in-out infinite;
+}
+
+@keyframes logoBreath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 .logo-icon svg {
@@ -285,23 +434,23 @@ const handleLogout = () => {
 .logo-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .logo-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 15px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary-orange), #FFD700);
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-lighter));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1;
 }
 
 .logo-badge {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -309,14 +458,13 @@ const handleLogout = () => {
 }
 
 .logo-mini {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
 }
 
 .logo-mini svg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 4px 12px rgba(255, 107, 53, 0.25));
 }
 
 /* Navigation */
@@ -339,7 +487,7 @@ const handleLogout = () => {
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: var(--border-default);
+  background: var(--border-light);
   border-radius: 2px;
 }
 
@@ -348,9 +496,9 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  color: var(--text-tertiary);
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
@@ -362,13 +510,14 @@ const handleLogout = () => {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--bg-elevated);
+  background: var(--bg-sand);
   opacity: 0;
   transition: opacity 0.3s ease;
+  border-radius: 12px;
 }
 
 .nav-item:hover {
-  color: var(--text-secondary);
+  color: var(--primary-green);
 }
 
 .nav-item:hover::before {
@@ -377,41 +526,52 @@ const handleLogout = () => {
 
 .nav-item.active {
   color: white;
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(123, 44, 191, 0.15));
+  background: linear-gradient(135deg, var(--nav-color), color-mix(in srgb, var(--nav-color) 85%, black));
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.15);
 }
 
-.nav-item.active .nav-icon {
-  color: var(--nav-color);
-  filter: drop-shadow(0 0 12px var(--nav-color));
+.nav-item.active .nav-icon-wrapper {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.nav-item.active .nav-glow {
+.nav-item.active .nav-indicator {
   opacity: 1;
 }
 
-.nav-icon {
-  width: 20px;
-  height: 20px;
+.nav-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-sand);
+  border-radius: 10px;
   flex-shrink: 0;
+  transition: all 0.3s ease;
   position: relative;
   z-index: 1;
-  transition: all 0.3s ease;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .nav-label {
+  flex: 1;
   position: relative;
   z-index: 1;
   white-space: nowrap;
+  font-family: 'Noto Serif SC', serif;
 }
 
-.nav-glow {
+.nav-indicator {
   position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 24px;
-  border-radius: 0 4px 4px 0;
+  right: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -419,7 +579,8 @@ const handleLogout = () => {
 /* Sidebar Footer */
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-light);
+  position: relative;
 }
 
 .collapse-btn {
@@ -428,19 +589,20 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 14px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: 14px;
-  color: var(--text-tertiary);
+  padding: 12px;
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s ease;
+  font-family: 'Nunito', sans-serif;
 }
 
 .collapse-btn:hover {
-  background: rgba(255, 107, 53, 0.08);
-  border-color: var(--border-hover);
-  color: var(--primary-orange);
+  background: rgba(116, 198, 157, 0.1);
+  border-color: var(--accent-green);
+  color: var(--primary-green);
 }
 
 .collapse-btn .icon {
@@ -455,6 +617,20 @@ const handleLogout = () => {
   white-space: nowrap;
 }
 
+.footer-plant {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.6;
+  animation: plantSway 4s ease-in-out infinite;
+}
+
+@keyframes plantSway {
+  0%, 100% { transform: translateX(-50%) rotate(-2deg); }
+  50% { transform: translateX(-50%) rotate(2deg); }
+}
+
 /* ============================================
    Main Wrapper
    ============================================ */
@@ -464,21 +640,7 @@ const handleLogout = () => {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-}
-
-/* Background Decoration */
-.main-wrapper::before {
-  content: '';
-  position: absolute;
-  top: -200px;
-  right: -200px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(255, 107, 53, 0.08) 0%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 /* Top Header */
@@ -488,32 +650,44 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 32px;
-  background: rgba(13, 13, 20, 0.8);
+  padding: 16px 32px;
+  background: rgba(250, 250, 249, 0.9);
   backdrop-filter: blur(24px);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .header-left {
   display: flex;
+  align-items: center;
+}
+
+.page-info {
+  display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .page-title {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 24px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .page-breadcrumb {
-  font-family: 'Outfit', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Nunito', sans-serif;
   font-size: 12px;
   color: var(--text-tertiary);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
+}
+
+.page-breadcrumb svg {
+  flex-shrink: 0;
 }
 
 .header-right {
@@ -527,15 +701,16 @@ const handleLogout = () => {
   align-items: center;
   gap: 12px;
   padding: 8px 16px 8px 8px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.04);
 }
 
 .user-profile:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-hover);
+  box-shadow: var(--shadow-soft);
+  border-color: var(--accent-green);
 }
 
 .user-avatar {
@@ -544,7 +719,7 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
+  background: linear-gradient(135deg, var(--primary-green-light), var(--primary-green-lighter));
   border-radius: 12px;
 }
 
@@ -564,12 +739,14 @@ const handleLogout = () => {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
+  font-family: 'Noto Serif SC', serif;
 }
 
 .user-role {
   font-size: 11px;
   color: var(--text-tertiary);
   font-weight: 500;
+  font-family: 'Nunito', sans-serif;
 }
 
 .logout-btn {
@@ -578,18 +755,18 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .logout-btn:hover {
-  color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.3);
-  background: rgba(255, 107, 107, 0.08);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
 }
 
 .logout-btn .icon {
@@ -602,7 +779,7 @@ const handleLogout = () => {
   flex: 1;
   position: relative;
   z-index: 1;
-  padding: 32px;
+  padding: 28px 32px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -616,12 +793,12 @@ const handleLogout = () => {
 }
 
 .main-content::-webkit-scrollbar-thumb {
-  background: var(--border-default);
+  background: var(--border-light);
   border-radius: 4px;
 }
 
 .main-content::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: var(--accent-green);
 }
 
 /* ============================================
@@ -693,11 +870,38 @@ const handleLogout = () => {
   .sidebar {
     position: absolute;
     height: 100%;
+    box-shadow: var(--shadow-hover);
   }
 
   .sidebar.is-collapsed {
     width: 280px;
     transform: translateX(-100%);
+  }
+
+  .leaf-left {
+    display: none;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-header {
+    padding: 12px 16px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .user-info {
+    display: none;
+  }
+
+  .main-content {
+    padding: 16px;
   }
 }
 </style>

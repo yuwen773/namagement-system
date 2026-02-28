@@ -17,6 +17,9 @@ const topBrands = computed(() => {
   return props.data?.slice(0, 8) || []
 })
 
+// 清新自然风格配色
+const natureColors = ['#2D6A4F', '#40916C', '#52B788', '#74C69D', '#00B4D8', '#90E0EF']
+
 const initChart = () => {
   if (!chartRef.value || !topBrands.value.length) return
 
@@ -30,19 +33,19 @@ const initChart = () => {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(15, 15, 26, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#E7E5E4',
       borderWidth: 1,
-      textStyle: { color: '#fff', fontSize: 13 },
+      textStyle: { color: '#1C1917', fontSize: 13 },
       formatter: (params) => {
         const brand = params[0].name
         const item = topBrands.value.find(b => b.brand === brand)
         return `
           <div style="padding: 8px;">
-            <div style="font-weight: 600; margin-bottom: 8px;">${brand}</div>
-            <div>商品数: ${item?.count || 0}</div>
-            <div>均价: ¥${item?.price?.avg?.toFixed(2) || '0'}</div>
-            <div>均销量: ${Math.round(item?.sales?.avg || 0)}</div>
+            <div style="font-weight: 600; margin-bottom: 8px; color: #1C1917;">${brand}</div>
+            <div style="color: #57534E;">商品数: ${item?.count || 0}</div>
+            <div style="color: #57534E;">均价: ¥${item?.price?.avg?.toFixed(2) || '0'}</div>
+            <div style="color: #57534E;">均销量: ${Math.round(item?.sales?.avg || 0)}</div>
           </div>
         `
       }
@@ -55,21 +58,21 @@ const initChart = () => {
       shape: 'polygon',
       splitNumber: 4,
       axisName: {
-        color: 'rgba(255, 255, 255, 0.7)',
+        color: '#57534E',
         fontSize: 11,
-        fontFamily: 'Exo 2, sans-serif'
+        fontFamily: 'Noto Serif SC, serif'
       },
       splitLine: {
-        lineStyle: { color: 'rgba(255, 255, 255, 0.1)' }
+        lineStyle: { color: '#E7E5E4' }
       },
       splitArea: {
         show: true,
         areaStyle: {
-          color: ['rgba(255, 107, 53, 0.05)', 'rgba(123, 44, 191, 0.05)']
+          color: ['rgba(45, 106, 79, 0.03)', 'rgba(116, 198, 157, 0.03)']
         }
       },
       axisLine: {
-        lineStyle: { color: 'rgba(255, 255, 255, 0.15)' }
+        lineStyle: { color: '#E7E5E4' }
       }
     },
     series: [{
@@ -79,16 +82,16 @@ const initChart = () => {
         name: '品牌分布',
         areaStyle: {
           color: new echarts.graphic.RadialGradient(0.5, 0.5, 1, [
-            { offset: 0, color: 'rgba(255, 107, 53, 0.4)' },
-            { offset: 1, color: 'rgba(123, 44, 191, 0.2)' }
+            { offset: 0, color: 'rgba(45, 106, 79, 0.4)' },
+            { offset: 1, color: 'rgba(116, 198, 157, 0.2)' }
           ])
         },
         lineStyle: {
           width: 2,
-          color: '#FF6B35'
+          color: '#2D6A4F'
         },
         itemStyle: {
-          color: '#FF6B35'
+          color: '#2D6A4F'
         },
         symbol: 'circle',
         symbolSize: 6
@@ -131,7 +134,9 @@ const formatNumber = (num) => {
   <div class="brand-analysis">
     <div class="section-header">
       <div class="header-left">
-        <Collection class="header-icon" />
+        <div class="header-icon-wrapper">
+          <Collection class="header-icon" />
+        </div>
         <div class="header-text">
           <h3 class="section-title">品牌分析</h3>
           <p class="section-subtitle">品牌分布与市场占有率</p>
@@ -182,8 +187,8 @@ const formatNumber = (num) => {
               :style="{
                 width: `${(brand.count / topBrands[0].count) * 100}%`,
                 background: index < 3
-                  ? `linear-gradient(90deg, #${['FF6B35', '7B2CBF', 'FFD700'][index]}, #${['FF8C42', '9D4EDD', 'FFED4E'][index]})`
-                  : 'rgba(255, 255, 255, 0.1)'
+                  ? `linear-gradient(90deg, ${natureColors[index]}, ${natureColors[index + 1]})`
+                  : '#E7E5E4'
               }"
             ></div>
           </div>
@@ -194,29 +199,33 @@ const formatNumber = (num) => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Base Analysis
+   Base Analysis - 清新自然风格
    ============================================ */
 .brand-analysis {
-  --primary-purple: #7B2CBF;
-  --primary-orange: #FF6B35;
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --primary-green: #2D6A4F;
+  --primary-teal: #40916C;
+  --primary-light: #52B788;
+  --accent-green: #74C69D;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
 
-  background: rgba(20, 20, 32, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
   overflow: hidden;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(45, 106, 79, 0.06);
 }
 
 .brand-analysis:hover {
-  border-color: rgba(123, 44, 191, 0.15);
-  box-shadow: 0 10px 40px rgba(123, 44, 191, 0.08);
+  box-shadow: 0 8px 30px rgba(45, 106, 79, 0.12);
+  transform: translateY(-2px);
 }
 
 /* ============================================
@@ -226,21 +235,32 @@ const formatNumber = (num) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #F5F5F4 0%, transparent 100%);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+}
+
+.header-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1), rgba(116, 198, 157, 0.08));
+  border-radius: 10px;
+  border: 1px solid rgba(116, 198, 157, 0.2);
 }
 
 .header-icon {
-  width: 22px;
-  height: 22px;
-  color: var(--primary-purple);
+  width: 18px;
+  height: 18px;
+  color: var(--primary-green);
 }
 
 .header-text {
@@ -250,7 +270,7 @@ const formatNumber = (num) => {
 }
 
 .section-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
@@ -258,7 +278,7 @@ const formatNumber = (num) => {
 }
 
 .section-subtitle {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 11px;
   color: var(--text-tertiary);
   margin: 0;
@@ -266,12 +286,12 @@ const formatNumber = (num) => {
 
 .header-badge {
   padding: 6px 14px;
-  background: rgba(123, 44, 191, 0.1);
-  border: 1px solid rgba(123, 44, 191, 0.2);
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1), rgba(116, 198, 157, 0.08));
+  border: 1px solid rgba(116, 198, 157, 0.3);
   border-radius: 20px;
   font-size: 10px;
-  font-weight: 600;
-  color: #9D4EDD;
+  font-weight: 700;
+  color: var(--primary-green);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -280,7 +300,7 @@ const formatNumber = (num) => {
    Analysis Content
    ============================================ */
 .analysis-content {
-  padding: 20px 24px;
+  padding: 18px 22px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
@@ -311,7 +331,7 @@ const formatNumber = (num) => {
 }
 
 .empty-text {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 13px;
   margin: 0;
 }
@@ -333,17 +353,17 @@ const formatNumber = (num) => {
 }
 
 .brand-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+  background: #F5F5F4;
   border-radius: 3px;
 }
 
 .brand-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: #E7E5E4;
   border-radius: 3px;
 }
 
 .brand-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: #D6D3D1;
 }
 
 .brand-item {
@@ -351,23 +371,23 @@ const formatNumber = (num) => {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
   transition: all 0.3s ease;
 }
 
 .brand-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(123, 44, 191, 0.15);
+  background: #F5F5F4;
+  border-color: var(--accent-green);
   transform: translateX(3px);
 }
 
 .brand-item--top {
   background: linear-gradient(135deg,
-    rgba(123, 44, 191, 0.08) 0%,
-    rgba(255, 107, 53, 0.04) 100%);
-  border-color: rgba(123, 44, 191, 0.15);
+    rgba(45, 106, 79, 0.05) 0%,
+    rgba(116, 198, 157, 0.03) 100%);
+  border-color: rgba(116, 198, 157, 0.3);
 }
 
 .brand-rank {
@@ -380,7 +400,7 @@ const formatNumber = (num) => {
   font-size: 12px;
   font-weight: 700;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: #F5F5F4;
   color: var(--text-tertiary);
   flex-shrink: 0;
 }
@@ -412,7 +432,7 @@ const formatNumber = (num) => {
 }
 
 .brand-name {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -445,7 +465,7 @@ const formatNumber = (num) => {
 .brand-bar {
   width: 60px;
   height: 3px;
-  background: rgba(255, 255, 255, 0.05);
+  background: #F5F5F4;
   border-radius: 2px;
   overflow: hidden;
   flex-shrink: 0;

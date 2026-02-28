@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import { TrendCharts } from '@element-plus/icons-vue'
 
@@ -24,6 +24,9 @@ const props = defineProps({
 
 const chartRef = ref(null)
 let chartInstance = null
+
+// 清新自然风格配色
+const natureColors = ['#2D6A4F', '#40916C', '#52B788', '#74C69D', '#00B4D8', '#90E0EF']
 
 const initChart = () => {
   if (!chartRef.value || !props.data) return
@@ -54,23 +57,21 @@ const initChart = () => {
 }
 
 const getPriceDistributionOption = () => {
-  const colors = ['#FF6B35', '#FF8C42', '#FFAD5D', '#7B2CBF', '#9D4EDD', '#C77DFF']
-
   return {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(15, 15, 26, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#E7E5E4',
       borderWidth: 1,
-      textStyle: { color: '#fff', fontSize: 13 },
+      textStyle: { color: '#1C1917', fontSize: 13 },
       formatter: '{b}<br/>数量: {c}<br/>占比: {d}%'
     },
     legend: {
       orient: 'vertical',
       right: '5%',
       top: 'center',
-      textStyle: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
+      textStyle: { color: '#57534E', fontSize: 12 },
       itemGap: 12
     },
     series: [{
@@ -80,12 +81,12 @@ const getPriceDistributionOption = () => {
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 12,
-        borderColor: '#0f0f1a',
+        borderColor: '#FFFFFF',
         borderWidth: 3
       },
       label: {
         show: true,
-        color: 'rgba(255,255,255,0.8)',
+        color: '#57534E',
         fontSize: 13,
         formatter: '{b}\n{d}%'
       },
@@ -94,11 +95,11 @@ const getPriceDistributionOption = () => {
         itemStyle: {
           shadowBlur: 20,
           shadowOffsetX: 0,
-          shadowColor: 'rgba(255, 107, 53, 0.5)'
+          shadowColor: 'rgba(45, 106, 79, 0.3)'
         }
       },
       labelLine: {
-        lineStyle: { color: 'rgba(255,255,255,0.3)' },
+        lineStyle: { color: '#A8A29E' },
         smooth: 0.3,
         length: 15,
         length2: 10
@@ -106,7 +107,7 @@ const getPriceDistributionOption = () => {
       data: props.data.map((item, index) => ({
         value: item.count,
         name: item.range,
-        itemStyle: { color: colors[index % colors.length] }
+        itemStyle: { color: natureColors[index % natureColors.length] }
       }))
     }]
   }
@@ -118,10 +119,10 @@ const getSalesDistributionOption = () => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(15, 15, 26, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#E7E5E4',
       borderWidth: 1,
-      textStyle: { color: '#fff', fontSize: 13 }
+      textStyle: { color: '#1C1917', fontSize: 13 }
     },
     grid: {
       left: '3%',
@@ -132,9 +133,9 @@ const getSalesDistributionOption = () => {
     },
     xAxis: {
       type: 'value',
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
-      axisLabel: { color: 'rgba(255,255,255,0.5)' },
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+      axisLine: { lineStyle: { color: '#E7E5E4' } },
+      axisLabel: { color: '#A8A29E' },
+      splitLine: { lineStyle: { color: '#F5F5F4', type: 'dashed' } }
     },
     yAxis: {
       type: 'category',
@@ -142,7 +143,7 @@ const getSalesDistributionOption = () => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: 'rgba(255,255,255,0.7)',
+        color: '#57534E',
         fontSize: 12
       }
     },
@@ -152,9 +153,8 @@ const getSalesDistributionOption = () => {
         value: item.count,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: index % 2 === 0 ? '#7B2CBF' : '#FF6B35' },
-            { offset: 0.5, color: index % 2 === 0 ? '#9D4EDD' : '#FF8C42' },
-            { offset: 1, color: index % 2 === 0 ? '#C77DFF' : '#FFAD5D' }
+            { offset: 0, color: natureColors[index % natureColors.length] },
+            { offset: 1, color: natureColors[(index + 1) % natureColors.length] }
           ]),
           borderRadius: [0, 8, 8, 0]
         }
@@ -163,14 +163,14 @@ const getSalesDistributionOption = () => {
       label: {
         show: true,
         position: 'right',
-        color: 'rgba(255,255,255,0.8)',
+        color: '#57534E',
         fontSize: 12,
         formatter: '{c}'
       },
       emphasis: {
         itemStyle: {
           shadowBlur: 15,
-          shadowColor: 'rgba(255, 107, 53, 0.4)'
+          shadowColor: 'rgba(45, 106, 79, 0.3)'
         }
       }
     }]
@@ -182,10 +182,10 @@ const getCorrelationOption = () => {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(15, 15, 26, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#E7E5E4',
       borderWidth: 1,
-      textStyle: { color: '#fff', fontSize: 13 },
+      textStyle: { color: '#1C1917', fontSize: 13 },
       formatter: (params) => {
         const param = params[0]
         return `${param.name}<br/>商品数: ${param.value[1]}<br/>平均销量: ${param.value[2]}`
@@ -201,9 +201,9 @@ const getCorrelationOption = () => {
     xAxis: {
       type: 'category',
       data: props.data.map(d => d.price_range),
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+      axisLine: { lineStyle: { color: '#E7E5E4' } },
       axisLabel: {
-        color: 'rgba(255,255,255,0.6)',
+        color: '#A8A29E',
         fontSize: 11,
         rotate: 30
       },
@@ -215,15 +215,15 @@ const getCorrelationOption = () => {
         name: '商品数',
         position: 'left',
         axisLine: { show: false },
-        axisLabel: { color: 'rgba(255,255,255,0.5)' },
-        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+        axisLabel: { color: '#A8A29E' },
+        splitLine: { lineStyle: { color: '#F5F5F4' } }
       },
       {
         type: 'value',
         name: '平均销量',
         position: 'right',
         axisLine: { show: false },
-        axisLabel: { color: 'rgba(255,255,255,0.5)' },
+        axisLabel: { color: '#A8A29E' },
         splitLine: { show: false }
       }
     ],
@@ -234,8 +234,8 @@ const getCorrelationOption = () => {
         data: props.data.map(d => d.count),
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(123, 44, 191, 0.8)' },
-            { offset: 1, color: 'rgba(123, 44, 191, 0.3)' }
+            { offset: 0, color: 'rgba(45, 106, 79, 0.8)' },
+            { offset: 1, color: 'rgba(45, 106, 79, 0.3)' }
           ]),
           borderRadius: [8, 8, 0, 0]
         },
@@ -251,19 +251,19 @@ const getCorrelationOption = () => {
         symbolSize: 8,
         lineStyle: {
           width: 3,
-          color: '#FF6B35',
-          shadowColor: 'rgba(255, 107, 53, 0.5)',
+          color: '#00B4D8',
+          shadowColor: 'rgba(0, 180, 216, 0.5)',
           shadowBlur: 10
         },
         itemStyle: {
-          color: '#FF6B35',
+          color: '#00B4D8',
           borderColor: '#fff',
           borderWidth: 2
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(255, 107, 53, 0.4)' },
-            { offset: 1, color: 'rgba(255, 107, 53, 0)' }
+            { offset: 0, color: 'rgba(0, 180, 216, 0.4)' },
+            { offset: 1, color: 'rgba(0, 180, 216, 0)' }
           ])
         }
       }
@@ -299,7 +299,9 @@ onMounted(() => {
   <div class="chart-section">
     <div class="section-header">
       <div class="header-left">
-        <TrendCharts class="header-icon" />
+        <div class="header-icon-wrapper">
+          <TrendCharts class="header-icon" />
+        </div>
         <div class="header-text">
           <h3 class="section-title">{{ title }}</h3>
           <p class="section-subtitle">{{ subtitle }}</p>
@@ -319,29 +321,33 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Base Section
+   Base Section - 清新自然风格
    ============================================ */
 .chart-section {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --primary-green: #2D6A4F;
+  --primary-teal: #40916C;
+  --primary-light: #52B788;
+  --accent-green: #74C69D;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
 
-  background: rgba(20, 20, 32, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
   overflow: hidden;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(45, 106, 79, 0.06);
 }
 
 .chart-section:hover {
-  border-color: rgba(255, 107, 53, 0.15);
-  box-shadow: 0 10px 40px rgba(255, 107, 53, 0.08);
+  box-shadow: 0 8px 30px rgba(45, 106, 79, 0.12);
+  transform: translateY(-2px);
 }
 
 /* ============================================
@@ -351,21 +357,32 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #F5F5F4 0%, transparent 100%);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+}
+
+.header-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1), rgba(116, 198, 157, 0.08));
+  border-radius: 10px;
+  border: 1px solid rgba(116, 198, 157, 0.2);
 }
 
 .header-icon {
-  width: 22px;
-  height: 22px;
-  color: var(--primary-orange);
+  width: 18px;
+  height: 18px;
+  color: var(--primary-green);
 }
 
 .header-text {
@@ -375,7 +392,7 @@ onMounted(() => {
 }
 
 .section-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
@@ -383,7 +400,7 @@ onMounted(() => {
 }
 
 .section-subtitle {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 11px;
   color: var(--text-tertiary);
   margin: 0;
@@ -391,12 +408,12 @@ onMounted(() => {
 
 .header-badge {
   padding: 6px 14px;
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid rgba(255, 107, 53, 0.2);
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1), rgba(116, 198, 157, 0.08));
+  border: 1px solid rgba(116, 198, 157, 0.3);
   border-radius: 20px;
   font-size: 10px;
-  font-weight: 600;
-  color: var(--primary-orange);
+  font-weight: 700;
+  color: var(--primary-green);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -405,7 +422,7 @@ onMounted(() => {
    Chart Container
    ============================================ */
 .chart-container {
-  padding: 20px 24px;
+  padding: 18px 22px;
   min-height: 350px;
   position: relative;
 }
@@ -431,7 +448,7 @@ onMounted(() => {
 }
 
 .empty-text {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 13px;
   margin: 0;
 }
@@ -441,14 +458,14 @@ onMounted(() => {
    ============================================ */
 @media (max-width: 768px) {
   .section-header {
-    padding: 18px 20px;
+    padding: 16px 18px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
+    gap: 12px;
   }
 
   .chart-container {
-    padding: 18px 20px;
+    padding: 16px 18px;
     min-height: 280px;
   }
 

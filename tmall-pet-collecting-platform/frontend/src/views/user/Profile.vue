@@ -3,7 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { authApi } from '@/api'
-import { User, Lock, Camera, Check, Close } from '@element-plus/icons-vue'
+import { User, Lock, Camera, Check, Close, Leaf, Sprout } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 
@@ -143,7 +143,22 @@ onMounted(() => {
       <div class="header-content">
         <div class="header-left">
           <div class="header-icon-wrapper">
-            <User class="header-icon" />
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="28" cy="28" r="26" fill="url(#profileHeaderGrad)" fill-opacity="0.15"/>
+              <path d="M28 12C28 12 38 18 38 26C38 34 34 36 28 36C22 36 18 34 18 26C18 18 22 12 28 12Z" fill="url(#profileHeaderLeaf)"/>
+              <path d="M28 12L28 36" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+              <circle cx="28" cy="12" r="3" fill="#52B788"/>
+              <defs>
+                <linearGradient id="profileHeaderGrad" x1="2" y1="2" x2="54" y2="54">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#40916C"/>
+                </linearGradient>
+                <linearGradient id="profileHeaderLeaf" x1="18" y1="12" x2="38" y2="36">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#52B788"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
           <div class="header-text">
             <h1 class="header-title">个人中心</h1>
@@ -170,7 +185,7 @@ onMounted(() => {
           <User class="tab-icon" />
         </div>
         <span class="tab-label">个人信息</span>
-        <div class="tab-indicator"></div>
+        <span class="tab-indicator"></span>
       </button>
       <button
         class="tab-btn"
@@ -181,7 +196,7 @@ onMounted(() => {
           <Lock class="tab-icon" />
         </div>
         <span class="tab-label">账户安全</span>
-        <div class="tab-indicator"></div>
+        <span class="tab-indicator"></span>
       </button>
     </nav>
 
@@ -280,39 +295,65 @@ onMounted(() => {
       <div class="stats-section">
         <div class="stats-header">
           <h3 class="stats-title">账户统计</h3>
+          <!-- 装饰植物 -->
+          <div class="stats-plant">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <path d="M20 38V18C20 18 32 10 32 10C32 10 36 10 36 10C36 10 30 18 30 18V38" stroke="#74C69D" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M20 18C20 18 30 12 30 6C30 6 24 6 24 6C24 6 20 12 20 12" stroke="#74C69D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 28C20 28 28 24 28 24C28 24 24 28 24 28C24 28 20 24 20 24" stroke="#74C69D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 6L20 30" stroke="#52B788" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="20" cy="6" r="3" fill="#52B788"/>
+            </svg>
+          </div>
         </div>
         <div class="stats-grid">
-          <div class="stat-card stat-card--orange">
-            <div class="stat-bg">📦</div>
+          <div class="stat-card stat-card--green">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7V17C2 18.1 2.9 19 4 19H20C21.1 19 22 18.1 22 17V7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 22V16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
             <div class="stat-content">
               <span class="stat-value">0</span>
               <span class="stat-label">收藏商品</span>
             </div>
-            <div class="stat-glow"></div>
           </div>
-          <div class="stat-card stat-card--purple">
-            <div class="stat-bg">👁️</div>
+          <div class="stat-card stat-card--teal">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 4.5C7 4.5 2.5 6.5 2.5 12C2.5 18.1 7 21.5 12 21.5C17 21.5 21.5 18.1 21.5 12C21.5 6.5 17 4.5 12 4.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M2 12H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
             <div class="stat-content">
               <span class="stat-value">0</span>
               <span class="stat-label">浏览记录</span>
             </div>
-            <div class="stat-glow"></div>
           </div>
-          <div class="stat-card stat-card--gold">
-            <div class="stat-bg">📅</div>
+          <div class="stat-card stat-card--blue">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M7 8H17M7 12H17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
             <div class="stat-content">
               <span class="stat-value">{{ userStore.userInfo?.created_at?.substring(0, 10) || '2025-01-01' }}</span>
               <span class="stat-label">注册时间</span>
             </div>
-            <div class="stat-glow"></div>
           </div>
-          <div class="stat-card stat-card--cyan">
-            <div class="stat-bg">🔐</div>
+          <div class="stat-card stat-card--light">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C12 2 4 3 4 5V19C4 20.1 4.9 21 6 21H18C19.1 21 20 20.1 20 19V5C20 3 18 2 12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="12" cy="15" r="3" fill="currentColor"/>
+              </svg>
+            </div>
             <div class="stat-content">
               <span class="stat-value">已绑定</span>
               <span class="stat-label">安全状态</span>
             </div>
-            <div class="stat-glow"></div>
           </div>
         </div>
       </div>
@@ -331,10 +372,6 @@ onMounted(() => {
               <h2 class="security-card-title">修改密码</h2>
               <p class="security-card-subtitle">定期更新密码以保护账户安全</p>
             </div>
-          </div>
-          <div class="security-alert-badge">
-            <span class="alert-icon">⚠️</span>
-            <span>定期修改密码更安全</span>
           </div>
         </div>
 
@@ -375,7 +412,7 @@ onMounted(() => {
             </div>
 
             <div class="form-actions">
-              <button class="action-btn action-btn--purple" @click="changePassword">
+              <button class="action-btn action-btn--primary" @click="changePassword">
                 <Lock class="btn-icon" />
                 修改密码
               </button>
@@ -392,7 +429,20 @@ onMounted(() => {
       <div class="tips-section">
         <div class="tips-header">
           <div class="tips-icon-wrapper">
-            <span>🛡️</span>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" fill="url(#tipsShieldGrad)" fill-opacity="0.15"/>
+              <path d="M24 14L18 20L30 20L24 26L18 32L30 32" stroke="url(#tipsShieldPath)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="tipsShieldGrad" x1="4" y1="4" x2="44" y2="44">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#40916C"/>
+                </linearGradient>
+                <linearGradient id="tipsShieldPath" x1="18" y1="20" x2="30" y2="32">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#52B788"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
           <div class="tips-header-text">
             <h3 class="tips-title">安全建议</h3>
@@ -417,50 +467,71 @@ onMounted(() => {
             <span class="tip-text">不要在多个平台使用相同密码</span>
           </div>
         </div>
+
+        <!-- 装饰植物 -->
+        <div class="tips-plant">
+          <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+            <path d="M30 55V25" stroke="#74C69D" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M30 40C30 40 44 34 44 26C44 26 40 18 40 18C36 18 34 10 34 10C34 10 30 16 30 16Z" fill="#74C69D" fill-opacity="0.2"/>
+            <path d="M30 26C30 26 38 20 38 12C38 6 34 2 30 2C26 2 22 6 22 6C22 6 30 10 30 10Z" fill="#52B788" fill-opacity="0.15"/>
+            <circle cx="30" cy="12" r="3" fill="#52B788"/>
+          </svg>
+        </div>
       </div>
+    </div>
+
+    <!-- 页面装饰植物 -->
+    <div class="page-plant page-plant--1">
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <path d="M40 75V35C40 35 60 20 60 20C60 20 50 30 50 30C50 30 40 35 40 35V75" stroke="#74C69D" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+        <path d="M40 35C40 35 50 42 50 30C50 30 42 25 42 25C42 25 40 20 40 20C40 20 30 25 30 25Z" fill="#74C69D" fill-opacity="0.1"/>
+      </svg>
+    </div>
+    <div class="page-plant page-plant--2">
+      <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+        <path d="M30 55V25C30 25 45 32 45 32C45 32 35 35 35 35C35 35 30 38 30 38Z" stroke="#52B788" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+        <path d="M30 25C30 25 38 20 38 18C38 16 35 14 35 14C35 14 30 17 30 17Z" fill="#52B788" fill-opacity="0.1"/>
+      </svg>
     </div>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Design Tokens & Base
+   Design Tokens - 清新自然
    ============================================ */
 .profile-container {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --primary-gold: #FFD700;
-  --primary-cyan: #06FFA5;
-  --bg-dark: #0F0F23;
-  --bg-card: rgba(20, 20, 32, 0.6);
-  --bg-card-hover: rgba(255, 255, 255, 0.04);
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-accent: rgba(255, 107, 53, 0.2);
+  --primary-green: #2D6A4F;
+  --primary-teal: #40916C;
+  --primary-light: #52B788;
+  --accent-green: #74C69D;
+  --accent-blue: #00B4D8;
+  --accent-blue-light: #90E0EF;
+  --bg-cream: #FAFAF9;
+  --bg-sand: #F5F5F4;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
+  --border-focus: #74C69D;
+  --shadow-soft: 0 4px 20px rgba(45, 106, 79, 0.08);
+  --shadow-hover: 0 8px 30px rgba(45, 106, 79, 0.12);
 
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  font-family: 'Nunito', 'Noto Serif SC', -apple-system, sans-serif;
   max-width: 1000px;
   margin: 0 auto;
-  animation: fadeIn 0.4s ease;
+  animation: pageFadeIn 0.4s ease;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================
@@ -468,22 +539,16 @@ onMounted(() => {
    ============================================ */
 .page-header {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
   overflow: hidden;
   animation: fadeInDown 0.5s ease;
+  box-shadow: var(--shadow-soft);
 }
 
 @keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .header-content {
@@ -502,18 +567,7 @@ onMounted(() => {
 .header-icon-wrapper {
   width: 56px;
   height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(255, 215, 0, 0.15));
-  border: 1px solid var(--border-accent);
-  border-radius: 14px;
-}
-
-.header-icon {
-  width: 28px;
-  height: 28px;
-  color: var(--primary-orange);
+  flex-shrink: 0;
 }
 
 .header-text {
@@ -523,8 +577,8 @@ onMounted(() => {
 }
 
 .header-title {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 26px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
@@ -540,37 +594,32 @@ onMounted(() => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
 }
 
 .user-status-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(6, 255, 165, 0.1);
-  border: 1px solid rgba(6, 255, 165, 0.2);
-  border-radius: 20px;
+  gap: 10px;
+  padding: 10px 18px;
+  background: rgba(116, 198, 157, 0.1);
+  border: 1px solid rgba(116, 198, 157, 0.2);
+  border-radius: 24px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--primary-cyan);
+  color: var(--primary-green);
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
-  background: var(--primary-cyan);
+  background: var(--primary-green);
   border-radius: 50%;
   animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* ============================================
@@ -580,22 +629,15 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   padding: 8px;
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   animation: fadeInUp 0.6s ease;
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .tab-btn {
@@ -605,13 +647,13 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 16px 24px;
+  padding: 14px 24px;
   background: transparent;
   border: none;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', sans-serif;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -622,7 +664,8 @@ onMounted(() => {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--bg-card-hover);
+  background: var(--bg-card);
+  border-radius: 12px;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -632,12 +675,12 @@ onMounted(() => {
 }
 
 .tab-btn:hover {
-  color: var(--text-primary);
+  color: var(--primary-green);
 }
 
 .tab-btn.active {
-  color: var(--primary-orange);
-  background: rgba(255, 107, 53, 0.1);
+  color: var(--primary-green);
+  background: rgba(116, 198, 157, 0.15);
 }
 
 .tab-btn.active::before {
@@ -674,7 +717,7 @@ onMounted(() => {
   transform: translateX(-50%) scaleX(0);
   width: 40px;
   height: 3px;
-  background: linear-gradient(90deg, var(--primary-orange), var(--primary-gold));
+  background: linear-gradient(90deg, var(--primary-green), var(--primary-light));
   border-radius: 2px;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -689,19 +732,13 @@ onMounted(() => {
 .content-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   animation: fadeInContent 0.5s ease;
 }
 
 @keyframes fadeInContent {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================
@@ -709,16 +746,16 @@ onMounted(() => {
    ============================================ */
 .profile-card {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
   overflow: hidden;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-soft);
 }
 
 .profile-card:hover {
-  border-color: var(--border-accent);
-  box-shadow: 0 8px 32px rgba(255, 107, 53, 0.1);
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-hover);
 }
 
 .profile-card-header {
@@ -726,8 +763,8 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 24px 28px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-sand) 0%, transparent 100%);
 }
 
 .profile-header-left {
@@ -737,11 +774,11 @@ onMounted(() => {
 }
 
 .profile-card-title {
+  font-family: 'Noto Serif SC', serif;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-  font-family: 'Noto Sans SC', sans-serif;
 }
 
 .profile-card-subtitle {
@@ -753,25 +790,25 @@ onMounted(() => {
 .profile-id-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 8px 16px;
-  background: rgba(123, 44, 191, 0.15);
-  border: 1px solid rgba(123, 44, 191, 0.25);
+  background: rgba(45, 106, 79, 0.08);
+  border: 1px solid rgba(45, 106, 79, 0.15);
   border-radius: 20px;
 }
 
 .id-label {
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .id-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Nunito', sans-serif;
   font-size: 13px;
   font-weight: 600;
-  color: var(--primary-purple);
+  color: var(--primary-green);
 }
 
 .profile-card-body {
@@ -786,9 +823,9 @@ onMounted(() => {
   align-items: center;
   gap: 24px;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
   margin-bottom: 28px;
 }
 
@@ -804,18 +841,18 @@ onMounted(() => {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid rgba(255, 107, 53, 0.3);
+  border: 3px solid var(--border-light);
   transition: all 0.3s ease;
 }
 
 .avatar-container:hover .avatar-img {
-  border-color: var(--primary-orange);
+  border-color: var(--accent-green);
 }
 
 .avatar-glow {
   position: absolute;
   inset: -4px;
-  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
+  background: linear-gradient(135deg, var(--primary-green), var(--accent-green));
   border-radius: 50%;
   opacity: 0;
   filter: blur(12px);
@@ -824,7 +861,7 @@ onMounted(() => {
 }
 
 .avatar-container:hover .avatar-glow {
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .avatar-edit-btn {
@@ -836,22 +873,22 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-orange), var(--primary-gold));
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-light));
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
 }
 
 .avatar-edit-btn:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.5);
+  box-shadow: 0 6px 16px rgba(45, 106, 79, 0.4);
 }
 
 .edit-icon {
   width: 14px;
   height: 14px;
-  color: #000;
+  color: white;
 }
 
 .avatar-details {
@@ -861,11 +898,10 @@ onMounted(() => {
 }
 
 .avatar-name {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
 }
 
 .avatar-meta {
@@ -875,19 +911,19 @@ onMounted(() => {
 }
 
 .meta-badge {
-  padding: 4px 12px;
-  background: rgba(255, 107, 53, 0.15);
-  border: 1px solid rgba(255, 107, 53, 0.25);
+  padding: 5px 12px;
+  background: rgba(45, 106, 79, 0.1);
+  border: 1px solid rgba(45, 106, 79, 0.15);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--primary-orange);
+  color: var(--primary-green);
 }
 
 .meta-dot {
   width: 4px;
   height: 4px;
-  background: var(--text-tertiary);
+  background: var(--border-light);
   border-radius: 50%;
 }
 
@@ -896,18 +932,14 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-/* ============================================
-   Form Divider
-   ============================================ */
+/* Form Divider */
 .form-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+  background: linear-gradient(90deg, transparent, var(--border-light), transparent);
   margin: 24px 0;
 }
 
-/* ============================================
-   Form Grid & Fields
-   ============================================ */
+/* Form Grid & Fields */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -921,7 +953,7 @@ onMounted(() => {
 .profile-form :deep(.el-form-item__label) {
   color: var(--text-secondary);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 8px;
 }
 
@@ -930,45 +962,42 @@ onMounted(() => {
 }
 
 .styled-input :deep(.el-input__wrapper) {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   box-shadow: none;
   padding: 12px 16px;
   transition: all 0.3s ease;
 }
 
 .styled-input :deep(.el-input__wrapper:hover) {
-  border-color: rgba(255, 107, 53, 0.3);
-  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--accent-green);
+  background: var(--bg-sand);
 }
 
 .styled-input :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--primary-orange);
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  border-color: var(--primary-green);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 4px rgba(116, 198, 157, 0.1);
 }
 
 .styled-input :deep(.el-input__inner) {
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
-  height: 48px;
 }
 
 .styled-input :deep(.el-input__inner::placeholder) {
   color: var(--text-tertiary);
 }
 
-/* ============================================
-   Form Actions
-   ============================================ */
+/* Form Actions */
 .form-actions {
   display: flex;
   gap: 12px;
   margin-top: 28px;
   padding-top: 24px;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-light);
 }
 
 .action-btn {
@@ -980,7 +1009,7 @@ onMounted(() => {
   padding: 14px 28px;
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Nunito', sans-serif;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1006,38 +1035,26 @@ onMounted(() => {
 }
 
 .action-btn--primary {
-  background: linear-gradient(135deg, var(--primary-orange), var(--primary-gold));
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-light));
   border: none;
-  color: #000;
-  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+  color: white;
+  box-shadow: var(--shadow-soft);
 }
 
 .action-btn--primary:hover {
-  box-shadow: 0 6px 24px rgba(255, 107, 53, 0.4);
-  transform: translateY(-2px);
-}
-
-.action-btn--purple {
-  background: linear-gradient(135deg, var(--primary-purple), #9D4EDD);
-  border: none;
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(123, 44, 191, 0.3);
-}
-
-.action-btn--purple:hover {
-  box-shadow: 0 6px 24px rgba(123, 44, 191, 0.4);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-2px);
 }
 
 .action-btn--ghost {
   background: transparent;
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-light);
   color: var(--text-secondary);
 }
 
 .action-btn--ghost:hover {
-  border-color: var(--border-accent);
-  color: var(--text-primary);
+  border-color: var(--border-focus);
+  color: var(--primary-green);
 }
 
 .btn-icon {
@@ -1047,27 +1064,47 @@ onMounted(() => {
   z-index: 1;
 }
 
-/* ============================================
-   Stats Section
-   ============================================ */
+/* Stats Section */
 .stats-section {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
   padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(116, 198, 157, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .stats-title {
+  font-family: 'Noto Serif SC', serif;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-  font-family: 'Noto Sans SC', sans-serif;
+}
+
+.stats-plant {
+  opacity: 0.5;
 }
 
 .stats-grid {
@@ -1079,101 +1116,50 @@ onMounted(() => {
 .stat-card {
   position: relative;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-soft);
 }
 
-.stat-card--orange {
-  border-color: rgba(255, 107, 53, 0.15);
+.stat-card--green { border-color: rgba(45, 106, 79, 0.15); }
+.stat-card--teal { border-color: rgba(64, 145, 108, 0.15); }
+.stat-card--blue { border-color: rgba(0, 180, 216, 0.15); }
+.stat-card--light { border-color: rgba(116, 198, 157, 0.15); }
+
+.stat-card:hover {
+  border-color: var(--border-focus);
 }
 
-.stat-card--orange:hover {
-  border-color: rgba(255, 107, 53, 0.3);
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.15);
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-sand);
+  border-radius: 10px;
+  color: var(--primary-green);
 }
 
-.stat-card--purple {
-  border-color: rgba(123, 44, 191, 0.15);
-}
-
-.stat-card--purple:hover {
-  border-color: rgba(123, 44, 191, 0.3);
-  box-shadow: 0 8px 24px rgba(123, 44, 191, 0.15);
-}
-
-.stat-card--gold {
-  border-color: rgba(255, 215, 0, 0.15);
-}
-
-.stat-card--gold:hover {
-  border-color: rgba(255, 215, 0, 0.3);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.15);
-}
-
-.stat-card--cyan {
-  border-color: rgba(6, 255, 165, 0.15);
-}
-
-.stat-card--cyan:hover {
-  border-color: rgba(6, 255, 165, 0.3);
-  box-shadow: 0 8px 24px rgba(6, 255, 165, 0.15);
-}
-
-.stat-bg {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  font-size: 64px;
-  opacity: 0.05;
-  pointer-events: none;
-}
-
-.stat-glow {
-  position: absolute;
-  bottom: -20px;
-  right: -20px;
-  width: 80px;
-  height: 80px;
-  background: inherit;
-  filter: blur(40px);
-  opacity: 0.15;
-  pointer-events: none;
-}
-
-.stat-card--orange .stat-glow {
-  background: var(--primary-orange);
-}
-
-.stat-card--purple .stat-glow {
-  background: var(--primary-purple);
-}
-
-.stat-card--gold .stat-glow {
-  background: var(--primary-gold);
-}
-
-.stat-card--cyan .stat-glow {
-  background: var(--primary-cyan);
-}
+.stat-card--teal .stat-icon { color: var(--primary-teal); }
+.stat-card--blue .stat-icon { color: var(--accent-blue); }
+.stat-card--light .stat-icon { color: var(--accent-green); }
 
 .stat-content {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  z-index: 1;
+  gap: 6px;
 }
 
 .stat-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Nunito', sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1184,37 +1170,27 @@ onMounted(() => {
   color: var(--text-tertiary);
 }
 
-/* ============================================
-   Security Card
-   ============================================ */
+/* Security Card */
 .security-card {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
   overflow: hidden;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-soft);
 }
 
 .security-card:hover {
-  border-color: rgba(123, 44, 191, 0.3);
-  box-shadow: 0 8px 32px rgba(123, 44, 191, 0.1);
+  border-color: var(--accent-blue);
 }
 
 .security-card-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 24px 28px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.2);
-  gap: 20px;
-}
-
-.security-header-left {
-  display: flex;
   align-items: center;
   gap: 16px;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, rgba(0, 180, 216, 0.05), transparent 100%);
 }
 
 .security-icon-wrapper {
@@ -1223,15 +1199,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(123, 44, 191, 0.2), rgba(157, 78, 221, 0.15));
-  border: 1px solid rgba(123, 44, 191, 0.25);
+  background: linear-gradient(135deg, rgba(0, 180, 216, 0.1), rgba(0, 180, 216, 0.05));
+  border: 1px solid rgba(0, 180, 216, 0.15);
   border-radius: 12px;
 }
 
 .security-icon {
   width: 24px;
   height: 24px;
-  color: var(--primary-purple);
+  color: var(--accent-blue);
 }
 
 .security-header-text {
@@ -1241,35 +1217,17 @@ onMounted(() => {
 }
 
 .security-card-title {
+  font-family: 'Noto Serif SC', serif;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-  font-family: 'Noto Sans SC', sans-serif;
 }
 
 .security-card-subtitle {
   font-size: 13px;
   color: var(--text-tertiary);
   margin: 0;
-}
-
-.security-alert-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(255, 215, 0, 0.1);
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--primary-gold);
-  white-space: nowrap;
-}
-
-.alert-icon {
-  font-size: 14px;
 }
 
 .security-card-body {
@@ -1282,15 +1240,26 @@ onMounted(() => {
   gap: 20px;
 }
 
-/* ============================================
-   Tips Section
-   ============================================ */
+/* Tips Section */
 .tips-section {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
   padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tips-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(116, 198, 157, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .tips-header {
@@ -1303,27 +1272,19 @@ onMounted(() => {
 .tips-icon-wrapper {
   width: 48px;
   height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(6, 255, 165, 0.15), rgba(6, 255, 165, 0.05));
-  border: 1px solid rgba(6, 255, 165, 0.2);
-  border-radius: 12px;
-  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .tips-header-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex: 1;
 }
 
 .tips-title {
+  font-family: 'Noto Serif SC', serif;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-  font-family: 'Noto Sans SC', sans-serif;
 }
 
 .tips-subtitle {
@@ -1343,15 +1304,15 @@ onMounted(() => {
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
   border-radius: 12px;
   transition: all 0.3s ease;
 }
 
 .tip-item:hover {
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(6, 255, 165, 0.15);
+  background: rgba(116, 198, 157, 0.05);
+  border-color: rgba(116, 198, 157, 0.15);
   transform: translateX(4px);
 }
 
@@ -1362,12 +1323,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 255, 165, 0.15);
-  border: 1px solid rgba(6, 255, 165, 0.25);
+  background: rgba(45, 106, 79, 0.1);
+  border: 1px solid rgba(45, 106, 79, 0.2);
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--primary-cyan);
+  color: var(--primary-green);
 }
 
 .tip-text {
@@ -1375,15 +1336,34 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-/* ============================================
-   Responsive Design
-   ============================================ */
-@media (max-width: 768px) {
-  .profile-container {
-    gap: 20px;
-  }
+.tips-plant {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  opacity: 0.4;
+}
 
-  .header-content {
+/* Page Plants */
+.page-plant {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.15;
+}
+
+.page-plant--1 {
+  bottom: 10%;
+  left: 5%;
+}
+
+.page-plant--2 {
+  top: 20%;
+  right: 8%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 20px;
@@ -1394,9 +1374,12 @@ onMounted(() => {
     width: 100%;
   }
 
-  .header-right {
-    width: 100%;
-    justify-content: flex-start;
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .tabs-navigation {
@@ -1411,49 +1394,8 @@ onMounted(() => {
     display: block;
   }
 
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .avatar-showcase {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .security-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .action-btn {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-title {
-    font-size: 22px;
-  }
-
-  .profile-card-title,
-  .security-card-title {
-    font-size: 16px;
-  }
-
-  .avatar-showcase {
-    padding: 20px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .page-plant {
+    display: none;
   }
 }
 </style>

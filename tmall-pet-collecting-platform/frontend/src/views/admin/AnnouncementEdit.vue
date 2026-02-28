@@ -30,9 +30,9 @@ const formRules = {
 const formRef = ref(null)
 
 const priorityOptions = [
-  { label: '普通', value: 1, color: '#60a5fa', icon: '📢' },
-  { label: '重要', value: 2, color: '#fbbf24', icon: '⚠️' },
-  { label: '紧急', value: 3, color: '#f87171', icon: '🔔' }
+  { label: '普通', value: 1, color: '#74C69D', icon: '📢' },
+  { label: '重要', value: 2, color: '#52B788', icon: '⚠️' },
+  { label: '紧急', value: 3, color: '#2D6A4F', icon: '🔔' }
 ]
 
 const pageTitle = computed(() => {
@@ -182,12 +182,32 @@ onMounted(() => {
 
 <template>
   <div class="announcement-edit-container">
-    <!-- 背景装饰 -->
-    <div class="bg-decoration">
-      <div class="gradient-orb orb-1"></div>
-      <div class="gradient-orb orb-2"></div>
-      <div class="grid-overlay"></div>
-      <div class="noise-texture"></div>
+    <!-- Leaf Decoration Top Left -->
+    <div class="leaf-decoration leaf-decoration--top-left">
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 95C50 95 20 80 15 50C10 20 30 5 50 5C70 5 90 20 85 50C80 80 50 95 50 95Z" fill="url(#leafGrad1)" opacity="0.25"/>
+        <path d="M50 5L50 95M50 50C35 40 20 45 15 50M50 50C65 40 80 45 85 50" stroke="#40916C" stroke-width="1" opacity="0.3"/>
+        <defs>
+          <linearGradient id="leafGrad1" x1="15" y1="5" x2="85" y2="95">
+            <stop offset="0%" stop-color="#74C69D"/>
+            <stop offset="100%" stop-color="#2D6A4F"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <!-- Leaf Decoration Bottom Right -->
+    <div class="leaf-decoration leaf-decoration--bottom-right">
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 95C50 95 20 80 15 50C10 20 30 5 50 5C70 5 90 20 85 50C80 80 50 95 50 95Z" fill="url(#leafGrad2)" opacity="0.25"/>
+        <path d="M50 5L50 95M50 50C35 40 20 45 15 50M50 50C65 40 80 45 85 50" stroke="#00B4D8" stroke-width="1" opacity="0.3"/>
+        <defs>
+          <linearGradient id="leafGrad2" x1="15" y1="5" x2="85" y2="95">
+            <stop offset="0%" stop-color="#90E0EF"/>
+            <stop offset="100%" stop-color="#00B4D8"/>
+          </linearGradient>
+        </defs>
+      </svg>
     </div>
 
     <!-- 主标题区 -->
@@ -200,11 +220,9 @@ onMounted(() => {
         <div class="title-section">
           <div class="title-badge">
             <span class="badge-icon">📢</span>
-            <span class="badge-text">ANNOUNCEMENT</span>
+            <span class="badge-text">公告管理</span>
           </div>
-          <h1 class="page-title">
-            <span class="title-gradient">{{ pageTitle }}</span>
-          </h1>
+          <h1 class="page-title">{{ pageTitle }}</h1>
           <p class="page-subtitle">{{ isView ? '只读模式 - 预览公告内容' : '编辑模式 - 创建或修改公告' }}</p>
         </div>
         <div v-if="!isView" class="header-actions">
@@ -218,18 +236,13 @@ onMounted(() => {
           </button>
         </div>
       </div>
-      <div class="header-visual">
-        <div class="floating-icon icon-1">📢</div>
-        <div class="floating-icon icon-2">✨</div>
-        <div class="floating-icon icon-3">🎯</div>
-      </div>
     </header>
 
     <!-- 主内容区 -->
     <div class="content-grid">
       <!-- 左侧：编辑表单 -->
       <div class="editor-column">
-        <div v-loading="loading" class="editor-card glass-card">
+        <div v-loading="loading" class="editor-card">
           <div class="card-header">
             <div class="header-left">
               <div class="icon-wrapper edit-icon">
@@ -268,7 +281,6 @@ onMounted(() => {
                     show-word-limit
                     class="title-input"
                   />
-                  <div class="input-decoration"></div>
                 </div>
               </div>
 
@@ -285,7 +297,7 @@ onMounted(() => {
                     :class="['priority-option', { active: form.priority === option.value }]"
                     :style="{
                       '--priority-color': option.color,
-                      '--priority-bg': form.priority === option.value ? option.color + '20' : 'transparent'
+                      '--priority-bg': form.priority === option.value ? option.color + '15' : '#F5F5F4'
                     }"
                     @click="!isView && (form.priority = option.value)"
                   >
@@ -327,57 +339,26 @@ onMounted(() => {
                   <span>公告内容</span>
                   <span class="label-required">*</span>
                 </label>
-                <div class="editor-toolbar">
-                  <div class="toolbar-group">
-                    <button class="toolbar-btn" :disabled="isView" title="加粗">
-                      <span>B</span>
-                    </button>
-                    <button class="toolbar-btn" :disabled="isView" title="斜体">
-                      <span>I</span>
-                    </button>
-                    <button class="toolbar-btn" :disabled="isView" title="下划线">
-                      <span>U</span>
-                    </button>
-                  </div>
-                  <div class="toolbar-group">
-                    <button class="toolbar-btn" :disabled="isView" title="链接">
-                      <span>🔗</span>
-                    </button>
-                    <button class="toolbar-btn" :disabled="isView" title="列表">
-                      <span>☰</span>
-                    </button>
-                  </div>
-                  <div class="toolbar-info">
-                    <span>{{ form.content.length }} / 5000</span>
-                  </div>
-                </div>
                 <div class="editor-wrapper">
                   <el-input
                     v-model="form.content"
                     type="textarea"
-                    :rows="15"
+                    :rows="12"
                     placeholder="请输入公告内容..."
                     maxlength="5000"
+                    show-word-limit
                     class="content-editor"
                   />
-                  <div class="editor-decoration"></div>
                 </div>
               </div>
             </el-form>
-          </div>
-
-          <!-- 卡片装饰 -->
-          <div class="card-decoration">
-            <div class="deco-line deco-1"></div>
-            <div class="deco-line deco-2"></div>
-            <div class="deco-dot"></div>
           </div>
         </div>
       </div>
 
       <!-- 右侧：实时预览 -->
       <div class="preview-column">
-        <div class="preview-card glass-card">
+        <div class="preview-card">
           <div class="card-header">
             <div class="header-left">
               <div class="icon-wrapper preview-icon">
@@ -395,7 +376,7 @@ onMounted(() => {
               class="announcement-preview"
               :class="{ pinned: form.is_pinned }"
               :style="{
-                '--preview-accent': priorityOptions.find(p => p.value === form.priority)?.color || '#60a5fa'
+                '--preview-accent': priorityOptions.find(p => p.value === form.priority)?.color || '#74C69D'
               }"
             >
               <!-- 预览顶部信息 -->
@@ -443,17 +424,10 @@ onMounted(() => {
               </div>
             </div>
           </div>
-
-          <!-- 卡片装饰 -->
-          <div class="card-decoration">
-            <div class="deco-line deco-1"></div>
-            <div class="deco-line deco-2"></div>
-            <div class="deco-dot"></div>
-          </div>
         </div>
 
         <!-- 快捷操作卡片 -->
-        <div v-if="!isView" class="quick-actions glass-card">
+        <div v-if="!isView" class="quick-actions">
           <h4 class="actions-title">⚡ 快捷操作</h4>
           <div class="actions-list">
             <button class="quick-action" @click="form.title = '【系统通知】'; form.content = '这是一条系统通知的示例内容...'">
@@ -476,81 +450,76 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ========== 全局样式 ========== */
 .announcement-edit-container {
-  min-height: 100vh;
-  padding: 24px;
+  --primary-green: #2D6A4F;
+  --primary-teal: #40916C;
+  --primary-light: #52B788;
+  --accent-green: #74C69D;
+  --accent-blue: #00B4D8;
+  --accent-blue-light: #90E0EF;
+  --bg-cream: #FAFAF9;
+  --bg-sand: #F5F5F4;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
+  --border-focus: #74C69D;
+  --shadow-soft: 0 4px 20px rgba(45, 106, 79, 0.08);
+  --shadow-hover: 0 8px 30px rgba(45, 106, 79, 0.12);
+  --shadow-card: 0 2px 12px rgba(45, 106, 79, 0.06);
+
   position: relative;
+  min-height: 100vh;
+  padding: 24px 32px;
+  font-family: 'Nunito', 'Noto Serif SC', -apple-system, sans-serif;
+  background: linear-gradient(135deg, var(--bg-cream) 0%, var(--bg-sand) 100%);
   overflow-x: hidden;
-  font-family: 'Noto Sans SC', sans-serif;
 }
 
 /* ========== 背景装饰 ========== */
-.bg-decoration {
+.leaf-decoration {
   position: fixed;
-  inset: 0;
-  z-index: 0;
+  width: 150px;
+  height: 150px;
   pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
 }
 
-.gradient-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  animation: float 20s ease-in-out infinite;
+.leaf-decoration--top-left {
+  top: -30px;
+  left: -30px;
+  animation: leafFloat1 8s ease-in-out infinite;
 }
 
-.orb-1 {
-  width: 600px;
-  height: 600px;
-  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
-  top: -200px;
-  right: -200px;
-  animation-delay: 0s;
+.leaf-decoration--bottom-right {
+  bottom: -30px;
+  right: -30px;
+  animation: leafFloat2 10s ease-in-out infinite;
 }
 
-.orb-2 {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(225deg, #06FFA5 0%, #FF6B35 100%);
-  bottom: -100px;
-  left: -100px;
-  animation-delay: -10s;
+@keyframes leafFloat1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(12px, 12px) rotate(3deg); }
 }
 
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -30px) scale(1.05); }
-  66% { transform: translate(-20px, 20px) scale(0.95); }
-}
-
-.grid-overlay {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 107, 53, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 107, 53, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-
-.noise-texture {
-  position: absolute;
-  inset: 0;
-  opacity: 0.02;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+@keyframes leafFloat2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-12px, -12px) rotate(-3deg); }
 }
 
 /* ========== 页面头部 ========== */
 .page-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 32px;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 28px;
 }
 
 .header-content {
@@ -565,21 +534,22 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: inherit;
+  box-shadow: var(--shadow-card);
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 107, 53, 0.3);
-  color: #fff;
+  background: var(--bg-sand);
+  border-color: var(--accent-green);
+  color: var(--primary-green);
   transform: translateX(-2px);
 }
 
@@ -591,43 +561,39 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px;
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid rgba(255, 107, 53, 0.3);
-  border-radius: 24px;
-  margin-bottom: 16px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1) 0%, rgba(116, 198, 157, 0.1) 100%);
+  border: 1px solid rgba(116, 198, 157, 0.3);
+  border-radius: 20px;
+  margin-bottom: 14px;
 }
 
 .badge-icon {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .badge-text {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: #FF6B35;
-  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--primary-green);
+  font-family: 'Noto Serif SC', serif;
 }
 
 .page-title {
-  font-size: 38px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 32px;
   font-weight: 700;
-  margin: 0 0 10px 0;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
   line-height: 1.2;
-}
-
-.title-gradient {
-  background: linear-gradient(135deg, #FF6B35 0%, #FFD700 50%, #7B2CBF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   margin: 0;
+  font-weight: 500;
 }
 
 .header-actions {
@@ -640,10 +606,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 12px 20px;
   border-radius: 12px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -651,26 +617,28 @@ onMounted(() => {
 }
 
 .draft-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-card);
 }
 
 .draft-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--bg-sand);
+  border-color: var(--accent-green);
+  color: var(--primary-green);
   transform: translateY(-2px);
 }
 
 .publish-btn {
-  background: linear-gradient(135deg, #FF6B35 0%, #7B2CBF 100%);
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--accent-green) 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(82, 183, 136, 0.3);
 }
 
 .publish-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 6px 20px rgba(82, 183, 136, 0.4);
 }
 
 .action-btn:disabled {
@@ -680,97 +648,38 @@ onMounted(() => {
 }
 
 .btn-icon {
-  font-size: 16px;
-}
-
-.header-visual {
-  position: relative;
-  width: 180px;
-  height: 90px;
-}
-
-.floating-icon {
-  position: absolute;
-  font-size: 28px;
-  animation: iconFloat 3s ease-in-out infinite;
-}
-
-.icon-1 { top: 0; right: 0; animation-delay: 0s; }
-.icon-2 { top: 25px; right: 50px; animation-delay: 0.5s; }
-.icon-3 { top: 45px; right: 15px; animation-delay: 1s; }
-
-@keyframes iconFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(5deg); }
+  font-size: 14px;
 }
 
 /* ========== 内容网格 ========== */
 .content-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1.4fr 1fr;
   gap: 24px;
-  position: relative;
-  z-index: 1;
 }
 
-@media (max-width: 1200px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-  .page-header {
-    flex-direction: column;
-    gap: 20px;
-  }
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .header-visual {
-    display: none;
-  }
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-}
-
-/* ========== 玻璃态卡片 ========== */
-.glass-card {
-  background: rgba(26, 26, 46, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* ========== 编辑器卡片 ========== */
+.editor-card,
+.preview-card,
+.quick-actions {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 20px;
   padding: 24px;
-  position: relative;
-  overflow: hidden;
-  animation: cardSlideIn 0.4s ease backwards;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
 }
 
-.glass-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-    rgba(255, 107, 53, 0.05) 0%,
-    transparent 50%,
-    rgba(123, 44, 191, 0.05) 100%
-  );
-  pointer-events: none;
+.editor-card:hover,
+.preview-card:hover {
+  box-shadow: var(--shadow-hover);
 }
 
-@keyframes cardSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.quick-actions {
+  padding: 20px;
 }
-
-.editor-card { animation-delay: 0.1s; }
-.preview-card { animation-delay: 0.2s; }
 
 /* ========== 卡片头部 ========== */
 .card-header {
@@ -778,70 +687,69 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  position: relative;
-  z-index: 1;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .icon-wrapper {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .edit-icon {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(255, 107, 53, 0.05));
-  border: 1px solid rgba(255, 107, 53, 0.3);
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.1), rgba(116, 198, 157, 0.1));
+  border: 1px solid rgba(116, 198, 157, 0.3);
 }
 
 .preview-icon {
-  background: linear-gradient(135deg, rgba(6, 255, 165, 0.2), rgba(6, 255, 165, 0.05));
-  border: 1px solid rgba(6, 255, 165, 0.3);
+  background: linear-gradient(135deg, rgba(0, 180, 216, 0.1), rgba(144, 224, 239, 0.1));
+  border: 1px solid rgba(0, 180, 216, 0.3);
 }
 
 .card-title {
-  font-size: 18px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   margin: 0 0 4px 0;
 }
 
 .card-subtitle {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  color: var(--text-tertiary);
   margin: 0;
+  font-weight: 500;
 }
 
 .view-badge {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  background: rgba(6, 255, 165, 0.1);
-  border: 1px solid rgba(6, 255, 165, 0.3);
+  padding: 6px 14px;
+  background: rgba(0, 180, 216, 0.1);
+  border: 1px solid rgba(0, 180, 216, 0.3);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  color: #06FFA5;
+  color: var(--accent-blue);
 }
 
 /* ========== 卡片主体 ========== */
 .card-body {
   position: relative;
-  z-index: 1;
 }
 
 .form-section {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .form-section:last-child {
@@ -855,16 +763,17 @@ onMounted(() => {
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  font-family: 'Noto Serif SC', serif;
 }
 
 .label-icon {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .label-required {
-  color: #FF6B6B;
+  color: #E76F51;
   font-size: 14px;
 }
 
@@ -873,69 +782,52 @@ onMounted(() => {
   position: relative;
 }
 
-.title-input {
-  --el-input-bg-color: rgba(0, 0, 0, 0.3);
-  --el-input-border-color: rgba(255, 255, 255, 0.1);
-  --el-input-text-color: rgba(255, 255, 255, 0.9);
-  --el-input-placeholder-color: rgba(255, 255, 255, 0.3);
-}
-
 .title-input :deep(.el-input__wrapper) {
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--bg-sand);
+  border: 2px solid var(--border-light);
+  padding: 14px 18px;
   box-shadow: none;
   transition: all 0.3s ease;
 }
 
 .title-input :deep(.el-input__wrapper:hover) {
-  border-color: rgba(255, 107, 53, 0.3);
+  border-color: var(--accent-green);
+  background: white;
 }
 
 .title-input :deep(.el-input__wrapper.is-focus) {
-  border-color: #FF6B35;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  border-color: var(--border-focus);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(116, 198, 157, 0.15);
 }
 
 .title-input :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 16px;
+  color: var(--text-primary);
+  font-size: 15px;
   font-weight: 500;
 }
 
 .title-input :deep(.el-input__count) {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   background: transparent;
-}
-
-.input-decoration {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 107, 53, 0.5) 50%,
-    transparent 100%
-  );
 }
 
 /* ========== 优先级选择 ========== */
 .priority-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 12px;
 }
 
 .priority-option {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.08);
+  gap: 10px;
+  padding: 16px 12px;
+  background: var(--bg-sand);
+  border: 2px solid var(--border-light);
   border-radius: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -943,45 +835,48 @@ onMounted(() => {
 }
 
 .priority-option:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: white;
+  border-color: var(--accent-green);
 }
 
 .priority-option.active {
   background: var(--priority-bg);
   border-color: var(--priority-color);
+  box-shadow: 0 4px 15px rgba(116, 198, 157, 0.2);
 }
 
 .priority-icon {
-  font-size: 28px;
-  width: 44px;
-  height: 44px;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: white;
   border-radius: 10px;
 }
 
 .priority-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  text-align: center;
 }
 
 .priority-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  display: block;
 }
 
 .priority-desc {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
+  display: block;
 }
 
 .priority-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   color: var(--priority-color);
 }
 
@@ -990,26 +885,26 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 20px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
+  padding: 16px 18px;
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
   transition: all 0.3s ease;
 }
 
 .toggle-row:hover {
-  background: rgba(255, 107, 53, 0.03);
-  border-color: rgba(255, 107, 53, 0.1);
+  background: white;
+  border-color: var(--accent-green);
 }
 
 .toggle-info {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .toggle-icon {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .toggle-text {
@@ -1021,162 +916,57 @@ onMounted(() => {
 .toggle-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
 }
 
 .toggle-desc {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
 .custom-switch {
-  --el-switch-on-color: #FF6B35;
-  --el-switch-off-color: rgba(255, 255, 255, 0.1);
+  --el-switch-on-color: var(--primary-light);
+  --el-switch-off-color: var(--border-light);
 }
 
 .custom-switch :deep(.el-switch__core) {
-  height: 26px;
-  border-radius: 13px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  height: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
 }
 
 /* ========== 富文本编辑器 ========== */
-.editor-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: none;
-  border-radius: 14px 14px 0 0;
-}
-
-.toolbar-group {
-  display: flex;
-  gap: 4px;
-}
-
-.toolbar-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Georgia', serif;
-}
-
-.toolbar-btn:hover:not(:disabled) {
-  background: rgba(255, 107, 53, 0.2);
-  border-color: rgba(255, 107, 53, 0.3);
-  color: #FF6B35;
-}
-
-.toolbar-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.toolbar-info {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
 .editor-wrapper {
   position: relative;
 }
 
-.content-editor {
-  --el-input-bg-color: rgba(0, 0, 0, 0.3);
-  --el-input-border-color: rgba(255, 255, 255, 0.08);
-}
-
 .content-editor :deep(.el-textarea__inner) {
-  border-radius: 0 0 14px 14px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: none;
-  padding: 16px 20px;
-  color: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  background: var(--bg-sand);
+  border: 2px solid var(--border-light);
+  padding: 16px 18px;
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.7;
   resize: vertical;
   font-family: inherit;
-}
-
-.content-editor :deep(.el-textarea__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
 }
 
 .content-editor :deep(.el-textarea__inner:hover) {
-  border-color: rgba(255, 107, 53, 0.2);
+  border-color: var(--accent-green);
+  background: white;
 }
 
 .content-editor :deep(.el-textarea__inner:focus) {
-  border-color: #FF6B35;
-  background: rgba(255, 107, 53, 0.02);
+  border-color: var(--border-focus);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(116, 198, 157, 0.15);
 }
 
-.editor-decoration {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 107, 53, 0.5) 50%,
-    transparent 100%
-  );
-}
-
-/* ========== 卡片装饰 ========== */
-.card-decoration {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.deco-line {
-  position: absolute;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 107, 53, 0.3) 50%,
-    transparent 100%
-  );
-}
-
-.deco-1 {
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.deco-2 {
-  bottom: 0;
-  left: 0;
-  right: 0;
-}
-
-.deco-dot {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: #FF6B35;
-  border-radius: 50%;
-  top: 20px;
-  right: 20px;
-  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+.content-editor :deep(.el-input__count) {
+  color: var(--text-tertiary);
+  background: transparent;
 }
 
 /* ========== 预览列 ========== */
@@ -1188,34 +978,33 @@ onMounted(() => {
 
 .preview-body {
   position: relative;
-  z-index: 1;
 }
 
 .announcement-preview {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-sand);
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px;
   border-left: 4px solid var(--preview-accent);
   transition: all 0.3s ease;
 }
 
 .announcement-preview.pinned {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(0, 0, 0, 0.2) 100%);
-  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.15);
+  background: linear-gradient(135deg, rgba(116, 198, 157, 0.1) 0%, var(--bg-sand) 100%);
+  box-shadow: 0 6px 25px rgba(45, 106, 79, 0.15);
 }
 
 .preview-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .preview-priority {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
@@ -1239,39 +1028,39 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #FF6B35;
-  background: rgba(255, 107, 53, 0.1);
-  padding: 6px 12px;
-  border-radius: 16px;
+  color: var(--primary-green);
+  background: rgba(45, 106, 79, 0.1);
+  padding: 5px 10px;
+  border-radius: 12px;
 }
 
 .preview-content {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .preview-title {
-  font-size: 20px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
   font-weight: 700;
-  color: #fff;
-  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
   line-height: 1.4;
 }
 
 .preview-divider {
   height: 1px;
   background: linear-gradient(90deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
+    var(--border-light) 0%,
     transparent 100%
   );
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .preview-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   line-height: 1.7;
   margin: 0;
   white-space: pre-wrap;
@@ -1282,8 +1071,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
 }
 
 .preview-time {
@@ -1291,37 +1080,37 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
 }
 
 .preview-status {
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.5);
+  background: var(--bg-cream);
+  color: var(--text-tertiary);
 }
 
 .preview-status.published {
-  background: rgba(6, 255, 165, 0.15);
-  color: #06FFA5;
+  background: rgba(82, 183, 136, 0.15);
+  color: var(--primary-green);
 }
 
 .preview-tips {
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .tip-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px;
-  background: rgba(6, 255, 165, 0.05);
-  border: 1px solid rgba(6, 255, 165, 0.15);
+  padding: 10px 12px;
+  background: rgba(0, 180, 216, 0.08);
+  border: 1px solid rgba(0, 180, 216, 0.2);
   border-radius: 10px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .tip-icon {
@@ -1329,36 +1118,29 @@ onMounted(() => {
 }
 
 /* ========== 快捷操作 ========== */
-.quick-actions {
-  animation-delay: 0.3s;
-}
-
 .actions-title {
-  font-size: 15px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 14px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 16px 0;
-  position: relative;
-  z-index: 1;
+  color: var(--text-primary);
+  margin: 0 0 14px 0;
 }
 
 .actions-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  position: relative;
-  z-index: 1;
+  gap: 8px;
 }
 
 .quick-action {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -1367,30 +1149,52 @@ onMounted(() => {
 }
 
 .quick-action:hover {
-  background: rgba(255, 107, 53, 0.08);
-  border-color: rgba(255, 107, 53, 0.2);
-  transform: translateX(4px);
+  background: white;
+  border-color: var(--accent-green);
+  color: var(--primary-green);
+  transform: translateX(3px);
 }
 
 .action-icon {
-  font-size: 18px;
-  width: 32px;
-  height: 32px;
+  font-size: 16px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: white;
   border-radius: 8px;
 }
 
 /* ========== 响应式 ========== */
+@media (max-width: 1200px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 @media (max-width: 768px) {
   .announcement-edit-container {
     padding: 16px;
   }
 
   .page-title {
-    font-size: 28px;
+    font-size: 26px;
   }
 
   .content-grid {
@@ -1412,6 +1216,11 @@ onMounted(() => {
 
   .quick-actions {
     order: -1;
+  }
+
+  .leaf-decoration {
+    width: 100px;
+    height: 100px;
   }
 }
 </style>

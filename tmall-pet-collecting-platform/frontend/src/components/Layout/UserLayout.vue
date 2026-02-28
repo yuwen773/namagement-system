@@ -65,25 +65,50 @@ onUnmounted(() => {
 
 <template>
   <div class="user-layout">
-    <!-- Background Effects -->
+    <!-- 自然背景装饰 -->
     <div class="layout-background">
-      <svg class="paw-grid" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="pawGrid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-            <g fill="none" stroke="rgba(255, 107, 53, 0.02)" stroke-width="1">
-              <circle cx="40" cy="40" r="6"/>
-              <circle cx="28" cy="32" r="3"/>
-              <circle cx="52" cy="32" r="3"/>
-              <circle cx="30" cy="48" r="3"/>
-              <circle cx="50" cy="48" r="3"/>
-            </g>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#pawGrid)"/>
-      </svg>
+      <div class="paper-texture"></div>
 
-      <div class="ambient-glow glow-1"></div>
-      <div class="ambient-glow glow-2"></div>
+      <!-- 漂浮叶片 -->
+      <div class="floating-leaves">
+        <div class="leaf leaf-1">
+          <svg viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M30 5C30 5 50 20 50 40C50 60 40 70 30 70C20 70 10 60 10 40C10 20 30 5 30 5Z" fill="url(#leafGrad1)" opacity="0.08"/>
+            <defs>
+              <linearGradient id="leafGrad1" x1="30" y1="5" x2="30" y2="70">
+                <stop offset="0%" stop-color="#52B788"/>
+                <stop offset="100%" stop-color="#2D6A4F"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="leaf leaf-2">
+          <svg viewBox="0 0 50 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M25 5C25 5 42 18 42 35C42 52 34 60 25 60C16 60 8 52 8 35C8 18 25 5 25 5Z" fill="url(#leafGrad2)" opacity="0.06"/>
+            <defs>
+              <linearGradient id="leafGrad2" x1="25" y1="5" x2="25" y2="60">
+                <stop offset="0%" stop-color="#90E0EF"/>
+                <stop offset="100%" stop-color="#00B4D8"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="leaf leaf-3">
+          <svg viewBox="0 0 40 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 5C20 5 34 15 34 30C34 45 28 52 20 52C12 52 6 45 6 30C6 15 20 5 20 5Z" fill="url(#leafGrad3)" opacity="0.05"/>
+            <defs>
+              <linearGradient id="leafGrad3" x1="20" y1="5" x2="20" y2="52">
+                <stop offset="0%" stop-color="#74C69D"/>
+                <stop offset="100%" stop-color="#40916C"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 环境光晕 -->
+      <div class="ambient-glow glow-green"></div>
+      <div class="ambient-glow glow-blue"></div>
     </div>
 
     <!-- Top Navigation -->
@@ -93,16 +118,25 @@ onUnmounted(() => {
         <router-link to="/user/market" class="nav-logo">
           <div class="logo-mark">
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="12" fill="url(#navLogoGrad)"/>
-              <g transform="translate(12, 9)">
-                <path d="M12 3 L20 11 L12 19 L4 11 Z" fill="white"/>
-                <path d="M8 19 L12 23 L16 19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="12" cy="11" r="3" fill="#FF6B35"/>
+              <circle cx="24" cy="24" r="22" fill="url(#navLogoBg)" fill-opacity="0.15"/>
+              <circle cx="24" cy="24" r="22" stroke="url(#navLogoBorder)" stroke-width="1.5"/>
+              <g transform="translate(24, 24)">
+                <path d="M0 -13C0 -13 11 -6 11 5C11 14 5 17 0 17C-5 17 -11 14 -11 5C-11 -6 0 -13 0 -13Z" fill="url(#navLogoLeaf)"/>
+                <path d="M0 -13L0 17" stroke="white" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                <circle cx="0" cy="-13" r="2.5" fill="#52B788"/>
               </g>
               <defs>
-                <linearGradient id="navLogoGrad" x1="0" y1="0" x2="48" y2="48">
-                  <stop offset="0%" stop-color="#FF6B35"/>
-                  <stop offset="100%" stop-color="#7B2CBF"/>
+                <linearGradient id="navLogoBg" x1="2" y1="2" x2="46" y2="46">
+                  <stop offset="0%" stop-color="#52B788"/>
+                  <stop offset="100%" stop-color="#2D6A4F"/>
+                </linearGradient>
+                <linearGradient id="navLogoBorder" x1="2" y1="2" x2="46" y2="46">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#40916C"/>
+                </linearGradient>
+                <linearGradient id="navLogoLeaf" x1="-11" y1="-13" x2="11" y2="17">
+                  <stop offset="0%" stop-color="#74C69D"/>
+                  <stop offset="100%" stop-color="#40916C"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -166,16 +200,24 @@ onUnmounted(() => {
           <div class="mobile-header">
             <div class="mobile-logo">
               <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="48" height="48" rx="12" fill="url(#mobileLogoGrad)"/>
-                <g transform="translate(12, 9)">
-                  <path d="M12 3 L20 11 L12 19 L4 11 Z" fill="white"/>
-                  <path d="M8 19 L12 23 L16 19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <circle cx="12" cy="11" r="3" fill="#FF6B35"/>
+                <circle cx="24" cy="24" r="22" fill="url(#mobileLogoBg)" fill-opacity="0.15"/>
+                <circle cx="24" cy="24" r="22" stroke="url(#mobileLogoBorder)" stroke-width="1.5"/>
+                <g transform="translate(24, 24)">
+                  <path d="M0 -13C0 -13 11 -6 11 5C11 14 5 17 0 17C-5 17 -11 14 -11 5C-11 -6 0 -13 0 -13Z" fill="url(#mobileLogoLeaf)"/>
+                  <circle cx="0" cy="-13" r="2.5" fill="#52B788"/>
                 </g>
                 <defs>
-                  <linearGradient id="mobileLogoGrad" x1="0" y1="0" x2="48" y2="48">
-                    <stop offset="0%" stop-color="#FF6B35"/>
-                    <stop offset="100%" stop-color="#7B2CBF"/>
+                  <linearGradient id="mobileLogoBg" x1="2" y1="2" x2="46" y2="46">
+                    <stop offset="0%" stop-color="#52B788"/>
+                    <stop offset="100%" stop-color="#2D6A4F"/>
+                  </linearGradient>
+                  <linearGradient id="mobileLogoBorder" x1="2" y1="2" x2="46" y2="46">
+                    <stop offset="0%" stop-color="#74C69D"/>
+                    <stop offset="100%" stop-color="#40916C"/>
+                  </linearGradient>
+                  <linearGradient id="mobileLogoLeaf" x1="-11" y1="-13" x2="11" y2="17">
+                    <stop offset="0%" stop-color="#74C69D"/>
+                    <stop offset="100%" stop-color="#40916C"/>
                   </linearGradient>
                 </defs>
               </svg>
@@ -201,6 +243,15 @@ onUnmounted(() => {
               <span v-if="item.badge" class="mobile-badge">{{ item.badge }}</span>
             </router-link>
           </nav>
+
+          <!-- 移动端底部装饰植物 -->
+          <div class="mobile-footer-plant">
+            <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+              <path d="M30 55V25" stroke="#74C69D" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M30 40C30 40 42 32 42 22C42 16 37 13 30 13C23 13 18 16 18 22C18 32 30 40 30 40Z" fill="#74C69D" fill-opacity="0.2"/>
+              <path d="M30 28C30 28 38 23 38 16C38 12 34 9 30 9C26 9 22 12 22 16C22 23 30 28 30 28Z" fill="#52B788" fill-opacity="0.3"/>
+            </svg>
+          </div>
         </div>
       </div>
     </transition>
@@ -217,36 +268,53 @@ onUnmounted(() => {
     <!-- Footer -->
     <footer class="layout-footer">
       <div class="footer-content">
+        <!-- 装饰线 -->
+        <div class="footer-decoration">
+          <div class="deco-line"></div>
+          <div class="deco-leaf">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2C10 2 16 6 16 10C16 14 13 16 10 16C7 16 4 14 4 10C4 6 10 2 10 2Z" fill="currentColor" opacity="0.3"/>
+            </svg>
+          </div>
+          <div class="deco-line"></div>
+        </div>
+
         <p class="footer-text">© 2025 天猫宠物用品数据采集系统</p>
-        <p class="footer-sub">Data-Driven Pet Market Insights</p>
+        <p class="footer-sub">自然生长 · 数据洞察</p>
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Design Tokens
+   Design Tokens - 清新自然
    ============================================ */
 .user-layout {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --bg-primary: #0D0D14;
-  --bg-elevated: rgba(20, 20, 32, 0.8);
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 107, 53, 0.3);
+  --primary-green: #2D6A4F;
+  --primary-green-light: #40916C;
+  --primary-green-lighter: #52B788;
+  --accent-green: #74C69D;
+  --accent-blue: #00B4D8;
+  --accent-blue-light: #90E0EF;
+  --bg-cream: #FAFAF9;
+  --bg-sand: #F5F5F4;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
+  --border-focus: #74C69D;
+  --shadow-soft: 0 4px 20px rgba(45, 106, 79, 0.08);
+  --shadow-hover: 0 8px 30px rgba(45, 106, 79, 0.12);
 
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
-  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg-cream);
+  font-family: 'Nunito', 'Noto Serif SC', -apple-system, sans-serif;
   position: relative;
 }
 
@@ -261,43 +329,82 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.paw-grid {
+.paper-texture {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
   opacity: 0.5;
+}
+
+.floating-leaves {
+  position: absolute;
+  inset: 0;
+}
+
+.leaf {
+  position: absolute;
+  animation: leafFloat 25s ease-in-out infinite;
+}
+
+.leaf-1 {
+  top: 15%;
+  right: 8%;
+  width: 80px;
+  height: 107px;
+  animation-delay: 0s;
+}
+
+.leaf-2 {
+  top: 60%;
+  right: 5%;
+  width: 60px;
+  height: 84px;
+  animation-delay: -12s;
+}
+
+.leaf-3 {
+  bottom: 20%;
+  left: 5%;
+  width: 50px;
+  height: 75px;
+  animation-delay: -6s;
+}
+
+@keyframes leafFloat {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(10px, -15px) rotate(3deg); }
+  50% { transform: translate(-5px, 10px) rotate(-2deg); }
+  75% { transform: translate(15px, 5px) rotate(2deg); }
 }
 
 .ambient-glow {
   position: absolute;
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.4;
-  animation: ambientPulse 20s ease-in-out infinite;
+  animation: ambientPulse 30s ease-in-out infinite;
 }
 
-.glow-1 {
+.glow-green {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(255, 107, 53, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(82, 183, 136, 0.2) 0%, transparent 70%);
   top: -150px;
   right: -150px;
   animation-delay: 0s;
 }
 
-.glow-2 {
+.glow-blue {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(123, 44, 191, 0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(144, 224, 239, 0.15) 0%, transparent 70%);
   bottom: -100px;
   left: -100px;
-  animation-delay: -10s;
+  animation-delay: -15s;
 }
 
 @keyframes ambientPulse {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-  50% { transform: translate(30px, -20px) scale(1.1); opacity: 0.5; }
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  50% { transform: translate(20px, -10px) scale(1.05); opacity: 0.6; }
 }
 
 /* ============================================
@@ -313,10 +420,10 @@ onUnmounted(() => {
 }
 
 .top-nav.is-scrolled {
-  background: rgba(13, 13, 20, 0.85);
+  background: rgba(250, 250, 249, 0.9);
   backdrop-filter: blur(24px);
-  border-bottom-color: var(--border-subtle);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  border-bottom-color: var(--border-light);
+  box-shadow: 0 4px 20px rgba(45, 106, 79, 0.05);
 }
 
 .nav-container {
@@ -343,7 +450,7 @@ onUnmounted(() => {
 }
 
 .nav-logo:hover .logo-mark {
-  transform: rotate(-5deg);
+  transform: rotate(-3deg);
 }
 
 .logo-mark {
@@ -351,7 +458,6 @@ onUnmounted(() => {
   height: 44px;
   flex-shrink: 0;
   transition: transform 0.3s ease;
-  filter: drop-shadow(0 4px 16px rgba(255, 107, 53, 0.3));
 }
 
 .logo-mark svg {
@@ -366,22 +472,22 @@ onUnmounted(() => {
 }
 
 .logo-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 16px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary-orange), #FFD700);
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-lighter));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1;
 }
 
 .logo-tag {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   color: var(--text-tertiary);
   text-transform: uppercase;
 }
@@ -405,27 +511,43 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 600;
   transition: all 0.3s ease;
+  font-family: 'Noto Serif SC', serif;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg-sand);
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .nav-item:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--primary-green);
+}
+
+.nav-item:hover::before {
+  opacity: 1;
 }
 
 .nav-item.active {
-  color: var(--primary-orange);
-  background: rgba(255, 107, 53, 0.1);
+  color: var(--primary-green);
+  background: rgba(116, 198, 157, 0.12);
 }
 
 .nav-item.active .nav-dot {
   opacity: 1;
-  transform: scale(1);
+  transform: translateX(-50%) scale(1);
 }
 
 .nav-icon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .nav-label {
@@ -435,13 +557,15 @@ onUnmounted(() => {
 
 .nav-badge {
   padding: 3px 8px;
-  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
+  background: linear-gradient(135deg, var(--primary-green-light), var(--primary-green));
   color: white;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 10px;
   font-weight: 700;
   border-radius: 6px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
+  position: relative;
+  z-index: 1;
 }
 
 .nav-dot {
@@ -451,7 +575,7 @@ onUnmounted(() => {
   transform: translateX(-50%) scale(0);
   width: 4px;
   height: 4px;
-  background: var(--primary-orange);
+  background: var(--primary-green);
   border-radius: 50%;
   opacity: 0;
   transition: all 0.3s ease;
@@ -470,15 +594,16 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 8px 16px 8px 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.04);
 }
 
 .user-chip:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--border-hover);
+  box-shadow: var(--shadow-soft);
+  border-color: var(--accent-green);
 }
 
 .user-chip-avatar {
@@ -487,7 +612,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
+  background: linear-gradient(135deg, var(--primary-green-light), var(--primary-green-lighter));
   border-radius: 50%;
 }
 
@@ -499,18 +624,19 @@ onUnmounted(() => {
 
 .user-chip-name {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
+  font-family: 'Noto Serif SC', serif;
 }
 
 .nav-icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 12px;
   color: var(--text-tertiary);
   cursor: pointer;
@@ -518,9 +644,9 @@ onUnmounted(() => {
 }
 
 .nav-icon-btn:hover {
-  color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.3);
-  background: rgba(255, 107, 107, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
 }
 
 .nav-icon-btn .icon {
@@ -530,12 +656,12 @@ onUnmounted(() => {
 
 .mobile-toggle {
   display: none;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 12px;
   color: var(--text-secondary);
   cursor: pointer;
@@ -543,9 +669,9 @@ onUnmounted(() => {
 }
 
 .mobile-toggle:hover {
-  background: rgba(255, 107, 53, 0.1);
-  border-color: var(--border-hover);
-  color: var(--primary-orange);
+  background: rgba(116, 198, 157, 0.1);
+  border-color: var(--accent-green);
+  color: var(--primary-green);
 }
 
 .mobile-toggle .icon {
@@ -560,8 +686,8 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
 }
 
 .mobile-menu {
@@ -569,13 +695,14 @@ onUnmounted(() => {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 300px;
+  width: 320px;
   max-width: 90vw;
-  background: var(--bg-elevated);
-  border-left: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(40px);
+  box-shadow: -10px 0 40px rgba(45, 106, 79, 0.1);
 }
 
 .mobile-header {
@@ -583,12 +710,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 14px;
   padding: 20px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, rgba(116, 198, 157, 0.03) 0%, transparent 100%);
 }
 
 .mobile-logo {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
 }
 
@@ -599,20 +727,20 @@ onUnmounted(() => {
 
 .mobile-title {
   flex: 1;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .mobile-close {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-default);
+  background: var(--bg-sand);
+  border: 1px solid var(--border-light);
   border-radius: 10px;
   color: var(--text-tertiary);
   cursor: pointer;
@@ -620,7 +748,7 @@ onUnmounted(() => {
 }
 
 .mobile-close:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
   color: var(--text-primary);
 }
 
@@ -644,12 +772,13 @@ onUnmounted(() => {
   font-size: 15px;
   font-weight: 600;
   transition: all 0.3s ease;
+  font-family: 'Noto Serif SC', serif;
 }
 
 .mobile-item:hover,
 .mobile-item.active {
-  background: rgba(255, 107, 53, 0.1);
-  color: var(--primary-orange);
+  background: rgba(116, 198, 157, 0.12);
+  color: var(--primary-green);
 }
 
 .mobile-icon {
@@ -664,12 +793,25 @@ onUnmounted(() => {
 
 .mobile-badge {
   padding: 4px 10px;
-  background: linear-gradient(135deg, var(--primary-orange), var(--primary-purple));
+  background: linear-gradient(135deg, var(--primary-green-light), var(--primary-green));
   color: white;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 10px;
   font-weight: 700;
   border-radius: 6px;
+}
+
+.mobile-footer-plant {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  opacity: 0.5;
+  animation: mobilePlantSway 4s ease-in-out infinite;
+}
+
+@keyframes mobilePlantSway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
 }
 
 /* ============================================
@@ -691,9 +833,10 @@ onUnmounted(() => {
 .layout-footer {
   position: relative;
   z-index: 1;
-  padding: 24px;
-  border-top: 1px solid var(--border-subtle);
+  padding: 32px 24px;
+  border-top: 1px solid var(--border-light);
   text-align: center;
+  background: linear-gradient(180deg, transparent 0%, rgba(116, 198, 157, 0.02) 100%);
 }
 
 .footer-content {
@@ -701,17 +844,40 @@ onUnmounted(() => {
   margin: 0 auto;
 }
 
+.footer-decoration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.deco-line {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-light));
+}
+
+.deco-line:last-child {
+  background: linear-gradient(90deg, var(--border-light), transparent);
+}
+
+.deco-leaf {
+  color: var(--accent-green);
+}
+
 .footer-text {
   font-size: 13px;
   color: var(--text-tertiary);
   margin: 0 0 4px 0;
+  font-family: 'Nunito', sans-serif;
 }
 
 .footer-sub {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 11px;
   color: var(--text-tertiary);
-  opacity: 0.6;
+  opacity: 0.7;
   margin: 0;
   letter-spacing: 0.05em;
 }
@@ -768,6 +934,10 @@ onUnmounted(() => {
   .nav-container {
     padding: 16px 20px;
   }
+
+  .leaf {
+    opacity: 0.4;
+  }
 }
 
 @media (max-width: 640px) {
@@ -789,13 +959,21 @@ onUnmounted(() => {
   }
 
   .nav-icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
   }
 
   .mobile-toggle {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .footer-text {
+    font-size: 12px;
+  }
+
+  .leaf-1, .leaf-2 {
+    display: none;
   }
 }
 </style>

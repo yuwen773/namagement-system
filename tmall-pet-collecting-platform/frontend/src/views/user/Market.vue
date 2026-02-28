@@ -64,13 +64,13 @@ const generatePriceDrops = (products) => {
   }))
 }
 
-// Chart configurations
+// Chart configurations - Updated with natural colors
 const salesChartOption = computed(() => {
   if (!topSales.value.length) {
     return null
   }
 
-  const colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#7B2CBF', '#FF6B35', '#06FFA5', '#00D9FF', '#FF1493', '#39FF14', '#FFD700']
+  const colors = ['#52B788', '#40916C', '#2D6A4F', '#74C69D', '#00B4D8', '#90E0EF', '#52B788', '#40916C', '#2D6A4F', '#74C69D']
 
   return {
     grid: {
@@ -83,28 +83,28 @@ const salesChartOption = computed(() => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(10, 10, 18, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
-      textStyle: { color: '#fff' },
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: 'rgba(82, 183, 136, 0.3)',
+      textStyle: { color: '#2D6A4F' },
       formatter: (params) => {
         const data = params[0]
         return `<div style="padding: 12px;">
-          <div style="font-weight: 700; margin-bottom: 8px; color: var(--neon-orange);">${data.name}</div>
+          <div style="font-weight: 700; margin-bottom: 8px; color: #2D6A4F;">${data.name}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="color: var(--text-tertiary);">销量:</span>
-            <span style="color: var(--status-success); font-weight: 600;">${formatNumber(data.value)}</span>
+            <span style="color: #666;">销量:</span>
+            <span style="color: #52B788; font-weight: 600;">${formatNumber(data.value)}</span>
           </div>
         </div>`
       }
     },
     xAxis: {
       type: 'value',
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+      axisLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.1)' } },
       axisLabel: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(45, 106, 79, 0.6)',
         formatter: (val) => val >= 1000 ? `${val/1000}k` : val
       },
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+      splitLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.05)' } }
     },
     yAxis: {
       type: 'category',
@@ -112,7 +112,7 @@ const salesChartOption = computed(() => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(45, 106, 79, 0.7)',
         fontSize: 11,
         width: 120,
         overflow: 'truncate'
@@ -124,8 +124,8 @@ const salesChartOption = computed(() => {
         value: item.sales || 0,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: colors[index] || '#7B2CBF' },
-            { offset: 1, color: `${colors[index] || '#7B2CBF'}66` }
+            { offset: 0, color: colors[index] || '#52B788' },
+            { offset: 1, color: `${colors[index] || '#52B788'}99` }
           ]),
           borderRadius: [0, 8, 8, 0]
         }
@@ -134,7 +134,7 @@ const salesChartOption = computed(() => {
       label: {
         show: true,
         position: 'right',
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(45, 106, 79, 0.8)',
         fontSize: 11,
         fontWeight: 600,
         formatter: (params) => formatNumber(params.value)
@@ -162,33 +162,33 @@ const salesDistributionChartOption = computed(() => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(10, 10, 18, 0.95)',
-      borderColor: 'rgba(123, 44, 191, 0.3)',
-      textStyle: { color: '#fff' },
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: 'rgba(64, 145, 108, 0.3)',
+      textStyle: { color: '#2D6A4F' },
       formatter: (params) => {
         const data = params[0]
         const item = salesDistribution.value[data.dataIndex]
         return `<div style="padding: 12px;">
-          <div style="font-weight: 700; margin-bottom: 8px; color: var(--neon-purple);">${data.name}</div>
+          <div style="font-weight: 700; margin-bottom: 8px; color: #40916C;">${data.name}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="color: var(--text-tertiary);">商品数:</span>
-            <span style="color: var(--status-success); font-weight: 600;">${item.count}</span>
+            <span style="color: #666;">商品数:</span>
+            <span style="color: #52B788; font-weight: 600;">${item.count}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-            <span style="color: var(--text-tertiary);">占比:</span>
-            <span style="color: var(--neon-cyan); font-weight: 600;">${item.percentage}%</span>
+            <span style="color: #666;">占比:</span>
+            <span style="color: #00B4D8; font-weight: 600;">${item.percentage}%</span>
           </div>
         </div>`
       }
     },
     xAxis: {
       type: 'value',
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+      axisLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.1)' } },
       axisLabel: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(45, 106, 79, 0.5)',
         formatter: (val) => val >= 1000 ? `${val/1000}k` : val
       },
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+      splitLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.05)' } }
     },
     yAxis: {
       type: 'category',
@@ -196,7 +196,7 @@ const salesDistributionChartOption = computed(() => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(45, 106, 79, 0.7)',
         fontSize: 11
       }
     },
@@ -206,8 +206,8 @@ const salesDistributionChartOption = computed(() => {
         value: item.count,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: `hsl(${270 + index * 15}, 70%, 55%)` },
-            { offset: 1, color: `hsla(${270 + index * 15}, 70%, 55%, 0.4)` }
+            { offset: 0, color: `hsl(${155 + index * 5}, 45%, ${45 + index * 2}%)` },
+            { offset: 1, color: `hsla(${155 + index * 5}, 45%, ${45 + index * 2}%, 0.6)` }
           ]),
           borderRadius: [0, 8, 8, 0]
         }
@@ -216,7 +216,7 @@ const salesDistributionChartOption = computed(() => {
       label: {
         show: true,
         position: 'right',
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(45, 106, 79, 0.8)',
         fontSize: 11,
         fontWeight: 600,
         formatter: (params) => salesDistribution.value[params.dataIndex].count
@@ -244,33 +244,33 @@ const priceDistributionChartOption = computed(() => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(10, 10, 18, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
-      textStyle: { color: '#fff' },
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: 'rgba(0, 180, 216, 0.3)',
+      textStyle: { color: '#2D6A4F' },
       formatter: (params) => {
         const data = params[0]
         const item = priceDistribution.value[data.dataIndex]
         return `<div style="padding: 12px;">
-          <div style="font-weight: 700; margin-bottom: 8px; color: var(--neon-orange);">${data.name}</div>
+          <div style="font-weight: 700; margin-bottom: 8px; color: #00B4D8;">${data.name}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="color: var(--text-tertiary);">商品数:</span>
-            <span style="color: var(--status-success); font-weight: 600;">${item.count}</span>
+            <span style="color: #666;">商品数:</span>
+            <span style="color: #52B788; font-weight: 600;">${item.count}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-            <span style="color: var(--text-tertiary);">占比:</span>
-            <span style="color: var(--neon-cyan); font-weight: 600;">${item.percentage}%</span>
+            <span style="color: #666;">占比:</span>
+            <span style="color: #90E0EF; font-weight: 600;">${item.percentage}%</span>
           </div>
         </div>`
       }
     },
     xAxis: {
       type: 'value',
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+      axisLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.1)' } },
       axisLabel: {
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(45, 106, 79, 0.5)',
         formatter: (val) => val >= 1000 ? `${val/1000}k` : val
       },
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+      splitLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.05)' } }
     },
     yAxis: {
       type: 'category',
@@ -278,7 +278,7 @@ const priceDistributionChartOption = computed(() => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(45, 106, 79, 0.7)',
         fontSize: 11
       }
     },
@@ -288,8 +288,8 @@ const priceDistributionChartOption = computed(() => {
         value: item.count,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: `hsl(${25 + index * 10}, 95%, 55%)` },
-            { offset: 1, color: `hsla(${25 + index * 10}, 95%, 55%, 0.4)` }
+            { offset: 0, color: `hsl(${195 + index * 5}, 70%, ${50 + index * 3}%)` },
+            { offset: 1, color: `hsla(${195 + index * 5}, 70%, ${50 + index * 3}%, 0.6)` }
           ]),
           borderRadius: [0, 8, 8, 0]
         }
@@ -298,7 +298,7 @@ const priceDistributionChartOption = computed(() => {
       label: {
         show: true,
         position: 'right',
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(45, 106, 79, 0.8)',
         fontSize: 11,
         fontWeight: 600,
         formatter: (params) => priceDistribution.value[params.dataIndex].count
@@ -331,28 +331,28 @@ const trendChartOption = computed(() => {
     },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(10, 10, 18, 0.95)',
-      borderColor: 'rgba(123, 44, 191, 0.3)',
-      textStyle: { color: '#fff' }
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: 'rgba(82, 183, 136, 0.3)',
+      textStyle: { color: '#2D6A4F' }
     },
     legend: {
       data: ['商品热度', '关注指数'],
       top: 0,
-      textStyle: { color: 'rgba(255,255,255,0.6)' },
+      textStyle: { color: 'rgba(45, 106, 79, 0.6)' },
       itemWidth: 16,
       itemHeight: 16
     },
     xAxis: {
       type: 'category',
       data: dates,
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
-      axisLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11 }
+      axisLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.1)' } },
+      axisLabel: { color: 'rgba(45, 106, 79, 0.5)', fontSize: 11 }
     },
     yAxis: {
       type: 'value',
       axisLine: { show: false },
-      axisLabel: { color: 'rgba(255,255,255,0.5)' },
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+      axisLabel: { color: 'rgba(45, 106, 79, 0.5)' },
+      splitLine: { lineStyle: { color: 'rgba(45, 106, 79, 0.05)' } }
     },
     series: [
       {
@@ -360,12 +360,12 @@ const trendChartOption = computed(() => {
         type: 'line',
         smooth: true,
         data: trendData,
-        lineStyle: { color: '#FF6B35', width: 3 },
-        itemStyle: { color: '#FF6B35' },
+        lineStyle: { color: '#52B788', width: 3 },
+        itemStyle: { color: '#52B788' },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(255, 107, 53, 0.3)' },
-            { offset: 1, color: 'rgba(255, 107, 53, 0.05)' }
+            { offset: 0, color: 'rgba(82, 183, 136, 0.3)' },
+            { offset: 1, color: 'rgba(82, 183, 136, 0.05)' }
           ])
         }
       },
@@ -374,12 +374,12 @@ const trendChartOption = computed(() => {
         type: 'line',
         smooth: true,
         data: trendData.map(v => Math.round(v * 0.75)),
-        lineStyle: { color: '#7B2CBF', width: 3 },
-        itemStyle: { color: '#7B2CBF' },
+        lineStyle: { color: '#40916C', width: 3 },
+        itemStyle: { color: '#40916C' },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(123, 44, 191, 0.3)' },
-            { offset: 1, color: 'rgba(123, 44, 191, 0.05)' }
+            { offset: 0, color: 'rgba(64, 145, 108, 0.3)' },
+            { offset: 1, color: 'rgba(64, 145, 108, 0.05)' }
           ])
         }
       }
@@ -523,12 +523,17 @@ onUnmounted(() => {
 
 <template>
   <div class="market-container">
+    <!-- 装饰性背景 -->
+    <div class="leaf-decoration leaf-1"></div>
+    <div class="leaf-decoration leaf-2"></div>
+    <div class="leaf-decoration leaf-3"></div>
+
     <!-- 顶部标题区 -->
     <div class="market-header">
       <div class="header-content">
         <div class="header-badge">
           <TrendCharts class="badge-icon" />
-          <span>LIVE DATA</span>
+          <span>市场洞察</span>
         </div>
         <h1 class="header-title">市场行情</h1>
         <p class="header-subtitle">宠物用品消费决策数据 · 实时监控 · 智能分析</p>
@@ -551,7 +556,7 @@ onUnmounted(() => {
 
     <!-- 统计指标卡片 -->
     <div class="metrics-grid">
-      <div class="metric-card metric-card--orange" style="--i: 0">
+      <div class="metric-card metric-card--green" style="--i: 0">
         <div class="metric-header">
           <div class="metric-icon">
             <TrendCharts class="icon" />
@@ -562,10 +567,10 @@ onUnmounted(() => {
           <p class="metric-label">商品总数</p>
           <p class="metric-value">{{ formatNumber(overview?.total_products || 0) }}</p>
         </div>
-        <div class="metric-bg">📦</div>
+        <div class="metric-bg">🌱</div>
       </div>
 
-      <div class="metric-card metric-card--purple" style="--i: 1">
+      <div class="metric-card metric-card--teal" style="--i: 1">
         <div class="metric-header">
           <div class="metric-icon">
             <Warning class="icon" />
@@ -578,10 +583,10 @@ onUnmounted(() => {
           <p class="metric-label">平均价格</p>
           <p class="metric-value">¥{{ overview?.price?.avg?.toFixed(0) || 0 }}</p>
         </div>
-        <div class="metric-bg">💰</div>
+        <div class="metric-bg">💚</div>
       </div>
 
-      <div class="metric-card metric-card--gold" style="--i: 2">
+      <div class="metric-card metric-card--blue" style="--i: 2">
         <div class="metric-header">
           <div class="metric-icon">
             <TrendCharts class="icon" />
@@ -592,16 +597,16 @@ onUnmounted(() => {
           <p class="metric-label">总销量</p>
           <p class="metric-value">{{ formatNumber(overview?.sales?.total || 0) }}</p>
         </div>
-        <div class="metric-bg">📈</div>
+        <div class="metric-bg">🌿</div>
       </div>
     </div>
 
     <!-- 图表区域 -->
     <div class="charts-section">
-      <div class="chart-panel chart-panel--orange" style="--i: 0">
+      <div class="chart-panel chart-panel--green" style="--i: 0">
         <div class="chart-panel-header">
           <div class="chart-title-group">
-            <div class="chart-icon-wrapper chart-icon-wrapper--orange">
+            <div class="chart-icon-wrapper chart-icon-wrapper--green">
               <TrendCharts class="icon" />
             </div>
             <div>
@@ -620,10 +625,10 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="chart-panel chart-panel--purple" style="--i: 1">
+      <div class="chart-panel chart-panel--teal" style="--i: 1">
         <div class="chart-panel-header">
           <div class="chart-title-group">
-            <div class="chart-icon-wrapper chart-icon-wrapper--purple">
+            <div class="chart-icon-wrapper chart-icon-wrapper--teal">
               <TrendCharts class="icon" />
             </div>
             <div>
@@ -647,7 +652,7 @@ onUnmounted(() => {
     <div class="ranking-panel" style="--i: 2">
       <div class="ranking-panel-header">
         <div class="chart-title-group">
-          <div class="chart-icon-wrapper chart-icon-wrapper--gold">
+          <div class="chart-icon-wrapper chart-icon-wrapper--leaf">
             <Star class="icon" />
           </div>
           <div>
@@ -670,7 +675,7 @@ onUnmounted(() => {
     <div class="drops-section">
       <div class="section-header">
         <div class="section-title-group">
-          <div class="section-icon-wrapper section-icon-wrapper--warning">
+          <div class="section-icon-wrapper section-icon-wrapper--discount">
             <Warning class="icon" />
           </div>
           <div>
@@ -735,28 +740,70 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;500;600;700&display=swap');
 
 /* ============================================
    Design Tokens & Base
    ============================================ */
 .market-container {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --primary-gold: #FFD700;
-  --primary-cyan: #06FFA5;
-  --bg-card: rgba(20, 20, 32, 0.6);
-  --bg-card-hover: rgba(255, 255, 255, 0.04);
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
+  --primary-green: #2D6A4F;
+  --primary-teal: #40916C;
+  --primary-light: #52B788;
+  --accent-green: #74C69D;
+  --accent-blue: #00B4D8;
+  --accent-blue-light: #90E0EF;
+  --bg-cream: #FAFAF9;
+  --bg-sand: #F5F5F4;
+  --bg-card: #FFFFFF;
+  --text-primary: #1A4D3A;
+  --text-secondary: #4A7C6A;
+  --text-tertiary: #8BA89A;
+  --border-light: #E8F0EC;
+  --border-default: #D0E2D8;
 
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  font-family: 'Nunito', 'Noto Serif SC', -apple-system, sans-serif;
+  background: var(--bg-cream);
+  position: relative;
+  padding: 24px;
+}
+
+/* ============================================
+   Leaf Decorations
+   ============================================ */
+.leaf-decoration {
+  position: fixed;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.leaf-1 {
+  top: 10%;
+  right: 5%;
+  width: 300px;
+  height: 300px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2352B788'%3E%3Cpath d='M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+.leaf-2 {
+  bottom: 20%;
+  left: 3%;
+  width: 250px;
+  height: 250px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2340916C'%3E%3Cpath d='M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  transform: rotate(45deg);
+}
+
+.leaf-3 {
+  top: 50%;
+  right: 2%;
+  width: 200px;
+  height: 200px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300B4D8'%3E%3Cpath d='M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  transform: rotate(-30deg);
 }
 
 /* ============================================
@@ -766,7 +813,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 16px 0;
+  position: relative;
+  z-index: 1;
 }
 
 .header-content {
@@ -777,38 +826,39 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  background: rgba(255, 107, 53, 0.15);
-  border: 1px solid rgba(255, 107, 53, 0.3);
-  border-radius: 20px;
-  margin-bottom: 12px;
+  padding: 8px 16px;
+  background: rgba(82, 183, 136, 0.12);
+  border: 1px solid rgba(82, 183, 136, 0.3);
+  border-radius: 24px;
+  margin-bottom: 16px;
 }
 
 .header-badge .badge-icon {
-  width: 14px;
-  height: 14px;
-  color: var(--primary-orange);
+  width: 16px;
+  height: 16px;
+  color: var(--primary-light);
 }
 
 .header-badge span {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: var(--primary-orange);
+  color: var(--primary-light);
+  text-transform: uppercase;
 }
 
 .header-title {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 28px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 32px;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 4px 0;
+  color: var(--primary-green);
+  margin: 0 0 8px 0;
   letter-spacing: -0.02em;
 }
 
 .header-subtitle {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-tertiary);
   margin: 0;
 }
@@ -820,31 +870,31 @@ onUnmounted(() => {
 
 .header-stat {
   text-align: center;
-  padding: 16px 20px;
+  padding: 20px 24px;
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  min-width: 90px;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  min-width: 100px;
+  box-shadow: 0 4px 20px rgba(45, 106, 79, 0.06);
   transition: all 0.3s ease;
 }
 
 .header-stat:hover {
-  background: var(--bg-card-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(82, 183, 136, 0.15);
   border-color: var(--border-default);
-  transform: translateY(-2px);
 }
 
 .header-stat-value {
   display: block;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 24px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 28px;
   font-weight: 700;
-  color: var(--primary-orange);
+  color: var(--primary-light);
 }
 
 .header-stat-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -856,20 +906,22 @@ onUnmounted(() => {
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .metric-card {
   position: relative;
-  padding: 24px;
+  padding: 28px;
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
   overflow: hidden;
   animation: metricSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
   animation-delay: calc(var(--i) * 0.1s);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(45, 106, 79, 0.06);
 }
 
 @keyframes metricSlideUp {
@@ -889,18 +941,18 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 4px;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.metric-card--orange::before { background: linear-gradient(90deg, var(--primary-orange), transparent); }
-.metric-card--purple::before { background: linear-gradient(90deg, var(--primary-purple), transparent); }
-.metric-card--gold::before { background: linear-gradient(90deg, var(--primary-gold), transparent); }
+.metric-card--green::before { background: linear-gradient(90deg, var(--primary-light), var(--accent-green)); }
+.metric-card--teal::before { background: linear-gradient(90deg, var(--primary-teal), var(--primary-light)); }
+.metric-card--blue::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light)); }
 
 .metric-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-default);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(82, 183, 136, 0.18);
 }
 
 .metric-card:hover::before {
@@ -911,46 +963,48 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .metric-icon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 16px;
 }
 
-.metric-card--orange .metric-icon { background: rgba(255, 107, 53, 0.15); }
-.metric-card--purple .metric-icon { background: rgba(123, 44, 191, 0.15); }
-.metric-card--gold .metric-icon { background: rgba(255, 215, 0, 0.15); }
+.metric-card--green .metric-icon { background: rgba(82, 183, 136, 0.15); }
+.metric-card--teal .metric-icon { background: rgba(64, 145, 108, 0.15); }
+.metric-card--blue .metric-icon { background: rgba(0, 180, 216, 0.15); }
 
 .metric-icon .icon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
-.metric-card--orange .metric-icon .icon { color: var(--primary-orange); }
-.metric-card--purple .metric-icon .icon { color: var(--primary-purple); }
-.metric-card--gold .metric-icon .icon { color: var(--primary-gold); }
+.metric-card--green .metric-icon .icon { color: var(--primary-light); }
+.metric-card--teal .metric-icon .icon { color: var(--primary-teal); }
+.metric-card--blue .metric-icon .icon { color: var(--accent-blue); }
 
 .metric-trend {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Nunito', sans-serif;
   font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
+  font-weight: 700;
+  padding: 6px 12px;
   border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .metric-trend.positive {
-  background: rgba(6, 255, 165, 0.1);
-  color: var(--primary-cyan);
+  background: rgba(82, 183, 136, 0.15);
+  color: var(--primary-light);
 }
 
 .metric-trend.neutral {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(139, 168, 154, 0.15);
   color: var(--text-tertiary);
 }
 
@@ -960,31 +1014,31 @@ onUnmounted(() => {
 }
 
 .metric-label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-tertiary);
   font-weight: 500;
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
 }
 
 .metric-value {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 26px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
   line-height: 1;
 }
 
-.metric-card--orange .metric-value { color: var(--primary-orange); }
-.metric-card--purple .metric-value { color: var(--primary-purple); }
-.metric-card--gold .metric-value { color: var(--primary-gold); }
+.metric-card--green .metric-value { color: var(--primary-light); }
+.metric-card--teal .metric-value { color: var(--primary-teal); }
+.metric-card--blue .metric-value { color: var(--accent-blue); }
 
 .metric-bg {
   position: absolute;
-  bottom: -8px;
-  right: -8px;
-  font-size: 72px;
-  opacity: 0.04;
+  bottom: -10px;
+  right: -10px;
+  font-size: 80px;
+  opacity: 0.06;
   pointer-events: none;
   filter: blur(1px);
 }
@@ -995,26 +1049,29 @@ onUnmounted(() => {
 .charts-section {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .chart-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   overflow: hidden;
   animation: panelFadeIn 0.5s ease backwards;
   animation-delay: calc(0.4s + var(--i) * 0.1s);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(45, 106, 79, 0.06);
 }
 
 @keyframes panelFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .chart-panel:hover {
+  box-shadow: 0 8px 30px rgba(82, 183, 136, 0.12);
   border-color: var(--border-default);
 }
 
@@ -1022,67 +1079,67 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  border-bottom: 1px solid var(--border-light);
+  background: rgba(82, 183, 136, 0.02);
 }
 
 .chart-title-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .chart-icon-wrapper {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
-.chart-icon-wrapper--orange { background: rgba(255, 107, 53, 0.15); }
-.chart-icon-wrapper--purple { background: rgba(123, 44, 191, 0.15); }
-.chart-icon-wrapper--gold { background: rgba(255, 215, 0, 0.15); }
+.chart-icon-wrapper--green { background: rgba(82, 183, 136, 0.15); }
+.chart-icon-wrapper--teal { background: rgba(64, 145, 108, 0.15); }
+.chart-icon-wrapper--leaf { background: rgba(116, 198, 157, 0.15); }
 
 .chart-icon-wrapper .icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
-.chart-icon-wrapper--orange .icon { color: var(--primary-orange); }
-.chart-icon-wrapper--purple .icon { color: var(--primary-purple); }
-.chart-icon-wrapper--gold .icon { color: var(--primary-gold); }
+.chart-icon-wrapper--green .icon { color: var(--primary-light); }
+.chart-icon-wrapper--teal .icon { color: var(--primary-teal); }
+.chart-icon-wrapper--leaf .icon { color: var(--accent-green); }
 
 .chart-title {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 15px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 2px 0;
 }
 
 .chart-subtitle {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-tertiary);
   margin: 0;
 }
 
 .chart-badge {
-  padding: 6px 14px;
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid rgba(255, 107, 53, 0.2);
+  padding: 8px 16px;
+  background: rgba(82, 183, 136, 0.12);
+  border: 1px solid rgba(82, 183, 136, 0.25);
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--primary-orange);
+  color: var(--primary-light);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .chart-panel-body {
-  padding: 20px 24px;
+  padding: 24px;
   min-height: 280px;
 }
 
@@ -1096,10 +1153,10 @@ onUnmounted(() => {
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border-default);
-  border-top-color: var(--primary-orange);
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--primary-light);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1109,8 +1166,8 @@ onUnmounted(() => {
 }
 
 .chart-loading p {
-  margin-top: 12px;
-  font-size: 13px;
+  margin-top: 16px;
+  font-size: 14px;
 }
 
 .chart-container {
@@ -1122,16 +1179,19 @@ onUnmounted(() => {
    ============================================ */
 .ranking-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   overflow: hidden;
   animation: panelFadeIn 0.5s ease backwards;
   animation-delay: calc(0.6s + var(--i) * 0.1s);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(45, 106, 79, 0.06);
+  position: relative;
+  z-index: 1;
 }
 
 .ranking-panel:hover {
+  box-shadow: 0 8px 30px rgba(82, 183, 136, 0.12);
   border-color: var(--border-default);
 }
 
@@ -1139,13 +1199,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  border-bottom: 1px solid var(--border-light);
+  background: rgba(82, 183, 136, 0.02);
 }
 
 .ranking-panel-body {
-  padding: 20px 24px;
+  padding: 24px;
 }
 
 /* ============================================
@@ -1154,7 +1214,9 @@ onUnmounted(() => {
 .drops-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .section-header {
@@ -1166,32 +1228,32 @@ onUnmounted(() => {
 .section-title-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .section-icon-wrapper {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
-.section-icon-wrapper--warning { background: rgba(255, 59, 48, 0.15); }
-.section-icon-wrapper--star { background: rgba(255, 215, 0, 0.15); }
+.section-icon-wrapper--discount { background: rgba(0, 180, 216, 0.15); }
+.section-icon-wrapper--star { background: rgba(82, 183, 136, 0.15); }
 
 .section-icon-wrapper .icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
-.section-icon-wrapper--warning .icon { color: #FF3B30; }
-.section-icon-wrapper--star .icon { color: var(--primary-gold); }
+.section-icon-wrapper--discount .icon { color: var(--accent-blue); }
+.section-icon-wrapper--star .icon { color: var(--primary-light); }
 
 .section-title {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 17px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 2px 0;
@@ -1206,24 +1268,26 @@ onUnmounted(() => {
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 10px;
+  padding: 14px 24px;
   background: var(--bg-card);
   border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(45, 106, 79, 0.06);
 }
 
 .action-btn:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--primary-orange);
-  color: var(--primary-orange);
+  background: var(--primary-light);
+  border-color: var(--primary-light);
+  color: #fff;
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(82, 183, 136, 0.3);
 }
 
 .action-icon {
@@ -1234,19 +1298,19 @@ onUnmounted(() => {
 .drops-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
 }
 
 .drop-card {
   position: relative;
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(255, 59, 48, 0.08), rgba(255, 107, 53, 0.04));
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 59, 48, 0.15);
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(0, 180, 216, 0.06), rgba(82, 183, 136, 0.04));
+  border: 1px solid rgba(0, 180, 216, 0.15);
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
   overflow: hidden;
+  box-shadow: 0 4px 15px rgba(45, 106, 79, 0.06);
 }
 
 .drop-card::before {
@@ -1255,16 +1319,16 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #FF3B30, var(--primary-orange));
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--primary-light));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .drop-card:hover {
-  border-color: rgba(255, 59, 48, 0.3);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(255, 59, 48, 0.15);
+  border-color: rgba(0, 180, 216, 0.3);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 35px rgba(0, 180, 216, 0.18);
 }
 
 .drop-card:hover::before {
@@ -1273,16 +1337,16 @@ onUnmounted(() => {
 
 .drop-badge {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 6px 12px;
-  background: #FF3B30;
+  top: 20px;
+  right: 20px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-light));
   color: white;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
   font-weight: 700;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 180, 216, 0.3);
 }
 
 .drop-content {
@@ -1290,11 +1354,11 @@ onUnmounted(() => {
 }
 
 .drop-title {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 14px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1305,25 +1369,25 @@ onUnmounted(() => {
 .drop-price-group {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .drop-current {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 22px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 26px;
   font-weight: 700;
-  color: var(--primary-orange);
+  color: var(--primary-light);
 }
 
 .drop-original {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-tertiary);
   text-decoration: line-through;
 }
 
 .drop-sales {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-tertiary);
 }
 
@@ -1333,13 +1397,15 @@ onUnmounted(() => {
 .products-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .products-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  gap: 24px;
 }
 
 /* ============================================
@@ -1367,7 +1433,7 @@ onUnmounted(() => {
   .market-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 20px;
   }
 
   .header-stats {
@@ -1392,7 +1458,7 @@ onUnmounted(() => {
   .market-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 20px;
   }
 
   .header-stats {
@@ -1419,6 +1485,10 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  .market-container {
+    padding: 16px;
   }
 }
 </style>

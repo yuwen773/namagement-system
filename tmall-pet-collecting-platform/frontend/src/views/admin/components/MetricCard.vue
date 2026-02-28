@@ -12,8 +12,12 @@ const props = defineProps({
 <template>
   <div class="metric-card" :style="{ '--metric-color': metric.color }">
     <div class="card-background">
-      <div class="gradient-orb" :class="metric.gradient"></div>
-      <div class="grid-pattern"></div>
+      <div class="gradient-orb"></div>
+      <div class="leaf-decoration">
+        <svg viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 5C30 5 50 20 50 40C50 60 40 70 30 70C20 70 10 60 10 40C10 20 30 5 30 5Z" fill="currentColor" opacity="0.08"/>
+        </svg>
+      </div>
     </div>
 
     <div class="card-content">
@@ -27,35 +31,32 @@ const props = defineProps({
         <p class="metric-detail">{{ metric.detail }}</p>
       </div>
     </div>
-
-    <div class="card-border"></div>
-    <div class="card-glow"></div>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Base Card
+   Base Card - 清新自然风格
    ============================================ */
 .metric-card {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --primary-gold: #FFD700;
-  --primary-cyan: #06FFA5;
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --bg-cream: #FAFAF9;
+  --bg-sand: #F5F5F4;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
 
   position: relative;
-  background: rgba(20, 20, 32, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 20px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 20px rgba(45, 106, 79, 0.08);
   animation: metricSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
   animation-delay: calc(var(--i) * 0.1s);
 }
@@ -81,11 +82,13 @@ const props = defineProps({
   opacity: 0;
   transition: opacity 0.3s ease;
   background: linear-gradient(90deg, var(--metric-color), transparent);
+  border-radius: 20px 20px 0 0;
 }
 
 .metric-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 35px rgba(45, 106, 79, 0.15);
+  border-color: var(--metric-color);
 }
 
 .metric-card:hover::before {
@@ -104,53 +107,37 @@ const props = defineProps({
 
 .gradient-orb {
   position: absolute;
-  width: 200%;
-  height: 200%;
-  top: -50%;
-  right: -50%;
+  width: 150%;
+  height: 150%;
+  top: -25%;
+  right: -25%;
   border-radius: 50%;
-  opacity: 0.08;
-  filter: blur(60px);
+  opacity: 0.05;
+  filter: blur(50px);
+  background: radial-gradient(circle, var(--metric-color) 0%, transparent 70%);
   transition: all 0.6s ease;
 }
 
 .metric-card:hover .gradient-orb {
-  opacity: 0.15;
+  opacity: 0.1;
   transform: scale(1.1);
 }
 
-.from-orange-500 {
-  background: radial-gradient(circle, #FF6B35 0%, transparent 70%);
-}
-
-.from-purple-500 {
-  background: radial-gradient(circle, #7B2CBF 0%, transparent 70%);
-}
-
-.from-yellow-400 {
-  background: radial-gradient(circle, #FFD700 0%, transparent 70%);
-}
-
-.from-emerald-400 {
-  background: radial-gradient(circle, #06FFA5 0%, transparent 70%);
-}
-
-.from-pink-500 {
-  background: radial-gradient(circle, #FF4785 0%, transparent 70%);
-}
-
-.from-cyan-400 {
-  background: radial-gradient(circle, #4CC9F0 0%, transparent 70%);
-}
-
-.grid-pattern {
+.leaf-decoration {
   position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 20px 20px;
-  opacity: 0.5;
+  bottom: -10px;
+  right: -10px;
+  width: 70px;
+  height: 90px;
+  color: var(--metric-color);
+  opacity: 0.15;
+  transition: all 0.4s ease;
+  pointer-events: none;
+}
+
+.metric-card:hover .leaf-decoration {
+  transform: scale(1.1) rotate(5deg);
+  opacity: 0.25;
 }
 
 /* ============================================
@@ -159,107 +146,78 @@ const props = defineProps({
 .card-content {
   position: relative;
   z-index: 1;
-  padding: 20px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .icon-wrapper {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.08), rgba(116, 198, 157, 0.05));
+  border-radius: 16px;
+  border: 1px solid rgba(116, 198, 157, 0.2);
   transition: all 0.3s ease;
 }
 
 .metric-card:hover .icon-wrapper {
-  transform: scale(1.05);
+  transform: scale(1.08) rotate(3deg);
+  background: linear-gradient(135deg, var(--metric-color) 15%, rgba(116, 198, 157, 0.1) 100%);
   border-color: var(--metric-color);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 25px rgba(45, 106, 79, 0.2);
 }
 
 .icon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   color: var(--metric-color);
+  transition: color 0.3s ease;
+}
+
+.metric-card:hover .icon {
+  color: white;
 }
 
 .metric-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .metric-label {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-tertiary);
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .metric-value {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--metric-color);
   margin: 0;
   line-height: 1;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover .metric-value {
+  transform: translateX(3px);
 }
 
 .metric-detail {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 11px;
-  color: var(--text-tertiary);
+  font-family: 'Noto Serif SC', serif;
+  font-size: 12px;
+  color: var(--text-secondary);
   margin: 0;
-}
-
-/* ============================================
-   Card Border & Glow
-   ============================================ */
-.card-border {
-  position: absolute;
-  inset: 0;
-  border-radius: 20px;
-  padding: 1px;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.02) 50%,
-    rgba(255, 255, 255, 0.05) 100%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.card-glow {
-  position: absolute;
-  bottom: -50%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 100%;
-  background: radial-gradient(ellipse at center,
-    var(--metric-color) 0%,
-    transparent 70%);
-  opacity: 0;
-  filter: blur(40px);
-  transition: all 0.4s ease;
-  pointer-events: none;
-}
-
-.metric-card:hover .card-glow {
-  opacity: 0.2;
-  bottom: -30%;
+  font-weight: 500;
 }
 
 /* ============================================
@@ -271,17 +229,22 @@ const props = defineProps({
   }
 
   .metric-value {
-    font-size: 22px;
+    font-size: 24px;
   }
 
   .icon-wrapper {
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
   }
 
   .icon {
     width: 20px;
     height: 20px;
+  }
+
+  .leaf-decoration {
+    width: 50px;
+    height: 65px;
   }
 }
 </style>

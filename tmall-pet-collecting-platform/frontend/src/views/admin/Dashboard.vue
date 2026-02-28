@@ -83,25 +83,27 @@ const fetchPetTypeDistribution = async () => {
   }
 }
 
+// 清新自然风格配色
+const natureColors = ['#2D6A4F', '#40916C', '#52B788', '#74C69D', '#00B4D8', '#90E0EF']
+
 const priceChartOption = computed(() => {
   if (!priceDistribution.value || priceDistribution.value.length === 0) {
     return null
   }
 
-  const colors = ['#FF6B35', '#FFD700', '#7B2CBF', '#06FFA5']
   return {
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(13, 13, 20, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
-      textStyle: { color: '#fff' },
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#E7E5E4',
+      textStyle: { color: '#1C1917' },
       formatter: '{b}: {c} ({d}%)'
     },
     legend: {
       orient: 'vertical',
       right: '5%',
       top: 'center',
-      textStyle: { color: 'rgba(255,255,255,0.6)', fontSize: 12 }
+      textStyle: { color: '#57534E', fontSize: 12 }
     },
     series: [{
       type: 'pie',
@@ -109,13 +111,13 @@ const priceChartOption = computed(() => {
       center: ['35%', '50%'],
       avoidLabelOverlap: false,
       itemStyle: {
-        borderRadius: 8,
-        borderColor: '#0D0D14',
-        borderWidth: 2
+        borderRadius: 10,
+        borderColor: '#FFFFFF',
+        borderWidth: 3
       },
       label: {
         show: true,
-        color: 'rgba(255,255,255,0.7)',
+        color: '#57534E',
         fontSize: 11,
         formatter: '{b}\n{d}%'
       },
@@ -124,17 +126,17 @@ const priceChartOption = computed(() => {
         itemStyle: {
           shadowBlur: 16,
           shadowOffsetX: 0,
-          shadowColor: 'rgba(255, 107, 53, 0.4)'
+          shadowColor: 'rgba(45, 106, 79, 0.25)'
         }
       },
       labelLine: {
-        lineStyle: { color: 'rgba(255,255,255,0.2)' },
+        lineStyle: { color: '#A8A29E' },
         smooth: 0.3
       },
       data: priceDistribution.value.map((item, index) => ({
         value: item.count,
         name: item.range,
-        itemStyle: { color: colors[index] }
+        itemStyle: { color: natureColors[index % natureColors.length] }
       }))
     }]
   }
@@ -149,9 +151,9 @@ const shopChartOption = computed(() => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(13, 13, 20, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
-      textStyle: { color: '#fff' }
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#E7E5E4',
+      textStyle: { color: '#1C1917' }
     },
     grid: {
       left: '3%',
@@ -162,9 +164,9 @@ const shopChartOption = computed(() => {
     },
     xAxis: {
       type: 'value',
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
-      axisLabel: { color: 'rgba(255,255,255,0.4)' },
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.03)' } }
+      axisLine: { lineStyle: { color: '#E7E5E4' } },
+      axisLabel: { color: '#A8A29E' },
+      splitLine: { lineStyle: { color: '#F5F5F4', type: 'dashed' } }
     },
     yAxis: {
       type: 'category',
@@ -172,7 +174,7 @@ const shopChartOption = computed(() => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: 'rgba(255,255,255,0.6)',
+        color: '#57534E',
         fontSize: 11,
         width: 100,
         overflow: 'truncate'
@@ -184,24 +186,24 @@ const shopChartOption = computed(() => {
         value: item.count,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: '#7B2CBF' },
-            { offset: 0.5, color: '#FF6B35' },
-            { offset: 1, color: '#FFD700' }
+            { offset: 0, color: natureColors[index % natureColors.length] },
+            { offset: 1, color: natureColors[(index + 1) % natureColors.length] }
           ]),
-          borderRadius: [0, 6, 6, 0]
+          borderRadius: [0, 8, 8, 0]
         }
       })),
       barWidth: '65%',
       label: {
         show: true,
         position: 'right',
-        color: 'rgba(255,255,255,0.7)',
-        fontSize: 11
+        color: '#57534E',
+        fontSize: 11,
+        fontWeight: '600'
       },
       emphasis: {
         itemStyle: {
           shadowBlur: 12,
-          shadowColor: 'rgba(255, 107, 53, 0.3)'
+          shadowColor: 'rgba(45, 106, 79, 0.2)'
         }
       }
     }]
@@ -213,37 +215,36 @@ const petTypeChartOption = computed(() => {
     return null
   }
 
-  const colors = ['#FF6B35', '#7B2CBF', '#FFD700', '#06FFA5', '#FF6B9D', '#9D4EDD']
   return {
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(13, 13, 20, 0.95)',
-      borderColor: 'rgba(255, 107, 53, 0.3)',
-      textStyle: { color: '#fff' }
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#E7E5E4',
+      textStyle: { color: '#1C1917' }
     },
     legend: {
       orient: 'vertical',
       right: '5%',
       top: 'center',
-      textStyle: { color: 'rgba(255,255,255,0.6)', fontSize: 11 }
+      textStyle: { color: '#57534E', fontSize: 11 }
     },
     series: [{
       type: 'pie',
       radius: ['35%', '65%'],
       center: ['40%', '50%'],
       itemStyle: {
-        borderRadius: 8,
-        borderColor: '#0D0D14',
-        borderWidth: 2
+        borderRadius: 10,
+        borderColor: '#FFFFFF',
+        borderWidth: 3
       },
       data: petTypeDistribution.value.map((item, index) => ({
         name: item.label,
         value: item.count,
-        itemStyle: { color: colors[index % colors.length] }
+        itemStyle: { color: natureColors[index % natureColors.length] }
       })),
       label: {
         show: true,
-        color: 'rgba(255,255,255,0.7)',
+        color: '#57534E',
         fontSize: 11,
         formatter: '{b}\n{d}%'
       },
@@ -251,7 +252,7 @@ const petTypeChartOption = computed(() => {
         itemStyle: {
           shadowBlur: 12,
           shadowOffsetX: 0,
-          shadowColor: 'rgba(255, 107, 53, 0.4)'
+          shadowColor: 'rgba(45, 106, 79, 0.25)'
         }
       }
     }]
@@ -292,20 +293,33 @@ onMounted(() => {
     <!-- 顶部欢迎区 -->
     <div class="dashboard-header">
       <div class="header-content">
-        <h1 class="header-title">数据概览</h1>
-        <p class="header-subtitle">实时监控宠物用品市场数据指标</p>
+        <div class="header-decoration">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="20" fill="url(#headerGrad)" fill-opacity="0.15"/>
+            <path d="M24 10C24 10 36 16 36 26C36 34 30 38 24 38C18 38 12 34 12 26C12 16 24 10 24 10Z" fill="url(#headerGrad)"/>
+            <path d="M24 10L24 38" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+            <defs>
+              <linearGradient id="headerGrad" x1="12" y1="10" x2="36" y2="38">
+                <stop offset="0%" stop-color="#74C69D"/>
+                <stop offset="100%" stop-color="#40916C"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">数据概览</h1>
+          <p class="header-subtitle">实时监控宠物用品市场数据指标</p>
+        </div>
       </div>
-      <div class="header-actions">
-        <button class="refresh-btn" @click="loadData" :class="{ loading }">
-          <Loading class="icon" :class="{ spinning: loading }" />
-          <span>刷新数据</span>
-        </button>
-      </div>
+      <button class="refresh-btn" @click="loadData" :class="{ loading }">
+        <Loading class="icon" :class="{ spinning: loading }" />
+        <span>刷新数据</span>
+      </button>
     </div>
 
     <!-- 统计指标卡片 -->
     <div class="metrics-grid">
-      <div class="metric-card metric-card--orange" style="--i: 0">
+      <div class="metric-card metric-card--green" style="--i: 0">
         <div class="metric-header">
           <div class="metric-icon">
             <ShoppingBag class="icon" />
@@ -316,10 +330,14 @@ onMounted(() => {
           <p class="metric-label">商品总数</p>
           <p class="metric-value">{{ formatNumber(overview.total_products) }}</p>
         </div>
-        <div class="metric-bg">📦</div>
+        <div class="metric-leaf">
+          <svg width="60" height="60" viewBox="0 0 60 80" fill="none">
+            <path d="M30 5C30 5 50 20 50 40C50 60 40 70 30 70C20 70 10 60 10 40C10 20 30 5 30 5Z" fill="currentColor" opacity="0.08"/>
+          </svg>
+        </div>
       </div>
 
-      <div class="metric-card metric-card--purple" style="--i: 1">
+      <div class="metric-card metric-card--teal" style="--i: 1">
         <div class="metric-header">
           <div class="metric-icon">
             <ShoppingCart class="icon" />
@@ -330,10 +348,14 @@ onMounted(() => {
           <p class="metric-label">店铺数量</p>
           <p class="metric-value">{{ formatNumber(overview.total_shops) }}</p>
         </div>
-        <div class="metric-bg">🏪</div>
+        <div class="metric-leaf">
+          <svg width="50" height="70" viewBox="0 0 50 70" fill="none">
+            <path d="M25 5C25 5 42 18 42 35C42 52 34 60 25 60C16 60 8 52 8 35C8 18 25 5 25 5Z" fill="currentColor" opacity="0.08"/>
+          </svg>
+        </div>
       </div>
 
-      <div class="metric-card metric-card--gold" style="--i: 2">
+      <div class="metric-card metric-card--blue" style="--i: 2">
         <div class="metric-header">
           <div class="metric-icon">
             <TrendCharts class="icon" />
@@ -344,10 +366,14 @@ onMounted(() => {
           <p class="metric-label">品牌数量</p>
           <p class="metric-value">{{ formatNumber(overview.total_brands) }}</p>
         </div>
-        <div class="metric-bg">🎯</div>
+        <div class="metric-leaf">
+          <svg width="40" height="60" viewBox="0 0 40 60" fill="none">
+            <path d="M20 5C20 5 34 15 34 30C34 45 28 52 20 52C12 52 6 45 6 30C6 15 20 5 20 5Z" fill="currentColor" opacity="0.08"/>
+          </svg>
+        </div>
       </div>
 
-      <div class="metric-card metric-card--cyan" style="--i: 3">
+      <div class="metric-card metric-card--light" style="--i: 3">
         <div class="metric-header">
           <div class="metric-icon">
             <Wallet class="icon" />
@@ -358,17 +384,21 @@ onMounted(() => {
           <p class="metric-label">平均价格</p>
           <p class="metric-value">{{ formatPrice(overview.price?.avg || 0) }}</p>
         </div>
-        <div class="metric-bg">💰</div>
+        <div class="metric-leaf">
+          <svg width="35" height="50" viewBox="0 0 35 50" fill="none">
+            <path d="M17.5 4C17.5 4 30 12 30 25C30 38 24 44 17.5 44C11 44 5 38 5 25C5 12 17.5 4 17.5 4Z" fill="currentColor" opacity="0.08"/>
+          </svg>
+        </div>
       </div>
     </div>
 
     <!-- 图表区域 -->
     <div class="charts-section">
       <!-- 价格分布 -->
-      <div class="chart-panel" style="--i: 0">
+      <div class="chart-panel chart-panel--green" style="--i: 0">
         <div class="chart-panel-header">
           <div class="chart-title-group">
-            <div class="chart-icon-wrapper chart-icon-wrapper--orange">
+            <div class="chart-icon-wrapper">
               <DataAnalysis class="icon" />
             </div>
             <div>
@@ -392,10 +422,10 @@ onMounted(() => {
       </div>
 
       <!-- 店铺排行 -->
-      <div class="chart-panel" style="--i: 1">
+      <div class="chart-panel chart-panel--teal" style="--i: 1">
         <div class="chart-panel-header">
           <div class="chart-title-group">
-            <div class="chart-icon-wrapper chart-icon-wrapper--purple">
+            <div class="chart-icon-wrapper">
               <ShoppingCart class="icon" />
             </div>
             <div>
@@ -419,10 +449,10 @@ onMounted(() => {
       </div>
 
       <!-- 宠物类型分布 -->
-      <div class="chart-panel" style="--i: 2">
+      <div class="chart-panel chart-panel--blue" style="--i: 2">
         <div class="chart-panel-header">
           <div class="chart-title-group">
-            <div class="chart-icon-wrapper chart-icon-wrapper--gold">
+            <div class="chart-icon-wrapper">
               <DataAnalysis class="icon" />
             </div>
             <div>
@@ -472,7 +502,12 @@ onMounted(() => {
       <div class="system-metrics">
         <div class="system-metric">
           <div class="metric-row">
-            <div class="metric-icon-small metric-icon-small--database"></div>
+            <div class="metric-icon-small metric-icon-small--database">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 3C9 3 14 4 14 6C14 8 9 9 9 9C9 9 4 8 4 6C4 4 9 3 9 3Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M4 6V12C4 14 9 15 9 15C9 15 14 14 14 12V6" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </div>
             <div class="metric-content">
               <span class="metric-name">数据库连接</span>
               <span class="metric-status" :class="systemStatus.database === 'normal' ? 'online' : 'offline'">
@@ -484,7 +519,12 @@ onMounted(() => {
 
         <div class="system-metric">
           <div class="metric-row">
-            <div class="metric-icon-small metric-icon-small--crawler"></div>
+            <div class="metric-icon-small metric-icon-small--crawler">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 3L3 7V13C3 14.1 3.9 15 5 15H13C14.1 15 15 14.1 15 13V7L9 3Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M9 9V13" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </div>
             <div class="metric-content">
               <span class="metric-name">爬虫服务</span>
               <span class="metric-status" :class="systemStatus.crawler === 'running' ? 'online' : 'idle'">
@@ -494,33 +534,53 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <!-- 装饰植物 -->
+      <div class="system-plant">
+        <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+          <path d="M25 48V20" stroke="#74C69D" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M25 35C25 35 40 28 40 18C40 12 35 8 25 8C15 8 10 12 10 18C10 28 25 35 25 35Z" fill="#74C69D" fill-opacity="0.15"/>
+          <path d="M25 22C25 22 35 17 35 10C35 6 31 4 25 4C19 4 15 6 15 10C15 17 25 22 25 22Z" fill="#52B788" fill-opacity="0.2"/>
+        </svg>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 /* ============================================
-   Design Tokens & Base
+   Design Tokens - 清新自然
    ============================================ */
 .dashboard-container {
-  --primary-orange: #FF6B35;
-  --primary-purple: #7B2CBF;
-  --primary-gold: #FFD700;
-  --primary-cyan: #06FFA5;
-  --bg-card: rgba(20, 20, 32, 0.6);
-  --bg-card-hover: rgba(255, 255, 255, 0.04);
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
+  --primary-green: #2D6A4F;
+  --primary-teal: #40916C;
+  --primary-light: #52B788;
+  --accent-green: #74C69D;
+  --accent-blue: #00B4D8;
+  --accent-blue-light: #90E0EF;
+  --bg-cream: #FAFAF9;
+  --bg-sand: #F5F5F4;
+  --bg-card: #FFFFFF;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --border-light: #E7E5E4;
+  --border-focus: #74C69D;
+  --shadow-soft: 0 4px 20px rgba(45, 106, 79, 0.08);
+  --shadow-hover: 0 8px 30px rgba(45, 106, 79, 0.12);
 
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+  font-family: 'Nunito', 'Noto Serif SC', -apple-system, sans-serif;
+  animation: pageFadeIn 0.5s ease;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================
@@ -534,16 +594,28 @@ onMounted(() => {
 }
 
 .header-content {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-decoration {
+  flex-shrink: 0;
+  animation: headerFloat 4s ease-in-out infinite;
+}
+
+@keyframes headerFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .header-title {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 28px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 4px 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .header-subtitle {
@@ -552,31 +624,28 @@ onMounted(() => {
   margin: 0;
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
 .refresh-btn {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
   background: var(--bg-card);
-  border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-soft);
 }
 
 .refresh-btn:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--primary-orange);
-  color: var(--primary-orange);
+  background: var(--bg-sand);
+  border-color: var(--accent-green);
+  color: var(--primary-green);
+  transform: translateY(-2px);
 }
 
 .refresh-btn .icon {
@@ -607,24 +676,18 @@ onMounted(() => {
   position: relative;
   padding: 24px;
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-light);
   border-radius: 20px;
   overflow: hidden;
   animation: metricSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
   animation-delay: calc(var(--i) * 0.1s);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-soft);
 }
 
 @keyframes metricSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .metric-card::before {
@@ -633,19 +696,20 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 4px;
   opacity: 0;
   transition: opacity 0.3s ease;
+  border-radius: 20px 20px 0 0;
 }
 
-.metric-card--orange::before { background: linear-gradient(90deg, var(--primary-orange), transparent); }
-.metric-card--purple::before { background: linear-gradient(90deg, var(--primary-purple), transparent); }
-.metric-card--gold::before { background: linear-gradient(90deg, var(--primary-gold), transparent); }
-.metric-card--cyan::before { background: linear-gradient(90deg, var(--primary-cyan), transparent); }
+.metric-card--green::before { background: linear-gradient(90deg, var(--primary-green), var(--accent-green)); }
+.metric-card--teal::before { background: linear-gradient(90deg, var(--primary-teal), var(--primary-light)); }
+.metric-card--blue::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light)); }
+.metric-card--light::before { background: linear-gradient(90deg, var(--accent-green), var(--accent-blue-light)); }
 
 .metric-card:hover {
   transform: translateY(-4px);
-  border-color: var(--border-default);
+  box-shadow: var(--shadow-hover);
 }
 
 .metric-card:hover::before {
@@ -668,36 +732,36 @@ onMounted(() => {
   border-radius: 14px;
 }
 
-.metric-card--orange .metric-icon { background: rgba(255, 107, 53, 0.15); }
-.metric-card--purple .metric-icon { background: rgba(123, 44, 191, 0.15); }
-.metric-card--gold .metric-icon { background: rgba(255, 215, 0, 0.15); }
-.metric-card--cyan .metric-icon { background: rgba(6, 255, 165, 0.15); }
+.metric-card--green .metric-icon { background: rgba(45, 106, 79, 0.1); }
+.metric-card--teal .metric-icon { background: rgba(64, 145, 108, 0.1); }
+.metric-card--blue .metric-icon { background: rgba(0, 180, 216, 0.1); }
+.metric-card--light .metric-icon { background: rgba(116, 198, 157, 0.1); }
 
 .metric-icon .icon {
   width: 22px;
   height: 22px;
 }
 
-.metric-card--orange .metric-icon .icon { color: var(--primary-orange); }
-.metric-card--purple .metric-icon .icon { color: var(--primary-purple); }
-.metric-card--gold .metric-icon .icon { color: var(--primary-gold); }
-.metric-card--cyan .metric-icon .icon { color: var(--primary-cyan); }
+.metric-card--green .metric-icon .icon { color: var(--primary-green); }
+.metric-card--teal .metric-icon .icon { color: var(--primary-teal); }
+.metric-card--blue .metric-icon .icon { color: var(--accent-blue); }
+.metric-card--light .metric-icon .icon { color: var(--accent-green); }
 
 .metric-trend {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Nunito', monospace;
   font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
+  font-weight: 700;
+  padding: 5px 10px;
   border-radius: 20px;
 }
 
 .metric-trend.positive {
-  background: rgba(6, 255, 165, 0.1);
-  color: var(--primary-cyan);
+  background: rgba(45, 106, 79, 0.1);
+  color: var(--primary-green);
 }
 
 .metric-trend.neutral {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-sand);
   color: var(--text-tertiary);
 }
 
@@ -714,7 +778,7 @@ onMounted(() => {
 }
 
 .metric-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Nunito', sans-serif;
   font-size: 26px;
   font-weight: 700;
   color: var(--text-primary);
@@ -722,19 +786,18 @@ onMounted(() => {
   line-height: 1;
 }
 
-.metric-card--orange .metric-value { color: var(--primary-orange); }
-.metric-card--purple .metric-value { color: var(--primary-purple); }
-.metric-card--gold .metric-value { color: var(--primary-gold); }
-.metric-card--cyan .metric-value { color: var(--primary-cyan); }
+.metric-card--green .metric-value { color: var(--primary-green); }
+.metric-card--teal .metric-value { color: var(--primary-teal); }
+.metric-card--blue .metric-value { color: var(--accent-blue); }
+.metric-card--light .metric-value { color: var(--accent-green); }
 
-.metric-bg {
+.metric-leaf {
   position: absolute;
   bottom: -8px;
   right: -8px;
-  font-size: 72px;
-  opacity: 0.04;
+  color: var(--primary-green);
+  opacity: 0.15;
   pointer-events: none;
-  filter: blur(1px);
 }
 
 /* ============================================
@@ -748,22 +811,22 @@ onMounted(() => {
 
 .chart-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   overflow: hidden;
   animation: panelFadeIn 0.5s ease backwards;
   animation-delay: calc(0.4s + var(--i) * 0.1s);
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-soft);
 }
 
 @keyframes panelFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .chart-panel:hover {
-  border-color: var(--border-default);
+  box-shadow: var(--shadow-hover);
 }
 
 .chart-panel-header {
@@ -771,8 +834,8 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-sand) 0%, transparent 100%);
 }
 
 .chart-title-group {
@@ -788,23 +851,17 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
+  background: rgba(45, 106, 79, 0.08);
 }
-
-.chart-icon-wrapper--orange { background: rgba(255, 107, 53, 0.15); }
-.chart-icon-wrapper--purple { background: rgba(123, 44, 191, 0.15); }
-.chart-icon-wrapper--gold { background: rgba(255, 215, 0, 0.15); }
 
 .chart-icon-wrapper .icon {
   width: 18px;
   height: 18px;
+  color: var(--primary-green);
 }
 
-.chart-icon-wrapper--orange .icon { color: var(--primary-orange); }
-.chart-icon-wrapper--purple .icon { color: var(--primary-purple); }
-.chart-icon-wrapper--gold .icon { color: var(--primary-gold); }
-
 .chart-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
@@ -819,12 +876,12 @@ onMounted(() => {
 
 .chart-badge {
   padding: 6px 14px;
-  background: rgba(255, 107, 53, 0.1);
-  border: 1px solid rgba(255, 107, 53, 0.2);
+  background: rgba(45, 106, 79, 0.1);
+  border: 1px solid rgba(45, 106, 79, 0.15);
   border-radius: 20px;
   font-size: 10px;
   font-weight: 700;
-  color: var(--primary-orange);
+  color: var(--primary-green);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -846,7 +903,7 @@ onMounted(() => {
 .chart-loading .loading-icon {
   width: 32px;
   height: 32px;
-  color: var(--primary-orange);
+  color: var(--primary-green);
   margin-bottom: 12px;
 }
 
@@ -859,13 +916,27 @@ onMounted(() => {
    System Panel
    ============================================ */
 .system-panel {
-  background: linear-gradient(135deg, rgba(123, 44, 191, 0.08), rgba(255, 107, 53, 0.04));
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(123, 44, 191, 0.15);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   padding: 24px;
+  position: relative;
+  overflow: hidden;
   animation: panelFadeIn 0.5s ease backwards;
   animation-delay: 0.7s;
+  box-shadow: var(--shadow-soft);
+}
+
+.system-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(116, 198, 157, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .system-panel-header {
@@ -873,6 +944,8 @@ onMounted(() => {
   align-items: center;
   gap: 20px;
   margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .system-status-indicator {
@@ -895,15 +968,15 @@ onMounted(() => {
 }
 
 .status-dot.active {
-  background: var(--primary-cyan);
-  box-shadow: 0 0 20px var(--primary-cyan);
+  background: var(--accent-green);
+  box-shadow: 0 0 20px var(--accent-green);
 }
 
 .status-pulse {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid var(--primary-orange);
+  border: 2px solid var(--primary-green);
   opacity: 0;
   transition: all 0.3s ease;
 }
@@ -922,7 +995,7 @@ onMounted(() => {
 }
 
 .system-title {
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
@@ -952,22 +1025,24 @@ onMounted(() => {
 }
 
 .info-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Nunito', sans-serif;
   font-weight: 600;
-  color: var(--primary-orange);
+  color: var(--primary-green);
 }
 
 .system-metrics {
   display: flex;
   gap: 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .system-metric {
   flex: 1;
   padding: 16px 20px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-sand);
   border-radius: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-light);
 }
 
 .metric-row {
@@ -983,15 +1058,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  color: white;
 }
 
 .metric-icon-small--database {
-  background: rgba(123, 44, 191, 0.15);
+  background: linear-gradient(135deg, var(--primary-green), var(--accent-green));
 }
 
 .metric-icon-small--crawler {
-  background: rgba(255, 215, 0, 0.15);
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-light));
 }
 
 .metric-content {
@@ -1004,6 +1079,7 @@ onMounted(() => {
 .metric-name {
   font-size: 14px;
   color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .metric-status {
@@ -1014,21 +1090,35 @@ onMounted(() => {
 }
 
 .metric-status.online {
-  background: rgba(6, 255, 165, 0.15);
-  color: var(--primary-cyan);
-  border: 1px solid rgba(6, 255, 165, 0.3);
+  background: rgba(45, 106, 79, 0.1);
+  color: var(--primary-green);
+  border: 1px solid rgba(45, 106, 79, 0.2);
 }
 
 .metric-status.idle {
-  background: rgba(255, 215, 0, 0.15);
-  color: var(--primary-gold);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(144, 224, 239, 0.15);
+  color: var(--accent-blue);
+  border: 1px solid rgba(0, 180, 216, 0.2);
 }
 
 .metric-status.offline {
-  background: rgba(255, 59, 48, 0.15);
-  color: #FF3B30;
-  border: 1px solid rgba(255, 59, 48, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.system-plant {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  opacity: 0.4;
+  animation: plantSway 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes plantSway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
 }
 
 /* ============================================
@@ -1070,6 +1160,10 @@ onMounted(() => {
 
   .system-metrics {
     flex-direction: column;
+  }
+
+  .system-plant {
+    display: none;
   }
 }
 </style>
