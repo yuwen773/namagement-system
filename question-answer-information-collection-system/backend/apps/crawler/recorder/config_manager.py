@@ -43,26 +43,42 @@ class ConfigManager:
         }
         return config
 
+    def _validate_filename(self, filename: str) -> str:
+        """验证文件名，防止路径遍历攻击"""
+        # 禁止包含路径分隔符和 ..
+        if '..' in filename or os.sep in filename or '/' in filename or '\\' in filename:
+            raise ValueError("Invalid filename: path traversal not allowed")
+        return filename
+
     def save_config(self, config: Dict[str, Any], filename: str = None) -> str:
         """保存配置到文件"""
         if filename is None:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f'config_{timestamp}.json'
+        else:
+            filename = self._validate_filename(filename)
 
         filepath = self.config_dir / filename
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(config, f, ensure_ascii=False, indent=2)
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(config, f, ensure_ascii=False, indent=2)
+        except IOError as e:
+            raise IOError(f"Failed to save config: {e}")
 
         return str(filepath)
 
     def load_config(self, filename: str) -> Optional[Dict[str, Any]]:
         """加载配置文件"""
+        filename = self._validate_filename(filename)
         filepath = self.config_dir / filename
         if not filepath.exists():
             return None
 
-        with open(filepath, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (IOError, json.JSONDecodeError) as e:
+            raise ValueError(f"Failed to load config: {e}")
 
     def list_configs(self) -> list:
         """列出所有配置文件"""
@@ -76,8 +92,12 @@ class ConfigManager:
 
     def delete_config(self, filename: str) -> bool:
         """删除配置文件"""
+        filename = self._validate_filename(filename)
         filepath = self.config_dir / filename
-        if filepath.exists():
-            filepath.unlink()
-            return True
-        return False
+        try:
+            if filepath.exists():
+                filepath.unlink()
+                return True
+            return False
+        except OSError as e:
+            raise IOError(f"Failed to delete config: {e}")
