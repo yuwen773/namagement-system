@@ -55,13 +55,13 @@ const routes = [
         path: 'statistics',
         name: 'StatisticsDashboard',
         component: StatisticsDashboard,
-        meta: { requiresAuth: true, role: 'admin', title: '数据分析' }
+        meta: { requiresAuth: true, role: 'admin', title: '宠物用品统计分析' }
       },
       {
         path: 'crawler',
         name: 'AdminCrawler',
         component: AdminCrawler,
-        meta: { requiresAuth: true, role: 'admin', title: '数据采集' }
+        meta: { requiresAuth: true, role: 'admin', title: '宠物数据采集' }
       },
       {
         path: 'crawler/config',
@@ -73,7 +73,7 @@ const routes = [
         path: 'products',
         name: 'AdminProducts',
         component: AdminProducts,
-        meta: { requiresAuth: true, role: 'admin', title: '商品管理' }
+        meta: { requiresAuth: true, role: 'admin', title: '宠物商品管理' }
       },
       {
         path: 'users',
