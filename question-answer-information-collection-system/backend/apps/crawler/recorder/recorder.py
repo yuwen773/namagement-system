@@ -2,11 +2,15 @@
 Playwright 录制器核心类 - 负责浏览器操作录制和步骤生成
 """
 import asyncio
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from playwright.async_api import async_playwright, Browser, Page, BrowserContext
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 class Recorder:
@@ -32,35 +36,41 @@ class Recorder:
         Args:
             url: 初始导航 URL，可选
         """
-        self.playwright = await async_playwright().start()
+        try:
+            self.playwright = await async_playwright().start()
 
-        # 启动 Chromium 浏览器
-        self.browser = await self.playwright.chromium.launch(
-            headless=self.headless,
-            args=['--disable-blink-features=AutomationControlled']
-        )
+            # 启动 Chromium 浏览器
+            self.browser = await self.playwright.chromium.launch(
+                headless=self.headless,
+                args=['--disable-blink-features=AutomationControlled']
+            )
 
-        # 创建浏览器上下文
-        self.context = await self.browser.new_context(
-            viewport={'width': 1280, 'height': 720},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        )
+            # 创建浏览器上下文
+            self.context = await self.browser.new_context(
+                viewport={'width': 1280, 'height': 720},
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            )
 
-        # 创建新页面
-        self.page = await self.context.new_page()
+            # 创建新页面
+            self.page = await self.context.new_page()
 
-        # 注入录制脚本
-        await self._inject_recorder_script()
+            # 注入录制脚本
+            await self._inject_recorder_script()
 
-        # 绑定事件监听
-        await self._bind_event_listeners()
+            # 绑定事件监听
+            await self._bind_event_listeners()
 
-        # 标记为正在录制
-        self._is_recording = True
+            # 标记为正在录制
+            self._is_recording = True
 
-        # 如果提供了 URL，则导航到该 URL
-        if url:
-            await self.navigate(url)
+            # 如果提供了 URL，则导航到该 URL
+            if url:
+                await self.navigate(url)
+        except Exception as e:
+            logger.error(f"启动录制器失败: {e}")
+            # 确保清理资源
+            await self._cleanup_resources()
+            raise
 
     async def stop(self) -> List[Dict[str, Any]]:
         """停止录制，返回录制的步骤列表
@@ -71,19 +81,63 @@ class Recorder:
         if not self._is_recording:
             return self._steps
 
-        # 关闭浏览器
-        if self.browser:
-            await self.browser.close()
-        if self.playwright:
-            await self.playwright.stop()
+        # 清理 JavaScript 事件监听器
+        await self._cleanup_js_listeners()
 
-        self.browser = None
-        self.context = None
-        self.page = None
-        self.playwright = None
+        # 关闭浏览器
+        await self._cleanup_resources()
+
         self._is_recording = False
 
         return self._steps.copy()
+
+    async def _cleanup_resources(self) -> None:
+        """清理浏览器资源"""
+        try:
+            if self.browser:
+                await self.browser.close()
+        except Exception as e:
+            logger.warning(f"关闭浏览器时出错: {e}")
+        finally:
+            self.browser = None
+
+        try:
+            if self.playwright:
+                await self.playwright.stop()
+        except Exception as e:
+            logger.warning(f"停止 Playwright 时出错: {e}")
+        finally:
+            self.playwright = None
+
+        self.context = None
+        self.page = None
+
+    async def _cleanup_js_listeners(self) -> None:
+        """清理 JavaScript 事件监听器"""
+        if not self.page:
+            return
+
+        try:
+            # 移除注入的录制脚本，清理事件监听器
+            cleanup_script = '''
+            (function() {
+                if (window.__recorderSteps) {
+                    window.__recorderSteps = [];
+                }
+                if (window.__generateSelector) {
+                    delete window.__generateSelector;
+                }
+                if (window.__recordStep) {
+                    delete window.__recordStep;
+                }
+                if (window.py_record_step) {
+                    delete window.py_record_step;
+                }
+            })();
+            '''
+            await self.page.evaluate(cleanup_script)
+        except Exception as e:
+            logger.warning(f"清理 JavaScript 监听器时出错: {e}")
 
     async def navigate(self, url: str) -> None:
         """导航到 URL
@@ -94,10 +148,14 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        await self.page.goto(url, wait_until='domcontentloaded')
-        # 重新注入脚本（页面导航后需要重新注入）
-        await self._inject_recorder_script()
-        await self._bind_event_listeners()
+        try:
+            await self.page.goto(url, wait_until='domcontentloaded')
+            # 重新注入脚本（页面导航后需要重新注入）
+            await self._inject_recorder_script()
+            await self._bind_event_listeners()
+        except Exception as e:
+            logger.error(f"导航到 {url} 失败: {e}")
+            raise
 
     async def click(self, selector: str) -> None:
         """点击元素
@@ -108,8 +166,12 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        await self.page.click(selector)
-        await self.page.wait_for_timeout(100)  # 等待操作完成
+        try:
+            await self.page.click(selector)
+            await self.page.wait_for_timeout(100)  # 等待操作完成
+        except Exception as e:
+            logger.error(f"点击元素 {selector} 失败: {e}")
+            raise
 
     async def wait_for_selector(self, selector: str, timeout: int = 10000) -> None:
         """等待元素出现
@@ -158,14 +220,31 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        screenshot_bytes = await self.page.screenshot(full_page=True)
+        try:
+            screenshot_bytes = await self.page.screenshot(full_page=True)
 
-        if path:
+            if path:
+                # 异步写入文件
+                await self._write_file(path, screenshot_bytes)
+
+            return screenshot_bytes
+        except Exception as e:
+            logger.error(f"截图失败: {e}")
+            raise
+
+    async def _write_file(self, path: str, data: bytes) -> None:
+        """异步写入文件
+
+        Args:
+            path: 文件路径
+            data: 文件数据
+        """
+        def _sync_write():
             Path(path).parent.mkdir(parents=True, exist_ok=True)
             with open(path, 'wb') as f:
-                f.write(screenshot_bytes)
+                f.write(data)
 
-        return screenshot_bytes
+        await asyncio.to_thread(_sync_write)
 
     @property
     def current_url(self) -> str:
@@ -323,15 +402,7 @@ class Recorder:
         if not self.page:
             return
 
-        # 设置事件处理器来捕获 Python 端的步骤
-        def handle_route(route):
-            route.continue_()
-
-        # 创建自定义事件处理器
-        async def handle_recorder_step(step):
-            self._steps.append(step)
-
-        # 通过 page.evaluate 获取步骤
+        # 通过 expose_function 暴露函数供页面调用
         await self.page.expose_function('py_record_step', lambda step: self._steps.append(step))
 
     async def sync_steps(self) -> None:
@@ -400,7 +471,11 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        return await self.page.evaluate(script)
+        try:
+            return await self.page.evaluate(script)
+        except Exception as e:
+            logger.error(f"执行 JavaScript 失败: {e}")
+            raise
 
     async def fill(self, selector: str, value: str) -> None:
         """填写表单字段
@@ -412,7 +487,11 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        await self.page.fill(selector, value)
+        try:
+            await self.page.fill(selector, value)
+        except Exception as e:
+            logger.error(f"填写表单字段 {selector} 失败: {e}")
+            raise
 
     async def select_option(self, selector: str, value: str) -> None:
         """选择下拉选项
@@ -424,7 +503,11 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        await self.page.select_option(selector, value)
+        try:
+            await self.page.select_option(selector, value)
+        except Exception as e:
+            logger.error(f"选择下拉选项 {selector} 失败: {e}")
+            raise
 
     async def hover(self, selector: str) -> None:
         """悬停在元素上
@@ -435,7 +518,11 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        await self.page.hover(selector)
+        try:
+            await self.page.hover(selector)
+        except Exception as e:
+            logger.error(f"悬停元素 {selector} 失败: {e}")
+            raise
 
     async def scroll_to_element(self, selector: str) -> None:
         """滚动到元素
@@ -460,15 +547,27 @@ class Recorder:
         if not self.page:
             raise RuntimeError("Browser not started. Call start() first.")
 
-        if selector:
-            element = await self.page.query_selector(selector)
-            if element:
-                return await element.inner_html()
-            return ""
-        return await self.page.content()
+        try:
+            if selector:
+                element = await self.page.query_selector(selector)
+                if element:
+                    return await element.inner_html()
+                return ""
+            return await self.page.content()
+        except Exception as e:
+            logger.error(f"获取 HTML 失败: {e}")
+            raise
 
     async def close(self) -> None:
         """关闭浏览器（别名）"""
+        await self.stop()
+
+    async def __aenter__(self):
+        """异步上下文管理器入口"""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """异步上下文管理器退出，确保资源清理"""
         await self.stop()
 
     def is_recording(self) -> bool:
