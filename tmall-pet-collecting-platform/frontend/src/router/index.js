@@ -16,12 +16,15 @@ const AdminCrawler = () => import('@/views/admin/Crawler.vue')
 const AdminCrawlerConfig = () => import('@/views/admin/CrawlerConfig.vue')
 const AdminProducts = () => import('@/views/admin/Products.vue')
 const AdminUsers = () => import('@/views/admin/Users.vue')
+const AdminAnnouncements = () => import('@/views/admin/Announcements.vue')
+const AdminAnnouncementEdit = () => import('@/views/admin/AnnouncementEdit.vue')
 const AdminSettings = () => import('@/views/admin/Settings.vue')
 
 // 用户端页面
 const UserMarket = () => import('@/views/user/Market.vue')
 const UserProducts = () => import('@/views/user/Products.vue')
 const UserProductDetail = () => import('@/views/user/ProductDetail.vue')
+const UserAnnouncements = () => import('@/views/user/Announcements.vue')
 const UserProfile = () => import('@/views/user/Profile.vue')
 
 const routes = [
@@ -82,6 +85,18 @@ const routes = [
         meta: { requiresAuth: true, role: 'admin', title: '用户管理' }
       },
       {
+        path: 'announcements',
+        name: 'AdminAnnouncements',
+        component: AdminAnnouncements,
+        meta: { requiresAuth: true, role: 'admin', title: '公告管理' }
+      },
+      {
+        path: 'announcements/edit',
+        name: 'AdminAnnouncementEdit',
+        component: AdminAnnouncementEdit,
+        meta: { requiresAuth: true, role: 'admin', title: '编辑公告' }
+      },
+      {
         path: 'settings',
         name: 'AdminSettings',
         component: AdminSettings,
@@ -116,6 +131,12 @@ const routes = [
         name: 'UserProductDetail',
         component: UserProductDetail,
         meta: { requiresAuth: true, role: 'user', title: '商品详情' }
+      },
+      {
+        path: 'announcements',
+        name: 'UserAnnouncements',
+        component: UserAnnouncements,
+        meta: { requiresAuth: true, role: 'user', title: '公告中心' }
       },
       {
         path: 'profile',

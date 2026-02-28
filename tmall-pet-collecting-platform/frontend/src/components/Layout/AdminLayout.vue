@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   DataBoard, DataAnalysis, Setting, User, SwitchButton,
-  Expand, Fold, Histogram, TrendCharts, ShoppingCart
+  Expand, Fold, Histogram, TrendCharts, ShoppingCart, Bell
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -43,6 +43,11 @@ const menuItems = computed(() => [
     path: '/admin/users',
     icon: User,
     title: '用户管理'
+  },
+  {
+    path: '/admin/announcements',
+    icon: Bell,
+    title: '公告管理'
   }
 ])
 

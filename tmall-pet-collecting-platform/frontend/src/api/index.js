@@ -193,3 +193,38 @@ export const statisticsApi = {
     return request.get('/products/statistics/shop-ranking/', { params })
   }
 }
+
+// 公告管理（普通用户）
+export const announcementApi = {
+  getList(params) {
+    return request.get('/announcements/', { params })
+  },
+  getDetail(id) {
+    return request.get(`/announcements/${id}/`)
+  }
+}
+
+// 公告管理（管理员）
+export const adminAnnouncementApi = {
+  getList(params) {
+    return request.get('/announcements/admin/', { params })
+  },
+  getDetail(id) {
+    return request.get(`/announcements/admin/${id}/`)
+  },
+  create(data) {
+    return request.post('/announcements/admin/', data)
+  },
+  update(id, data) {
+    return request.put(`/announcements/admin/${id}/`, data)
+  },
+  delete(id) {
+    return request.delete(`/announcements/admin/${id}/`)
+  },
+  publish(id) {
+    return request.post(`/announcements/admin/${id}/publish/`)
+  },
+  unpublish(id) {
+    return request.post(`/announcements/admin/${id}/unpublish/`)
+  }
+}
