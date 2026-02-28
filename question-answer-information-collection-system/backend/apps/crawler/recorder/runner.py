@@ -297,7 +297,7 @@ class Runner:
                                 time: time,
                                 location: location,
                                 detail_url: detailUrl,
-                                page: ''' + str(page) + '''
+                                page: """ + str(page) + """
                             });
                         }
                     });
