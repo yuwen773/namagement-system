@@ -91,7 +91,7 @@ const startCrawl = async () => {
 
   try {
     isLoading.value = true
-    const keyword = keywords.value.trim() || '高达'
+    const keyword = keywords.value.trim() || '猫粮'
 
     const res = await crawlerApi.start({
       mode: 'normal',
@@ -370,7 +370,7 @@ onUnmounted(() => {
             <input
               v-model="keywords"
               type="text"
-              placeholder="例如: 高达、手办、模型"
+              placeholder="例如: 狗粮、猫砂、玩具"
               class="input-field"
             />
           </div>

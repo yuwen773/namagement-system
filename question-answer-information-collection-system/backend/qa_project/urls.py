@@ -33,6 +33,8 @@ urlpatterns = [
     path("api/notices/", include("apps.notices.urls")),
     # Feedbacks API URLs
     path("api/feedbacks/", include("apps.feedbacks.urls")),
+    # Recorder API URLs
+    path("api/recorder/", include("apps.crawler.recorder.urls")),
     # Crawler API URLs (keep last as it has root-level routes)
     path("api/", include("apps.api.urls")),
 ]

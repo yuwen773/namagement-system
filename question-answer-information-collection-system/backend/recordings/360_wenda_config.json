@@ -1,0 +1,109 @@
+{
+  "version": "1.0",
+  "name": "360问答采集配置",
+  "created_at": "2026-02-28T17:00:00Z",
+  "description": "360问答列表页爬取配置，支持翻页和详情页提取",
+
+  "start_url": "https://wenda.so.com/c/",
+
+  "list_config": {
+    "item_selector": "ul.question-list li",
+    "pagination": {
+      "type": "url",
+      "pattern": "?pn={page}",
+      "start_page": 0,
+      "max_pages": 500
+    },
+    "fields": [
+      {
+        "name": "question_id",
+        "selector": "::attr(data-askid)",
+        "attribute": "value"
+      },
+      {
+        "name": "title",
+        "selector": "p.fl a",
+        "attribute": "text"
+      },
+      {
+        "name": "url",
+        "selector": "p.fl a",
+        "attribute": "href"
+      },
+      {
+        "name": "answer_count",
+        "selector": "::attr(data-ans)",
+        "attribute": "value"
+      }
+    ]
+  },
+
+  "detail_config": {
+    "entry_selector": "p.fl a",
+    "fields": [
+      {
+        "name": "question_title",
+        "selector": "h1.title",
+        "attribute": "text"
+      },
+      {
+        "name": "question_content",
+        "selector": ".question-content",
+        "attribute": "text"
+      },
+      {
+        "name": "answers",
+        "selector": ".answer-item",
+        "type": "list",
+        "fields": [
+          {
+            "name": "content",
+            "selector": ".answer-content",
+            "attribute": "text"
+          },
+          {
+            "name": "answerer",
+            "selector": ".answerer-name",
+            "attribute": "text"
+          },
+          {
+            "name": "time",
+            "selector": ".answer-time",
+            "attribute": "text"
+          }
+        ]
+      },
+      {
+        "name": "category",
+        "selector": ".category-tag",
+        "attribute": "text"
+      },
+      {
+        "name": "tags",
+        "selector": ".tag-list span",
+        "attribute": "text",
+        "type": "list"
+      }
+    ]
+  },
+
+  "crawler_config": {
+    "interval": {
+      "initial": 3,
+      "increment": 1,
+      "max": 10
+    },
+    "retry": {
+      "max_attempts": 3,
+      "wait_seconds": 5
+    },
+    "anti_captcha": {
+      "enabled": true,
+      "wait_until_solved": true
+    },
+    "close_popup": {
+      "enabled": true,
+      "selectors": ["span.close", ".close-btn", "[class*='close']"]
+    }
+  }
+}

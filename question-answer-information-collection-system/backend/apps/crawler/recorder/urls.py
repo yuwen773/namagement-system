@@ -12,6 +12,10 @@ urlpatterns = [
     path('stop/', views.stop_recording, name='stop_recording'),
     path('steps/', views.get_recording_steps, name='get_steps'),
 
+    # 本地录制器
+    path('download/', views.download_recorder, name='download_recorder'),
+    path('upload/', views.upload_config, name='upload_config'),
+
     # 配置相关
     path('configs/', views.list_configs, name='list_configs'),
     path('config/', views.get_config, name='get_config'),

@@ -474,7 +474,7 @@ onMounted(() => {
             <input
               v-model="searchForm.category"
               type="text"
-              placeholder="如：盲盒、手办"
+              placeholder="如：狗粮、猫砂"
               class="filter-input"
             />
           </div>

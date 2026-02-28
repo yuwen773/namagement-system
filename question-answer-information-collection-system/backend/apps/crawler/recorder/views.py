@@ -1,13 +1,15 @@
 """
 录制爬虫 API 视图
 """
+import os
 import asyncio
 import json
 import logging
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
+from django.conf import settings
 
 from .recorder import Recorder
 from .config_manager import ConfigManager
@@ -373,3 +375,83 @@ def stop_task(request, task_id):
     except Exception as e:
         logger.error(f"停止任务失败: {e}")
         return JsonResponse(make_response(code=-1, message=f"停止任务失败: {str(e)}"))
+
+
+# ==================== 本地录制器下载 ====================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def download_recorder(request):
+    """下载本地录制器脚本"""
+    try:
+        # 获取项目根目录
+        project_root = settings.BASE_DIR.parent
+        recorder_path = project_root / "local_recorder.py"
+
+        if not recorder_path.exists():
+            recorder_path = settings.BASE_DIR / "local_recorder.py"
+
+        if not recorder_path.exists():
+            return JsonResponse(make_response(
+                code=-1,
+                message="录制器脚本不存在"
+            ))
+
+        # 返回文件下载响应
+        response = FileResponse(
+            open(recorder_path, 'rb'),
+            content_type='application/octet-stream'
+        )
+        response['Content-Disposition'] = f'attachment; filename="local_recorder.py"'
+        return response
+
+    except Exception as e:
+        logger.error(f"下载录制器失败: {e}")
+        return JsonResponse(make_response(code=-1, message=f"下载录制器失败: {str(e)}"))
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def upload_config(request):
+    """上传配置文件"""
+    try:
+        # 检查是否有文件上传
+        if 'file' not in request.FILES:
+            return JsonResponse(make_response(code=-1, message="请选择要上传的配置文件"))
+
+        uploaded_file = request.FILES['file']
+
+        # 检查文件类型
+        if not uploaded_file.name.endswith('.json'):
+            return JsonResponse(make_response(code=-1, message="请上传 JSON 格式的配置文件"))
+
+        # 读取并解析 JSON
+        try:
+            config_data = json.loads(uploaded_file.read().decode('utf-8'))
+        except json.JSONDecodeError:
+            return JsonResponse(make_response(code=-1, message="无效的 JSON 文件"))
+
+        # 验证配置格式
+        if 'steps' not in config_data:
+            return JsonResponse(make_response(code=-1, message="配置文件格式不正确，缺少 steps 字段"))
+
+        # 保存配置
+        filename = request.POST.get('name', uploaded_file.name.replace('.json', ''))
+        config = _config_manager.create_config(filename)
+        config['steps'] = config_data.get('steps', [])
+        config['target_url'] = config_data.get('target_url', '')
+        config['description'] = config_data.get('description', '')
+
+        filepath = _config_manager.save_config(config, f"{filename}.json")
+
+        return JsonResponse(make_response(
+            data={
+                "filename": filepath,
+                "steps_count": len(config_data.get('steps', []))
+            },
+            message="配置上传成功"
+        ))
+
+    except Exception as e:
+        logger.error(f"上传配置失败: {e}")
+        return JsonResponse(make_response(code=-1, message=f"上传配置失败: {str(e)}"))

@@ -1,0 +1,98 @@
+{
+  "name": "recording_20260228_163831",
+  "created_at": "2026-02-28T16:38:31.778395",
+  "version": "1.0",
+  "steps": [
+    {
+      "type": "navigate",
+      "timestamp": "2026-02-28T16:37:48.858829Z",
+      "url": "https://wenda.so.com/",
+      "description": "页面导航"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-02-28T08:37:50.714Z",
+      "selector": "span.close",
+      "tagName": "span",
+      "text": "",
+      "x": 990,
+      "y": 24
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-02-28T08:37:50.714Z",
+      "selector": "span.close",
+      "tagName": "span",
+      "text": "",
+      "x": 990,
+      "y": 24
+    },
+    {
+      "type": "navigate",
+      "timestamp": "2026-02-28T16:37:51.953553Z",
+      "url": "https://wenda.so.com/c/",
+      "description": "页面导航"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-02-28T08:37:53.449Z",
+      "selector": "div#wenda-content-wrap > div.g-w1000 > div.list-content-wrap > div.list-content > div.border-top > div.question-wrap > ul.question-list > li > div.clearfix > p.fl > a",
+      "tagName": "a",
+      "text": "社会中有能力高调的人，给你一种什么样的感觉",
+      "x": 456,
+      "y": 372
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-02-28T08:38:03.878Z",
+      "selector": "div#wenda-content-wrap > div.g-w1000 > div.list-content-wrap > div.list-content > div.border-top > div.question-wrap > ul.question-list > li > div.clearfix > p.fl > a",
+      "tagName": "a",
+      "text": "某病毒木马能针对Windows系统，其能否针对麦金塔系统",
+      "x": 447,
+      "y": 400
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-02-28T08:38:14.543Z",
+      "selector": "div#wenda-content-wrap > div.g-w1000 > div.list-content-wrap > div.list-content > div.border-top > div.question-wrap > ul.question-list > li > div.clearfix > p.fl > a",
+      "tagName": "a",
+      "text": "为何第一代战斗机，基本被美国与苏联垄断",
+      "x": 440,
+      "y": 437
+    },
+    {
+      "type": "scroll",
+      "timestamp": "2026-02-28T08:38:19.800Z",
+      "x": 0,
+      "y": 300,
+      "scrollTop": 300,
+      "scrollLeft": 0
+    },
+    {
+      "type": "scroll",
+      "timestamp": "2026-02-28T08:38:20.677Z",
+      "x": 0,
+      "y": 200,
+      "scrollTop": 200,
+      "scrollLeft": 0
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-02-28T08:38:21.094Z",
+      "selector": "div#wenda-content-wrap > div.g-w1000 > div.list-content-wrap > div.list-content > div.border-top > div.question-wrap > ul.question-list > li > div.clearfix > p.fl > a",
+      "tagName": "a",
+      "text": "引力和斥力是绝对的，还是相对的？",
+      "x": 421,
+      "y": 269
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-02-28T08:38:28.317Z",
+      "selector": "div#wenda-content-wrap > div.g-w1000 > div.list-content-wrap > div.list-content > div.border-top > div.question-wrap > ul.question-list > li > div.clearfix > p.fl > a",
+      "tagName": "a",
+      "text": "温和的姐姐（是外人）对温和的妹妹就要好点，你觉得是什么原因？（和平时不一样）",
+      "x": 424,
+      "y": 300
+    }
+  ]
+}

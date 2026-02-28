@@ -36,6 +36,32 @@ export function getRecordingSteps() {
   })
 }
 
+/**
+ * 下载本地录制器
+ */
+export function downloadRecorder() {
+  return request({
+    url: '/api/recorder/download/',
+    method: 'get',
+    responseType: 'blob'
+  })
+}
+
+/**
+ * 上传配置文件
+ * @param {FormData} formData - 配置文件 FormData
+ */
+export function uploadConfig(formData) {
+  return request({
+    url: '/api/recorder/upload/',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 // 配置相关
 
 /**

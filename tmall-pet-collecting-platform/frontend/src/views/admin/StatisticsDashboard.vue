@@ -171,7 +171,7 @@ onUnmounted(() => {
             <DataAnalysis class="title-icon" />
             宠物用品统计分析
           </h1>
-          <p class="dashboard-subtitle">天猫潮玩商品数据洞察与可视化分析</p>
+          <p class="dashboard-subtitle">天猫宠物用品数据洞察与可视化分析</p>
         </div>
         <div class="header-actions">
           <el-button

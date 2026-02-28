@@ -1,8 +1,9 @@
 """
 360问答爬虫 (混合模式)
 
-优先使用 JSON API 模式，API 失效时自动降级为 Playwright 浏览器渲染模式。
-支持断点续传、代理轮换、验证码处理等反爬机制。
+基于 script\360q&a\crawler.py 的正确实现移植到 Scrapy 框架。
+使用 HTML 解析方式，访问 /c/?pn={pn} 获取问答列表。
+支持断点续传、Playwright 降级等反爬机制。
 """
 
 import json
@@ -15,7 +16,8 @@ from urllib.parse import urljoin, parse_qs, urlparse
 from typing import Generator, Dict, Any, Optional
 
 import scrapy
-from scrapy.http import Request, Response, HtmlResponse, JsonRequest
+from scrapy.http import Request, Response, HtmlResponse
+from scrapy.selector import Selector
 from scrapy_playwright.page import PageMethod
 from scrapy.exceptions import DropItem
 
@@ -29,44 +31,74 @@ class WendaSpider(scrapy.Spider):
     """
     360问答爬虫
 
-    混合模式：
-    1. 优先模式 - httpx 调用隐藏 JSON API
-    2. 降级模式 - Playwright 浏览器渲染
+    基于 script\360q&a\crawler.py 的正确实现：
+    - URL: https://wenda.so.com/c/?pn={pn}
+    - 选择器: ul.question-list li
+    - 支持降级到 Playwright 浏览器渲染模式
     """
 
     name = 'wenda_360'
     allowed_domains = ['wenda.so.com', '360.cn']
-    start_urls = ['https://wenda.so.com/']
+
+    # 基础 URL (与 crawler.py 一致)
+    BASE_URL = "https://wenda.so.com"
 
     # 爬虫配置
     custom_settings = {
-        'DOWNLOAD_DELAY': 3,          # 请求延迟（秒）
+        'DOWNLOAD_DELAY': 2,          # 请求延迟（秒）- 与 crawler.py 的 delay 参数对应
         'RANDOMIZE_DOWNLOAD_DELAY': True,  # 随机延迟
-        'RETRY_TIMES': 5,             # 重试次数
+        'RETRY_TIMES': 3,             # 重试次数 - 与 crawler.py 的 max_retries 对应
         'RETRY_HTTP_CODES': [500, 502, 503, 504, 408, 429],  # 重试状态码
         'CONCURRENT_REQUESTS': 1,     # 并发请求数（避免封禁）
         'AUTOTHROTTLE_ENABLED': True, # 自动限速
-        'AUTOTHROTTLE_START_DELAY': 3,
-        'AUTOTHROTTLE_MAX_DELAY': 10,
+        'AUTOTHROTTLE_START_DELAY': 2,
+        'AUTOTHROTTLE_MAX_DELAY': 8,
         'AUTOTHROTTLE_TARGET_CONCURRENTITY': 1.0,
-        'ROBOTSTXT_OBEY': True,       # 遵守 robots.txt
+        'ROBOTSTXT_OBEY': False,      # 不遵守 robots.txt（测试用）
         'USER_AGENT_ROTATE': True,    # 开启 UA 旋转
         'PLAYWRIGHT_LAUNCH_OPTIONS': {
             'headless': True,
         },
     }
 
-    def __init__(self, mode: str = 'demo', limit: int = 20, *args, **kwargs):
+    # 默认请求头（从 crawler.py 移植）
+    DEFAULT_HEADERS = {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "cache-control": "no-cache",
+        "pragma": "no-cache",
+        "referer": "https://wenda.so.com/",
+        "sec-ch-ua": '"Not(A:Brand";v="8", "Chromium";v="144", "Microsoft Edge";v="144"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0",
+    }
+
+    def __init__(self, mode: str = 'demo', limit: int = 20, use_redis: bool = False, *args, **kwargs):
         """
         初始化爬虫
 
         Args:
             mode: 采集模式 ('demo' 或 'full')
             limit: 采集数量限制
+            use_redis: 是否使用 Redis 进行断点续传 (默认 False)
         """
         super().__init__(*args, **kwargs)
         self.mode = mode
-        self.limit = limit
+        # 确保参数类型正确（命令行传入的参数是字符串）
+        if isinstance(limit, str):
+            self.limit = int(limit)
+        else:
+            self.limit = limit
+
+        # 确保 use_redis 参数类型正确
+        if isinstance(use_redis, str):
+            self.use_redis = use_redis.lower() in ('true', '1', 'yes', 'on')
+        else:
+            self.use_redis = use_redis
 
         # 演示模式限制
         self.demo_limit = 20
@@ -74,56 +106,89 @@ class WendaSpider(scrapy.Spider):
         # 状态追踪
         self.collected_count = 0
         self.failed_count = 0
-        self.api_mode = True  # 优先使用 API 模式
 
         # 清洗工具
         self.cleaner = DataCleaner()
 
-        # Redis 断点记录 key
+        # Redis 断点记录 key (仅当 use_redis=True 时使用)
         self.redis_key_prefix = 'crawler:wenda:'
+        self.redis_enabled = self.use_redis
 
-        logger.info(f"初始化爬虫: mode={mode}, limit={limit}")
+        logger.info(f"初始化爬虫: mode={mode}, limit={limit}, use_redis={self.use_redis}")
 
     def start_requests(self) -> Generator[Request, None, None]:
         """
         生成初始请求
 
-        优先使用 JSON API，失败后降级为 Playwright
+        基于 crawler.py 的正确实现：
+        - 第1页: https://wenda.so.com/c/
+        - 第2页+: https://wenda.so.com/c/?pn={pn}
         """
-        # 从 Redis 读取断点
-        last_page = self._get_redis('last_page', 1)
-        last_id = self._get_redis('last_id', '')
+        # 从 Redis 读取断点（如果启用）
+        if self.redis_enabled:
+            last_page = self._get_redis('last_page', 1)
+            self.logger.info(f"断点续传: 起始页={last_page}")
+        else:
+            last_page = 1
+            self.logger.info(f"从头开始爬取: 起始页={last_page}")
 
-        self.logger.info(f"断点续传: page={last_page}, last_id={last_id}")
+        # 构造第一页的 URL
+        # 第1页: pn=0 -> /c/
+        # 第2页: pn=1 -> /c/?pn=1
+        yield self._create_page_request(last_page)
 
-        # 构造搜索 URL（示例：搜索 Python 相关问题）
-        base_url = 'https://wenda.so.com/search/list'
+    def _create_page_request(self, page_num: int, use_playwright: bool = False,
+                              retry_count: int = 0) -> Request:
+        """
+        创建页面请求
 
-        params = {
-            'q': 'python',  # 搜索关键词
-            'pn': last_page,  # 页码
-            'ps': 20,  # 每页数量
-            'sort': 'time',  # 按时间排序
-        }
+        Args:
+            page_num: 页码 (1=第1页, 2=第2页, ...)
+            use_playwright: 是否使用 Playwright 模式
+            retry_count: 重试次数
 
-        # 优先尝试 JSON API
-        api_url = f"{base_url}?{self._encode_params(params)}"
+        Returns:
+            Request 对象
+        """
+        # pn 参数从 0 开始: pn=0 -> 第1页, pn=1 -> 第2页
+        pn = page_num - 1
+        if pn == 0:
+            url = f"{self.BASE_URL}/c/"
+        else:
+            url = f"{self.BASE_URL}/c/?pn={pn}"
 
-        yield JsonRequest(
-            url=api_url,
-            callback=self.parse_api,
-            errback=self.fallback_to_playwright,
-            meta={
-                'playwright': False,
-                'page': last_page,
-                'retry_count': 0,
-            },
-            headers={
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Referer': 'https://wenda.so.com/',
-            }
-        )
+        self.logger.debug(f"创建请求: {url} (第{page_num}页)")
+
+        if use_playwright:
+            # Playwright 浏览器模式
+            return Request(
+                url=url,
+                callback=self.parse_playwright_html,
+                errback=self.handle_error,
+                meta={
+                    'playwright': True,
+                    'playwright_include_page': True,
+                    'playwright_page_methods': [
+                        PageMethod('wait_for_selector', 'ul.question-list li', timeout=15000),
+                        PageMethod('wait_for_timeout', 1000),
+                    ],
+                    'page': page_num,
+                    'retry_count': retry_count,
+                },
+                headers=self.DEFAULT_HEADERS.copy()
+            )
+        else:
+            # 普通 HTTP 请求模式
+            return Request(
+                url=url,
+                callback=self.parse_html,
+                errback=self.handle_error,
+                meta={
+                    'page': page_num,
+                    'retry_count': retry_count,
+                },
+                headers=self.DEFAULT_HEADERS.copy()
+            )
 
     def _encode_params(self, params: dict) -> str:
         """URL 参数编码"""
@@ -143,6 +208,10 @@ class WendaSpider(scrapy.Spider):
         Returns:
             值或默认值
         """
+        # 如果未启用 Redis，直接返回默认值
+        if not self.redis_enabled:
+            return default
+
         try:
             import redis
             r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
@@ -154,6 +223,10 @@ class WendaSpider(scrapy.Spider):
 
     def _save_redis(self, key: str, value: Any) -> None:
         """保存断点到 Redis"""
+        # 如果未启用 Redis，直接返回
+        if not self.redis_enabled:
+            return
+
         try:
             import redis
             r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
@@ -161,59 +234,59 @@ class WendaSpider(scrapy.Spider):
         except Exception as e:
             self.logger.warning(f"Redis 保存失败: {e}")
 
-    def parse_api(self, response: Response) -> Generator[QuestionItem, None, None]:
+    def parse_html(self, response: Response) -> Generator[QuestionItem, None, None]:
         """
-        JSON API 解析器
+        HTML 解析器（与 crawler.py 逻辑一致）
 
-        处理 API 返回的 JSON 数据
+        解析 https://wenda.so.com/c/ 页面的问答列表
         """
-        self.logger.info(f"API 响应状态: {response.status}")
+        page = response.meta.get('page', 1)
+        self.logger.info(f"解析第 {page} 页: URL={response.url}, 状态={response.status}")
 
-        # 检查响应状态
-        if response.status != 200:
-            self.logger.warning(f"API 返回非 200 状态: {response.status}")
+        # 检查 HTML 是否异常短（可能被反爬拦截）
+        html_length = len(response.text)
+        if html_length < 10000:
+            self.logger.warning(f"HTML 异常短: {html_length} 字符，尝试 Playwright 模式")
             yield from self.fallback_to_playwright(response)
             return
 
-        try:
-            data = response.json()
-            self.logger.info(f"API 返回数据结构: {type(data)}")
+        # 检查是否为空页
+        if self._is_empty_page(response.text):
+            self.logger.warning(f"第 {page} 页为空页，停止采集")
+            return
 
-            # 解析数据 - 根据实际 API 结构调整
-            questions = self._extract_from_api_response(data)
+        # 解析问题列表
+        questions = self._parse_question_list(response.text, page)
 
-            if not questions:
-                self.logger.warning("API 返回数据为空，尝试 Playwright 模式")
-                yield from self.fallback_to_playwright(response)
-                return
-
-            # 处理每条问答
-            for q in questions:
-                if self.mode == 'demo' and self.collected_count >= self.demo_limit:
-                    break
-
-                if self.collected_count >= self.limit:
-                    self.logger.info(f"达到采集限制: {self.limit}")
-                    break
-
-                item = self._build_question_item(q)
-                if item:
-                    yield item
-                    self.collected_count += 1
-
-            # 保存断点
-            page = response.meta.get('page', 1)
-            self._save_redis('last_page', page + 1)
-
-            # 判断是否继续采集
-            if self.mode == 'full' and self.collected_count < self.limit:
-                # 构造下一页请求
-                next_page = page + 1
-                yield from self._get_next_page_request(next_page)
-
-        except json.JSONDecodeError as e:
-            self.logger.error(f"JSON 解析失败: {e}")
+        if not questions:
+            self.logger.warning(f"第 {page} 页解析为 0 条问题，尝试 Playwright 模式")
             yield from self.fallback_to_playwright(response)
+            return
+
+        self.logger.info(f"第 {page} 页解析到 {len(questions)} 条问题")
+
+        # 处理每条问答
+        for q in questions:
+            if self.mode == 'demo' and self.collected_count >= self.demo_limit:
+                self.logger.info(f"演示模式已达到限制 {self.demo_limit} 条")
+                break
+
+            if self.collected_count >= self.limit:
+                self.logger.info(f"已达到采集限制: {self.limit}")
+                break
+
+            item = self._build_question_item(q)
+            if item:
+                yield item
+                self.collected_count += 1
+
+        # 保存断点
+        self._save_redis('last_page', page + 1)
+
+        # 判断是否继续采集
+        if self.mode == 'full' and self.collected_count < self.limit:
+            next_page = page + 1
+            yield self._create_page_request(next_page)
 
     def _extract_from_api_response(self, data: dict) -> list:
         """
@@ -249,59 +322,218 @@ class WendaSpider(scrapy.Spider):
 
         return questions
 
+    def _is_empty_page(self, html: str) -> bool:
+        """
+        检查是否为空白页（无问题数据）
+
+        与 crawler.py 中的 _is_empty_page 方法一致
+        """
+        # 检查 HTML 是否异常短
+        MIN_HTML_LENGTH = 10000
+        if len(html) < MIN_HTML_LENGTH:
+            return True
+
+        selector = Selector(text=html)
+
+        # 方法1: 检查是否有问题列表
+        question_items = selector.css('ul.question-list li')
+        if question_items:
+            return False
+
+        # 方法2: 检查是否有任何 data-askid 的 li
+        data_items = selector.css('li[data-askid]')
+        if data_items:
+            return False
+
+        # 方法3: 检查是否有问题链接
+        question_links = selector.css('a[href^="/q/"]')
+        if question_links:
+            return False
+
+        # 方法4: 检查 pagination 元素是否存在
+        pagination = selector.css('.pagination, #list-page')
+        if pagination:
+            return False
+
+        # 方法5: 检查是否有 "已解决" 或问题库相关的文本
+        page_text = selector.xpath('//body//text()').getall()
+        page_text = ''.join(page_text)
+        if '已解决' in page_text or '问题库' in page_text:
+            return False
+
+        # 如果以上都没有，判定为空页
+        return True
+
+    def _parse_question_list(self, html: str, page_num: int) -> list:
+        """
+        解析问题列表页面
+
+        与 crawler.py 中的 parse_question_list 方法一致
+
+        Args:
+            html: HTML 内容
+            page_num: 页码
+
+        Returns:
+            问题列表，每项包含: id, title, category, answer_count, time, location, pn
+        """
+        self.logger.debug(f"开始解析第 {page_num} 页问题列表")
+        selector = Selector(text=html)
+        questions = []
+
+        # 查找问题列表
+        question_items = selector.css("ul.question-list li")
+
+        # 如果没找到，尝试备用选择器
+        if not question_items:
+            question_items = selector.css("li[data-askid]")
+
+        if not question_items:
+            self.logger.warning(f"第 {page_num} 页: 未找到问题列表项")
+            return []
+
+        for item in question_items:
+            try:
+                question = self._parse_question_item(item, page_num)
+                if question:
+                    questions.append(question)
+            except Exception as e:
+                self.logger.error(f"解析问题项失败: {e}", exc_info=True)
+                continue
+
+        self.logger.debug(f"第 {page_num} 页解析完成: {len(questions)} 条问题")
+        return questions
+
+    def _parse_question_item(self, item_selector, page_num: int = 1) -> Optional[dict]:
+        """
+        解析单个问题项
+
+        与 crawler.py 中的 _parse_question_item 方法一致
+
+        Args:
+            item_selector: Scrapy Selector 对象
+            page_num: 页码
+
+        Returns:
+            问题字典
+        """
+        # 提取问题 ID - 从 data-askid 属性获取
+        qid = item_selector.css('::attr(data-askid)').get()
+
+        # 备用: 从 href 中获取
+        if not qid:
+            href = item_selector.css('a[href^="/q/"]::attr(href)').get()
+            if href:
+                qid_match = re.search(r'/q/(\d+)', href)
+                qid = qid_match.group(1) if qid_match else ''
+
+        # 提取问题标题 - 查找有 target="_blank" 的链接
+        title = item_selector.css('a[target="_blank"]::text').get()
+        if not title:
+            title = item_selector.css('a[href^="/q/"]::text').get()
+
+        if title:
+            title = title.strip()
+
+        # 提取分类
+        category = item_selector.css('a.js-question-cate::text').get()
+        if category:
+            category = category.strip()
+
+        # 从 data-ans 属性获取回答数
+        answer_count = 0
+        data_ans = item_selector.css('::attr(data-ans)').get()
+        if data_ans:
+            try:
+                answer_count = int(data_ans)
+            except ValueError:
+                pass
+
+        # 从 div.fr 中提取回答个数、时间、地点
+        info_text = item_selector.css('div.fr::text').getall()
+        info_text = ''.join(info_text).strip()
+
+        # 解析回答个数（备用方法）
+        ans_match = re.search(r'(\d+)个回答', info_text)
+        if ans_match and answer_count == 0:
+            answer_count = int(ans_match.group(1))
+
+        # 解析时间
+        time_str = ''
+        time_match = re.search(r'(\d{4}\.\d{2}\.\d{2})', info_text)
+        if time_match:
+            time_str = time_match.group(1)
+
+        # 解析地点
+        location = ''
+        loc_match = re.search(r'·\s*(\S+)', info_text)
+        if loc_match:
+            location = loc_match.group(1).strip()
+
+        return {
+            'id': qid,
+            'title': title,
+            'category': category,
+            'answer_count': answer_count,
+            'time': time_str,
+            'location': location,
+            'pn': page_num,
+        }
+
     def _build_question_item(self, q: dict) -> Optional[QuestionItem]:
         """
         构建 QuestionItem
 
         Args:
-            q: 原始问答数据
+            q: 从 _parse_question_item 返回的问题字典
 
         Returns:
             QuestionItem 或 None
         """
         try:
-            # 提取字段 - 根据实际 API 结构调整字段名
-            title = q.get('title') or q.get('question_title', '')
-            answer_content = q.get('answer') or q.get('answer_content', q.get('answer_text', ''))
-            source_url = q.get('url') or q.get('source_url', q.get('link', ''))
+            qid = q.get('id', '')
+            title = q.get('title', '')
 
             # 必填字段验证
-            if not title or not answer_content or not source_url:
-                self.logger.debug(f"数据缺失，跳过: title={title[:30] if title else None}")
+            if not qid or not title:
+                self.logger.debug(f"数据缺失，跳过: id={qid}, title={title[:30] if title else None}")
                 return None
 
-            # 清洗数据
+            # 构造详情页 URL
+            source_url = f"{self.BASE_URL}/q/{qid}"
+
+            # 清洗标题
             title = self.cleaner.clean_html(title)
             title = self.cleaner.normalize_text(title)
 
-            answer_content = self.cleaner.clean_html(answer_content)
-            answer_content = self.cleaner.normalize_text(answer_content)
+            # 提取可选字段（与 items.py 中的字段名一致）
+            category = q.get('category', '')
+            answer_count = q.get('answer_count', 0)
+            time_str = q.get('time', '')  # 格式: YYYY.MM.DD
+            location = q.get('location', '')
+            page_num = q.get('pn', 1)
 
-            # 提取可选字段
-            description = q.get('description') or q.get('question_desc', '')
-            if description:
-                description = self.cleaner.clean_html(description)
-                description = self.cleaner.normalize_text(description)
+            # 构建 Item（使用正确的字段名）
+            item = QuestionItem()
+            item['question_id'] = qid
+            item['title'] = title
+            item['source_url'] = source_url
+            item['crawl_time'] = datetime.now().isoformat()
 
-            answerer = q.get('answerer') or q.get('answer_user', '')
-            answer_time = q.get('answer_time') or q.get('answer_date', '')
+            # 可选字段
+            if category:
+                item['category'] = category
+            if answer_count:
+                item['answer_count'] = answer_count
+            if time_str:
+                item['publish_time'] = time_str
+            if location:
+                item['location'] = location
+            if page_num:
+                item['crawl_page'] = page_num
 
-            # 处理标签
-            tags = q.get('tags', [])
-            if isinstance(tags, str):
-                tags = [t.strip() for t in tags.split(',') if t.strip()]
-
-            # 构建 Item
-            item = QuestionItem(
-                title=title,
-                answer_content=answer_content,
-                source_url=source_url,
-                description=description or None,
-                answerer=answerer or None,
-                answer_time=answer_time or None,
-                tags=tags,
-                crawl_time=datetime.now().isoformat()
-            )
+            # 答案列表（列表页暂无答案，设为空列表）
+            item['answer_list'] = []
 
             return item
 
@@ -313,85 +545,55 @@ class WendaSpider(scrapy.Spider):
         """
         降级到 Playwright 模式
 
-        当 API 失效、被封禁或返回异常时，切换到浏览器渲染模式
+        当 HTTP 请求失败时，切换到浏览器渲染模式
         """
-        if self.api_mode:
-            self.logger.warning("API 模式失效，降级到 Playwright 模式")
-            self.api_mode = False
-
         # 从 meta 获取或设置默认值
         meta = getattr(response_or_failure, 'meta', {}) or {}
         page = meta.get('page', 1)
         retry_count = meta.get('retry_count', 0)
 
-        # 构造搜索 URL
-        search_url = f'https://wenda.so.com/search/list?q=python&pn={page}'
+        self.logger.warning(f"HTTP 模式失效，降级到 Playwright 模式 (第{page}页)")
 
-        yield Request(
-            url=search_url,
-            callback=self.parse_playwright,
-            errback=self.handle_error,
-            meta={
-                'playwright': True,
-                'playwright_include_page': True,
-                'playwright_page_methods': [
-                    PageMethod('wait_for_selector', '.question-list, .result-list', timeout=15000),
-                    PageMethod('wait_for_timeout', 2000),  # 等待懒加载
-                    PageMethod('evaluate', 'window.scrollTo(0, document.body.scrollHeight / 2)'),  # 滚动加载
-                    PageMethod('wait_for_timeout', 1000),
-                ],
-                'page': page,
-                'retry_count': retry_count + 1,
-            },
-            headers={
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-            }
-        )
+        # 使用正确的 URL 构造 Playwright 请求
+        yield self._create_page_request(page, use_playwright=True, retry_count=retry_count)
 
-    def parse_playwright(self, response: HtmlResponse) -> Generator[QuestionItem, None, None]:
+    def parse_playwright_html(self, response: HtmlResponse) -> Generator[QuestionItem, None, None]:
         """
         Playwright HTML 解析器
 
-        处理浏览器渲染后的 HTML 页面
+        使用浏览器渲染后解析，与 parse_html 逻辑一致
         """
         page = response.meta.get('page', 1)
-        self.logger.info(f"Playwright 解析页面: {response.url}")
+        self.logger.info(f"Playwright 解析第 {page} 页: {response.url}")
 
-        # 提取问答列表 - 根据实际页面结构调整选择器
-        # 360问答可能的 CSS 选择器
-        selectors = [
-            '.question-item',
-            '.result-item',
-            '.wenda-item',
-            '.js-wenda-item',
-            '.question-list li',
-            '.search-result li',
-        ]
+        # 使用相同的解析逻辑
+        html = response.text
 
-        questions = []
-        for selector in selectors:
-            questions = response.css(selector)
-            if questions:
-                self.logger.info(f"使用选择器: {selector}, 找到 {len(questions)} 条")
-                break
-
-        if not questions:
-            self.logger.warning(f"页面未找到问答内容: {response.url}")
-            # 可能是验证码页面
-            if 'captcha' in response.url or '验证码' in response.text:
-                self.logger.error("检测到验证码页面，需要人工处理")
-                # 这里可以触发 2Captcha API 调用
+        # 检查是否为空页
+        if self._is_empty_page(html):
+            self.logger.warning(f"第 {page} 页为空页（Playwright），停止采集")
             return
 
+        # 解析问题列表
+        questions = self._parse_question_list(html, page)
+
+        if not questions:
+            self.logger.warning(f"第 {page} 页 Playwright 解析为 0 条问题")
+            return
+
+        self.logger.info(f"第 {page} 页 Playwright 解析到 {len(questions)} 条问题")
+
+        # 处理每条问答
         for q in questions:
             if self.mode == 'demo' and self.collected_count >= self.demo_limit:
+                self.logger.info(f"演示模式已达到限制 {self.demo_limit} 条")
                 break
 
             if self.collected_count >= self.limit:
+                self.logger.info(f"已达到采集限制: {self.limit}")
                 break
 
-            item = self._parse_question_element(q)
+            item = self._build_question_item(q)
             if item:
                 yield item
                 self.collected_count += 1
@@ -401,11 +603,12 @@ class WendaSpider(scrapy.Spider):
 
         # 继续采集下一页
         if self.mode == 'full' and self.collected_count < self.limit:
-            yield from self._get_next_page_request(page + 1, use_playwright=True)
+            next_page = page + 1
+            yield self._create_page_request(next_page, use_playwright=True)
 
     def _parse_question_element(self, q) -> Optional[QuestionItem]:
         """
-        解析单个问答元素
+        解析单个问答元素（已废弃，使用 _parse_question_item 代替）
 
         Args:
             q: scrapy Selector 对象
@@ -473,56 +676,13 @@ class WendaSpider(scrapy.Spider):
 
     def _get_next_page_request(self, page: int, use_playwright: bool = False) -> Generator[Request, None, None]:
         """
-        生成下一页请求
+        生成下一页请求（已废弃，使用 _create_page_request 代替）
 
         Args:
             page: 页码
             use_playwright: 是否使用 Playwright 模式
         """
-        if self.mode == 'demo' and self.collected_count >= self.demo_limit:
-            return
-
-        if self.collected_count >= self.limit:
-            return
-
-        if use_playwright or not self.api_mode:
-            url = f'https://wenda.so.com/search/list?q=python&pn={page}'
-            yield Request(
-                url=url,
-                callback=self.parse_playwright,
-                errback=self.handle_error,
-                meta={
-                    'playwright': True,
-                    'playwright_include_page': True,
-                    'playwright_page_methods': [
-                        PageMethod('wait_for_selector', '.question-list, .result-list', timeout=15000),
-                        PageMethod('wait_for_timeout', 2000),
-                        PageMethod('evaluate', 'window.scrollTo(0, document.body.scrollHeight / 2)'),
-                        PageMethod('wait_for_timeout', 1000),
-                    ],
-                    'page': page,
-                }
-            )
-        else:
-            params = {
-                'q': 'python',
-                'pn': page,
-                'ps': 20,
-                'sort': 'time',
-            }
-            api_url = f"https://wenda.so.com/search/list?{self._encode_params(params)}"
-            yield JsonRequest(
-                url=api_url,
-                callback=self.parse_api,
-                errback=self.fallback_to_playwright,
-                meta={
-                    'playwright': False,
-                    'page': page,
-                },
-                headers={
-                    'Accept': 'application/json, text/plain, */*',
-                }
-            )
+        yield self._create_page_request(page, use_playwright=use_playwright)
 
     def handle_error(self, failure) -> Generator[Request, None, None]:
         """
@@ -534,13 +694,15 @@ class WendaSpider(scrapy.Spider):
         meta = failure.request.meta
         retry_count = meta.get('retry_count', 0)
         page = meta.get('page', 1)
+        use_playwright = meta.get('playwright', False)
 
         self.logger.error(f"请求失败: {failure.value}, 重试次数: {retry_count}")
 
-        if retry_count < 5:
+        if retry_count < 3:
             # 延迟后重试
-            time.sleep(random.uniform(5, 10))
-            yield from self._get_next_page_request(page, use_playwright=True)
+            time.sleep(random.uniform(2, 5))
+            # 失败后自动升级到 Playwright 模式
+            yield self._create_page_request(page, use_playwright=True, retry_count=retry_count + 1)
         else:
             self.failed_count += 1
             self.logger.error(f"重试次数耗尽，跳过页面: {page}")
@@ -558,20 +720,20 @@ class WendaSpider(scrapy.Spider):
             f"失败={self.failed_count}"
         )
 
-        # 保存最终统计
-        stats = {
-            'total': self.collected_count,
-            'failed': self.failed_count,
-            'mode': 'api' if self.api_mode else 'playwright',
-            'closed_reason': reason,
-            'finish_time': datetime.now().isoformat()
-        }
+        # 保存最终统计到 Redis（如果启用）
+        if self.redis_enabled:
+            stats = {
+                'total': self.collected_count,
+                'failed': self.failed_count,
+                'closed_reason': reason,
+                'finish_time': datetime.now().isoformat()
+            }
 
-        try:
-            import redis
-            r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-            # 兼容旧版 Redis/redis-py
-            for k, v in stats.items():
-                r.hset(f"{self.redis_key_prefix}stats", k, str(v))
-        except Exception as e:
-            self.logger.warning(f"保存统计失败: {e}")
+            try:
+                import redis
+                r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+                # 兼容旧版 Redis/redis-py
+                for k, v in stats.items():
+                    r.hset(f"{self.redis_key_prefix}stats", k, str(v))
+            except Exception as e:
+                self.logger.warning(f"保存统计失败: {e}")

@@ -211,9 +211,14 @@ REST_FRAMEWORK_SPECTACULAR_SETTINGS = {
 # =============================================================================
 # Celery Configuration
 # =============================================================================
-# Redis 配置（端口 6379，无密码）
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+# Celery Broker 配置（开发环境使用内存 broker，无需 Redis）
+# 注意：内存 broker 不支持分布式和重启恢复，仅用于开发测试
+CELERY_BROKER_URL = 'memory://'
+CELERY_RESULT_BACKEND = 'cache+memory://'
+
+# 生产环境使用 Redis（取消下面的注释）
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 # 任务追踪
 CELERY_TASK_TRACK_STARTED = True

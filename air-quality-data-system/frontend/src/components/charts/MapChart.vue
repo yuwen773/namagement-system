@@ -52,7 +52,7 @@ const props = defineProps({
   },
   zoom: {
     type: Number,
-    default: 1.2
+    default: 1.5
   },
   center: {
     type: Array,

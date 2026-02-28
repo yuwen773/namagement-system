@@ -1,16 +1,13 @@
 """
 Celery 应用配置
 
-为问答信息采集系统配置异步任务队列，支持爬虫异步执行和断点续传。
+为问答信息采集系统配置异步任务队列，支持爬虫异步执行。
+
+开发环境使用内存 broker，无需安装 Redis。
 """
 
 import os
 from celery import Celery
-from celery.schedules import crontab
-
-# 移除 django-celery-results 相关导入（使用 Redis 后端不需要）
-# 如果需要数据库存储结果，取消下面的注释并运行迁移：
-# CELERY_RESULT_BACKEND = 'django-db'
 
 # 设置 Django 默认模块
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'qa_project.settings')
@@ -27,14 +24,14 @@ app.autodiscover_tasks()
 # 配置时区（与 Django 保持一致）
 app.conf.timezone = 'Asia/Shanghai'
 
-# Celery Beat 定时任务配置（可选）
-app.conf.beat_schedule = {
-    # 示例定时任务：每天凌晨2点清理过期任务
-    'cleanup-expired-tasks': {
-        'task': 'crawler.tasks.cleanup_expired_tasks',
-        'schedule': crontab(hour=2, minute=0),
-    },
-}
+# Celery Beat 定时任务配置（内存 broker 不支持，已禁用）
+# 如需使用定时任务，请切换到 Redis broker
+# app.conf.beat_schedule = {
+#     'cleanup-expired-tasks': {
+#         'task': 'crawler.tasks.cleanup_expired_tasks',
+#         'schedule': crontab(hour=2, minute=0),
+#     },
+# }
 
 # 任务结果序列化
 app.conf.task_serializer = 'json'

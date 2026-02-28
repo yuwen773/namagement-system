@@ -25,6 +25,57 @@
       </div>
     </header>
 
+    <!-- Local Recorder Info Card -->
+    <el-card class="info-card">
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="info-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            本地录制器
+          </span>
+        </div>
+      </template>
+      <div class="local-recorder-info">
+        <p class="info-text">
+          由于浏览器安全限制，服务器上的浏览器无法在前端页面中显示和控制。
+          请下载本地录制器，在本地浏览器中进行操作录制。
+        </p>
+        <div class="recorder-actions">
+          <button class="action-btn download" @click="handleDownloadRecorder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>下载录制器</span>
+          </button>
+          <button class="action-btn upload" @click="handleUploadConfig">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>上传配置</span>
+          </button>
+        </div>
+        <div class="usage-steps">
+          <h4>使用步骤：</h4>
+          <ol>
+            <li>点击"下载录制器"下载 <code>local_recorder.py</code> 脚本</li>
+            <li>在本地安装 Python 和 Playwright: <code>pip install playwright && playwright install chromium</code></li>
+            <li>运行脚本: <code>python local_recorder.py</code></li>
+            <li>在弹出的浏览器中进行操作录制</li>
+            <li>录制完成后，会在 <code>recordings/</code> 目录生成 JSON 配置文件</li>
+            <li>点击"上传配置"将生成的配置文件导入系统</li>
+          </ol>
+        </div>
+      </div>
+    </el-card>
+
     <!-- Control Bar -->
     <section class="control-bar">
       <div class="control-actions">
@@ -219,7 +270,9 @@ import {
   startRecording,
   stopRecording,
   getRecordingSteps,
-  listConfigs
+  listConfigs,
+  downloadRecorder,
+  uploadConfig
 } from '@/api/crawler'
 
 // State
@@ -391,6 +444,92 @@ const stopPollingSteps = () => {
   }
 }
 
+// 下载本地录制器
+const handleDownloadRecorder = async () => {
+  try {
+    // 获取 token
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      ElMessage.warning('请先登录')
+      return
+    }
+
+    // 直接使用 window.location.href 下载
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+    const downloadUrl = `${apiBaseUrl}/recorder/download/`
+
+    // 创建隐藏的 a 标签进行下载
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = 'local_recorder.py'
+    link.style.display = 'none'
+
+    // 添加 Authorization 头
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', downloadUrl, true)
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    xhr.responseType = 'blob'
+
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        const blob = new Blob([xhr.response], { type: 'application/octet-stream' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'local_recorder.py'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        ElMessage.success('录制器下载成功')
+      } else {
+        ElMessage.error('下载录制器失败')
+      }
+    }
+
+    xhr.onerror = function() {
+      ElMessage.error('下载录制器失败，请确保后端服务正常运行')
+    }
+
+    xhr.send()
+  } catch (e) {
+    console.error('Failed to download recorder:', e)
+    ElMessage.error('下载录制器失败，请确保后端服务正常运行')
+  }
+}
+
+// 上传配置文件
+const handleUploadConfig = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('name', file.name.replace('.json', ''))
+
+    try {
+      loading.value = true
+      const res = await uploadConfig(formData)
+      if (res.code === 0 || res.code === 200) {
+        ElMessage.success('配置上传成功')
+        fetchConfigs()
+      } else {
+        ElMessage.error(res.message || '上传失败')
+      }
+    } catch (e) {
+      console.error('Failed to upload config:', e)
+      ElMessage.error('上传配置文件失败')
+    } finally {
+      loading.value = false
+    }
+  }
+  input.click()
+}
+
 onMounted(() => {
   fetchConfigs()
   fetchSteps()
@@ -403,6 +542,100 @@ onMounted(() => {
   min-height: 100vh;
   padding: 2rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Info Card */
+.info-card {
+  margin-bottom: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.info-card :deep(.el-card__header) {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.info-card .card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.info-icon {
+  width: 20px;
+  height: 20px;
+  color: #3b82f6;
+}
+
+.local-recorder-info {
+  padding: 0.5rem;
+}
+
+.info-text {
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
+.recorder-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.action-btn.download {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: #fff;
+}
+
+.action-btn.download:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.action-btn.upload {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  color: #fff;
+}
+
+.action-btn.upload:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+.usage-steps {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.usage-steps h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.usage-steps ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #475569;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+.usage-steps code {
+  background: #e2e8f0;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.8rem;
+  color: #dc2626;
 }
 
 .page-header {

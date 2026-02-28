@@ -578,7 +578,7 @@ class ProductAnalytics:
         pet_types = dict(Product.PET_TYPE_CHOICES)
         data = []
 
-        for pet_key, pet_label in pet_types:
+        for pet_key, pet_label in pet_types.items():
             count = products.filter(pet_type=pet_key).count()
             percentage = count * 100 / total if total > 0 else 0
 
@@ -605,7 +605,7 @@ class ProductAnalytics:
         pet_uses = dict(Product.PET_USE_CHOICES)
         data = []
 
-        for use_key, use_label in pet_uses:
+        for use_key, use_label in pet_uses.items():
             count = products.filter(pet_use=use_key).count()
             percentage = count * 100 / total if total > 0 else 0
 

@@ -70,7 +70,15 @@ def run_spider_task(self, mode: str = 'demo', limit: int = 20, resume: bool = Fa
     import apps.crawler.settings as my_settings
 
     task_id = self.request.id or 'unknown'
-    redis_client = get_redis()
+
+    # 尝试获取 Redis 连接（可能失败）
+    try:
+        redis_client = get_redis()
+        redis_client.ping()
+        redis_available = True
+    except Exception:
+        redis_available = False
+        redis_client = None
 
     # 初始化进度状态
     progress_key = get_progress_key(task_id)
@@ -89,13 +97,14 @@ def run_spider_task(self, mode: str = 'demo', limit: int = 20, resume: bool = Fa
         'message': '任务启动中...',
     }
 
-    redis_client.setex(status_key, 86400, json.dumps(initial_status))  # 24小时过期
-    redis_client.setex(progress_key, 86400, json.dumps({
-        'timestamp': timezone.now().isoformat(),
-        'current_page': 0,
-        'collected': 0,
-        'failed': 0,
-    }))
+    if redis_available and redis_client:
+        redis_client.setex(status_key, 86400, json.dumps(initial_status))  # 24小时过期
+        redis_client.setex(progress_key, 86400, json.dumps({
+            'timestamp': timezone.now().isoformat(),
+            'current_page': 0,
+            'collected': 0,
+            'failed': 0,
+        }))
 
     try:
         # 更新状态：准备启动
@@ -211,11 +220,12 @@ process.start()
         else:
             status = 'failed'
             message = f'采集失败: {result.stderr[:200]}'
-            # 记录错误日志
-            error_log_key = f'{REDIS_KEY_PREFIX}error:{task_id}'
-            redis_client.setex(error_log_key, 86400, result.stderr)
+            # 记录错误日志（如果 Redis 可用）
+            if redis_available and redis_client:
+                error_log_key = f'{REDIS_KEY_PREFIX}error:{task_id}'
+                redis_client.setex(error_log_key, 86400, result.stderr)
 
-        # 更新最终状态
+        # 更新最终状态（如果 Redis 可用）
         final_status = {
             'task_id': task_id,
             'mode': mode,
@@ -228,7 +238,8 @@ process.start()
             'message': message,
             'logs_available': True,
         }
-        redis_client.setex(status_key, 86400, json.dumps(final_status))
+        if redis_available and redis_client:
+            redis_client.setex(status_key, 86400, json.dumps(final_status))
 
         return {
             'status': status,
@@ -265,8 +276,9 @@ process.start()
 
 def update_status(status_key: str, updates: dict):
     """更新任务状态"""
-    redis_client = get_redis()
     try:
+        redis_client = get_redis()
+        redis_client.ping()
         current = json.loads(redis_client.get(status_key) or '{}')
         current.update(updates)
         redis_client.setex(status_key, 86400, json.dumps(current))
@@ -285,12 +297,16 @@ def get_task_status(task_id: str) -> dict:
     Returns:
         dict: 任务状态信息
     """
-    redis_client = get_redis()
-    status_key = get_status_key(task_id)
+    try:
+        redis_client = get_redis()
+        redis_client.ping()
+        status_key = get_status_key(task_id)
 
-    status_data = redis_client.get(status_key)
-    if status_data:
-        return json.loads(status_data)
+        status_data = redis_client.get(status_key)
+        if status_data:
+            return json.loads(status_data)
+    except Exception:
+        pass
 
     # 如果 Redis 中没有，查询 Celery 结果
     from qa_project.celery import app
@@ -313,12 +329,16 @@ def get_task_progress(task_id: str) -> dict:
     Returns:
         dict: 进度详情
     """
-    redis_client = get_redis()
-    progress_key = get_progress_key(task_id)
+    try:
+        redis_client = get_redis()
+        redis_client.ping()
+        progress_key = get_progress_key(task_id)
 
-    progress_data = redis_client.get(progress_key)
-    if progress_data:
-        return json.loads(progress_data)
+        progress_data = redis_client.get(progress_key)
+        if progress_data:
+            return json.loads(progress_data)
+    except Exception:
+        pass
 
     return {
         'timestamp': None,
@@ -340,12 +360,16 @@ def get_task_logs(task_id: str) -> str:
     Returns:
         str: 日志内容
     """
-    redis_client = get_redis()
-    error_log_key = f'{REDIS_KEY_PREFIX}error:{task_id}'
+    try:
+        redis_client = get_redis()
+        redis_client.ping()
+        error_log_key = f'{REDIS_KEY_PREFIX}error:{task_id}'
 
-    error_log = redis_client.get(error_log_key)
-    if error_log:
-        return error_log
+        error_log = redis_client.get(error_log_key)
+        if error_log:
+            return error_log
+    except Exception:
+        pass
 
     # 如果没有错误日志，返回占位信息
     return '暂无日志'
@@ -362,12 +386,16 @@ def get_resume_info(mode: str = 'full') -> dict:
     Returns:
         dict: 断点信息
     """
-    redis_client = get_redis()
-    resume_key = get_resume_key(mode)
+    try:
+        redis_client = get_redis()
+        redis_client.ping()
+        resume_key = get_resume_key(mode)
 
-    resume_data = redis_client.get(resume_key)
-    if resume_data:
-        return json.loads(resume_data)
+        resume_data = redis_client.get(resume_key)
+        if resume_data:
+            return json.loads(resume_data)
+    except Exception:
+        pass
 
     return {
         'mode': mode,
@@ -415,15 +443,19 @@ def stop_spider(task_id: str) -> dict:
         from qa_project.celery import app
         app.control.revoke(task_id, terminate=True)
 
-        # 更新状态
-        redis_client = get_redis()
-        status_key = get_status_key(task_id)
-        redis_client.setex(status_key, 86400, json.dumps({
-            'task_id': task_id,
-            'status': 'stopped',
-            'message': '任务已被用户停止',
-            'stopped_at': timezone.now().isoformat(),
-        }))
+        # 更新状态（如果 Redis 可用）
+        try:
+            redis_client = get_redis()
+            redis_client.ping()
+            status_key = get_status_key(task_id)
+            redis_client.setex(status_key, 86400, json.dumps({
+                'task_id': task_id,
+                'status': 'stopped',
+                'message': '任务已被用户停止',
+                'stopped_at': timezone.now().isoformat(),
+            }))
+        except Exception:
+            pass
 
         return {
             'status': 'success',

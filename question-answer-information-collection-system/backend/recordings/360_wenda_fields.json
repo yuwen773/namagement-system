@@ -1,0 +1,80 @@
+{
+  "version": "1.0",
+  "name": "360问答采集配置",
+  "description": "从录制文件提取的字段配置",
+
+  "list_page": {
+    "url": "https://wenda.so.com/c/",
+    "pagination": {
+      "type": "url_param",
+      "param": "pn",
+      "start": 0,
+      "max": 500
+    },
+    "item_selector": "ul.question-list li",
+    "fields": {
+      "question_id": {
+        "selector": "::attr(data-askid)",
+        "type": "attribute"
+      },
+      "title": {
+        "selector": "p.fl a",
+        "type": "text"
+      },
+      "url": {
+        "selector": "p.fl a",
+        "attribute": "href",
+        "type": "attribute"
+      },
+      "answer_count": {
+        "selector": "::attr(data-ans)",
+        "type": "attribute"
+      }
+    }
+  },
+
+  "detail_page": {
+    "field_selectors": {
+      "question_title": {
+        "selector": "h1.title",
+        "type": "text"
+      },
+      "question_content": {
+        "selector": ".question-content",
+        "type": "text"
+      },
+      "category": {
+        "selector": ".q-tags a",
+        "type": "text"
+      },
+      "tags": {
+        "selector": ".q-tags span",
+        "type": "text_list"
+      },
+      "answers": {
+        "selector": ".answer-item",
+        "type": "list",
+        "fields": {
+          "content": {
+            "selector": ".answer-content",
+            "type": "text"
+          },
+          "answerer": {
+            "selector": ".answerer-name, .user-name",
+            "type": "text"
+          },
+          "time": {
+            "selector": ".answer-time",
+            "type": "text"
+          }
+        }
+      }
+    }
+  },
+
+  "interval": {
+    "initial": 3,
+    "increment": 1,
+    "max": 10
+  }
+}
